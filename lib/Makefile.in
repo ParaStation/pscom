@@ -1,0 +1,104 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003,2004 ParTec AG, Karlsruhe
+# Copyright (C) 2005 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOP_SRCDIR := @TOP_SRCDIR@
+TOP_BUILDDIR:=@TOP_BUILDDIR@
+PSCOM_ENABLED:=@PSCOM_ENABLED@
+MELLANOX_ENABLED:=@MELLANOX_ENABLED@
+OPENIB_ENABLED:=@OPENIB_ENABLED@
+OFED_ENABLED:=@OFED_ENABLED@
+GM_ENABLED:=@GM_ENABLED@
+DAPL_ENABLED:=@DAPL_ENABLED@
+ELAN_ENABLED:=@ELAN_ENABLED@
+PSM_ENABLED:=@PSM_ENABLED@
+EXTOLL_ENABLED:=@EXTOLL_ENABLED@
+
+LIBS := psport4
+LIBS += psport4switch
+LIBS += psport4std
+
+ifeq ($(MELLANOX_ENABLED),yes)
+LIBS += psport4mvapi
+endif # ($(MELLANOX_ENABLED),yes)
+
+ifeq ($(OPENIB_ENABLED),yes)
+# CPPFLAGS +=
+LIBS += psport4openib
+endif # ($(OPENIB_ENABLED),yes)
+
+
+ifeq ($(GM_ENABLED),yes)
+LIBS += psport4gm
+ifeq ($(MELLANOX_ENABLED),yes)
+LIBS += psport4all
+else
+ifeq ($(OPENIB_ENABLED),yes)
+LIBS += psport4all
+endif # ($(OPENIB_ENABLED),yes)
+endif # ($(MELLANOX_ENABLED),yes)
+endif # ($(GM_ENABLED),yes)
+
+
+ifeq ($(PSCOM_ENABLED),yes)
+LIBS += pscom
+
+ifeq ($(OPENIB_ENABLED),yes)
+LIBS += pscom4openib
+endif # ($(OPENIB_ENABLED),yes)
+
+ifeq ($(OFED_ENABLED),yes)
+LIBS += pscom4ofed
+endif # ($(OFED_ENABLED),yes)
+
+ifeq ($(GM_ENABLED),yes)
+LIBS += pscom4gm
+endif # ($(GM_ENABLED),yes)
+
+ifeq ($(DAPL_ENABLED),yes)
+LIBS += pscom4dapl
+endif # ($(DAPL_ENABLED),yes)
+
+ifeq ($(ELAN_ENABLED),yes)
+LIBS += pscom4elan
+endif # ($(ELAN_ENABLED),yes)
+
+ifeq ($(PSM_ENABLED),yes)
+LIBS += pscom4psm
+endif # ($(PSM_ENABLED),yes)
+
+ifeq ($(EXTOLL_ENABLED),yes)
+LIBS += pscom4extoll
+endif # ($(EXTOLL_ENABLED),yes)
+
+endif # ($(PSCOM_ENABLED),yes)
+LIBS += p4tcp
+
+all: lib
+
+%_lib %_clean %_distclean:
+	@echo "------------ Dir $* : make ${@:$*_%=%} --------"
+	$(MAKE) -C $* ${@:$*_%=%}
+
+lib:		$(LIBS:=_lib)
+clean:		$(LIBS:=_clean)
+
+DISTCLEAN+= Makefile
+DISTCLEAN+= Makefile.staticlib Makefile.sharedlib
+DISTCLEAN+= Makefile.sharedlib
+
+distclean:	$(LIBS:=_distclean) psport4multi_distclean
+	$(RM) $(DISTCLEAN)
+
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status

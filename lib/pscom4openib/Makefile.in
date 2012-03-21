@@ -1,0 +1,51 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003,2004 ParTec AG, Karlsruhe
+# Copyright (C) 2005-2007 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+# Use absolute paths !!!
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOPSRCDIR := @TOP_SRCDIR@
+TOP_BUILDDIR:=@TOP_BUILDDIR@
+OPENIB_ENABLED:=@OPENIB_ENABLED@
+OPENIB_INCLUDE_DIR:=@OPENIB_INCLUDE_DIR@
+OPENIB_LIB_DIR:=@OPENIB_LIB_DIR@
+HAS_ibv_wc_status_str:=@HAS_ibv_wc_status_str@
+################################
+
+export LIBNAME := pscom4openib
+export LIBOBJS := pscom_openib.o psoib.o
+export LIBVPATH := $(SRCDIR)
+export LIBINC = -I$(TOPSRCDIR)/include -I$(OPENIB_INCLUDE_DIR) -I$(SRCDIR)/../pscom -DHAS_ibv_wc_status_str=$(HAS_ibv_wc_status_str)
+export LIBEXTERNAL_SHARED = -L$(OPENIB_LIB_DIR) -libverbs
+# export LIBDEF := -DENABLE_OPENIB
+export LIBDSTDIR = ../..
+
+################################
+
+all lib: sharedlib
+
+sharedlib: sharedlib.dir
+	$(MAKE) -C $@.dir -f ../../Makefile.$@
+
+sharedlib.dir:
+	mkdir -p $@
+
+clean:
+	$(MAKE) -C sharedlib.dir -f ../../Makefile.sharedlib clean || echo nevermind
+
+distclean:
+	$(MAKE) -C sharedlib.dir -f ../../Makefile.sharedlib distclean || echo nevermind
+	$(RM) -r sharedlib.dir
+	$(RM) Makefile
+
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status

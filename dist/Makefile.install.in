@@ -1,0 +1,222 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003 ParTec AG, Karlsruhe
+# Copyright (C) 2005-2009 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOP_SRCDIR := @top_srcdir@
+TOP_BUILDDIR := ..
+
+PSMGMT_ENABLED:=@PSMGMT_ENABLED@
+PSMGMT_HOME:=@PSMGMT_HOME@
+PSCOM_ENABLED:=@PSCOM_ENABLED@
+MELLANOX_ENABLED:=@MELLANOX_ENABLED@
+OPENIB_ENABLED:=@OPENIB_ENABLED@
+OFED_ENABLED:=@OFED_ENABLED@
+GM_ENABLED:=@GM_ENABLED@
+DAPL_ENABLED:=@DAPL_ENABLED@
+ELAN_ENABLED:=@ELAN_ENABLED@
+PSM_ENABLED:=@PSM_ENABLED@
+EXTOLL_ENABLED:=@EXTOLL_ENABLED@
+CONFIGARGS:=@CONFIGARGS@
+LIB_DIRNAME:=@LIB_DIRNAME@
+
+INSTALL = @INSTALL@
+
+#############################################################################
+#s.o. clean:
+DISTPATH := opt/parastation
+
+INCDIR := $(DISTPATH)/include
+BINDIR := $(DISTPATH)/bin
+LIBDIR := $(DISTPATH)/$(LIB_DIRNAME)
+CONFIGDIR := $(DISTPATH)/config
+
+INCLUDES += psport4.h
+
+BINS += p4stat p4tcp pspipe
+BINS += psport4_pp
+BINS += psock_pp
+BINS += pscom_pp
+
+ifeq ($(PSMGMT_ENABLED),yes)
+BINS += test_nodes pscp
+endif
+
+ifneq ($(PSMGMT_ENABLED),yes)
+$(warning "=================================")
+$(warning "PSMGMT_ENABLED = $(PSMGMT_ENABLED).")
+$(warning "ERROR: Missing Tools in Release!!!")
+$(warning "=================================")
+endif
+
+LIBS += libpsport4.a
+LIBS += libpsport4.so
+
+LIBS += libpsport4switch.so
+LIBS += libpsport4std.so
+
+ifeq ($(MELLANOX_ENABLED),yes)
+
+LIBS += libpsport4mvapi.a
+LIBS += libpsport4mvapi.so
+
+  ifeq ($(GM_ENABLED),yes)
+    LIBS += libpsport4all.a
+    LIBS += libpsport4all.so
+  endif
+
+endif
+ifeq ($(OPENIB_ENABLED),yes)
+
+LIBS += libpsport4openib.a
+LIBS += libpsport4openib.so
+
+  ifeq ($(GM_ENABLED),yes)
+	ifneq ($MELLANOX_ENABLED,yes)
+	    LIBS += libpsport4all.a
+	    LIBS += libpsport4all.so
+	endif
+  endif
+
+endif
+ifeq ($(GM_ENABLED),yes)
+
+LIBS += libpsport4gm.a
+LIBS += libpsport4gm.so
+
+endif
+
+ifeq ($(PSCOM_ENABLED),yes)
+INCLUDES += pscom.h
+LIBS += libpscom.so
+
+ifeq ($(OPENIB_ENABLED),yes)
+LIBS += libpscom4openib.so
+endif # ($(OPENIB_ENABLED),yes)
+
+ifeq ($(OFED_ENABLED),yes)
+LIBS += libpscom4ofed.so
+endif # ($(OFED_ENABLED),yes)
+
+ifeq ($(GM_ENABLED),yes)
+LIBS += libpscom4gm.so
+endif # ($(GM_ENABLED),yes)
+
+ifeq ($(DAPL_ENABLED),yes)
+LIBS += libpscom4dapl.so
+endif # ($(DAPL_ENABLED),yes)
+
+ifeq ($(ELAN_ENABLED),yes)
+LIBS += libpscom4elan.so
+endif # ($(ELAN_ENABLED),yes)
+
+ifeq ($(PSM_ENABLED),yes)
+LIBS += libpscom4psm.so
+endif # ($(PSM_ENABLED),yes)
+
+ifeq ($(EXTOLL_ENABLED),yes)
+LIBS += libpscom4extoll.so
+endif # ($(EXTOLL_ENABLED),yes)
+
+endif # ($(PSCOM_ENABLED),yes)
+
+LIBS += libp4tcp.a
+LIBS += libp4tcp.so
+
+BINS += pscom_debug
+
+MISC += VERSION.pscom
+MISC += config/ps_p4sock config/ps_ethernet # config/ps_gm
+MISC += ChangeLog.pscom
+MISC += config/parastation-config
+MISC += config/pscom.gdb
+
+DIRS += $(BINDIR) $(LIBDIR) $(INCDIR) $(MISCDIR) $(CONFIGDIR)
+
+######################################################
+MISCEXP := $(patsubst %,$(DISTPATH)/%, $(MISC))
+
+install:  dirs libs bins includes $(MISCEXP)
+
+VERSION:=$(shell cd $(TOP_SRCDIR) && scripts/vcversion --fmt version)
+RELEASE:=$(shell cd $(TOP_SRCDIR) && scripts/vcversion --fmt release)
+
+# Creating directories
+$(DIRS):
+	mkdir -p $@
+
+dirs: $(DIRS)
+
+#
+# building libs
+#
+$(LIBDIR)/%: $(TOP_BUILDDIR)/lib/%
+	cp $< $@
+#	strip -g $@
+
+libs: $(LIBDIR) $(patsubst %,$(LIBDIR)/%,$(LIBS))
+
+#
+# building bins
+#
+$(BINDIR)/%: $(TOP_BUILDDIR)/bin/%
+	cp $< $@
+#	strip $@
+
+bins: $(BINDIR) $(patsubst %,$(BINDIR)/%,$(BINS))
+
+#
+# copy includes
+#
+$(INCDIR)/%: $(TOP_SRCDIR)/include/%
+	cp $< $@
+
+includes: $(INCDIR) $(patsubst %,$(INCDIR)/%,$(INCLUDES))
+
+
+#
+# Misc files
+#
+$(DISTPATH)/config/ps_p4sock: $(TOP_SRCDIR)/scripts/ps_p4sock
+	cp $< $@
+
+$(DISTPATH)/config/ps_ethernet: $(TOP_SRCDIR)/scripts/ps_ethernet
+	cp $< $@
+
+$(DISTPATH)/config/ps_ib: $(TOP_SRCDIR)/scripts/ps_ib
+	cp $< $@
+
+$(DISTPATH)/config/parastation-config: $(TOP_BUILDDIR)/scripts/parastation-config
+	cp $< $@
+
+$(DISTPATH)/config/pscom.gdb: $(TOP_SRCDIR)/bin/pscom.gdb
+	cp $< $@
+
+$(DISTPATH)/ChangeLog.pscom: $(TOP_SRCDIR)/ChangeLog
+	cp $< $@
+
+.PHONY: $(DISTPATH)/VERSION.pscom
+$(DISTPATH)/VERSION.pscom:
+	echo "ParaStation $(VERSION)-$(RELEASE) ($(shell date)) pscom" > $@
+
+DISTCLEAN+= Makefile
+
+
+# refresh Makefile?
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status
+
+######################################################
+clean:
+
+distclean: clean
+	$(RM) $(DISTCLEAN)

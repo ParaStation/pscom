@@ -1,0 +1,28 @@
+NAME
+  p4stat - display information about the p4sock protocol.
+
+SYNOPSIS
+  p4stat [-v|--verbose=level] [-s|--sock] [-n|--net] [-?|--help] [--usage]
+
+DESCRIPTION
+  Display information for sockets and network connections using the
+  ParaStation protocol p4sock.
+
+OPTIONS
+  -s|--sock  Display information about open p4sock sockets.
+
+  -n|--net   Display information of network connections using
+             p4sock.
+
+
+  -v|--verbose=level  be more verbose
+
+  -?|--help  Show a help message.
+
+  --usage    Display a brief usage message.
+
+SEE ALSO
+  p4tcp(8)
+
+COPYRIGHT
+  (c) 2004-2009 ParTec CCC GmbH, Munich.

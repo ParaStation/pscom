@@ -1,0 +1,1319 @@
+2012-03-21  Jens Hauke  <hauke@par-tec.com>
+
+	* enhance: License with QPL
+
+	* feature: test_nodes is now using libpscom
+
+2011-12-02  Thomas Moschny <moschny@par-tec.com>	5.0.37-1
+
+	* psm: share one progress engine (ipeek) with all
+	connections. Greatly enhances performance e.g. for namd2.
+
+	* Fix the initial state of receive requests from
+	socket->default_recv.
+
+	* Fix assertion test from _pscom_cancel_recv with ANY_SOURCE
+	requests. Fixes two failing mpich2 tests.
+
+	* Fix missing -ldl for openib_pp tools.
+
+	* Fix compiler warnings in psofed.c and psoib.c.
+
+2011-07-14  Jens Hauke  <hauke@par-tec.com>	-	5.0.36-1
+
+	* feature: Native qlogic psm support
+
+2011-06-01  Jens Hauke  <hauke@par-tec.com>	-	5.0.35-1
+
+	* psoib: revert 5.0.34-1 error reporting.
+
+2011-05-30  Jens Hauke  <hauke@par-tec.com>	-	5.0.34-1
+
+	* Fix a race in ufd_poll.
+
+	* Scaling fix: Increase default PSP_TCP_BACKLOG to 262144.
+
+	* psoib: increased error reporting.
+
+	* Fix PSP_DEBUG_OUT parsing with malformed file names.
+
+	* enhance: Prefix debug output with the socket name (= mpi rank).
+
+	* Fix receive request counting after termination of a broken
+	connection. (Was false positive "deadlock detected")
+
+	* enhance: pscom_debug: Use ssh. New option -p to use pssh.
+
+2010-11-11  Jens Hauke  <hauke@par-tec.com>	-	5.0.33-2
+
+	* psbuild for the git buildbots
+
+2010-08-23  Jens Hauke  <hauke@par-tec.com>	-	5.0.33-1
+
+	* Fix: p4ether: linearize rx skb. Fix bnx2 fragmented receive
+	  skb's. (Corrupted messages with pscom over p4sock over bnx2)
+
+	* feature: count and print pscom_probe, pscom_iprobe usage and
+	  ANY_SOURCE receives when PSP_DEBUG_STATS=1 or PSP_DEBUG >= 2 is
+	  set
+
+	* feature: Iprobes without progress. Iprobe will iterate without
+	  progress for PSP_IPROBE_COUNT iterations.
+
+	* Fix p4s_setsockopt signature for kernel > 2.6.31.
+
+	* Update p4ether for kernels > 2.6.28
+
+	* change: Do not build linux kernel modules by default. Enable
+	  modules with: "configure --with-kernel"
+
+2010-06-28  Jens Hauke  <hauke@par-tec.com>	-	5.0.32-1
+
+	* fix: Thread aware implementation of
+	libpscom. (pscom_init_thread())
+
+2010-05-26  Jens Hauke  <hauke@par-tec.com>	-	5.0.31-1
+
+	* fix: OpenIB deadlock/slowdown with
+	  PSP_OPENIB_{SEND|RECV}Q_SIZE=3
+
+	* change: exit(112), on detected deadlocks to avoid waste of
+	  CPU cycles.
+
+2010-01-28  Jens Hauke  <hauke@par-tec.com>	-	5.0.30-1
+
+	* enhance: Prefix debug output with the hostname
+
+	* enhance: libpscom: Search plugins in LD_LIBRARY_PATH.
+
+	* enhance: include the man pages about p4stat and p4tcp.
+
+	* change: psofed: default IB_MTU_SPEC = 2048.
+
+	* new: libpscom4ofed for UD infiniband communication. Infiniband
+	  communication with a very small memory footprint (very good
+	  scaling) but less performant than libpscom4openib. Use export
+	  PSP_OFED=1 to enable this transport.
+
+	* fix: p4sock: ethernet: alloc_skb() with extra 16 byte to avoid
+	  skb panics with ipoib devices.
+
+	* fix: openib error handling, if ibv_create_qp() fails.
+
+2009-05-25  Jens Hauke  <hauke@par-tec.com>	-	5.0.29-1
+
+	* fix: compat define for gso_size to tso_size rename for 2.6.16.60
+	SuSE kernels.
+
+2009-03-11  Jens Hauke  <hauke@par-tec.com>	-	5.0.28-1
+
+	* enhance: Optional usage of libpslib for environment and debugging.
+
+2009-03-03  Jens Hauke  <hauke@par-tec.com>	-	5.0.27-1
+
+	* fix: psoib token handling.
+
+	* fix: psdapl event counting.
+
+2009-03-02  Jens Hauke  <hauke@par-tec.com>
+
+	* enhance: Add pscom.gdb. A gdb script to help on libpscom debugging.
+
+2009-03-02  Jens Hauke  <hauke@par-tec.com>
+
+	* enhance: psoib: configurable busy waiting on completion events.
+	`export PSP_OPENIB_EVENT_CNT=0` to disable busy waiting.
+
+2009-02-26  Jens Hauke  <hauke@par-tec.com>
+
+	* enhance: --enable-new-dtags (runpath & rpath) in
+	parastation-config.
+
+2009-02-23  Jens Hauke  <hauke@par-tec.com>
+
+	* fix: rendezvous on loopback connections.
+
+	* enhance: Allow rendezvous requests without
+	PSP_UNEXPECTED_RECEIVES=1.
+
+2009-02-16  Jens Hauke  <hauke@par-tec.com>
+
+	* enhance: env PSP_DEBUG_OUT to define the filename for debug
+	output. Shell-like expansion of the value (wordexp(8)).
+
+2009-02-12  Jens Hauke  <hauke@par-tec.com>	-	5.0.26-1
+
+	* psoib: Longer default completion queue
+	(PSP_OPENIB_COMPQ_SIZE=40000)
+
+2009-02-09  Jens Hauke  <hauke@par-tec.com>	-	5.0.25-1
+
+	* psoib: Connection local send queue as a workaround for OFED
+	problems with a global send queue. (Fix #210)
+
+2009-02-06  Jens Hauke  <hauke@par-tec.com>	-	5.0.24-1
+
+	* "On demand" connections. Establish a connection with the first
+	send request.
+
+2009-01-29  Jens Hauke  <hauke@par-tec.com>	-	5.0.23-1
+
+	* Configurable OpenIB/Ofed send and receive queue sizes.
+	(PSP_OPENIB_SENDQ_SIZE, PSP_OPENIB_RECVQ_SIZE)
+
+2009-01-29  Jens Hauke  <hauke@par-tec.com>	-	5.0.22-1
+
+	* Improve OpenIB/Ofed completion queue handling.
+
+2009-01-21  Jens Hauke  <hauke@par-tec.com>	-	5.0.21-1
+
+	* openib/ofed: Scan for the first active IB port. (or
+	PSP_OPENIB_{HCA,PORT})
+
+2009-01-13  Jens Hauke  <hauke@par-tec.com>	-	5.0.20-1
+
+	* Configurable openib hca and port. (PSP_OPENIB_HCA,
+	PSP_OPENIB_PORT)
+
+2009-01-08  Jens Hauke  <hauke@par-tec.com>	-	5.0.19-1
+
+	* Fix deadlock in pscom_iprobe() and pscom_probe() (Ticket #199)
+
+	* Pack also the low level pingpong tests for psport4, p4sock and
+	pscom.
+
+	* Replace "extern inline" by "static inline" to avoid compiler
+	warnings.
+
+
+2009-11-25  Jens Hauke  <hauke@par-tec.com>	-	5.0.18-1
+
+	* Fix potential hanging OpenIB, GM, ELAN and DAPL (Ticket #182)
+
+------------------------------------------------------------------------
+r6964 | hauke | 2008-11-05 14:58:24 +0100 (Wed, 05 Nov 2008) | 2 lines
+
+Version 5.0.17-1.
+
+------------------------------------------------------------------------
+r6963 | hauke | 2008-11-05 14:56:14 +0100 (Wed, 05 Nov 2008) | 2 lines
+
+p4sock: Fix sysctl table check problem with /proc/sys/ps4 (Ticket #177)
+
+------------------------------------------------------------------------
+r6852 | hauke | 2008-10-23 15:57:44 +0200 (Thu, 23 Oct 2008) | 2 lines
+
+Version 5.0.16-1.
+
+------------------------------------------------------------------------
+r6851 | hauke | 2008-10-23 15:06:28 +0200 (Thu, 23 Oct 2008) | 2 lines
+
+Version 5.0.16-0.1.devel.
+
+------------------------------------------------------------------------
+r6850 | hauke | 2008-10-23 15:03:26 +0200 (Thu, 23 Oct 2008) | 2 lines
+
+Bugfix: Hanging p4sock with recvqcheck=1.
+
+------------------------------------------------------------------------
+r6528 | hauke | 2008-10-07 13:07:10 +0200 (Tue, 07 Oct 2008) | 2 lines
+
+Version 5.0.15-1.
+
+------------------------------------------------------------------------
+r6522 | hauke | 2008-09-29 18:52:37 +0200 (Mon, 29 Sep 2008) | 2 lines
+
+Fix warning about constness in call of dev_hard_header in old kernels.
+
+------------------------------------------------------------------------
+r6521 | hauke | 2008-09-29 18:52:36 +0200 (Mon, 29 Sep 2008) | 2 lines
+
+Advanced receive queue checking. (p4sock performance fix)
+
+------------------------------------------------------------------------
+r6511 | hauke | 2008-09-29 10:52:46 +0200 (Mon, 29 Sep 2008) | 2 lines
+
+Switch PSP_UNEXPECTED_RECEIVES.
+
+------------------------------------------------------------------------
+r6510 | hauke | 2008-09-29 10:52:45 +0200 (Mon, 29 Sep 2008) | 7 lines
+
+Fix a deadlock caused by a generated request.
+
+------------------------------------------------------------------------
+r6508 | hauke | 2008-09-29 10:52:44 +0200 (Mon, 29 Sep 2008) | 2 lines
+
+pscom_dump_request() : Print already received bytes.
+
+------------------------------------------------------------------------
+r6503 | hauke | 2008-09-29 10:52:40 +0200 (Mon, 29 Sep 2008) | 4 lines
+
+Count all receive requests (con->recv_req_cnt). Use this
+information to disable receiving from a connection in the case of no
+receive request for this connection.
+
+------------------------------------------------------------------------
+r6469 | hauke | 2008-08-29 11:53:21 +0200 (Fri, 29 Aug 2008) | 2 lines
+
+Version 5.0.14-1.
+
+------------------------------------------------------------------------
+r6468 | hauke | 2008-08-29 11:52:01 +0200 (Fri, 29 Aug 2008) | 3 lines
+
+Bugfix: Switched "offset" and "flags" parameter in
+kmem_cache_create. (committed 2007-12-13 r5431)
+
+------------------------------------------------------------------------
+r6457 | hauke | 2008-08-19 20:12:09 +0200 (Tue, 19 Aug 2008) | 2 lines
+
+Show bug in gcc (SUSE Linux) 4.3.1 20080507 (prerelease).
+
+------------------------------------------------------------------------
+r6451 | hauke | 2008-08-19 15:36:57 +0200 (Tue, 19 Aug 2008) | 2 lines
+
+Change the name of pscom-modules to pscom-modules-{kernelversion}.
+
+------------------------------------------------------------------------
+r6280 | hauke | 2008-07-10 11:36:20 +0200 (Thu, 10 Jul 2008) | 2 lines
+
+Version 5.0.13-1
+
+------------------------------------------------------------------------
+r6258 | hauke | 2008-07-08 18:43:12 +0200 (Tue, 08 Jul 2008) | 2 lines
+
+Version 5.0.13-devel1.
+
+------------------------------------------------------------------------
+r6253 | hauke | 2008-07-08 18:35:47 +0200 (Tue, 08 Jul 2008) | 2 lines
+
+Version 5.0.13-devel.
+
+------------------------------------------------------------------------
+r6153 | hauke | 2008-06-20 16:27:09 +0200 (Fri, 20 Jun 2008) | 2 lines
+
+Protocol version check at connection startup.
+
+------------------------------------------------------------------------
+r6114 | hauke | 2008-06-06 11:45:45 +0200 (Fri, 06 Jun 2008) | 2 lines
+
+Version 5.0.13-0devel
+
+------------------------------------------------------------------------
+r6105 | hauke | 2008-06-05 15:54:06 +0200 (Thu, 05 Jun 2008) | 2 lines
+
+test pscom_barrier().
+
+------------------------------------------------------------------------
+r6104 | hauke | 2008-06-05 15:53:55 +0200 (Thu, 05 Jun 2008) | 2 lines
+
+Implement pscom_barrier().
+
+------------------------------------------------------------------------
+r6098 | hauke | 2008-06-04 15:59:55 +0200 (Wed, 04 Jun 2008) | 2 lines
+
+Implement ctrl queues for internal communication.
+
+------------------------------------------------------------------------
+r6032 | hauke | 2008-05-21 13:01:04 +0200 (Wed, 21 May 2008) | 2 lines
+
+Implement a blocking Broadcast (pscom_bcast).
+
+------------------------------------------------------------------------
+r6027 | hauke | 2008-05-20 16:34:15 +0200 (Tue, 20 May 2008) | 2 lines
+
+Make pscom_env_get_???() public available.
+
+------------------------------------------------------------------------
+r5961 | hauke | 2008-05-07 18:00:04 +0200 (Wed, 07 May 2008) | 2 lines
+
+Working bcast.
+
+------------------------------------------------------------------------
+r5960 | hauke | 2008-05-07 17:59:33 +0200 (Wed, 07 May 2008) | 2 lines
+
+Fix states in send requests.
+
+------------------------------------------------------------------------
+r5959 | hauke | 2008-05-07 17:56:47 +0200 (Wed, 07 May 2008) | 2 lines
+
+Update docu.
+
+------------------------------------------------------------------------
+r5956 | hauke | 2008-05-07 13:44:16 +0200 (Wed, 07 May 2008) | 2 lines
+
+bcast test: establish n*n connections.
+
+------------------------------------------------------------------------
+r5955 | hauke | 2008-05-07 13:43:26 +0200 (Wed, 07 May 2008) | 2 lines
+
+pscom: allow restriction to specified communication paths.
+
+------------------------------------------------------------------------
+r5946 | hauke | 2008-05-02 13:50:15 +0200 (Fri, 02 May 2008) | 2 lines
+
+bcast connect.
+
+------------------------------------------------------------------------
+r5944 | hauke | 2008-04-30 18:00:29 +0200 (Wed, 30 Apr 2008) | 2 lines
+
+Fix blocking connect to localhost:-1.
+
+------------------------------------------------------------------------
+r5938 | hauke | 2008-04-29 11:26:08 +0200 (Tue, 29 Apr 2008) | 2 lines
+
+Code cleanup
+
+------------------------------------------------------------------------
+r5909 | hauke | 2008-04-18 16:41:39 +0200 (Fri, 18 Apr 2008) | 2 lines
+
+Preparation for pscom broadcasts.
+
+------------------------------------------------------------------------
+r5784 | hauke | 2008-03-17 17:46:13 +0100 (Mon, 17 Mar 2008) | 2 lines
+
+Update for kernel >= 2.6.24.
+
+------------------------------------------------------------------------
+r5654 | hauke | 2008-02-25 10:54:29 +0100 (Mon, 25 Feb 2008) | 2 lines
+
+Build in parallel on SMP. (_smp_mflags in specfile).
+
+------------------------------------------------------------------------
+r5609 | hauke | 2008-02-19 15:21:43 +0100 (Tue, 19 Feb 2008) | 2 lines
+
+Version 5.0.12-0
+
+------------------------------------------------------------------------
+r5592 | hauke | 2008-02-18 11:05:07 +0100 (Mon, 18 Feb 2008) | 2 lines
+
+Do not build e1000 modules unless --with e1000.
+
+------------------------------------------------------------------------
+r5591 | hauke | 2008-02-18 10:57:14 +0100 (Mon, 18 Feb 2008) | 2 lines
+
+Do not build bcm5700 modules unless --with bcm5700.
+
+------------------------------------------------------------------------
+r5590 | hauke | 2008-02-18 10:47:00 +0100 (Mon, 18 Feb 2008) | 2 lines
+
+Fix warning: "rdtscll" redefined.
+
+------------------------------------------------------------------------
+r5505 | moschny | 2008-01-09 12:19:13 +0100 (Wed, 09 Jan 2008) | 1 line
+
+------------------------------------------------------------------------
+r5491 | hauke | 2008-01-08 12:44:28 +0100 (Tue, 08 Jan 2008) | 2 lines
+
+Version 5.0.11-0
+
+------------------------------------------------------------------------
+r5490 | hauke | 2008-01-08 12:43:43 +0100 (Tue, 08 Jan 2008) | 2 lines
+
+Use /usr/lib64 for openib/ofed detection on 64bit arch.
+
+------------------------------------------------------------------------
+r5489 | hauke | 2008-01-08 12:32:38 +0100 (Tue, 08 Jan 2008) | 4 lines
+
+bugfix: missing include "stdlib.h" cause a Segfault on 64bit
+arch.
+
+------------------------------------------------------------------------
+r5455 | hauke | 2007-12-17 13:00:26 +0100 (Mon, 17 Dec 2007) | 2 lines
+
+Version 5.0.10-0
+
+------------------------------------------------------------------------
+r5451 | hauke | 2007-12-17 12:46:56 +0100 (Mon, 17 Dec 2007) | 2 lines
+
+include "sched.h" to find symbol HZ.
+
+------------------------------------------------------------------------
+r5442 | hauke | 2007-12-14 16:04:32 +0100 (Fri, 14 Dec 2007) | 2 lines
+
+Version 5.0.9-0
+
+------------------------------------------------------------------------
+r5440 | hauke | 2007-12-14 15:57:03 +0100 (Fri, 14 Dec 2007) | 3 lines
+
+Fix compat_ioctl 32bit ioctl for kernels > 2.6.17.
+
+------------------------------------------------------------------------
+r5425 | hauke | 2007-12-13 10:22:33 +0100 (Thu, 13 Dec 2007) | 2 lines
+
+fix usage of eth_hdr() for linux >= 2.6.21
+
+------------------------------------------------------------------------
+r5424 | hauke | 2007-12-13 10:22:11 +0100 (Thu, 13 Dec 2007) | 2 lines
+
+register_sysctl_table() for linux >= 2.6.21
+
+------------------------------------------------------------------------
+r5345 | hauke | 2007-11-09 14:50:32 +0100 (Fri, 09 Nov 2007) | 2 lines
+
+Version 5.0.8-0
+
+------------------------------------------------------------------------
+r5344 | hauke | 2007-11-09 14:49:19 +0100 (Fri, 09 Nov 2007) | 2 lines
+
+Include libpscom4elan.so with default PSP_ELAN=0.
+
+------------------------------------------------------------------------
+r5312 | hauke | 2007-10-25 12:42:51 +0200 (Thu, 25 Oct 2007) | 2 lines
+
+Version 5.0.7-0
+
+------------------------------------------------------------------------
+r5307 | hauke | 2007-10-24 16:46:02 +0200 (Wed, 24 Oct 2007) | 2 lines
+
+Lib ELAN support.
+
+------------------------------------------------------------------------
+r5305 | hauke | 2007-10-23 18:15:41 +0200 (Tue, 23 Oct 2007) | 2 lines
+
+libelan lowlevel pingpong.
+
+------------------------------------------------------------------------
+r5300 | hauke | 2007-10-22 11:54:19 +0200 (Mon, 22 Oct 2007) | 2 lines
+
+Version 5.0.6-1
+
+------------------------------------------------------------------------
+r5299 | hauke | 2007-10-22 11:54:03 +0200 (Mon, 22 Oct 2007) | 2 lines
+
+Distribution with libpscom4dapl.so.
+
+------------------------------------------------------------------------
+r5298 | hauke | 2007-10-22 11:44:45 +0200 (Mon, 22 Oct 2007) | 1 line
+
+Version 5.0.6-0
+------------------------------------------------------------------------
+r5293 | hauke | 2007-10-18 16:39:57 +0200 (Thu, 18 Oct 2007) | 4 lines
+
+Move environment to pscom_env.c (prepare for a
+registry). PSP_DAPL_PROVIDER to choose a dapl provider. Scan all DAPL
+providers.
+
+------------------------------------------------------------------------
+r5279 | hauke | 2007-10-15 17:14:11 +0200 (Mon, 15 Oct 2007) | 2 lines
+
+Use rendezvous for long messages.
+
+------------------------------------------------------------------------
+r5278 | hauke | 2007-10-15 15:58:21 +0200 (Mon, 15 Oct 2007) | 2 lines
+
+--enable-new-dtags (runpath & rpath) for pscom
+
+------------------------------------------------------------------------
+r5253 | hauke | 2007-10-02 17:21:54 +0200 (Tue, 02 Oct 2007) | 2 lines
+
+Version 5.0.5-0
+
+------------------------------------------------------------------------
+r5249 | hauke | 2007-10-02 14:19:49 +0200 (Tue, 02 Oct 2007) | 2 lines
+
+enable libpscom4dapl. (DAPL support)
+
+------------------------------------------------------------------------
+r5247 | hauke | 2007-10-02 14:09:43 +0200 (Tue, 02 Oct 2007) | 2 lines
+
+DAPL: pscom connections.
+
+------------------------------------------------------------------------
+r5221 | hauke | 2007-09-24 11:00:55 +0200 (Mon, 24 Sep 2007) | 2 lines
+
+fix missing stringtermination '\0' on long hostnames.
+
+------------------------------------------------------------------------
+r5179 | hauke | 2007-09-11 16:32:14 +0200 (Tue, 11 Sep 2007) | 2 lines
+
+Version 5.0.4-1
+
+------------------------------------------------------------------------
+r5177 | hauke | 2007-09-11 16:18:35 +0200 (Tue, 11 Sep 2007) | 3 lines
+
+p4s: Try more ports (instead of getpid())
+Bugfix: p4s: send NACK on local connect error.
+
+------------------------------------------------------------------------
+r5174 | hauke | 2007-09-11 12:55:50 +0200 (Tue, 11 Sep 2007) | 2 lines
+
+Version 5.0.3-1
+
+------------------------------------------------------------------------
+r5158 | hauke | 2007-08-24 18:21:22 +0200 (Fri, 24 Aug 2007) | 2 lines
+
+bugfix: wrong pscom_con_t *con in p4sock protocol.
+------------------------------------------------------------------------
+r5155 | hauke | 2007-08-24 18:11:52 +0200 (Fri, 24 Aug 2007) | 2 lines
+
+Dump mpi2 xheader if PSP_DEBUG >= 5.
+------------------------------------------------------------------------
+r5149 | hauke | 2007-08-23 14:24:07 +0200 (Thu, 23 Aug 2007) | 2 lines
+
+compat env: PSP_P4S <-> PSP_P4SOCK.
+------------------------------------------------------------------------
+r4928 | hauke | 2007-06-21 18:22:00 +0200 (Thu, 21 Jun 2007) | 2 lines
+
+install libpscom4gm and libpscom4openib.
+
+------------------------------------------------------------------------
+r4919 | hauke | 2007-06-20 16:52:59 +0200 (Wed, 20 Jun 2007) | 2 lines
+
+Pscom plugin system and openIB stack.
+
+------------------------------------------------------------------------
+r4915 | hauke | 2007-06-19 15:26:04 +0200 (Tue, 19 Jun 2007) | 2 lines
+
+Move openib to lib/pscom4openib.
+
+------------------------------------------------------------------------
+r4910 | hauke | 2007-06-19 10:14:40 +0200 (Tue, 19 Jun 2007) | 2 lines
+
+Fix rpath option (linking with gcc with -Wl,-rpath instead of ld -rpath)
+
+------------------------------------------------------------------------
+r4905 | hauke | 2007-06-19 09:50:13 +0200 (Tue, 19 Jun 2007) | 2 lines
+
+Update for Slab cache in 2.6.20.
+
+------------------------------------------------------------------------
+r4896 | hauke | 2007-06-18 18:03:37 +0200 (Mon, 18 Jun 2007) | 2 lines
+
+replace c++ comments by c comments (/* */)
+
+------------------------------------------------------------------------
+r4645 | hauke | 2007-03-12 18:43:55 +0100 (Mon, 12 Mar 2007) | 2 lines
+
+rma_read and rma_write.
+
+------------------------------------------------------------------------
+r4577 | hauke | 2007-02-19 14:43:59 +0100 (Mon, 19 Feb 2007) | 2 lines
+
+New communication lib libpscom.
+
+------------------------------------------------------------------------
+r4576 | hauke | 2007-02-19 13:24:06 +0100 (Mon, 19 Feb 2007) | 2 lines
+
+Create pscom 5 branch.
+
+------------------------------------------------------------------------
+r4545 | hauke | 2007-02-07 14:03:08 +0100 (Wed, 07 Feb 2007) | 2 lines
+
+Version 4.3.13-0
+
+------------------------------------------------------------------------
+r4544 | hauke | 2007-02-07 13:46:18 +0100 (Wed, 07 Feb 2007) | 2 lines
+
+OpenIB: ibv_get_devices -> ibv_get_device_list.
+
+------------------------------------------------------------------------
+r4543 | hauke | 2007-02-07 13:45:36 +0100 (Wed, 07 Feb 2007) | 2 lines
+
+Search for /usr/local/oefd (open fabric/ open ib) path.
+
+------------------------------------------------------------------------
+r4525 | eicker | 2007-01-22 13:20:46 +0100 (Mon, 22 Jan 2007) | 2 lines
+
+PPC64 on RedHat actually builds 64-bit objects.
+
+------------------------------------------------------------------------
+r4502 | hauke | 2007-01-10 14:06:11 +0100 (Wed, 10 Jan 2007) | 2 lines
+
+bcm5700: Dont use UTS_RELEASE.
+
+------------------------------------------------------------------------
+r4457 | hauke | 2006-11-28 14:47:06 +0100 (Tue, 28 Nov 2006) | 2 lines
+
+USER_HZ to HZ.
+
+------------------------------------------------------------------------
+r4456 | hauke | 2006-11-28 10:36:41 +0100 (Tue, 28 Nov 2006) | 2 lines
+
+Version 4.3.12-0
+
+------------------------------------------------------------------------
+r4455 | hauke | 2006-11-28 10:33:16 +0100 (Tue, 28 Nov 2006) | 2 lines
+
+e100 hangup workaround.
+
+------------------------------------------------------------------------
+r4454 | hauke | 2006-11-24 12:57:52 +0100 (Fri, 24 Nov 2006) | 2 lines
+
+Bugfix: pspipe/pscp reuse of send buffer as receive buffer.
+
+------------------------------------------------------------------------
+r4453 | eicker | 2006-11-23 21:04:14 +0100 (Thu, 23 Nov 2006) | 2 lines
+
+First snapshot of pscp. This needs psmgmt-4.3.4-3 or higher to work.
+
+------------------------------------------------------------------------
+r4450 | hauke | 2006-11-21 16:15:07 +0100 (Tue, 21 Nov 2006) | 2 lines
+
+Version 4.3.11-0
+
+------------------------------------------------------------------------
+r4447 | hauke | 2006-11-21 16:05:03 +0100 (Tue, 21 Nov 2006) | 2 lines
+
+Bugfix: negative modulecounter.
+
+------------------------------------------------------------------------
+r4445 | hauke | 2006-11-20 15:19:06 +0100 (Mon, 20 Nov 2006) | 2 lines
+
+remove deprecated "#include <linux/config.h>".
+
+------------------------------------------------------------------------
+r4395 | hauke | 2006-10-17 11:57:28 +0200 (Tue, 17 Oct 2006) | 2 lines
+
+Version 4.3.10-2
+------------------------------------------------------------------------
+r4394 | hauke | 2006-10-17 11:57:03 +0200 (Tue, 17 Oct 2006) | 2 lines
+
+Bugfix: repair configure --with-modules.
+
+------------------------------------------------------------------------
+r4346 | partec | 2006-09-12 18:02:26 +0200 (Tue, 12 Sep 2006) | 1 line
+
+compat_ioctl hack
+------------------------------------------------------------------------
+r4344 | hauke | 2006-09-12 16:56:41 +0200 (Tue, 12 Sep 2006) | 2 lines
+
+remove unused #include <asm/segment.h>
+
+------------------------------------------------------------------------
+r4311 | hauke | 2006-09-01 15:45:38 +0200 (Fri, 01 Sep 2006) | 2 lines
+
+Add target_cpu=powerpc64.
+
+------------------------------------------------------------------------
+r4292 | hauke | 2006-08-23 14:30:05 +0200 (Wed, 23 Aug 2006) | 2 lines
+
+Fix parse_opt() for ppc.
+
+------------------------------------------------------------------------
+r4286 | hauke | 2006-08-22 15:25:46 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+Version 4.3.10-1
+
+------------------------------------------------------------------------
+r4284 | hauke | 2006-08-22 15:21:18 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+Fix MM_GETSTATS64 macro. (remove some warnings)
+
+------------------------------------------------------------------------
+r4283 | hauke | 2006-08-22 15:01:55 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+ioctl32.
+
+------------------------------------------------------------------------
+r4282 | hauke | 2006-08-22 15:00:19 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+disable BCM_IOCTL32 on kernels >= 2.6.14.
+
+------------------------------------------------------------------------
+r4281 | hauke | 2006-08-22 13:36:19 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+Version 4.3.10
+
+------------------------------------------------------------------------
+r4272 | hauke | 2006-08-22 12:59:24 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+Update e1000 to 7.2.7.
+
+------------------------------------------------------------------------
+r4270 | hauke | 2006-08-22 11:30:10 +0200 (Tue, 22 Aug 2006) | 2 lines
+
+Remove some warnings. tso_size is now(>=2.6.17)  gso_size.
+
+------------------------------------------------------------------------
+r4249 | hauke | 2006-08-15 15:20:10 +0200 (Tue, 15 Aug 2006) | 2 lines
+
+Version 4.3.9-0
+
+------------------------------------------------------------------------
+r4248 | hauke | 2006-08-15 15:18:47 +0200 (Tue, 15 Aug 2006) | 2 lines
+
+lib64 in parastation-config.
+
+------------------------------------------------------------------------
+r4247 | hauke | 2006-08-14 18:29:48 +0200 (Mon, 14 Aug 2006) | 2 lines
+
+Version 4.3.8-0
+
+------------------------------------------------------------------------
+r4246 | hauke | 2006-08-14 18:28:13 +0200 (Mon, 14 Aug 2006) | 3 lines
+
+kernels >= 2.6.14 (?) dont have register_ioctl32_conversion().
+
+------------------------------------------------------------------------
+r4148 | hauke | 2006-06-29 15:49:36 +0200 (Thu, 29 Jun 2006) | 2 lines
+
+Fix signed/unsigned warnings inside mvapi.
+
+Version 4.3.7-0
+
+------------------------------------------------------------------------
+r4137 | hauke | 2006-06-20 14:40:38 +0200 (Tue, 20 Jun 2006) | 2 lines
+
+Install x86_64 libs to /opt/parastation/lib64.
+
+------------------------------------------------------------------------
+r4129 | hauke | 2006-06-07 13:39:14 +0200 (Wed, 07 Jun 2006) | 2 lines
+
+Version 4.3.6-0
+
+------------------------------------------------------------------------
+r4128 | hauke | 2006-06-07 13:37:07 +0200 (Wed, 07 Jun 2006) | 2 lines
+
+Fix BUG: spinlock wrong CPU on kernels > 2.6.14. (Bug #47)
+
+------------------------------------------------------------------------
+r4127 | hauke | 2006-06-07 13:25:27 +0200 (Wed, 07 Jun 2006) | 2 lines
+
+fix RPM build errors:  Macro %config has empty body
+
+------------------------------------------------------------------------
+r4125 | hauke | 2006-06-07 10:37:17 +0200 (Wed, 07 Jun 2006) | 2 lines
+
+Version 4.3.5-0
+
+------------------------------------------------------------------------
+r4124 | hauke | 2006-06-07 10:35:22 +0200 (Wed, 07 Jun 2006) | 2 lines
+
+Workaround for Bug #46 (__stack_chk_fail_local).
+
+------------------------------------------------------------------------
+r4117 | hauke | 2006-05-31 12:54:13 +0200 (Wed, 31 May 2006) | 2 lines
+
+Version 4.3.4-1
+
+------------------------------------------------------------------------
+r4116 | hauke | 2006-05-31 12:52:55 +0200 (Wed, 31 May 2006) | 2 lines
+
+Update struct packet_type.func (net receive callback) for kernels >= 2.6.14.
+
+------------------------------------------------------------------------
+r4115 | hauke | 2006-05-31 12:50:55 +0200 (Wed, 31 May 2006) | 2 lines
+
+Update rwlocks for kernels >= 2.6.14.
+
+------------------------------------------------------------------------
+r4114 | hauke | 2006-05-30 12:41:41 +0200 (Tue, 30 May 2006) | 2 lines
+
+Version 4.3.4
+
+------------------------------------------------------------------------
+r4113 | hauke | 2006-05-30 12:38:58 +0200 (Tue, 30 May 2006) | 3 lines
+
+Avoid calls to external function ip_dev_find() (no export in
+kernels >= 2.6.14)
+
+------------------------------------------------------------------------
+r4098 | hauke | 2006-04-21 12:07:48 +0200 (Fri, 21 Apr 2006) | 2 lines
+
+Version pscom-4.3.3
+
+------------------------------------------------------------------------
+r4097 | hauke | 2006-04-21 12:01:54 +0200 (Fri, 21 Apr 2006) | 2 lines
+
+Support for flag MSG_WAITALL in recvfrom(fd, buf, sizeof(buf), MSG_WAITALL,...).
+
+------------------------------------------------------------------------
+r4063 | hauke | 2006-04-06 14:46:22 +0200 (Thu, 06 Apr 2006) | 2 lines
+
+Version 4.3.2
+
+------------------------------------------------------------------------
+r4062 | hauke | 2006-04-06 14:46:03 +0200 (Thu, 06 Apr 2006) | 2 lines
+
+Changed p4tcp rendezvous protocol.
+
+------------------------------------------------------------------------
+r4061 | hauke | 2006-04-06 14:44:08 +0200 (Thu, 06 Apr 2006) | 2 lines
+
+New callback registration "p4_setcb_new_connection()"
+
+------------------------------------------------------------------------
+r4059 | hauke | 2006-04-05 18:45:35 +0200 (Wed, 05 Apr 2006) | 2 lines
+
+Bugfix: p4tcp: NULL pointer exception in tinet_release().
+
+------------------------------------------------------------------------
+r4015 | hauke | 2006-03-08 10:03:52 +0100 (Wed, 08 Mar 2006) | 2 lines
+
+Dont use libpsport4std, if not requested.
+
+------------------------------------------------------------------------
+r3979 | hauke | 2006-02-09 16:04:36 +0100 (Thu, 09 Feb 2006) | 2 lines
+
+Version 4.3.0
+
+------------------------------------------------------------------------
+r3944 | hauke | 2006-01-27 16:53:18 +0100 (Fri, 27 Jan 2006) | 2 lines
+
+Version pscom-4.2.11
+
+------------------------------------------------------------------------
+r3943 | hauke | 2006-01-27 16:51:59 +0100 (Fri, 27 Jan 2006) | 2 lines
+
+Include pspipe.
+
+Version pscom-4.2.10:
+=====================
+------------------------------------------------------------------------
+r3919 | hauke | 2006-01-19 14:35:53 +0100 (Thu, 19 Jan 2006) | 2 lines
+
+Replace sock_alloc() with sock_create().
+------------------------------------------------------------------------
+r3846 | hauke | 2005-12-15 16:07:06 +0100 (Thu, 15 Dec 2005) | 2 lines
+
+Search psport4 libs in /opt/parastation/lib{64}.
+------------------------------------------------------------------------
+r3804 | hauke | 2005-11-03 13:20:00 +0100 (Thu, 03 Nov 2005) | 2 lines
+
+Update for 2.6.12 kernels. (proto_register and sk_alloc).
+------------------------------------------------------------------------
+r3800 | hauke | 2005-11-03 11:25:06 +0100 (Thu, 03 Nov 2005) | 2 lines
+
+specfile tag "Copyright" is deprecated. Changed to "License: Proprietary".
+------------------------------------------------------------------------
+r3794 | hauke | 2005-10-17 16:58:03 +0200 (Mon, 17 Oct 2005) | 2 lines
+
+Backport from e1000-6.1.16 for Linuxkernel > 2.6.9.
+------------------------------------------------------------------------
+r3792 | hauke | 2005-10-17 12:38:23 +0200 (Mon, 17 Oct 2005) | 3 lines
+
+Prepare for IB Gold from mellanox.
+
+Version pscom-4.2.7:
+====================
+------------------------------------------------------------------------
+r3790 | hauke | 2005-10-13 17:58:19 +0200 (Thu, 13 Oct 2005) | 2 lines
+
+Update bcm5700 from version 7.1.22 to 8.2.18.
+
+Version pscom-4.2.6:
+====================
+------------------------------------------------------------------------
+r3776 | hauke | 2005-09-28 18:18:58 +0200 (Wed, 28 Sep 2005) | 2 lines
+
+psport4 OpenIB implementation.
+
+------------------------------------------------------------------------
+r3774 | hauke | 2005-09-28 16:53:43 +0200 (Wed, 28 Sep 2005) | 2 lines
+
+psport4 mvapi bugfix after failed send (memcpy_iov()).
+
+------------------------------------------------------------------------
+r3772 | hauke | 2005-09-26 16:17:34 +0200 (Mon, 26 Sep 2005) | 2 lines
+
+Bugzilla Bug 21: libpsport4switch should be more verbose.
+
+Version pscom-4.2.5:
+====================
+------------------------------------------------------------------------
+r3751 | hauke | 2005-08-11 16:01:51 +0200 (Thu, 11 Aug 2005) | 1 line
+
+Use up to 8 Myrinet units. (round robin).
+
+Version pscom-4.2.4:
+====================
+------------------------------------------------------------------------
+r3721 | hauke | 2005-07-12 14:45:22 +0200 (Tue, 12 Jul 2005) | 2 lines
+
+Fix memory leakage in p4s_release(). (module p4sock)
+------------------------------------------------------------------------
+r3683 | hauke | 2005-06-14 11:52:13 +0200 (Tue, 14 Jun 2005) | 1 line
+
+Dynamic switching between libpsport4 variants. Use libpsport4std for
+linking (soname to libpsport4switch).
+libpsport4switch will load one of libpsport4{,mvapi,gm,all}.
+
+Version pscom-4.2.3:
+====================
+------------------------------------------------------------------------
+r3672 | hauke | 2005-06-09 15:51:43 +0200 (Thu, 09 Jun 2005) | 1 line
+
+Bugfix for ethernet connections with multiple interfaces on same network.
+
+------------------------------------------------------------------------
+r3671 | hauke | 2005-06-09 15:37:56 +0200 (Thu, 09 Jun 2005) | 1 line
+
+Include the pscom version in p4sock.ko (for modinfo and kernellog).
+
+Version pscom-4.2.2:
+====================
+------------------------------------------------------------------------
+r3640 | hauke | 2005-05-12 17:14:27 +0200 (Thu, 12 May 2005) | 1 line
+
+Fix deadlock in psport on ia64 with gcc 3.4.x.
+
+Version pscom-4.2.1:
+====================
+------------------------------------------------------------------------
+r3638 | hauke | 2005-05-11 17:16:57 +0200 (Wed, 11 May 2005) | 1 line
+
+Fix deadlock in e1000.
+------------------------------------------------------------------------
+r3620 | hauke | 2005-05-04 20:18:13 +0200 (Wed, 04 May 2005) | 1 line
+
+Powerpc64 support.
+------------------------------------------------------------------------
+r3616 | hauke | 2005-05-03 16:59:25 +0200 (Tue, 03 May 2005) | 1 line
+
+ps_pref.h dont include timex.h for ia64 anymore.
+------------------------------------------------------------------------
+r3605 | hauke | 2005-04-26 19:33:35 +0200 (Tue, 26 Apr 2005) | 1 line
+
+Switches to switch off e1000 and bcm5700.
+------------------------------------------------------------------------
+r3604 | hauke | 2005-04-26 19:32:58 +0200 (Tue, 26 Apr 2005) | 1 line
+
+Linux > 2.6.10
+------------------------------------------------------------------------
+r3602 | hauke | 2005-04-26 18:20:13 +0200 (Tue, 26 Apr 2005) | 1 line
+
+rpmbuild --with modules --define 'kernel x.y.z' and --without modules.
+------------------------------------------------------------------------
+r3596 | hauke | 2005-04-25 19:18:20 +0200 (Mon, 25 Apr 2005) | 1 line
+
+Bugfix: libgm.so is a symlink (dont check with test -f).
+------------------------------------------------------------------------
+r3567 | hauke | 2005-04-11 15:09:07 +0200 (Mon, 11 Apr 2005) | 2 lines
+
+2.6.x change.
+------------------------------------------------------------------------
+r3565 | hauke | 2005-04-11 14:48:11 +0200 (Mon, 11 Apr 2005) | 3 lines
+
+New p4tcp implementation for 2.4 AND 2.6 kernels
+(without "inet_stream_ops").(merge from /branches/jens/p4tcp2.6/p4/@r3563)
+------------------------------------------------------------------------
+r3564 | hauke | 2005-04-11 13:41:44 +0200 (Mon, 11 Apr 2005) | 1 line
+
+IA32EMUL for 2.6 kernels.
+------------------------------------------------------------------------
+r3554 | hauke | 2005-03-11 17:13:47 +0100 (Fri, 11 Mar 2005) | 2 lines
+
+Change PF_TINET to 29 (31 is used by bluez).
+------------------------------------------------------------------------
+r3551 | hauke | 2005-03-09 15:30:13 +0100 (Wed, 09 Mar 2005) | 1 line
+
+Change the protocol family from the tcp-bypass to PF_TINET=31.
+Use LD_PRELOAD=libp4tcp.so to enable the bypass for applications.
+------------------------------------------------------------------------
+r3540 | hauke | 2005-02-14 14:37:55 +0100 (Mon, 14 Feb 2005) | 1 line
+
+Update copyright information. Prepare for OpenSource release.
+------------------------------------------------------------------------
+r3525 | hauke | 2005-02-09 10:12:00 +0100 (Wed, 09 Feb 2005) | 1 line
+
+target_cpu i586. typo.
+------------------------------------------------------------------------
+r3471 | hauke | 2004-11-10 17:16:26 +0100 (Wed, 10 Nov 2004) | 1 line
+
+- cleanup. Building source rpms.
+------------------------------------------------------------------------
+r3467 | hauke | 2004-11-09 16:19:57 +0100 (Tue, 09 Nov 2004) | 1 line
+
+- e1000-5.5.4 vendor version
+------------------------------------------------------------------------
+r3434 | hauke | 2004-10-28 16:12:50 +0200 (Thu, 28 Oct 2004) | 3 lines
+
+Avoid 2.6.9 ia64 warning about "bad: scheduling while atomic!" at
+rmmod p4sock. (remove old unnecessary p4socket-locks)
+
+------------------------------------------------------------------------
+r3433 | hauke | 2004-10-26 17:40:31 +0200 (Tue, 26 Oct 2004) | 2 lines
+
+Update for kernelversions >= 2.6.9.
+
+------------------------------------------------------------------------
+r3432 | hauke | 2004-10-26 17:39:42 +0200 (Tue, 26 Oct 2004) | 2 lines
+
+fix inet_sk() for 2.4.20 <= kernelversion < 2.6.0.
+
+------------------------------------------------------------------------
+r3431 | hauke | 2004-10-26 15:12:48 +0200 (Tue, 26 Oct 2004) | 3 lines
+
+Kernel 2.6 support. Changed module build (using kbuild). Update e1000
+to version 5.5.4.
+
+Version pscom-4.1.3:
+====================
+
+2004-09-28  Norbert Eicker  <eicker@par-tec.com>
+
+	* ChangeLog: Update ChangeLog. Prepare for release 4.1.4.
+
+	* Bugfix: Setup the xhdr correctly in PSP_IProbeFrom() and
+	  PSP_ProbeFrom(). Otherwise MPI_Probe() and MPI_Iprobe will not
+	  work as defined in the standard.
+
+2004-09-22  Norbert Eicker  <eicker@par-tec.com>
+
+	* Modification: New defaults for module parameters:
+	- Limit MaxAcksPending to 20 per default. This increases the
+	  performance whenever significant packet loss occurs.
+	- Allways enable polling per default.
+
+Version pscom-4.1.3:
+====================
+
+2004-07-22  Norbert Eicker  <eicker@par-tec.com>
+
+	* Bugfix: Allow GM_HOME and MTHOME to be set simultanously.
+	Executables will try to use both, Infiniband and Myrinet (in this
+	order).
+
+2004-07-21  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Enable NACK's. Changed "proc" counter. Add HZ to proc.
+
+	* Modification: Changed timeout defaults.
+
+Version pscom-4.1.2:
+====================
+
+2004-07-13  Norbert Eicker  <eicker@par-tec.com>
+
+	* Extension: Add new psport4all library containing all possible
+	kinds of interconnects.
+
+	* Extension: Add script for InfiniBand handling.
+
+2004-06-22  Norbert Eicker  <eicker@par-tec.com>
+
+	* Modification: Link against libpopt statically. This is due to
+	version switch in some distros.
+
+	* Modification:	Merge psport4b branch into main trunk.
+
+2004-06-17  Norbert Eicker  <eicker@par-tec.com>
+
+	* Bugfix: Also close local side of p4sock connections if the other
+	side is closed. (psport4b branch)
+
+2004-05-27  Norbert Eicker  <eicker@par-tec.com>
+
+	* Bugfix: Merge change applied long time ago when this script
+	resided within psm. Due to some unknown reasons this change was
+	taken along to p4 project.
+
+2004-05-10  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: SigSegv in p4sock Path. (psport4b branch)
+
+2004-04-29  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: Truncated messages.
+
+2004-04-08  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Include psport4mvapi for infiniband support.
+
+2004-03-17  Jens Hauke  <hauke@par-tec.com>
+
+	* Modification: 32bit support for Opteron. Dont use sys_ioctl
+	anymore. (vanilla kernels dont export sys_ioctl)
+
+2004-03-30  Jens Hauke  <hauke@par-tec.com>
+
+	* Modification:	Changed default parameters for bcm5700.
+
+Version pscom-4.1.1:
+====================
+
+2004-03-17  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: 32bit support for Opteron (register ioctl's).
+
+2004-03-03  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: p4tcp. Implent MSG_PEEK flag.
+
+2004-02-23  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: p4tcp. Set send_page to sock_no_sendpage.
+
+Version pscom-4.1.0:
+====================
+
+2004-02-22  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: Set sendpage (p4tcp) to sock_no_sendpage.
+
+2004-02-11  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: Load all module via modprobe. You need to call
+	psmodules_install on each compute node (copy modules to /lib/modules/...).
+
+
+Version pscom-4.0.6:
+============================
+
+2003-12-15  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: Fix EXPORT_SYMBOL() in all Modules.
+
+2003-11-26  Jens Hauke  <hauke@par-tec.com>
+
+	* Modification: ia64 smp optimization in libpsport4.
+
+	* Modification: Changes for mvapi (infiniband) version
+	thca-ia64-3.0.1-2.4.18_e.31smp.
+
+	* Extension: Changes for Opteron (AMD, x86_64).
+
+2003-11-21  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Add p4tcp to the distribution.
+
+	* Extension: Register remote connections in accept (bookkeeping of
+	all connections). This need a p4sock module with the
+	dump_usr_ci(self) extension for p4sock communication!
+
+	* Extension: dump_usr_ci with -1 (self); new function
+	p4_shutdown() for psockt and TCP shutdown(); first vision of
+	SYNNACK for faster "connection refused";
+
+2003-11-18  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: p4tcp tool. interface for external configuration of
+	node/ip lists.
+
+
+2003-11-17  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: First TCP Bypass implementation with p4sock.
+
+2003-11-10  Norbert Eicker  <eicker@phoenix>
+
+	* Bugfix: test_nodes explicitely request for a partition.
+
+2003-11-07  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: NR_RUNNINFUNC fixed for 2.4.20-8smp.redhat.
+
+2003-11-06  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Include some backward compat functions for GM1.6.4.
+
+2003-10-16  Jens Hauke  <hauke@par-tec.com>
+
+	* Modification: Change some headerfiles for PGI compiler.
+
+Version pscom-4.0.5:
+============================
+
+2003-09-29  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: PSP_HWList.
+
+2003-09-19  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: GPL source distribution for e1000 and e1000_glue. Rename e1000_ps.o to
+	e1000.o.
+
+	* Extension: Add 2.4.21-4GB-SMP Kernel.
+
+2003-09-15  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: test_nodes for psport4.
+
+2003-09-05  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: Set e1000 Interrupt Delay parameters to the original
+	values. Add e1000 with polling.
+
+Version pscom-4.0.4:
+============================
+
+2003-09-02  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: Support for ia64.
+
+2003-08-13  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: More kernels.
+
+2003-07-31  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: p4sock.o: Pessimistic MaxResend default (120sec).Check
+	the length of skb in receive against dat->len.
+
+2003-07-23  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Add 2.4.18-14 RedHat 4GB UP.
+
+Version pscom-4.0.3:
+============================
+
+2003-07-02  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: SPIN_TRYLOCK for UP Modules.
+
+	* Change: rpm4 support.
+
+Version pscom-4.0.2:
+============================
+
+2003-06-10  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: p4sock.o Hangup on connection startup with lo device.
+
+2003-06-05  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: SIGSEG in shm cleanups.
+
+2003-05-16  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: p4sock.o MTU discovery for ethernet communication. Some
+	statistic counters (/proc/sys/ps4/state). Fix SMP racecondition
+	which somtimes send packages twice.
+
+2003-05-08  Norbert Eicker  <eicker@par-tec.com>
+
+	* scripts/ps_p4sock: Unload the correct module.
+
+2003-04-22  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Implement PSP_NETWORK for libpsport4.
+
+	* Bugfix: Deadlock with sharedmem together with p4sock communication.
+
+Version pscom-4.0.1:
+============================
+
+2003-04-11  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: libpsport4 with p4sock and shm.
+
+2003-04-04  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: p4sock.o Changed ResendTimeout and AckDelay. .info file
+	for module options.
+
+2003-04-02  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: Change the dist name from ps4base to pscom.
+
+2003-03-28  Jens Hauke  <hauke@par-tec.com>
+
+	* Change: Include e1000_ps.o (from e1000-5.0.43.tar.gz).
+
+2003-02-25  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: Add PSP_StopListen(PSP_PortH_t porth). Used inside
+	psport4shm and psport4 (PSFE).
+
+2003-02-07  Jens Hauke  <hauke@par-tec.com>
+
+	* Bugfix: Wrong refcnt on low resources. Hangup after sending to a
+	closed connection.
+
+2003-01-17  Jens Hauke  <hauke@par-tec.com>
+
+	* Extension: p4sock.o support for ethernet.
+
+2002-04-25  Jens Hauke  <hauke@par-tec.com>
+
+	* ParaStation4

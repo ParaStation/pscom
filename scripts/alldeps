@@ -1,0 +1,11 @@
+#!/bin/sh
+
+
+cat $* |
+sed 's_\\__g ; s_[: ]_#_g'|
+tr "#" "\n" |
+sort -u |
+grep -v '.o$'|
+while read a ;do
+echo "$a\\"
+done

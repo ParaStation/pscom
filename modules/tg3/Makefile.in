@@ -1,0 +1,23 @@
+#							-*- Makefile -*-
+SRCDIR := @srcdir@
+TOP_SRCDIR := @TOP_SRCDIR@
+
+
+ifeq ($(KNAME),)
+all:
+	$(MAKE) -C .. tg3
+clean:
+	$(MAKE) -C .. tg3_clean
+else
+
+# Module tg3.o
+
+# MODULE_OBJS +=
+MODULE = tg3.o
+
+CPPFLAGS += -I$(TOP_SRCDIR)/include
+VPATH += $(SRCDIR)
+
+include $(SRCDIR)/../Makefile.linuxmod.include
+
+endif

@@ -1,0 +1,93 @@
+-*- text -*-
+
+= Gruppenbildung =
+
+Alle Prozesse die Mitglied der Gruppe werden möchten, müssen zu jedem
+anderen Prozess der Gruppe eine direkte Verbindung haben. Beim
+erzeugen der Gruppe müssen vom Benutzer global einheitliche
+ranks(=grank) innerhalb der Gruppe vergeben werden. Der Benutzer gibt
+für jedes Gruppenmitglied eine Abbildung von grank nach
+pscom_connection an, um andere Gruppenmitglieder Kontaktieren zu
+können.
+
+
+= Broadcast =
+
+Broadcasts werden über einen Verbindungsbaum realisiert. Die genaue
+Topologie des Baumes hängt von der Gruppengröße und von der
+Nachrichtengröße ab. Die Metadaten der Broadcastnachrichten sind
+unabhängig von der gewählten Topologie:
+
+groupID : Identifiziert die Gruppe
+fw_start -
+fw_end : grank Bereich für die Weiterleitung
+
+Welche Topologie für die Weiterleitung verwendet wird, entscheidet
+jeder Knoten erneut.
+
+
+== Mögliche Topologien ==
+
+- Seriell
+  Der Knoten schickt selber die Nachricht an alle Knoten
+  [fw_start, fw_end]
+
+- Pipe
+  Der Knoten schickt die Nachricht nur an fw_start und delegiert die
+  Weiterleitung für [fw_start + 1, fw_end] an fw_start
+
+- Binärer Baum
+  len = fw_end - fw_start
+  Delegation [fw_start, fw_end - len/2] an fw_start
+  Delegation [fw_start + len/2, fw_end] an fw_start + len/2
+
+- Fibonacci ähnlicher Baum
+
+  len = fw_end - fw_start
+  Delegation [fw_start, fw_start + len * r] an fw_start
+  Delegation [fw_start + len * r, fw_end] an fw_start + len * r
+
+  r zwischen 0.0 und 1.0. Berechnet durch das Verhältnis:
+
+  r = (a(n - m, m) : a(n - 1, m)) / a(n, m)
+
+  mit der Folge:
+
+  a(n, m) = a(n - 1, m) + a(n - m, m)
+
+  m: Nachrichtenlänge
+  n: Gruppengröße
+
+  Die Nachrichtenlänge ist in Einheiten der Latenz bei der
+  Weiterleitung (= Verzögerung bei einer Pipe) anzugeben.
+
+  Im Grenzfall m = 1 ergibt sich der binäre Baum (r = (1:1)/2 = 0.5).
+  Im Grenzfall m = oo ergibt sich die Pipe (r = 0).
+
+
+
+fw_start ist in der Regel der grank des Empfängerknotens, so dass auch
+lokal zugestellt wird.
+
+
+
+= Implementierung =
+
+BCast Receives werden mit dem Rootrank aufgerufen. Der Receive sollte
+daraus berechnen können, von wo die Nachricht kommt, damit nicht auf
+"Any" gelauscht werden muss. Der Sender ist aber aufgrund der
+Baumstruktur typischerweise nicht Root der Nachricht. Es kann aber
+sein, dass verschiedene Roots über den gleichen Sender schicken. Es
+muss also zusätzlich zum src und dest in der Nachricht ein groot in
+der Nachricht stehen, damit zum richtigen Receive gerouted werden
+kann.
+
+
+
+
+
+
+
+Local Variables:
+  ispell-local-dictionary: "de"
+End:

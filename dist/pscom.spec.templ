@@ -1,0 +1,108 @@
+# -*- rpm-spec -*-
+%{expand:%define buildForSuSE %(if [ -e /etc/SuSE-release ]; then echo 1; else echo 0; fi)}
+
+Summary:   ParaStation Cluster Communication drivers and libraries
+Vendor:    ParTec Cluster Competence Center GmbH, Munich, Germany
+Name:      pscom
+Version:   @VERSION_pscom@
+Release:   @RELEASE_pscom@
+License:   QPL
+Group:     System/Development/Libraries
+Packager:  support@par-tec.de
+Source0:   %{name}-%{version}-%{release}.tar.gz
+Requires:  psmgmt
+
+# Dont use internal find_requires, because we dont want dependencies
+# to the infiniband libs. (Searching for a clean solution!)
+%define _use_internal_dependency_generator 0
+%define __find_requires %_builddir/%{name}-%{version}-@RELEASE_pscom@/scripts/rpm_noreq
+
+BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+
+# "uname -r" output of the kernel to build for, the running one
+# if none was specified with "--define 'kernel <uname -r>'"
+%{?kernel: %{expand: %%define _with_kernel yes}}
+%{!?kernel: %{expand: %%define kernel %(uname -r)}}
+
+%description
+ParaStation Cluster Communication drivers and libraries.
+%if %{?_without_modules:1}%{?_with_modules:1}%{?_with_e1000:1}%{?_with_bcm5700:1}0
+(configured with %{?_without_modules} %{?_with_modules} %{?_with_e1000} %{?_with_bcm5700})
+%endif
+
+# on recent Red Hat systems, debug_package is inserted automatically,
+# so don't insert it again
+%if %buildForSuSE
+%debug_package
+%endif
+
+%prep
+
+cat <<DOK
+######################################################
+# To build with kernel 2.x.y-z use:
+# >rpmbuild --define 'kernel 2.x.y-z'
+#
+# To build with "uname -r" kernel (%kernel) use:
+# >rpmbuild --with kernel
+#
+# To build ONLY modules use:
+# >rpmbuild --with modules
+#
+# To build NO modules use:
+# >rpmbuild --without modules
+######################################################
+# >rpmbuild -with bcm5700 : build bcm5700 module
+# >rpmbuild -with e1000   : build e1000 module
+#
+#
+DOK
+
+%setup -q -n %{name}-%{version}-%{release}
+
+%build
+
+%configure %{?_with_kernel:--with-kernel=%{kernel}} %{?_without_modules} %{?_with_modules} %{?_with_e1000} %{?_with_bcm5700} ${EXTRA_ARGS}
+
+%{__make} %{?_smp_mflags}
+
+%install
+%{__rm} -rf %{buildroot}
+%makeinstall
+
+%clean
+%{__rm} -rf %{buildroot}
+
+
+#
+# conditional build libs and bins
+# Use: "rpmbuild --with modules" to build ONLY modules
+#
+
+%if %{?_with_modules:0}%{!?_with_modules:1}
+
+%files
+%attr(-,root,root) /opt/parastation
+
+%endif
+
+#
+# conditional build modules
+# Use: "rpmbuild --with kernel" or "rpmbuild --with modules" to enable this build
+#
+
+%if 0%{?_with_modules:1}%{?_with_kernel:1}
+
+%package modules-%{kernel}
+Summary: ParaStation Cluster Communication modules
+Release: %{release}
+Group: System Environment/Kernel
+%description modules-%{kernel}
+This package provides kernel modules for package %{name}.
+%if %{?_without_modules:1}%{?_with_modules:1}%{?_with_e1000:1}%{?_with_bcm5700:1}0
+(configured with %{?_without_modules} %{?_with_modules} %{?_with_e1000} %{?_with_bcm5700})
+%endif
+%files modules-%{kernel}
+%attr(-,root,root) /lib/modules
+
+%endif

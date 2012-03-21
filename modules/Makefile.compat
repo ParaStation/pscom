@@ -1,0 +1,21 @@
+#							-*- Makefile -*-
+
+ifeq ($(VERSION).$(PATCHLEVEL),2.4)
+  #
+  # Used by the 2.4.x kbuild system.
+  #
+
+  ifneq ($($(obj-m:.o=)-objs),)
+    # multi file module
+    O_TARGET	:= $(obj-m)
+
+    obj-y	:= $($(obj-m:.o=)-objs)
+    export-objs += $(obj-y)
+  else
+    # one file module
+    export-objs += $(obj-m)
+  endif
+
+  -include $(TOPDIR)/Rules.make
+
+endif # ifneq ($(VERSION).$(PATCHLEVEL),2.4)

@@ -1,0 +1,26 @@
+#							-*- Makefile -*-
+include Makefile.release
+include $(subdir)/Makefile
+
+ifeq ($(VERSION).$(PATCHLEVEL),2.4)
+MOD_EXTENSION:=.o
+else  # ifneq ($(VERSION).$(PATCHLEVEL),2.4)
+MOD_EXTENSION:=.ko
+endif # ifneq ($(VERSION).$(PATCHLEVEL),2.4)
+
+INSTALL_PATH:=$(INSTALL_MOD_PATH)/lib/modules/$(KERNELRELEASE)/kernel/drivers/net/ps4
+
+TARGETS:=$(addprefix $(INSTALL_PATH)/,$(obj-m:.o=$(MOD_EXTENSION)))
+
+$(INSTALL_PATH):
+	mkdir -p $(INSTALL_PATH)
+
+$(INSTALL_PATH)/%: $(subdir)/% $(INSTALL_PATH)
+	cp $< $@
+
+modules_install: $(TARGETS)
+ifeq ($(INSTALL_MOD_PATH),)
+ifeq ($(KERNELRELEASE),$(shell uname -r))
+	depmod -a
+endif
+endif

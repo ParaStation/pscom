@@ -1,0 +1,55 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003,2004 ParTec AG, Karlsruhe
+# Copyright (C) 2005-2007 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+# Use absolute paths !!!
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOPSRCDIR := @TOP_SRCDIR@
+TOP_BUILDDIR:=@TOP_BUILDDIR@
+
+################################
+
+export LIBNAME := pscom
+# export LIBSONAME := libpscom_switch.so
+export LIBOBJS
+LIBOBJS += pscom.o pscom_io.o pscom_tcp.o pscom_shm.o pscom_p4s.o pscom_ufd.o pscom_str_util.o
+LIBOBJS += pscom_debug.o pscom_dprint.o pscom_con.o pscom_sock.o pscom_plugin.o pscom_env.o pscom_group.o
+LIBOBJS += pscom_group_bcast.o pscom_queues.o pscom_req.o pscom_ondemand.o pscom_listener.o pslib.o
+
+export LIBVPATH := $(SRCDIR)
+export LIBINC = -I$(TOPSRCDIR)/include
+# ToDo: -DNDEBUG
+export LIBDSTDIR = ../..
+export LIBEXTERNAL_SHARED = -ldl
+################################
+
+all lib: sharedlib
+# staticlib
+
+sharedlib staticlib: sharedlib.dir staticlib.dir
+	$(MAKE) -C $@.dir -f ../../Makefile.$@
+
+sharedlib.dir staticlib.dir:
+	mkdir -p $@
+
+clean:
+	$(MAKE) -C sharedlib.dir -f ../../Makefile.sharedlib clean || echo nevermind
+	$(MAKE) -C staticlib.dir -f ../../Makefile.staticlib clean || echo nevermind
+
+distclean:
+	$(MAKE) -C sharedlib.dir -f ../../Makefile.sharedlib distclean || echo nevermind
+	$(MAKE) -C staticlib.dir -f ../../Makefile.staticlib distclean || echo nevermind
+	$(RM) -r staticlib.dir sharedlib.dir
+	$(RM) Makefile
+
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status

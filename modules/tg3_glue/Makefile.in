@@ -1,0 +1,22 @@
+#							-*- Makefile -*-
+
+SRCDIR := @srcdir@
+TOP_SRCDIR := @TOP_SRCDIR@
+
+
+ifeq ($(KNAME),)
+all:
+	$(MAKE) -C .. tg3_glue
+clean:
+	$(MAKE) -C .. tg3_glue_clean
+else
+
+#Glue between p4sock and tg3
+MODULE := tg3_glue.o
+
+CPPFLAGS += -I$(TOP_SRCDIR)/include
+VPATH += $(SRCDIR)
+
+include $(SRCDIR)/../Makefile.linuxmod.include
+
+endif

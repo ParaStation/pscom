@@ -1,0 +1,57 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003,2004 ParTec AG, Karlsruhe
+# Copyright (C) 2005 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+# Use absolute paths !!!
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOPSRCDIR := @TOP_SRCDIR@
+TOP_BUILDDIR:=@TOP_BUILDDIR@
+OPENIB_ENABLED:=@OPENIB_ENABLED@
+OPENIB_INCLUDE_DIR:=@OPENIB_INCLUDE_DIR@
+OPENIB_LIB_DIR:=@OPENIB_LIB_DIR@
+################################
+
+export LIBNAME := psport4openib
+# export LIBSONAME := libpsport4switch.so
+export LIBOBJS := psport4b.o psport_tcp.o psport_ufd.o psport_shm.o perf.o
+LIBOBJS += psport_p4s.o psport_openib.o
+export LIBVPATH := $(SRCDIR)/../psport4multi
+export LIBINC = -I$(TOPSRCDIR)/include -I$(OPENIB_INCLUDE_DIR) -I$(SRCDIR)/../pscom
+export LIBEXTERNAL_SHARED = -L$(OPENIB_LIB_DIR) -libverbs
+# = -rpath $()/lib
+# LIBEXTERNAL_SHARED += -L$()/lib
+# -lmtl_common -lmosal -lmpga -lpthread
+export LIBDEF := -DENABLE_OPENIB -DNDEBUG
+export LIBDSTDIR = ../..
+
+################################
+
+all lib: sharedlib staticlib
+
+sharedlib staticlib: sharedlib.dir staticlib.dir
+	$(MAKE) -C $@.dir -f ../../Makefile.$@
+
+sharedlib.dir staticlib.dir:
+	mkdir -p $@
+
+clean:
+	$(MAKE) -C sharedlib.dir -f ../../Makefile.sharedlib clean || echo nevermind
+	$(MAKE) -C staticlib.dir -f ../../Makefile.staticlib clean || echo nevermind
+
+distclean:
+	$(MAKE) -C sharedlib.dir -f ../../Makefile.sharedlib distclean || echo nevermind
+	$(MAKE) -C staticlib.dir -f ../../Makefile.staticlib distclean || echo nevermind
+	$(RM) -r staticlib.dir sharedlib.dir
+	$(RM) Makefile
+
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status

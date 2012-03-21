@@ -1,0 +1,364 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003-2004  ParTec AG, Karlsruhe
+# Copyright (C) 2005-2011 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOP_SRCDIR := @TOP_SRCDIR@
+TOP_BUILDDIR:=@TOP_BUILDDIR@
+PSCOM_ENABLED:=@PSCOM_ENABLED@
+MELLANOX_ENABLED:=@MELLANOX_ENABLED@
+MELLANOX_HOME:=@MELLANOX_HOME@
+GM_ENABLED:=@GM_ENABLED@
+GM_HOME:=@GM_HOME@
+OFED_ENABLED:=@OFED_ENABLED@
+OPENIB_ENABLED:=@OPENIB_ENABLED@
+OPENIB_INCLUDE_DIR:=@OPENIB_INCLUDE_DIR@
+OPENIB_LIB_DIR:=@OPENIB_LIB_DIR@
+HAS_ibv_wc_status_str:=@HAS_ibv_wc_status_str@
+DAPL_ENABLED:=@DAPL_ENABLED@
+DAT_INCLUDE_DIR:=@DAT_INCLUDE_DIR@
+DAT_LIB_DIR:=@DAT_LIB_DIR@
+ELAN_ENABLED:=@ELAN_ENABLED@
+ELAN_INCLUDE_DIR:=@ELAN_INCLUDE_DIR@
+PSM_ENABLED:=@PSM_ENABLED@
+PSM_INCLUDE_DIR:=@PSM_INCLUDE_DIR@
+EXTOLL_ENABLED:=@EXTOLL_ENABLED@
+EXTOLL_INCLUDE_DIR:=@EXTOLL_INCLUDE_DIR@
+PSMGMT_ENABLED:=@PSMGMT_ENABLED@
+PSMGMT_HOME:=@PSMGMT_HOME@
+LIB_DIRNAME:=@LIB_DIRNAME@
+
+CPPFLAG_MARCH:=@CPPFLAG_MARCH@
+
+############################################
+LIBDIR:=$(TOP_BUILDDIR)/lib
+LIBPSPORT4:= -L$(LIBDIR) -lpsport4std -Wl,-rpath,/opt/parastation/$(LIB_DIRNAME)
+#LIBPSPORT4:= $(LIBDIR)/libpsport4.a -Wl,-rpath,/opt/parastation/$(LIB_DIRNAME)
+LIBPSCOM:= -L$(LIBDIR) -lpscom  -Wl,-rpath,/opt/parastation/$(LIB_DIRNAME) -Wl,--enable-new-dtags
+
+LDLIBS += $(LDLIBS_$@)
+CPPFLAGS += $(CPPFLAGS_$@)
+LDFLAGS += $(LDFLAGS_$@)
+
+ifeq (@target_cpu@, powerpc64)
+ifeq (@target_vendor@, redhat)
+LDFLAGS +=  -m64
+endif
+endif
+
+#LOADLIBES +=-Wl,-Bstatic -lpopt -Wl,-Bdynamic
+LOADLIBES +=-lpopt
+
+VPATH += $(SRCDIR)
+
+PROGS += p4stat p4tcp p4logd
+PROGS += porttest psock_pp psock_test
+PROGS += psport4_pp
+PROGS += pspipe
+PROGS += pscom_debug
+bin: all
+
+CPPFLAGS += -I$(TOP_SRCDIR)/include
+CPPFLAGS += -MMD
+CFLAGS   += -Wall -W -O3 -g  -Wno-unused $(CPPFLAG_MARCH)
+
+_info_:
+	@echo "------------ Build binaries.--------"
+
+LDLIBS_porttest = $(LIBPSPORT4)
+porttest: porttest.o
+
+LDLIBS_pspipe = $(LIBPSPORT4)
+pspipe: pspipe.o psport_util.o
+
+psock_pp: psock_pp.o
+
+psock_test: psock_test.o
+
+jmraw_pp: jmraw_pp.o
+
+p4stat: p4stat.o
+
+p4tcp: p4tcp.o
+
+p4logd: p4logd.o
+
+LDLIBS_psport4_pp = $(LIBPSPORT4)
+psport4_pp: psport4_pp.o
+
+ifeq ($(PSCOM_ENABLED),yes)
+
+LDLIBS_pscom_test = $(LIBPSCOM)
+pscom_test: pscom_test.o
+
+PROGS += pscom_ondemand
+LDLIBS_pscom_ondemand = $(LIBPSCOM)
+pscom_ondemand: pscom_ondemand.o
+
+PROGS += pscom_pp
+LDLIBS_pscom_pp = $(LIBPSCOM)
+# needed for debugging:
+#LDFLAGS_pscom_pp += -pthread
+pscom_pp: pscom_pp.o
+
+PROGS += pscom_bcast_test
+LDLIBS_pscom_bcast_test = $(LIBPSCOM)
+pscom_bcast_test: pscom_bcast_test.o
+
+PROGS += pscom_request_create
+LDLIBS_pscom_request_create = $(LIBPSCOM)
+pscom_request_create: pscom_request_create.o
+
+PROGS += pscom_bcast_pp
+LDLIBS_pscom_bcast_pp = $(LIBPSCOM)
+pscom_bcast_pp: pscom_bcast_pp.o
+
+
+pscom_debug: pscom_debug.sh
+	cp $< $@; chmod +x $@
+
+test: pscom_test
+#env LD_LIBRARY_PATH=$(LIBDIR) ./pscom_test
+
+else
+
+test:
+
+
+endif
+
+#
+# IB Mellanox tools
+#
+
+ifeq ($(MELLANOX_ENABLED),yes)
+
+VPATH += $(SRCDIR)/mellanox
+PROGS += ps4_ib ps4_ib_pp ps4_ib_pp_rdma psport4mvapi_pp
+
+LIB_MELLANOX += -L$(MELLANOX_HOME)/lib -Wl,-rpath,/usr/mellanox/lib
+LIB_MELLANOX += -lvapi -lmtl_common -lmosal -lmpga
+LIB_MELLANOX += -lpthread
+# vapi mtl_common mosal readline ncurses pthread mpga ncurses popt
+
+CPPFLAGS += -I$(MELLANOX_HOME)/include -D__LINUX__ -DMT_LITTLE_ENDIAN
+
+LDLIBS_ps4_ib = $(LIB_MELLANOX)
+ps4_ib: ps4_ib.o
+
+LDLIBS_ps4_ib_pp = $(LIB_MELLANOX)
+ps4_ib_pp: ps4_ib_pp.o
+
+LDLIBS_ps4_ib_pp_rdma = $(LIB_MELLANOX)
+ps4_ib_pp_rdma: ps4_ib_pp_rdma.o
+
+psport4mvapi_pp.c:
+	touch $@
+
+LDLIBS_psport4mvapi_pp = $(LIB_MELLANOX)
+psport4mvapi_pp: psport4mvapi_pp.o psport4_pp.o $(LIBDIR)/libpsport4mvapi.a
+
+endif
+
+#
+# GM Myricom tools
+#
+
+ifeq ($(GM_ENABLED),yes)
+
+VPATH += $(SRCDIR)/gm
+PROGS += gm_pp
+LIB_GM += $(GM_HOME)/lib/libgm.so
+CPPFLAGS += -I$(GM_HOME)/include
+
+gm_pp: gm_pp.o $(LIB_GM)
+
+endif
+
+#
+# OPENIB tools
+#
+
+ifeq ($(OPENIB_ENABLED),yes)
+
+VPATH += $(SRCDIR)/openib
+VPATH += $(TOP_SRCDIR)/lib/pscom4openib
+VPATH += $(TOP_SRCDIR)/lib/pscom
+LIB_OPENIB += -L$(OPENIB_LIB_DIR) -libverbs
+CPPFLAGS += -I$(OPENIB_INCLUDE_DIR) -I$(TOP_SRCDIR)/lib/pscom4openib -DHAS_ibv_wc_status_str=$(HAS_ibv_wc_status_str)
+
+PROGS += openib_pp
+LDLIBS_openib_pp = $(LIB_OPENIB) -ldl
+CPPFLAGS_openib_pp.o = -I$(TOP_SRCDIR)/lib/pscom
+openib_pp: openib_pp.o pslib.o pscom_env.o pscom_dprint.o
+
+PROGS += openib_ud_pp
+LDLIBS_openib_ud_pp = $(LIB_OPENIB) -ldl
+CPPFLAGS_openib_ud_pp.o = -I$(TOP_SRCDIR)/lib/pscom
+openib_ud_pp: openib_ud_pp.o pslib.o pscom_env.o pscom_dprint.o
+
+endif
+
+#
+# DAPL tools
+#
+
+ifeq ($(DAPL_ENABLED),yes)
+
+VPATH += $(SRCDIR)/dapl
+VPATH += $(TOP_SRCDIR)/lib/pscom4dapl
+VPATH += $(TOP_SRCDIR)/lib/pscom
+LIB_DAPL += $(DAT_LIB_DIR)/libdat.so
+CPPFLAGS += -I$(DAT_INCLUDE_DIR) -I$(TOP_SRCDIR)/lib/pscom -I$(TOP_SRCDIR)/lib/pscom4dapl
+
+PROGS += dapl_pp
+dapl_pp: dapl_pp.o psdapl.o perf.o $(LIB_DAPL)
+
+PROGS += dapl_pp_lowlevel
+dapl_pp_lowlevel: dapl_pp_lowlevel.o $(LIB_DAPL)
+
+endif
+
+#
+# ELAN Tools
+#
+
+ifeq ($(ELAN_ENABLED),yes)
+
+VPATH += $(SRCDIR)/elan
+VPATH += $(TOP_SRCDIR)/lib/pscom4elan
+VPATH += $(TOP_SRCDIR)/lib/pscom
+LIB_ELAN += -lelan
+CPPFLAGS += -I$(ELAN_INCLUDE_DIR) -I$(TOP_SRCDIR)/lib/pscom -I$(TOP_SRCDIR)/lib/pscom4elan
+
+# PROGS += elan_pp
+LDLIBS_elan_pp = $(LIB_ELAN)
+elan_pp: elan_pp.o pselan.o perf.o
+
+PROGS += elan_pp_lowlevel
+LDLIBS_elan_pp_lowlevel = $(LIB_ELAN)
+elan_pp_lowlevel: elan_pp_lowlevel.o
+
+endif
+
+
+#
+# EXTOLL Tools
+#
+
+ifeq ($(EXTOLL_ENABLED),yes)
+
+VPATH += $(SRCDIR)/extoll
+VPATH += $(TOP_SRCDIR)/lib/pscom4extoll
+VPATH += $(TOP_SRCDIR)/lib/pscom
+LIB_EXTOLL_RMA += -L/extoll/lib -lrma
+LIB_EXTOLL_VELO += -L/extoll/lib -lvelo
+CPPFLAGS += -I$(EXTOLL_INCLUDE_DIR) -I$(TOP_SRCDIR)/lib/pscom -I$(TOP_SRCDIR)/lib/pscom4elan
+
+PROGS += extoll_pp_lowlevel
+LDLIBS_extoll_pp_lowlevel = $(LIB_EXTOLL_RMA)
+extoll_pp_lowlevel: extoll_pp_lowlevel.o
+
+PROGS += extoll_pp_velo
+LDLIBS_extoll_pp_velo = $(LIB_EXTOLL_VELO)
+extoll_pp_velo: extoll_pp_velo.o
+
+PROGS += extoll_one_message
+LDLIBS_extoll_one_message = $(LIB_EXTOLL_RMA)
+extoll_one_message: extoll_one_message.o
+
+endif
+
+
+#
+# PSM / QLogic Tools
+#
+
+ifeq ($(PSM_ENABLED),yes)
+
+VPATH += $(SRCDIR)/psm
+VPATH += $(TOP_SRCDIR)/lib/pscom4psm
+VPATH += $(TOP_SRCDIR)/lib/pscom
+LIB_PSM += -lpsm_infinipath
+CPPFLAGS += -I$(PSM_INCLUDE_DIR) -I$(TOP_SRCDIR)/lib/pscom -I$(TOP_SRCDIR)/lib/pscom4psm
+
+PROGS += psm_pp
+LDLIBS_psm_pp = $(LIB_PSM)
+psm_pp: psm_pp.o
+
+endif
+
+
+#
+# PSMGMT Tools
+#
+
+ifeq ($(PSMGMT_ENABLED),yes)
+
+PROGS += test_nodes
+LIB_PSMGMT += -L$(PSMGMT_HOME)/$(LIB_DIRNAME) -lpse -lpsi -Wl,-rpath,/opt/parastation/$(LIB_DIRNAME)
+CPPFLAGS += -I$(PSMGMT_HOME)/include
+
+LDLIBS_test_nodes = $(LIBPSCOM) $(LIB_PSMGMT)
+test_nodes: test_nodes.o
+
+PROGS += pscp
+LDLIBS_pscp = $(LIBPSPORT4) $(LIB_PSMGMT)
+pscp: pscp.o psport_util.o
+
+endif
+
+
+#
+# Mem usage diagnostics
+#
+ifeq ($(OFED_ENABLED),yes)
+ifeq ($(OPENIB_ENABLED),yes)
+
+LDLIBS_pscom_memusage = $(LIB_OPENIB)
+CPPFLAGS_pscom_memusage.o= -I$(TOP_SRCDIR)/lib/pscom
+CPPFLAGS_pscom_memusage.o += -I$(TOP_SRCDIR)/lib/pscom4openib
+CPPFLAGS_pscom_memusage.o += -I$(TOP_SRCDIR)/lib/pscom4ofed
+pscom_memusage: pscom_memusage.o
+endif
+endif # ($(OFED_ENABLED),yes)
+
+# Check for gcc bug first seen in
+# gcc (SUSE Linux) 4.3.1 20080507 (prerelease) [gcc-4_3-branch revision 135036]
+# (openSUSE 11.0 (i586))
+list_test.ok: list_test
+	./list_test && touch $@
+
+
+# refresh Makefile?
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status
+
+#
+# Cleanups and default options
+#
+
+DEPFILES:=*.d
+OBJECTS:=*.o
+
+
+all: _info_ $(PROGS) list_test.ok
+
+clean:
+	$(RM) $(OBJECTS) list_test.ok
+
+distclean: clean
+	$(RM) $(PROGS) $(DEPFILES) Makefile list_test
+
+# include dependencies, if already made
+#
+-include $(DEPFILES) dummy.d

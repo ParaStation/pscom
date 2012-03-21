@@ -1,0 +1,60 @@
+#!/bin/sh
+#
+# p4sock Driver for Parastation4
+#
+# Script to load/unload the module
+#
+# Author: Jens Hauke <hauke@par-tec.com>
+#
+# $Id$
+#
+
+#defaults
+PS_INSTALLDIR=${PS_INSTALLDIR-"/opt/parastation"}
+PSP4STAT=${PS_INSTALLDIR}/bin/p4stat
+PSP4TCP=${PS_INSTALLDIR}/bin/p4tcp
+
+case "$1" in
+    start)
+	modprobe p4sock || { echo "psmodules_install called? "; exit 1; }
+
+        # Try "glue Modules" ignore errors
+	lsmod |grep -q -e "^e1000" && modprobe e1000_glue	> /dev/null 2>&1
+	lsmod |grep -q -e "^bcm5700" && modprobe bcm5700_glue	> /dev/null 2>&1
+
+	# Configure p4tcp
+	if [ "${PS_TCP}" != "" ] ; then
+	    modprobe p4tcp
+	    echo ${PS_TCP}| tr " " "\n"| tr "-" " " | grep -v -e '^$' | while read from to ; do
+		${PSP4TCP} -a $from $to
+	    done
+	fi
+	;;
+
+    stop)
+	# Delete p4tcp config
+	${PSP4TCP} -d 0.0.0.0 255.255.255.255	> /dev/null 2>&1
+	rmmod p4tcp		> /dev/null 2>&1
+
+	rmmod e1000_glue	> /dev/null 2>&1
+	rmmod bcm5700_glue	> /dev/null 2>&1
+	rmmod p4sock
+	;;
+
+    statusheader)
+	echo
+	${PSP4STAT} -n | head -1
+	;;
+
+    status)
+	echo
+	${PSP4STAT} -n | tail -n +2
+	;;
+
+    *)
+	echo "Usage: $0 {start|stop|statusheader|status}"
+	exit 1
+	;;
+esac
+
+exit 0
