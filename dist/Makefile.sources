@@ -11,6 +11,8 @@ bin/dapl/dapl_pp.c \
 bin/dapl/dapl_pp_lowlevel.c \
 bin/dump.c \
 bin/elan/elan_pp_lowlevel.c \
+bin/examples/Makefile.in \
+bin/examples/pscom_dispatch.c \
 bin/extoll/extoll_one_message.c \
 bin/extoll/extoll_pp_lowlevel.c \
 bin/extoll/extoll_pp_velo.c \

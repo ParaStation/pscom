@@ -3925,6 +3925,8 @@ if test x"$BUILD_USER" == x"yes"; then
 
    ac_config_files="$ac_config_files bin/Makefile"
 
+   ac_config_files="$ac_config_files bin/examples/Makefile"
+
    ac_config_files="$ac_config_files doc/Makefile"
 
    ac_config_files="$ac_config_files scripts/parastation-config"
@@ -4678,6 +4680,7 @@ do
     "lib/pscom4extoll/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4extoll/Makefile" ;;
     "lib/p4tcp/Makefile") CONFIG_FILES="$CONFIG_FILES lib/p4tcp/Makefile" ;;
     "bin/Makefile") CONFIG_FILES="$CONFIG_FILES bin/Makefile" ;;
+    "bin/examples/Makefile") CONFIG_FILES="$CONFIG_FILES bin/examples/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "scripts/parastation-config") CONFIG_FILES="$CONFIG_FILES scripts/parastation-config" ;;
     "modules/Makefile") CONFIG_FILES="$CONFIG_FILES modules/Makefile" ;;

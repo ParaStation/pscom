@@ -1,8 +1,13 @@
-2012-03-21  Jens Hauke  <hauke@par-tec.com>
+2012-03-26  Jens Hauke  <hauke@par-tec.com>	-	5.0.38-1
+
+	* Fix: handling of new connections after posting anysrc
+	receives.
 
 	* enhance: License with QPL
 
 	* feature: test_nodes is now using libpscom
+
+	* add pscom_dispatch example to the source
 
 2011-12-02  Thomas Moschny <moschny@par-tec.com>	5.0.37-1
 

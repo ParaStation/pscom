@@ -713,6 +713,7 @@ if test x"$BUILD_USER" == x"yes"; then
    fi
    AC_CONFIG_FILES([lib/p4tcp/Makefile])
    AC_CONFIG_FILES([bin/Makefile])
+   AC_CONFIG_FILES([bin/examples/Makefile])
    AC_CONFIG_FILES([doc/Makefile])
    AC_CONFIG_FILES([scripts/parastation-config])
 fi

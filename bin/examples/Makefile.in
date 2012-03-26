@@ -1,0 +1,82 @@
+#							-*- Makefile -*-
+# ParaStation
+#
+# Copyright (C) 2003-2004  ParTec AG, Karlsruhe
+# Copyright (C) 2005-2012 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:	Jens Hauke <hauke@par-tec.com>
+#
+
+SRCDIR := $(shell cd @srcdir@;pwd)
+TOP_SRCDIR := @TOP_SRCDIR@
+TOP_BUILDDIR:=@TOP_BUILDDIR@
+PSCOM_ENABLED:=@PSCOM_ENABLED@
+PSMGMT_ENABLED:=@PSMGMT_ENABLED@
+PSMGMT_HOME:=@PSMGMT_HOME@
+LIB_DIRNAME:=@LIB_DIRNAME@
+
+CPPFLAG_MARCH:=@CPPFLAG_MARCH@
+
+############################################
+LIBDIR:=$(TOP_BUILDDIR)/lib
+LIBPSCOM:= -L$(LIBDIR) -lpscom  -Wl,-rpath,/opt/parastation/$(LIB_DIRNAME) -Wl,--enable-new-dtags
+
+LDLIBS += $(LDLIBS_$@)
+CPPFLAGS += $(CPPFLAGS_$@)
+LDFLAGS += $(LDFLAGS_$@)
+
+ifeq (@target_cpu@, powerpc64)
+ifeq (@target_vendor@, redhat)
+LDFLAGS +=  -m64
+endif
+endif
+
+LOADLIBES +=-lpopt
+
+VPATH += $(SRCDIR)
+
+bin: all
+
+CPPFLAGS += -I$(TOP_SRCDIR)/include
+CPPFLAGS += -MMD
+CFLAGS   += -Wall -W -O3 -g  -Wno-unused $(CPPFLAG_MARCH)
+
+_info_:
+	@echo "------------ Building examples.--------"
+
+ifeq ($(PSCOM_ENABLED),yes)
+
+PROGS += pscom_dispatch
+LDLIBS_pscom_dispatch = $(LIBPSCOM)
+pscom_dispatch: pscom_dispatch.o
+
+
+endif # ($(PSCOM_ENABLED),yes)
+
+# refresh Makefile?
+Makefile: $(SRCDIR)/Makefile.in
+	cd $(TOP_BUILDDIR); ./config.status
+
+#
+# Cleanups and default options
+#
+
+DEPFILES:=*.d
+OBJECTS:=*.o
+
+
+all: _info_ $(PROGS)
+
+clean:
+	$(RM) $(OBJECTS)
+
+distclean: clean
+	$(RM) $(PROGS) $(DEPFILES) Makefile list_test
+
+# include dependencies, if already made
+#
+-include $(DEPFILES) dummy.d
