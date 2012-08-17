@@ -1,3 +1,14 @@
+2012-08-16  Jens Hauke  <hauke@par-tec.com>	-	5.0.39-1
+
+	* Update the extoll plugin to extoll2
+
+	* Fix missing initializer in the ofed plugin.
+
+2012-05-23  Jens Hauke  <hauke@par-tec.com>
+
+	* pscom: Build only libraries and tools. Build the package
+	"pscom-modules" for the linux kernel modules like p4sock.ko.
+
 2012-03-26  Jens Hauke  <hauke@par-tec.com>	-	5.0.38-1
 
 	* Fix: handling of new connections after posting anysrc

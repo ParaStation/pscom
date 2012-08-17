@@ -12,27 +12,15 @@
 #		Norbert Eicker <eicker@par-tec.de>
 #
 
-BUILD_MODULES=@BUILD_MODULES@
-BUILD_USER=@BUILD_USER@
 SRCDIR := $(shell cd @srcdir@;pwd)
 export CONFIGARGS = @CONFIGARGS@
 export TOP_SRCDIR = $(SRCDIR)
 
 SUBDIRS := dist_install
-ifeq ($(BUILD_MODULES),yes)
-SUBDIRS += modules
-all: modules
-
-install: modules_install
-endif
-
-ifeq ($(BUILD_USER),yes)
 SUBDIRS += lib bin doc
 all: lib bin doc
 
 install: user_install
-
-endif
 
 bin: lib
 
@@ -62,16 +50,10 @@ distclean:
 	$(RM) $(DISTCLEAN)
 
 ifeq ($(RPM_BUILD_ROOT),)
-modules_install:
-	$(MAKE) -C modules $@
-
 user_install:
 	$(MAKE) -C dist -f Makefile.install install DISTPATH=/opt/parastation
 
 else
-modules_install:
-	$(MAKE) -C modules $@ INSTALL_MOD_PATH=/$(RPM_BUILD_ROOT)
-
 user_install:
 	$(MAKE) -C dist  -f Makefile.install install DISTPATH=/$(RPM_BUILD_ROOT)/opt/parastation
 

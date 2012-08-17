@@ -33,12 +33,12 @@
 
 
 /* Used buffersize */
-#define PSEX_RMA_MTU		(4*1024)
-#define PSEX_RMA_PAYLOAD	(PSEX_RMA_MTU - sizeof(psex_msgheader_t)) /* must be < 65536, or change sizeof psex_msgheader_t.payload */
+#define PSEX_RMA2_MTU		(4*1024)
+#define PSEX_RMA2_PAYLOAD	(PSEX_RMA2_MTU - sizeof(psex_msgheader_t)) /* must be < 65536, or change sizeof psex_msgheader_t.payload */
 
 typedef struct {
 	void *ptr;
-	RMA_Region	*mr;
+	RMA2_Region	*mr;
 } mem_info_t;
 
 
@@ -49,21 +49,21 @@ typedef struct {
 
 
 struct hca_info {
-	RMA_Port	port;	/* extoll port from rma_open(&port) */
+	RMA2_Port	port;	/* extoll port from rma_open(&port) */
 
 	/* send */
 	ringbuf_t	send;	/* global send queue */
 
-	RMA_Nodeid	nodeid;	/* local nodeid */
-	RMA_Vpid	vpid;	/* local vpid */
+	RMA2_Nodeid	nodeid;	/* local nodeid */
+	RMA2_VPID	vpid;	/* local vpid */
 };
 
 
 
 /* Extoll specific information about one connection */
 struct psex_con_info {
-	RMA_Port	port;	/* extoll port from rma_open(&port) (copied from hca_info) */
-	RMA_Handle	handle; /* Connection handle from rma_connect(..&handle); */
+	RMA2_Port	port;	/* extoll port from rma2_open(&port) (copied from hca_info) */
+	RMA2_Handle	handle; /* Connection handle from rma2_connect(..&handle); */
 
 	/* low level */
 	hca_info_t	*hca_info;
@@ -71,7 +71,7 @@ struct psex_con_info {
 	/* send */
 	unsigned int	remote_recv_pos; /* next to use receive buffer (= remote recv_pos) */
 
-	RMA_NLA		remote_rbuf_nla; /* from remote rma_get_nla(con->recv.bufs.mr, 0, &remote_rbuf) */
+	RMA2_NLA		remote_rbuf_nla; /* from remote rma2_get_nla(con->recv.bufs.mr, 0, &remote_rbuf) */
 
 	ringbuf_t	send;
 
@@ -100,7 +100,7 @@ typedef struct {
 
 
 typedef struct {
-    char __data[PSEX_RMA_PAYLOAD];
+    char __data[PSEX_RMA2_PAYLOAD];
     psex_msgheader_t tail;
 } psex_msg_t;
 
@@ -176,22 +176,22 @@ void psex_err_errno(char *str, int err_no)
 
 
 static
-void psex_err_rma_error(char *str, int rc)
+void psex_err_rma2_error(char *str, int rc)
 {
-	char rma_err_str[100];
+	char rma2_err_str[100];
 	int len;
 	char *msg;
 
-	rma_serror(rc, rma_err_str, sizeof(rma_err_str));
+	rma2_serror(rc, rma2_err_str, sizeof(rma2_err_str));
 
-	len = strlen(str) + strlen(rma_err_str) + 10;
+	len = strlen(str) + strlen(rma2_err_str) + 10;
 	msg = malloc(len);
 
 	assert(msg);
 
 	strcpy(msg, str);
 	strcat(msg, " : ");
-	strcat(msg, rma_err_str);
+	strcat(msg, rma2_err_str);
 
 	psex_err(msg);
 	free(msg);
@@ -221,9 +221,9 @@ unsigned psex_pending_tokens_suggestion(void)
 
 
 static
-void psex_rma_free(hca_info_t *hca_info, mem_info_t *mem_info)
+void psex_rma2_free(hca_info_t *hca_info, mem_info_t *mem_info)
 {
-	rma_unregister(hca_info->port, mem_info->mr);
+	rma2_unregister(hca_info->port, mem_info->mr);
 	mem_info->mr = NULL;
 	free(mem_info->ptr);
 	mem_info->ptr = NULL;
@@ -239,7 +239,7 @@ void print_mlock_help(unsigned size)
 	if (called) return;
 	called = 1;
 
-	psex_dprint(0, "EXTOLL: rma_register(%u) failed.", size);
+	psex_dprint(0, "EXTOLL: rma2_register(%u) failed.", size);
 	psex_dprint(0, "(Check memlock limit in /etc/security/limits.conf or try 'ulimit -l')");
 
 	if (!getrlimit(RLIMIT_MEMLOCK, &rlim)) {
@@ -249,7 +249,7 @@ void print_mlock_help(unsigned size)
 
 
 static
-int psex_rma_alloc(hca_info_t *hca_info, int size, mem_info_t *mem_info)
+int psex_rma2_alloc(hca_info_t *hca_info, int size, mem_info_t *mem_info)
 {
 	int rc;
 
@@ -259,7 +259,7 @@ int psex_rma_alloc(hca_info_t *hca_info, int size, mem_info_t *mem_info)
 	mem_info->ptr = valloc(size);
 	if (!mem_info->ptr) goto err_malloc;
 
-	rc = rma_register(hca_info->port, mem_info->ptr, size, &mem_info->mr);
+	rc = rma2_register(hca_info->port, mem_info->ptr, size, &mem_info->mr);
 	if (!mem_info->mr) goto err_reg_mr;
 
 	return 0;
@@ -267,8 +267,8 @@ int psex_rma_alloc(hca_info_t *hca_info, int size, mem_info_t *mem_info)
 err_reg_mr:
 	free(mem_info->ptr);
 	mem_info->ptr = NULL;
-	psex_err_rma_error("rma_register()", rc);
-	/*if (rc == RMA_ERR_NO_MEM)*/ print_mlock_help(size);
+	psex_err_rma2_error("rma2_register()", rc);
+	/*if (rc == RMA2_ERR_NO_MEM)*/ print_mlock_help(size);
 	return -1;
 err_malloc:
 	psex_err_errno("malloc()", errno);
@@ -281,15 +281,15 @@ void psex_con_cleanup(psex_con_info_t *con_info)
 	hca_info_t *hca_info = con_info->hca_info;
 
 	if (con_info->send.bufs.mr) {
-		psex_rma_free(hca_info, &con_info->send.bufs);
+		psex_rma2_free(hca_info, &con_info->send.bufs);
 		con_info->send.bufs.mr = 0;
 	}
 	if (con_info->recv.bufs.mr) {
-		psex_rma_free(hca_info, &con_info->recv.bufs);
+		psex_rma2_free(hca_info, &con_info->recv.bufs);
 		con_info->recv.bufs.mr = 0;
 	}
 	if (con_info->handle) {
-		rma_disconnect(hca_info->port, con_info->handle);
+		rma2_disconnect(hca_info->port, con_info->handle);
 		con_info->handle = NULL;
 	}
 }
@@ -312,13 +312,13 @@ int psex_con_init(psex_con_info_t *con_info, hca_info_t *hca_info)
 	 */
 
 	if (!psex_global_sendq) {
-		if (psex_rma_alloc(hca_info, PSEX_RMA_MTU * psex_sendq_size,
+		if (psex_rma2_alloc(hca_info, PSEX_RMA2_MTU * psex_sendq_size,
 				   &con_info->send.bufs))
 			goto err_alloc;
 	}
 	con_info->send.pos = 0;
 
-	if (psex_rma_alloc(hca_info, PSEX_RMA_MTU * psex_recvq_size,
+	if (psex_rma2_alloc(hca_info, PSEX_RMA2_MTU * psex_recvq_size,
 			    &con_info->recv.bufs))
 		goto err_alloc;
 
@@ -357,14 +357,14 @@ int psex_con_connect(psex_con_info_t *con_info, psex_info_msg_t *info_msg)
 	con_info->remote_rbuf_nla = info_msg->rbuf_nla;
 
 
-	rc = rma_connect(con_info->port, info_msg->nodeid,
-			 info_msg->vpid, &con_info->handle);
+	rc = rma2_connect(con_info->port, info_msg->nodeid,
+			  info_msg->vpid, RMA2_CONN_DEFAULT, &con_info->handle);
 	if (rc) goto err_connect;
 
 	return 0;
 	/* --- */
 err_connect:
-	psex_err_rma_error("rma_connect()", rc);
+	psex_err_rma2_error("rma2_connect()", rc);
 	psex_dprint(1, "psex_con_connect() : %s", psex_err_str);
 	return -1;
 }
@@ -374,11 +374,11 @@ static
 void psex_cleanup_hca(hca_info_t *hca_info)
 {
 	if (hca_info->send.bufs.mr) {
-		psex_rma_free(hca_info, &hca_info->send.bufs);
+		psex_rma2_free(hca_info, &hca_info->send.bufs);
 		hca_info->send.bufs.mr = 0;
 	}
 	if (hca_info->port) {
-		rma_close(hca_info->port);
+		rma2_close(hca_info->port);
 		hca_info->port = NULL;
 	}
 }
@@ -397,21 +397,21 @@ int psex_init_hca(hca_info_t *hca_info)
 		psex_pending_tokens = psex_recvq_size;
 	}
 
-	rc = rma_open(&hca_info->port);
-	if (rc != RMA_SUCCESS) {
-		psex_err_rma_error("rma_open()", rc);
+	rc = rma2_open(&hca_info->port);
+	if (rc != RMA2_SUCCESS) {
+		psex_err_rma2_error("rma2_open()", rc);
 		goto err_hca;
 	}
 
 
 	if (psex_global_sendq) {
-		if (psex_rma_alloc(hca_info, PSEX_RMA_MTU * psex_sendq_size, &hca_info->send.bufs))
+		if (psex_rma2_alloc(hca_info, PSEX_RMA2_MTU * psex_sendq_size, &hca_info->send.bufs))
 			goto err_alloc;
 		hca_info->send.pos = 0;
 	}
 
-	hca_info->nodeid = rma_get_nodeid(hca_info->port);
-	hca_info->vpid = rma_get_vpid(hca_info->port);
+	hca_info->nodeid = rma2_get_nodeid(hca_info->port);
+	hca_info->vpid = rma2_get_vpid(hca_info->port);
 
 	return 0;
 	/* --- */
@@ -472,7 +472,7 @@ int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned
 		goto err_busy;
 	}
 
-	len = (size <= (int)PSEX_RMA_PAYLOAD) ? size : (int)PSEX_RMA_PAYLOAD;
+	len = (size <= (int)PSEX_RMA2_PAYLOAD) ? size : (int)PSEX_RMA2_PAYLOAD;
 	psex_len = PSEX_LEN(len);
 
 	ringbuf_t *send = (con_info->send.bufs.mr) ? &con_info->send : &hca_info->send;
@@ -486,12 +486,12 @@ int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned
 
 	/* copy to registerd send buffer */
 	pscom_memcpy_from_iov((void *)_msg, iov, len);
-	rc = rma_post_put_cl(con_info->port, con_info->handle, send->bufs.mr,
-			     ((char*)_msg - (char *)send->bufs.ptr), (psex_len >> 6) - 1,
+	rc = rma2_post_put_bt(con_info->port, con_info->handle, send->bufs.mr,
+			     ((char*)_msg - (char *)send->bufs.ptr), psex_len,
 			     PSEX_DATA(con_info->remote_rbuf_nla +
 				       con_info->remote_recv_pos * sizeof(psex_msg_t), psex_len),
-			     0);
-	if (rc != 0) goto err_rma_post_cl;
+			      0, 0);
+	if (rc != 0) goto err_rma2_post_cl;
 
 	psex_pending_global_sends++; // ToDo: Decrease the counter somewhere!
 
@@ -507,13 +507,13 @@ int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned
 err_busy:
 	return -EAGAIN;
 	/* --- */
-err_rma_post_cl:
+err_rma2_post_cl:
     if (0 /*rc == ???EAGAIN  Too many posted work requests ? */) {
 	psex_stat.post_send_eagain++;
 	return -EAGAIN;
     } else {
 	psex_stat.post_send_error++;
-	psex_err_rma_error("rma_post_put_cl()", rc);
+	psex_err_rma2_error("rma2_post_put_cl()", rc);
 	con_info->con_broken = 1;
 	return -EPIPE;
     }
@@ -656,6 +656,6 @@ void psex_con_get_info_msg(psex_con_info_t *con_info /* in */, psex_info_msg_t *
 
 	info_msg->nodeid	= hca_info->nodeid;
 	info_msg->vpid		= hca_info->vpid;
-	rc = rma_get_nla(con_info->recv.bufs.mr, 0, &info_msg->rbuf_nla);
-	assert(rc == RMA_SUCCESS);
+	rc = rma2_get_nla(con_info->recv.bufs.mr, 0, &info_msg->rbuf_nla);
+	assert(rc == RMA2_SUCCESS);
 }

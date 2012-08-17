@@ -31,12 +31,12 @@
 #include <error.h>
 #include <errno.h>
 // Compat stuff for missing Extoll includes:
-//typedef struct RMA_Connection_s RMA_Connection;
-//typedef struct RMA_Endpoint_s RMA_Endpoint;
-//typedef struct RMA_Region_s RMA_Region;
+//typedef struct RMA2_Connection_s RMA2_Connection;
+//typedef struct RMA2_Endpoint_s RMA2_Endpoint;
+//typedef struct RMA2_Region_s RMA2_Region;
 
-#include <rma.h>
-#include <libvelo.h>
+#include <rma2.h>
+#include <velo2.h>
 
 #define VERSION "EXTOLL_VELO_PP1.0"
 
@@ -137,45 +137,45 @@ typedef struct msg_buf
 msg_buf_t	*s_buf;
 msg_buf_t	*r_buf;
 
-velo_port_t	velo_port; // by velo_open()
+velo2_port_t	velo2_port; // by velo2_open()
 
-RMA_Nodeid	remote_nodeid;
-RMA_Vpid	remote_vpid;
-velo_connection_t remote_connection; // by velo_connect()
+RMA2_Nodeid	remote_nodeid;
+RMA2_VPID	remote_vpid;
+velo2_connection_t remote_connection; // by velo2_connect()
 
-RMA_Nodeid	my_nodeid;
-RMA_Vpid	my_vpid;
+RMA2_Nodeid	my_nodeid;
+RMA2_VPID	my_vpid;
 
 
 typedef struct {
-	RMA_Nodeid	nodeid;
-	RMA_Vpid	vpid;
+	RMA2_Nodeid	nodeid;
+	RMA2_VPID	vpid;
 } pp_info_msg_t;
 
 
 static
-void extoll_ret_check(enum velo_ret ret, char *msg)
+void extoll_ret_check(enum velo2_ret ret, char *msg)
 {
-	if (ret == VELO_RET_SUCCESS) return;
+	if (ret == VELO2_RET_SUCCESS) return;
 	switch (ret) {
-	case VELO_RET_SUCCESS:
+	case VELO2_RET_SUCCESS:
 		fprintf(stderr, "%s : operation was successful\n", msg); break;
-	case VELO_RET_ERROR:
+	case VELO2_RET_ERROR:
 		fprintf(stderr, "%s : an error occured\n", msg); break;
-	case VELO_RET_NO_MSG:
+	case VELO2_RET_NO_MSG:
 		fprintf(stderr, "%s : no valid message\n", msg); break;
-	case VELO_RET_NO_MATCH:
+	case VELO2_RET_NO_MATCH:
 		fprintf(stderr, "%s : no valid message match\n", msg); break;
-	case VELO_RET_ERR_FDOPEN:
+	case VELO2_RET_ERR_FDOPEN:
 		fprintf(stderr, "%s : error during open operation\n", msg); break;
-	case VELO_RET_ERR_MMAP:
+	case VELO2_RET_ERR_MMAP:
 		fprintf(stderr, "%s : error during mmap operation\n", msg); break;
-	case VELO_RET_INVALID_MBOX:
+	case VELO2_RET_INVALID_MBOX:
 		fprintf(stderr, "%s : mailbox id not valid\n", msg); break;
-	case VELO_RET_INVALID_NODE:
+	case VELO2_RET_INVALID_NODE:
 		fprintf(stderr, "%s : node id not valid\n", msg); break;
 	default:
-		fprintf(stderr, "%s : Unknown velo error %d\n", msg, ret);
+		fprintf(stderr, "%s : Unknown velo2 error %d\n", msg, ret);
 	}
 	exit(1);
 }
@@ -192,8 +192,8 @@ void init_bufs(void)
 	memset(s_buf->data, 0x11, sizeof(s_buf->data));
 	memset(r_buf->data, 0x22, sizeof(r_buf->data));
 
-	my_nodeid = velo_get_node_id(&velo_port);
-	my_vpid = velo_get_vpid(&velo_port);
+	my_nodeid = velo2_get_nodeid(&velo2_port);
+	my_vpid = velo2_get_vpid(&velo2_port);
 }
 
 
@@ -242,11 +242,11 @@ void pp_info_read(FILE *peer, pp_info_msg_t *msg)
 static
 void init(FILE *peer)
 {
-	enum velo_ret ret;
+	enum velo2_ret ret;
 	pp_info_msg_t lmsg, rmsg;
 
-	ret = velo_open(&velo_port);
-	extoll_ret_check(ret, "velo_open()");
+	ret = velo2_open(&velo2_port);
+	extoll_ret_check(ret, "velo2_open()");
 
 	init_bufs();
 
@@ -263,9 +263,9 @@ void init(FILE *peer)
 
 	pp_info_set(&rmsg);
 
-	ret = velo_connect(&velo_port, &remote_connection,
-			   remote_nodeid, remote_vpid);
-	extoll_ret_check(ret, "velo_connect()");
+	ret = velo2_connect(&velo2_port, &remote_connection,
+			    remote_nodeid, remote_vpid);
+	extoll_ret_check(ret, "velo2_connect()");
 
 	printf("I'm the %s\n", is_server ? "server" : "client");
 	sleep(1);
@@ -275,7 +275,7 @@ void init(FILE *peer)
 static inline
 void extoll_send(unsigned len)
 {
-	enum velo_ret ret;
+	enum velo2_ret ret;
 	unsigned slen;
 	char *s;
 	s_buf->len = len;
@@ -287,9 +287,9 @@ void extoll_send(unsigned len)
 		unsigned next_len = (slen > 64) ? 64 : slen;
 
 		//printf("Send %u next %u rest %u ptr %p\n", len, next_len, slen, s);
-		ret = velo_send(&remote_connection, s,
-				next_len, 0x00);
-		extoll_ret_check(ret, "velo_send()");
+		ret = velo2_send(&remote_connection, s,
+				 next_len, 0x00, 0);
+		extoll_ret_check(ret, "velo2_send()");
 
 		slen -= next_len;
 		s += next_len;
@@ -300,7 +300,7 @@ void extoll_send(unsigned len)
 static inline
 unsigned extoll_recv(void)
 {
-	enum velo_ret ret;
+	enum velo2_ret ret;
 
 	uint32_t mlen;
 	int rlen;
@@ -308,10 +308,10 @@ unsigned extoll_recv(void)
 	uint8_t tag;
 	char *r = (char *)r_buf;
 
-	ret = velo_recv(&velo_port, r, 64,
-			&mlen, &sourceid, &tag);
-	extoll_ret_check(ret, "velo_recv() 1");
-	assert(mlen > sizeof(r_buf->len));
+	ret = velo2_recv(&velo2_port, r, 64,
+			 &mlen, &sourceid, &tag, 0);
+	extoll_ret_check(ret, "velo2_recv() 1");
+	assert(mlen >= sizeof(r_buf->len));
 
 	r += mlen;
 	rlen = r_buf->len + sizeof(r_buf->len) - mlen;
@@ -319,9 +319,9 @@ unsigned extoll_recv(void)
 	//printf("Recv1: len %u msglen %u rest %u ptr %p\n", r_buf->len, mlen, rlen, r);
 
 	while (rlen > 0) {
-		ret = velo_recv(&velo_port, r, 64,
-				&mlen, &sourceid, &tag);
-		extoll_ret_check(ret, "velo_recv() 2");
+		ret = velo2_recv(&velo2_port, r, 64,
+				 &mlen, &sourceid, &tag, 0);
+		extoll_ret_check(ret, "velo2_recv() 2");
 		//printf("Recv2: len %u msglen %u rest %u ptr %p\n", r_buf->len, mlen, rlen, r);
 
 		r += mlen;

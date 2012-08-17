@@ -473,7 +473,7 @@ static
 void pscom_psm_finalize(void){
 	if (pspsm_close_endpoint() == -1) goto err;
 	if (pspsm_finalize_mq() == -1) goto err;
-
+	return;
  err:
 	pspsm_dprint(1, "pspsm_psm_finalize not successful");
 }

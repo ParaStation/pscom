@@ -23,7 +23,7 @@ export LIBNAME := pscom4extoll
 export LIBOBJS := pscom_extoll.o psextoll.o
 export LIBVPATH := $(SRCDIR)
 export LIBINC = -I$(TOPSRCDIR)/include -I$(EXTOLL_INCLUDE_DIR) -I$(SRCDIR)/../pscom
-export LIBEXTERNAL_SHARED = -L/extoll/lib -lrma
+export LIBEXTERNAL_SHARED = -L/extoll2/lib -lrma2
 export LIBDSTDIR = ../..
 
 ################################

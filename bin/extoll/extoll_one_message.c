@@ -32,17 +32,17 @@
 #include <errno.h>
 
 // Compat stuff for missing Extoll includes:
-//typedef struct RMA_Connection_s RMA_Connection;
-//typedef struct RMA_Endpoint_s RMA_Endpoint;
-//typedef struct RMA_Region_s RMA_Region;
+//typedef struct RMA2_Connection_s RMA2_Connection;
+//typedef struct RMA2_Endpoint_s RMA2_Endpoint;
+//typedef struct RMA2_Region_s RMA2_Region;
 
-#include "rma.h" /* Extoll librma interface */
+#include "rma2.h" /* Extoll librma2 interface */
 
 #define VERSION "EXTOLL_ONE1.0"
 
 int arg_soffset = 0; // s_buf offset
 int arg_roffset = 0; // r_buf offset
-int arg_clines = 1; // cachelines
+int arg_bytes = 1; // bytes to send
 int arg_verbose = 0;
 
 const char *arg_port = "5535";
@@ -63,8 +63,8 @@ void parse_opt(int argc, char **argv)
 		  &arg_soffset, 0, "s_buf offset", "offset" },
 		{ "roffset"  , 'r', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_roffset, 0, "r_buf offset", "offset" },
-		{ "clines"  , 'c', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_clines, 0, "cachelines to send", "count" },
+		{ "bytes"  , 'b', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
+		  &arg_bytes, 0, "bytes to send", "count" },
 
 		{ "nokill" , 'k', POPT_ARGFLAG_OR | POPT_ARG_VAL,
 		  &arg_nokill, 1, "Dont kill the server afterwards", NULL },
@@ -135,33 +135,33 @@ typedef struct msg_buf
 
 msg_buf_t	*s_buf;
 msg_buf_t	*r_buf;
-RMA_NLA		remote_rbuf;
-RMA_Nodeid	remote_nodeid;
-RMA_Vpid	remote_vpid;
-RMA_Handle	remote_handle; // The connection from rma_connect
+RMA2_NLA	remote_rbuf;
+RMA2_Nodeid	remote_nodeid;
+RMA2_VPID	remote_vpid;
+RMA2_Handle	remote_handle; // The connection from rma2_connect
 
-RMA_Port extoll_port;
-RMA_Handle extoll_handle;
-RMA_Region* extoll_s_region;
-RMA_Region* extoll_r_region;
+RMA2_Port extoll_port;
+RMA2_Handle extoll_handle;
+RMA2_Region* extoll_s_region;
+RMA2_Region* extoll_r_region;
 
-RMA_NLA		my_rbuf;
-RMA_Nodeid	my_nodeid;
-RMA_Vpid	my_vpid;
+RMA2_NLA	my_rbuf;
+RMA2_Nodeid	my_nodeid;
+RMA2_VPID	my_vpid;
 
 
 typedef struct {
-	RMA_NLA		rbuf_nla;
-	RMA_Nodeid	nodeid;
-	RMA_Vpid	vpid;
+	RMA2_NLA	rbuf_nla;
+	RMA2_Nodeid	nodeid;
+	RMA2_VPID	vpid;
 } pp_info_msg_t;
 
 
 static
 void extoll_rc_check(int rc, char *msg)
 {
-	if (rc == RMA_SUCCESS) return;
-	rma_perror(rc, msg);
+	if (rc == RMA2_SUCCESS) return;
+	rma2_perror(rc, msg);
 	exit(1);
 }
 
@@ -177,17 +177,17 @@ void init_bufs(void)
 	memset(s_buf, 0x11, sizeof(*s_buf));
 	memset(r_buf, 0x22, sizeof(*r_buf));
 
-	rc = rma_register(extoll_port, s_buf, sizeof(*s_buf), &extoll_s_region);
-	extoll_rc_check(rc, "rma_register() for s_buf");
+	rc = rma2_register(extoll_port, s_buf, sizeof(*s_buf), &extoll_s_region);
+	extoll_rc_check(rc, "rma2_register() for s_buf");
 
-	rc = rma_register(extoll_port, r_buf, sizeof(*r_buf), &extoll_r_region);
-	extoll_rc_check(rc, "rma_register() for r_buf");
+	rc = rma2_register(extoll_port, r_buf, sizeof(*r_buf), &extoll_r_region);
+	extoll_rc_check(rc, "rma2_register() for r_buf");
 
-	rc = rma_get_nla(extoll_r_region, 0, &my_rbuf);
-	extoll_rc_check(rc, "rma_get_nla() for my_rbuf");
+	rc = rma2_get_nla(extoll_r_region, 0, &my_rbuf);
+	extoll_rc_check(rc, "rma2_get_nla() for my_rbuf");
 
-	my_nodeid = rma_get_nodeid(extoll_port);
-	my_vpid = rma_get_vpid(extoll_port);
+	my_nodeid = rma2_get_nodeid(extoll_port);
+	my_vpid = rma2_get_vpid(extoll_port);
 }
 
 
@@ -241,8 +241,8 @@ void init(FILE *peer)
 	int rc;
 	pp_info_msg_t lmsg, rmsg;
 
-	rc = rma_open(&extoll_port);
-	extoll_rc_check(rc, "rma_open()");
+	rc = rma2_open(&extoll_port);
+	extoll_rc_check(rc, "rma2_open()");
 
 	init_bufs();
 
@@ -259,8 +259,9 @@ void init(FILE *peer)
 
 	pp_info_set(&rmsg);
 
-	rc = rma_connect(extoll_port, remote_nodeid, remote_vpid, &remote_handle);
-	extoll_rc_check(rc, "rma_connect()");
+	rc = rma2_connect(extoll_port, remote_nodeid, remote_vpid,
+			  RMA2_CONN_DEFAULT, &remote_handle);
+	extoll_rc_check(rc, "rma2_connect()");
 
 	printf("I'm the %s\n", is_server ? "server" : "client");
 }
@@ -311,17 +312,21 @@ void run_server(void)
 	unsigned i;
 	int rc;
 	for (i = 0; i < sizeof(*s_buf); i++) s_buf->buf[i] = i;
+	const unsigned dump_size = 128;
 
-	rc = rma_post_put_cl(extoll_port, remote_handle, extoll_s_region,
-			     arg_soffset, arg_clines,
-			     remote_rbuf + arg_roffset,
-			     0 /* RMA_COMPLETER_NOTIFICATION */);
-	assert(rc == RMA_SUCCESS);
+	dump_msg(s_buf, 0, dump_size);
+	dump_msg(r_buf, 0, dump_size);
+	sleep(1);
 
-	sleep(2);
-	dump_msg(r_buf, 0, 8192 + 1);
-	sleep(2);
-	dump_msg(r_buf, 0, 8192 + 1);
+	rc = rma2_post_put_bt(extoll_port, remote_handle, extoll_s_region,
+			      arg_soffset, arg_bytes,
+			      remote_rbuf + arg_roffset,
+			      0 /* RMA2_COMPLETER_NOTIFICATION */,
+			      /* RMA2_Command_Modifier */ 0);
+	assert(rc == RMA2_SUCCESS);
+
+	sleep(1);
+	dump_msg(r_buf, 0, dump_size);
 }
 
 

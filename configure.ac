@@ -86,110 +86,6 @@ osf5.1)
 esac
 
 
-AC_SUBST([BUILD_MODULES])
-AC_SUBST([BUILD_USER])
-AC_ARG_WITH([modules], [AS_HELP_STRING([--with-modules], [build only modules(no libs/bins)])
-AS_HELP_STRING([--without-modules], [build without modules(only libs/bins)]) ],
-[
-	if test x"$withval" == x"no" ; then
-	   BUILD_MODULES="no"
-	   BUILD_USER="yes"
-	   CONFIGARGS=${CONFIGARGS}" --without modules"
-	else
-	   BUILD_MODULES="yes"
-	   BUILD_USER="no"
-	   CONFIGARGS=${CONFIGARGS}" --with modules"
-	fi
-],[
-	BUILD_MODULES="auto"
-	BUILD_USER="yes"
-])
-
-AC_ARG_WITH([kernel], [AS_HELP_STRING([--with-kernel=name], [
-build ParaStation modules for the current kernel (uname -r) or NAME a dirname in /lib/modules]) ],
-[
-	case "$withval" in
-	yes)	OSUNAME=`uname -r` ;;
-	no)	BUILD_MODULES=no ;;
-	*)	OSUNAME=$withval ;;
-	esac
-	if test x"$BUILD_MODULES" == x"auto" ; then
-		BUILD_MODULES="yes"
-	fi
-],[
-	OSUNAME=`uname -r`
-	if test x"$BUILD_MODULES" == x"auto" ; then
-		BUILD_MODULES="no"
-	fi
-])
-
-
-if test x"$BUILD_MODULES" == x"yes" ; then
-
-AC_SUBST([KERNELLIST])
-AC_ARG_WITH([kernellist], [AS_HELP_STRING([--with-kernellist=file], [file with kernelnames and kerneldirs])] ,
-[
-	KERNELLIST=`path_cleanup $withval`
-],[
-	KERNELLIST=`path_cleanup kernellist`
-
-	echo "Search kernel source"
-	echo '# kernel-name  kernel-sourcedir  [O=kernel-builddir]' > $KERNELLIST
-	if test -d /lib/modules/$OSUNAME/source; then
-		echo "$OSUNAME  /lib/modules/$OSUNAME/source O=/lib/modules/$OSUNAME/build" >> $KERNELLIST
-	else
-		echo "/lib/modules/$OSUNAME/source not found"
-		if test -d /lib/modules/$OSUNAME/build; then
-			echo "$OSUNAME  /lib/modules/$OSUNAME/build" >> $KERNELLIST;
-		else
-			echo "/lib/modules/$OSUNAME/build not found"
-			if test x"$OSUNAME" == x"local" ; then
-				echo "$OSUNAME  /usr/src/linux" >> $KERNELLIST;
-			else
-				if test -d /usr/src/linux; then
-					echo "Use --with-kernel=local to use /usr/src/linux."
-				fi
-				echo
-				echo "No kernel source found!"
-				echo
-
-				BUILD_MODULES="no"
-				exit 1 # User request module building, but no kernel source found. Giving up
-			 fi
-		fi
-	fi
-	echo "Using kernellist $KERNELLIST:"
-	cat $KERNELLIST
-])
-
-
-AC_SUBST([BUILD_E1000])
-AC_ARG_WITH([e1000], [AS_HELP_STRING([--with-e1000], [build e1000 ethernet driver])] ,
-[
-	if test x"$withval" == x"yes" ; then
-	   CONFIGARGS=${CONFIGARGS}" --with e1000"
-	fi
-	BUILD_E1000="$withval"
-],[
-	BUILD_E1000="no"
-])
-
-AC_SUBST([BUILD_BCM5700])
-AC_ARG_WITH([bcm5700], [AS_HELP_STRING([--with-bcm5700], [build bcm5700 ethernet driver])] ,
-[
-	if test x"$withval" == x"yes" ; then
-	   CONFIGARGS=${CONFIGARGS}" --with bcm5700"
-	fi
-	BUILD_BCM5700="$withval"
-],[
-	BUILD_BCM5700="no"
-])
-
-
-fi # BUILD_MODULES
-
-if test x"$BUILD_USER" == x"yes"; then
-
 #
 # Mellanox section
 #
@@ -574,24 +470,24 @@ AC_ARG_ENABLE([elan], [AS_HELP_STRING([--enable-elan], [(default: auto)])] ,
 #
 
 AC_SUBST([EXTOLL_INCLUDE_DIR])
-AC_ARG_WITH([extollincl], [AS_HELP_STRING([--with-extollincl=dir], [(dir with rma.h, default: /usr/include)])] ,
+AC_ARG_WITH([extollincl], [AS_HELP_STRING([--with-extollincl=dir], [(dir with rma2.h, default: /usr/include)])] ,
 [
 	EXTOLL_INCLUDE_DIR=`path_cleanup $withval`
 ],[
-	echo "Searching for extolls rma.h"
-	for TMP in "/extoll/include" "/usr/include"; do
-		if test -r "$TMP/rma.h" ; then
-			echo "  $TMP/rma.h	yes"
+	echo "Searching for extolls rma2.h"
+	for TMP in "/extoll2/include" "/usr/include"; do
+		if test -r "$TMP/rma2.h" ; then
+			echo "  $TMP/rma2.h	yes"
 			break;
 		else
-			echo "  $TMP/rma.h	no"
+			echo "  $TMP/rma2.h	no"
 		fi
 	done
 	EXTOLL_INCLUDE_DIR="$TMP"
 ])
 
 AC_SUBST([EXTOLL_ENABLED])
-# default is yes, if ${EXTOLL_INCLUDE_DIR}/rma.h is available
+# default is yes, if ${EXTOLL_INCLUDE_DIR}/rma2.h is available
 AC_ARG_ENABLE([extoll], [AS_HELP_STRING([--enable-extoll], [(default: auto)])] ,
 [
 	EXTOLL_ENABLED=$enableval
@@ -599,7 +495,7 @@ AC_ARG_ENABLE([extoll], [AS_HELP_STRING([--enable-extoll], [(default: auto)])] ,
 	echo "checking for EXTOLL"
 	EXTOLL_ENABLED="yes"
 
-	TMP="${EXTOLL_INCLUDE_DIR}/rma.h"
+	TMP="${EXTOLL_INCLUDE_DIR}/rma2.h"
 	if test -r "$TMP" ; then
 		echo "  found $TMP."
 	else
@@ -660,13 +556,9 @@ AC_ARG_ENABLE([psm], [AS_HELP_STRING([--enable-psm], [(default: auto)])] ,
 	fi
 ])
 
-fi # if BUILD_USER
-
-
 AC_CONFIG_FILES([Makefile])
 
 
-if test x"$BUILD_USER" == x"yes"; then
    AC_CONFIG_FILES([lib/Makefile])
    AC_CONFIG_FILES([lib/Makefile.staticlib])
    AC_CONFIG_FILES([lib/Makefile.sharedlib])
@@ -716,24 +608,13 @@ if test x"$BUILD_USER" == x"yes"; then
    AC_CONFIG_FILES([bin/examples/Makefile])
    AC_CONFIG_FILES([doc/Makefile])
    AC_CONFIG_FILES([scripts/parastation-config])
-fi
-if test x"$BUILD_MODULES" == x"yes"; then
-   AC_CONFIG_FILES([modules/Makefile])
-fi
 
 AC_CONFIG_FILES([dist/Makefile.install])
 
 AC_OUTPUT
 
-if test x"${BUILD_MODULES}" == x"no"; then
-	MODULE_HINT="	    (use --with-kernel to build modules)"
-fi
-
 cat <<DOK
 =========================================
-BUILD_MODULES:    ${BUILD_MODULES}${MODULE_HINT}
-BUILD_USER:       ${BUILD_USER}
-
 MELLANOX_ENABLED: ${MELLANOX_ENABLED}
 OPENIB_ENABLED:	  ${OPENIB_ENABLED}
 OFED_ENABLED:	  ${OFED_ENABLED}
@@ -746,9 +627,7 @@ PSMGMT_ENABLED:	  ${PSMGMT_ENABLED}
 DOK
 
 
-if test x"$BUILD_USER" == x"yes"; then
 chmod +x ${TOP_BUILDDIR}/scripts/parastation-config
-fi
 
 #
 # Local Variables:

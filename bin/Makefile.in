@@ -260,8 +260,8 @@ ifeq ($(EXTOLL_ENABLED),yes)
 VPATH += $(SRCDIR)/extoll
 VPATH += $(TOP_SRCDIR)/lib/pscom4extoll
 VPATH += $(TOP_SRCDIR)/lib/pscom
-LIB_EXTOLL_RMA += -L/extoll/lib -lrma
-LIB_EXTOLL_VELO += -L/extoll/lib -lvelo
+LIB_EXTOLL_RMA += -L/extoll2/lib -lrma2
+LIB_EXTOLL_VELO += -L/extoll2/lib -lvelo2
 CPPFLAGS += -I$(EXTOLL_INCLUDE_DIR) -I$(TOP_SRCDIR)/lib/pscom -I$(TOP_SRCDIR)/lib/pscom4elan
 
 PROGS += extoll_pp_lowlevel

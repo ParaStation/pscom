@@ -201,6 +201,7 @@ void pscom_ofed_init(void)
 
 	INIT_LIST_HEAD(&pscom_ofed.reader.next);
 	pscom_ofed.reader.do_read = pscom_ofed_do_read;
+	pscom_ofed.reader_user = 0;
 }
 
 

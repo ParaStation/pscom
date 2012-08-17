@@ -177,7 +177,10 @@ if [ "$release" == "$version" ]; then release="0"; fi
 
 version="${version%%-*}"
 
-# use only rpm release allowed chars.
+# Allow only [.a-zA-Z0-9] for the version. Replace all others by "_".
+version="${version//[^.a-zA-Z0-9]/_}"
+
+# use only rpm release allowed chars. Replace all others by "_".
 release="${release//[^a-zA-Z0-9]/_}"
 
 case "$arg_fmt" in

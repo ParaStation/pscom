@@ -609,11 +609,6 @@ MELLANOX_ENABLED
 MELLANOX_LIB_DIR
 MELLANOX_INCLUDE_DIR
 MELLANOX_HOME
-BUILD_BCM5700
-BUILD_E1000
-KERNELLIST
-BUILD_USER
-BUILD_MODULES
 CONFIGARGS
 RANLIB
 INSTALL_DATA
@@ -672,11 +667,6 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
-with_modules
-with_kernel
-with_kernellist
-with_e1000
-with_bcm5700
 with_mellanoxhome
 with_mellanoxincl
 with_mellanoxlib
@@ -1337,13 +1327,6 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
-  --with-modules          build only modules(no libs/bins)
-  --without-modules       build without modules(only libs/bins)
-  --with-kernel=name      build ParaStation modules for the current kernel
-                          (uname -r) or NAME a dirname in /lib/modules
-  --with-kernellist=file  file with kernelnames and kerneldirs
-  --with-e1000            build e1000 ethernet driver
-  --with-bcm5700          build bcm5700 ethernet driver
   --with-mellanoxhome=dir home of mellanox (libs and includes)
   --with-mellanoxincl=dir (dir with vapi.h, evapi.h, vapi_common.h)
   --with-mellanoxlib=dir  (dir with libvapi.so, libmtl_common.so ...)
@@ -1356,7 +1339,7 @@ Optional Packages:
   --with-datlib=dir       (dir with libdat.so, default:
                           {daplhome}/${LIB_DIRNAME})
   --with-elanincl=dir     (dir with elan/elan.h, default: /usr/include)
-  --with-extollincl=dir   (dir with rma.h, default: /usr/include)
+  --with-extollincl=dir   (dir with rma2.h, default: /usr/include)
   --with-psmincl=dir      (dir with psm.h, default: /usr/include)
 
 Some influential environment variables:
@@ -2287,138 +2270,6 @@ osf5.1)
 	;;
 esac
 
-
-
-
-
-# Check whether --with-modules was given.
-if test "${with_modules+set}" = set; then :
-  withval=$with_modules;
-	if test x"$withval" == x"no" ; then
-	   BUILD_MODULES="no"
-	   BUILD_USER="yes"
-	   CONFIGARGS=${CONFIGARGS}" --without modules"
-	else
-	   BUILD_MODULES="yes"
-	   BUILD_USER="no"
-	   CONFIGARGS=${CONFIGARGS}" --with modules"
-	fi
-
-else
-
-	BUILD_MODULES="auto"
-	BUILD_USER="yes"
-
-fi
-
-
-
-# Check whether --with-kernel was given.
-if test "${with_kernel+set}" = set; then :
-  withval=$with_kernel;
-	case "$withval" in
-	yes)	OSUNAME=`uname -r` ;;
-	no)	BUILD_MODULES=no ;;
-	*)	OSUNAME=$withval ;;
-	esac
-	if test x"$BUILD_MODULES" == x"auto" ; then
-		BUILD_MODULES="yes"
-	fi
-
-else
-
-	OSUNAME=`uname -r`
-	if test x"$BUILD_MODULES" == x"auto" ; then
-		BUILD_MODULES="no"
-	fi
-
-fi
-
-
-
-if test x"$BUILD_MODULES" == x"yes" ; then
-
-
-
-# Check whether --with-kernellist was given.
-if test "${with_kernellist+set}" = set; then :
-  withval=$with_kernellist;
-	KERNELLIST=`path_cleanup $withval`
-
-else
-
-	KERNELLIST=`path_cleanup kernellist`
-
-	echo "Search kernel source"
-	echo '# kernel-name  kernel-sourcedir  [O=kernel-builddir]' > $KERNELLIST
-	if test -d /lib/modules/$OSUNAME/source; then
-		echo "$OSUNAME  /lib/modules/$OSUNAME/source O=/lib/modules/$OSUNAME/build" >> $KERNELLIST
-	else
-		echo "/lib/modules/$OSUNAME/source not found"
-		if test -d /lib/modules/$OSUNAME/build; then
-			echo "$OSUNAME  /lib/modules/$OSUNAME/build" >> $KERNELLIST;
-		else
-			echo "/lib/modules/$OSUNAME/build not found"
-			if test x"$OSUNAME" == x"local" ; then
-				echo "$OSUNAME  /usr/src/linux" >> $KERNELLIST;
-			else
-				if test -d /usr/src/linux; then
-					echo "Use --with-kernel=local to use /usr/src/linux."
-				fi
-				echo
-				echo "No kernel source found!"
-				echo
-
-				BUILD_MODULES="no"
-				exit 1 # User request module building, but no kernel source found. Giving up
-			 fi
-		fi
-	fi
-	echo "Using kernellist $KERNELLIST:"
-	cat $KERNELLIST
-
-fi
-
-
-
-
-
-# Check whether --with-e1000 was given.
-if test "${with_e1000+set}" = set; then :
-  withval=$with_e1000;
-	if test x"$withval" == x"yes" ; then
-	   CONFIGARGS=${CONFIGARGS}" --with e1000"
-	fi
-	BUILD_E1000="$withval"
-
-else
-
-	BUILD_E1000="no"
-
-fi
-
-
-
-
-# Check whether --with-bcm5700 was given.
-if test "${with_bcm5700+set}" = set; then :
-  withval=$with_bcm5700;
-	if test x"$withval" == x"yes" ; then
-	   CONFIGARGS=${CONFIGARGS}" --with bcm5700"
-	fi
-	BUILD_BCM5700="$withval"
-
-else
-
-	BUILD_BCM5700="no"
-
-fi
-
-
-
-fi # BUILD_MODULES
-
-if test x"$BUILD_USER" == x"yes"; then
 
 #
 # Mellanox section
@@ -3750,13 +3601,13 @@ if test "${with_extollincl+set}" = set; then :
 
 else
 
-	echo "Searching for extolls rma.h"
-	for TMP in "/extoll/include" "/usr/include"; do
-		if test -r "$TMP/rma.h" ; then
-			echo "  $TMP/rma.h	yes"
+	echo "Searching for extolls rma2.h"
+	for TMP in "/extoll2/include" "/usr/include"; do
+		if test -r "$TMP/rma2.h" ; then
+			echo "  $TMP/rma2.h	yes"
 			break;
 		else
-			echo "  $TMP/rma.h	no"
+			echo "  $TMP/rma2.h	no"
 		fi
 	done
 	EXTOLL_INCLUDE_DIR="$TMP"
@@ -3765,7 +3616,7 @@ fi
 
 
 
-# default is yes, if ${EXTOLL_INCLUDE_DIR}/rma.h is available
+# default is yes, if ${EXTOLL_INCLUDE_DIR}/rma2.h is available
 # Check whether --enable-extoll was given.
 if test "${enable_extoll+set}" = set; then :
   enableval=$enable_extoll;
@@ -3776,7 +3627,7 @@ else
 	echo "checking for EXTOLL"
 	EXTOLL_ENABLED="yes"
 
-	TMP="${EXTOLL_INCLUDE_DIR}/rma.h"
+	TMP="${EXTOLL_INCLUDE_DIR}/rma2.h"
 	if test -r "$TMP" ; then
 		echo "  found $TMP."
 	else
@@ -3850,14 +3701,10 @@ else
 fi
 
 
-fi # if BUILD_USER
-
-
 ac_config_files="$ac_config_files Makefile"
 
 
 
-if test x"$BUILD_USER" == x"yes"; then
    ac_config_files="$ac_config_files lib/Makefile"
 
    ac_config_files="$ac_config_files lib/Makefile.staticlib"
@@ -3931,11 +3778,6 @@ if test x"$BUILD_USER" == x"yes"; then
 
    ac_config_files="$ac_config_files scripts/parastation-config"
 
-fi
-if test x"$BUILD_MODULES" == x"yes"; then
-   ac_config_files="$ac_config_files modules/Makefile"
-
-fi
 
 ac_config_files="$ac_config_files dist/Makefile.install"
 
@@ -4683,7 +4525,6 @@ do
     "bin/examples/Makefile") CONFIG_FILES="$CONFIG_FILES bin/examples/Makefile" ;;
     "doc/Makefile") CONFIG_FILES="$CONFIG_FILES doc/Makefile" ;;
     "scripts/parastation-config") CONFIG_FILES="$CONFIG_FILES scripts/parastation-config" ;;
-    "modules/Makefile") CONFIG_FILES="$CONFIG_FILES modules/Makefile" ;;
     "dist/Makefile.install") CONFIG_FILES="$CONFIG_FILES dist/Makefile.install" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -5140,15 +4981,8 @@ $as_echo "$as_me: WARNING: unrecognized options: $ac_unrecognized_opts" >&2;}
 fi
 
 
-if test x"${BUILD_MODULES}" == x"no"; then
-	MODULE_HINT="	    (use --with-kernel to build modules)"
-fi
-
 cat <<DOK
 =========================================
-BUILD_MODULES:    ${BUILD_MODULES}${MODULE_HINT}
-BUILD_USER:       ${BUILD_USER}
-
 MELLANOX_ENABLED: ${MELLANOX_ENABLED}
 OPENIB_ENABLED:	  ${OPENIB_ENABLED}
 OFED_ENABLED:	  ${OFED_ENABLED}
@@ -5161,9 +4995,7 @@ PSMGMT_ENABLED:	  ${PSMGMT_ENABLED}
 DOK
 
 
-if test x"$BUILD_USER" == x"yes"; then
 chmod +x ${TOP_BUILDDIR}/scripts/parastation-config
-fi
 
 #
 # Local Variables:

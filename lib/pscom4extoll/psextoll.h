@@ -21,12 +21,12 @@
 #include <sys/uio.h>
 
 // Compat stuff for missing Extoll includes:
-//typedef struct RMA_Connection_s RMA_Connection;
-//typedef struct RMA_Endpoint_s RMA_Endpoint;
-//typedef struct RMA_Region_s RMA_Region;
-#include "rma.h" /* Extoll librma interface */
+//typedef struct RMA2_Connection_s RMA2_Connection;
+//typedef struct RMA2_Endpoint_s RMA2_Endpoint;
+//typedef struct RMA2_Region_s RMA2_Region;
+#include "rma2.h" /* Extoll librma interface */
 
-/* rma.h includes extoll/include/list.h which clash with pscom/list.h.
+/* rma2.h includes extoll/include/list.h which clash with pscom/list.h.
    If so, do not include pscom/list.h again:*/
 #ifdef _LINUX_LIST_H /* extoll/include/list.h included? */
 #define _LIST_H_ /* dont include pscom/list.h again */
@@ -37,9 +37,9 @@ typedef struct hca_info hca_info_t;
 
 // contact endpoint info
 typedef struct psex_info_msg_s {
-	RMA_Nodeid	nodeid;
-	RMA_Vpid	vpid;
-	RMA_NLA		rbuf_nla;
+	RMA2_Nodeid	nodeid;
+	RMA2_VPID	vpid;
+	RMA2_NLA	rbuf_nla;
 } psex_info_msg_t;
 
 

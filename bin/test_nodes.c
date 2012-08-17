@@ -477,6 +477,14 @@ void run(int argc,char **argv,int np)
 	/* I am the logger */
 	/* Set default to none: */
 	setenv("PSI_NODES_SORT","NONE",0);
+	/* Loop nodes first. */
+	setenv("PSI_LOOP_NODES_FIRST", "1", 0);
+	if (strcmp(getenv("PSI_LOOP_NODES_FIRST"), "0") == 0) {
+	    /* Workaround: If the user overwrite the env with "0", unset the
+	       env. The pse layer only checks for the definition and
+	       do not evaluate the value!. */
+	    unsetenv("PSI_LOOP_NODES_FIRST");
+	}
 	PSE_getPartition(np);
 	PSE_spawnMaster(argc, argv);
 	/* Never be here ! */
