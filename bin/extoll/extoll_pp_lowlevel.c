@@ -151,7 +151,7 @@ typedef struct msg_buf
 static
 void idle(void)
 {
-	volatile unsigned y;
+	volatile unsigned y = 0;
 	y++;
 //	sched_yield();
 }

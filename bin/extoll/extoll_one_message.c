@@ -47,6 +47,7 @@ int arg_verbose = 0;
 
 const char *arg_port = "5535";
 const char *arg_servername = NULL;
+const char *arg_ssh_clienthost = NULL;
 int arg_nokill = 0;
 
 int is_server = 1;
@@ -71,6 +72,9 @@ void parse_opt(int argc, char **argv)
 
 		{ "port" , 'p', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_STRING,
 		  &arg_port, 0, "server port to use", "port" },
+
+		{ "ssh" , 'S', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_STRING,
+		  &arg_ssh_clienthost, 0, "autostart a client on node with ssh", "node" },
 
 		{ "verbose"	, 'v', POPT_ARG_NONE,
 		  NULL		, 'v', "increase verbosity", NULL },
@@ -192,6 +196,16 @@ void init_bufs(void)
 
 
 static
+void cleanup_bufs(void)
+{
+	// printf("%s:%u:%s\n", __FILE__, __LINE__, __func__);
+	rma2_unregister(extoll_port, extoll_s_region);
+	rma2_unregister(extoll_port, extoll_r_region);
+	rma2_disconnect(extoll_port, remote_handle);
+}
+
+
+static
 void pp_info_get(pp_info_msg_t *msg)
 {
 	msg->rbuf_nla = my_rbuf;
@@ -300,7 +314,9 @@ void dump_msg(void *buf, int offset, int size)
 {
 	while (offset < size) {
 		int len = size - offset > 32 ? 32 : size - offset;
-		printf("%04x : %s\n", offset, dumpstr(buf + offset, len));
+		printf("%s%04x : %s\n",
+		       is_server ? "s:" : "c:",
+		       offset, dumpstr(buf + offset, len));
 		offset += len;
 	}
 }
@@ -312,7 +328,7 @@ void run_server(void)
 	unsigned i;
 	int rc;
 	for (i = 0; i < sizeof(*s_buf); i++) s_buf->buf[i] = i;
-	const unsigned dump_size = 128;
+	const unsigned dump_size = (arg_bytes + 4 + 31) / 32 * 32;
 
 	dump_msg(s_buf, 0, dump_size);
 	dump_msg(r_buf, 0, dump_size);
@@ -327,6 +343,7 @@ void run_server(void)
 
 	sleep(1);
 	dump_msg(r_buf, 0, dump_size);
+	sleep(1);
 }
 
 
@@ -407,6 +424,13 @@ int main(int argc, char **argv)
 
 	parse_opt(argc, argv);
 
+	if (arg_ssh_clienthost) {
+		char cmd[200];
+		char wd[200];
+		snprintf(cmd, sizeof(cmd), "bash -x -c \"ssh %s cd %s && %s --bytes=%u $(hostname -s)\" &",
+			 arg_ssh_clienthost, getcwd(wd, sizeof(wd)), argv[0], arg_bytes);
+		if (system(cmd)) perror("system");
+	}
 	peer = get_peer();
 	init(peer);
 
@@ -422,6 +446,7 @@ int main(int argc, char **argv)
 	} else {
 		run_client();
 	}
+	cleanup_bufs();
 
 	return 0;
 }

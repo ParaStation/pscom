@@ -1,3 +1,11 @@
+2012-08-27  Jens Hauke  <hauke@par-tec.com>	-	5.0.40-1
+
+	* Feature: Terminate all ib connections on wrong cq opcodes.
+
+	* Fix: Workaround for extoll buffer cleanup
+
+	* Feature: MIC support
+
 2012-08-16  Jens Hauke  <hauke@par-tec.com>	-	5.0.39-1
 
 	* Update the extoll plugin to extoll2

@@ -53,7 +53,7 @@ COMPILE.c-shared = $(CC) $(CFLAGS) $(CPPFLAGS) $(TARGET_ARCH) -fPIC -DPIC -c
 
 #Link with gcc (not LD)(hidden symbol `atexit' in libc_nonshared.a is referenced by DSO)
 $(_LIBDESTNAME): $(LIBOBJS)
-	gcc -shared $(LDFLAGS) $(LIBOBJS) -o $@ $(LIBEXTERNAL_SHARED) $(_LIBSONAME)
+	$(CC) -shared $(LDFLAGS) $(LIBOBJS) -o $@ $(LIBEXTERNAL_SHARED) $(_LIBSONAME)
 
 clean:
 	$(RM) $(LIBOBJS)

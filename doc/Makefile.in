@@ -1,4 +1,4 @@
-#							-*- Makefile -*-
+#                                                       -*- Makefile -*-
 # ParaStation
 #
 # Copyright (C) 2009 ParTec Cluster Competence Center GmbH, Munich
@@ -7,7 +7,7 @@
 # as defined in the file LICENSE.QPL included in the packaging of this
 # file.
 #
-# Author:	Jens Hauke <hauke@par-tec.com>
+# Authors:      Jens Hauke <hauke@par-tec.com>
 #
 
 SRCDIR := $(shell cd @srcdir@;pwd)

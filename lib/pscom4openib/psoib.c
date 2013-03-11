@@ -26,6 +26,7 @@
 /* #include <sysfs/libsysfs.h> */
 #include <infiniband/verbs.h>
 
+#include "list.h"
 #include "pscom_util.h"
 #include "psoib.h"
 
@@ -68,6 +69,9 @@ struct hca_info {
 
     /* send */
     ringbuf_t	send; /* global send queue */
+
+    /* misc */
+    struct list_head list_con_info; /* list of all psoib_con_info.next_con_info */
 };
 
 
@@ -105,6 +109,9 @@ struct psoib_con_info {
     unsigned int n_tosend_toks;
 
     int con_broken;
+
+    /* misc */
+    struct list_head next_con_info;
 };
 
 
@@ -149,6 +156,7 @@ unsigned int psoib_pending_tokens = _SIZE_RECV_QUEUE - 6;
 
 int psoib_global_sendq = 0; /* bool. Use one sendqueue for all connections? */
 int psoib_event_count = 1; /* bool. Be busy if outstanding_cq_entries is to high? */
+int psoib_ignore_wrong_opcodes = 0; /* bool: ignore wrong cq opcodes */
 
 struct psoib_stat_s {
     unsigned busy_notokens;	// connection out of tokens for sending
@@ -356,7 +364,7 @@ struct ibv_device *psoib_get_dev_by_hca_name(const char *in_hca_name)
 	if (!ib_dev) goto err_no_dev2;
     } else {
 	int i;
-        for (i = 0; i < dev_list_count; i++) {
+	for (i = 0; i < dev_list_count; i++) {
 	    ib_dev = dev_list[i];
 	    if (!ib_dev) break;
 	    const char *tmp = ibv_get_device_name(ib_dev);
@@ -510,6 +518,9 @@ int psoib_vapi_alloc(hca_info_t *hca_info, int size, enum ibv_access_flags acces
 void psoib_con_cleanup(psoib_con_info_t *con_info, hca_info_t *hca_info)
 {
     if (!hca_info) hca_info = &default_hca;
+
+    list_del_init(&con_info->next_con_info);
+
     if (con_info->send.bufs.mr) {
 	psoib_vapi_free(hca_info, &con_info->send.bufs);
 	con_info->send.bufs.mr = 0;
@@ -613,7 +624,7 @@ int psoib_con_init(psoib_con_info_t *con_info, hca_info_t *hca_info, port_info_t
     con_info->send.bufs.mr = NULL;
     con_info->recv.bufs.mr = NULL;
     con_info->con_broken = 0;
-
+    INIT_LIST_HEAD(&con_info->next_con_info);
 
     {
 	struct ibv_qp_init_attr attr = {
@@ -682,6 +693,7 @@ int psoib_con_init(psoib_con_info_t *con_info, hca_info_t *hca_info, port_info_t
     con_info->remote_recv_pos = 0;
     con_info->recv.pos = 0;
 
+    list_add_tail(&con_info->next_con_info, &hca_info->list_con_info);
     return 0;
     /* --- */
  err_alloc:
@@ -760,6 +772,7 @@ int psoib_init_hca(hca_info_t *hca_info)
     hca_info->cq = NULL;
     hca_info->pd = NULL;
     hca_info->send.bufs.mr = NULL;
+    INIT_LIST_HEAD(&hca_info->list_con_info);
 
     if (psoib_pending_tokens > psoib_recvq_size) {
 	psoib_dprint(1, "warning: reset psoib_pending_tokens from %u to %u\n",
@@ -1100,6 +1113,20 @@ int psoib_recvlook(psoib_con_info_t *con_info, void **buf)
 #endif
 }
 
+
+/* Mark all connections of hca_info as broken */
+static
+void psoib_all_con_broken(hca_info_t *hca_info)
+{
+    struct list_head *pos;
+    list_for_each(pos, &hca_info->list_con_info) {
+	psoib_con_info_t *con = list_entry(pos, psoib_con_info_t, next_con_info);
+	con->con_broken = 1;
+    }
+    errno = EPIPE;
+}
+
+
 static
 int psoib_check_cq(hca_info_t *hca_info)
 {
@@ -1154,7 +1181,11 @@ int psoib_check_cq(hca_info_t *hca_info)
 		con->con_broken = 1;
 	    }
 	} else {
-	    psoib_dprint(0, "Unknown Opcode: %d", wc.opcode);
+	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
+			 "ibv_poll_cq(): Infiniband returned the wrong Opcode %d", wc.opcode);
+	    if (!psoib_ignore_wrong_opcodes) {
+		psoib_all_con_broken(hca_info);
+	    }
 	}
     }
     return rc;

@@ -281,6 +281,8 @@ void psex_con_cleanup(psex_con_info_t *con_info)
 	hca_info_t *hca_info = con_info->hca_info;
 
 	if (con_info->send.bufs.mr) {
+		usleep(20000); // Workaround: Wait for the completion of all rma2_post_put_bt()'s // ToDo: remove me!
+
 		psex_rma2_free(hca_info, &con_info->send.bufs);
 		con_info->send.bufs.mr = 0;
 	}
@@ -374,6 +376,8 @@ static
 void psex_cleanup_hca(hca_info_t *hca_info)
 {
 	if (hca_info->send.bufs.mr) {
+		usleep(20000); // Workaround: Wait for the completion of all rma2_post_put_bt()'s // ToDo: remove me!
+
 		psex_rma2_free(hca_info, &hca_info->send.bufs);
 		hca_info->send.bufs.mr = 0;
 	}

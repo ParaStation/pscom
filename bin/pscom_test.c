@@ -73,6 +73,8 @@ struct PSCOM_req_user {
 
 const char *arg_server_str = "localhost:5006";
 
+static const int guard = 0x4434312;
+
 #define ARG_SERVER 0x0001
 #define ARG_CLIENT 0x0002
 int arg_type = 0;
@@ -284,7 +286,7 @@ void io_done_msg_ordering(pscom_request_t *req)
 	assert((req->xheader.user.tag == req->user->req.msg_ordering.tag)
 	       || !pscom_req_successful(req));
 	// guard ok?
-	assert(*((int *)&req->user->req.msg_ordering.data[req->data_len]) == 0x4434312);
+	assert(memcmp(&req->user->req.msg_ordering.data[req->data_len], &guard, sizeof(guard)) == 0);
 
 	pscom_request_free(req);
 	msg_ordering_jobs--;
@@ -322,7 +324,7 @@ void server_msg_ordering(pscom_connection_t *con)
 
 		req->user->req.msg_ordering.tag = n[i].tag;
 		req->user->req.msg_ordering.index = i;
-		*((int *)&req->user->req.msg_ordering.data[n[i].data_len]) = 0x4434312;
+		memcpy(&req->user->req.msg_ordering.data[n[i].data_len], &guard, sizeof(guard));
 
 		req->connection = n[i].con;
 		req->socket = con->socket;
@@ -367,7 +369,7 @@ void client_msg_ordering(pscom_connection_t *con)
 		req->xheader.user.tag = n[i].tag;
 		req->user->req.msg_ordering.tag = n[i].tag;
 		req->user->req.msg_ordering.index = i;
-		*((int *)&req->user->req.msg_ordering.data[n[i].data_len]) = 0x4434312;
+		memcpy(&req->user->req.msg_ordering.data[n[i].data_len], &guard, sizeof(guard));
 
 		req->connection = con;
 

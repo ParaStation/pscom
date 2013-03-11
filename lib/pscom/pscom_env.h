@@ -79,6 +79,7 @@
 #define ENV_OPENIB_PENDING_TOKENS "PSP_OPENIB_PENDING_TOKENS"
 #define ENV_OPENIB_GLOBAL_SENDQ "PSP_OPENIB_GLOBAL_SENDQ" /* bool: Use one sendq for all connections? default: 0(no) */
 #define ENV_OPENIB_EVENT_CNT "PSP_OPENIB_EVENT_CNT" /* bool: Be busy if outstanding_cq_entries is to high? default: 1(yes) */
+#define ENV_OPENIB_IGNORE_WRONG_OPCODES "PSP_OPENIB_IGNORE_WRONG_OPCODES" /* bool: ignore wrong cq opcodes */
 
 
 /* OFED HCA and port */

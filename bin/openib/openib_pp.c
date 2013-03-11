@@ -155,8 +155,7 @@ static
 void psoib_rc_check(const char *msg, int rc)
 {
 	if (rc) {
-		fprintf(stderr, msg);
-		fprintf(stderr, " : %s", psoib_err_str ? psoib_err_str : "???");
+		fprintf(stderr, "%s : %s", msg, psoib_err_str ? psoib_err_str : "???");
 		exit(1);
 	}
 }

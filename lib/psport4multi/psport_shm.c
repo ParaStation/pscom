@@ -22,7 +22,7 @@
 #include "psport_shm.h"
 
 
-#ifdef __x86_64__
+#if defined(__x86_64__) && !(defined(__KNF__) || defined(__MIC__))
 /* We need memory barriers only for x86_64 (?) */
 #define shm_mb()    asm volatile("mfence":::"memory")
 #elif defined(__ia64__)
