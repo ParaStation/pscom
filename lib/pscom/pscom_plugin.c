@@ -168,10 +168,7 @@ void pscom_plugin_load(const char *arch)
 
 	char *libdirs[] = {
 		"",
-#if defined( __x86_64 )
-		"/opt/parastation/lib64/",
-#endif
-		"/opt/parastation/lib/",
+		LIBDIR,
 		NULL
 	};
 	unsigned cnt = 0;

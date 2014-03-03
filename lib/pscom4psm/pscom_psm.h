@@ -62,9 +62,11 @@ typedef struct pspsm_con_info {
 typedef struct pspsm_info_msg_s {
 	psm_epid_t epid;        /**< endpoint id */
 	uint64_t id;            /**< tag to be used sending to that epid */
+	char protocol_version[8];  /**< 8 byte psm protocol identifier */
 } pspsm_info_msg_t;
 
 #define DEFAULT_UUID_PATTERN 42
+#define PSPSM_PROTOCOL_VERSION "master01"
 
 /*
  * UUID Helper
@@ -78,9 +80,9 @@ typedef union {
  * fixme
  */
 typedef enum pspsm_init_state {
-	PSPSM_INIT_START = 0,
-	PSPSM_INIT_DONE = 1,
-	PSPSM_INIT_DISABLED = 2
+	PSPSM_INIT_START = 1,
+	PSPSM_INIT_DONE = 0,
+	PSPSM_INIT_FAILED = -1 /* init failed once */
 } pspsm_init_state_t;
 
 

@@ -32,30 +32,6 @@
 
 #include <popt.h>
 
-static
-char *dumpstr( void *buf, int size )
-{
-    static char *ret=NULL;
-    char *tmp;
-    int s;
-    char *b;
-    if (ret) free(ret);
-    ret = (char *)malloc(size * 5 + 4);
-    tmp = ret;
-    s = size; b = (char *)buf;
-    for (; s ; s--, b++){
-	tmp += sprintf( tmp, "<%02x>", (unsigned char)*b );
-    }
-    *tmp++ = '\'';
-    s = size; b = (char *)buf;
-    for (; s ; s--, b++){
-	*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
-    }
-    *tmp++ = '\'';
-    *tmp++ = 0;
-    return ret;
-}
-
 int arg_verbose=0;
 int arg_add=0;
 int arg_del=0;

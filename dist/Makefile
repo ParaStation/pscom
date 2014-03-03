@@ -25,7 +25,7 @@ VERSION:=$(shell cd $(TOP_SRCDIR) && scripts/vcversion --fmt version)
 RELEASE:=$(shell cd $(TOP_SRCDIR) && scripts/vcversion --fmt release)
 DISTNAME=$(PKG_NAME)-$(VERSION)-$(RELEASE)
 RPMBUILDDIR=/var/tmp/$(DISTNAME)-$(USER)
-RPMBUILDLOG=$(DISTNAME)$(shell echo $(CONFIGARGS)|tr " " "_").rpmbuild.log
+RPMBUILDLOG=$(PKG_NAME)$(shell echo -n $(CONFIGARGS)|tr -c "[0-9A-Za-z]" "_")-$(VERSION)-$(RELEASE).rpmbuild.log
 CHANGELOG=$(TOP_SRCDIR)/ChangeLog
 
 

@@ -149,15 +149,6 @@ struct PSCOM_socket_ops socket_ops_server = {
 };
 
 
-static
-void io_done_default(pscom_request_t *req)
-{
-	printf("Request %p state %s io_done (xhlen:%3d, dlen:%4d)\n",
-	       req, pscom_req_state_str(req->state),
-	       req->xheader_len, req->data_len);
-}
-
-
 int main(int argc, char **argv)
 {
 	pscom_err_t rc;

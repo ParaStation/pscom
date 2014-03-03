@@ -353,8 +353,6 @@ void run_client()
     for (i = 0; i < arg_cnt; i++) {
 	uint16_t dest = conid;
 	uint16_t src;
-	struct msghdr hdr;
-	struct iovec iov;
 	int len;
 
 	len = sock_send(sock, dest, buf, CLIENT_BUFSIZE);

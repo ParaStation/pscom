@@ -10,9 +10,9 @@
 #
 
 #defaults
-PS_INSTALLDIR=${PS_INSTALLDIR-"/opt/parastation"}
-PSP4STAT=${PS_INSTALLDIR}/bin/p4stat
-PSP4TCP=${PS_INSTALLDIR}/bin/p4tcp
+PS_BINDIR=${PS_BINDIR-@bindir@}
+PSP4STAT=${PS_BINDIR}/p4stat
+PSP4TCP=${PS_BINDIR}/p4tcp
 
 case "$1" in
     start)

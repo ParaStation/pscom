@@ -427,7 +427,7 @@ int main(int argc, char **argv)
 	if (arg_ssh_clienthost) {
 		char cmd[200];
 		char wd[200];
-		snprintf(cmd, sizeof(cmd), "bash -x -c \"ssh %s cd %s && %s --bytes=%u $(hostname -s)\" &",
+		snprintf(cmd, sizeof(cmd), "bash -x -c \"ssh %s 'cd %s && %s --bytes=%u $(hostname -s)'\" &",
 			 arg_ssh_clienthost, getcwd(wd, sizeof(wd)), argv[0], arg_bytes);
 		if (system(cmd)) perror("system");
 	}

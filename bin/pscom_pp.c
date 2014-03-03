@@ -205,7 +205,6 @@ int run_pp_c(pscom_connection_t *con, int msize, int xsize, int loops)
 		pscom_wait(rreq);
 	}
 
-err_io:
 	ret = !pscom_req_successful(rreq);
 	pscom_request_free(sreq);
 	pscom_request_free(rreq);
@@ -261,7 +260,6 @@ int run_pp_c_histo(pscom_connection_t *con, int msize, int xsize, int loops)
 	}
 	fflush(stdout);
 
-err_io:
 	pscom_request_free(sreq);
 	pscom_request_free(rreq);
 	ret = !pscom_req_successful(rreq);

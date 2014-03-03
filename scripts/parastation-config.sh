@@ -1,7 +1,8 @@
 #! /bin/sh
 
-PS_INSTALLDIR=${PS_INSTALLDIR-"/opt/parastation"}
-LIB_DIRNAME=@LIB_DIRNAME@
+PS_LIBDIR=${PS_LIBDIR-@libdir@}
+PS_DOCDIR=${PS_DOCDIR-@docdir@}
+PS_INCLUDEDIR=${PS_INCLUDEDIR-@includedir@}
 
 usage()
 {
@@ -61,7 +62,8 @@ while test $# -gt 0; do
 
     case $1 in
 	--version)
-	    cat ${PS_INSTALLDIR}/VERSION*
+	    cat /opt/parastation/VERSION* # backwards compatibility
+	    cat ${PS_DOCDIR}/VERSION*
 	    exit 0
 	    ;;
 	--cflags)
@@ -134,14 +136,14 @@ if test "$with_mellanox" = "auto"; then
 	-a  -r $mellanox_home/lib64/libmtl_common.so \
 	-a  -r $mellanox_home/lib64/libmosal.so \
 	-a  -r $mellanox_home/lib64/libmpga.so \
-	-a  -r ${PS_INSTALLDIR}/${LIB_DIRNAME}/libpsport4mvapi.so ; then
+	-a  -r ${PS_LIBDIR}/libpsport4mvapi.so ; then
 	with_mellanox=yes;
 	mellanox_libdir="$mellanox_home/lib64"
     elif test -r $mellanox_home/lib/libvapi.so \
 	-a  -r $mellanox_home/lib/libmtl_common.so \
 	-a  -r $mellanox_home/lib/libmosal.so \
 	-a  -r $mellanox_home/lib/libmpga.so \
-	-a  -r ${PS_INSTALLDIR}/${LIB_DIRNAME}/libpsport4mvapi.so ; then
+	-a  -r ${PS_LIBDIR}/libpsport4mvapi.so ; then
 	with_mellanox=yes;
     else
 	with_mellanox=no;
@@ -157,11 +159,11 @@ mellanox_libdir=${mellanox_libdir-"$mellanox_home/lib"}
 if test "$with_gm" = "auto"; then
     # prefere lib64 folders (opteron only?)
     if test -r $gm_home/lib64/libgm.so \
-	-a  -r ${PS_INSTALLDIR}/${LIB_DIRNAME}/libpsport4gm.so ; then
+	-a  -r ${PS_LIBDIR}/libpsport4gm.so ; then
 	with_gm=yes;
 	gm_libdir="$gm_home/lib64"
     elif test -r $gm_home/lib/libgm.so \
-	-a  -r ${PS_INSTALLDIR}/${LIB_DIRNAME}/libpsport4gm.so ; then
+	-a  -r ${PS_LIBDIR}/libpsport4gm.so ; then
 	with_gm=yes;
     else
 	with_gm=no;
@@ -181,7 +183,7 @@ if test "$lib_all" = "yes"; then
 fi
 
 if test "$echo_cflags" = "yes"; then
-    cflags="-I${PS_INSTALLDIR}/include"
+    cflags="-I${PS_INCLUDEDIR}"
 
     if test "$with_mellanox" = "yes"; then
 	cflags="$cflags -DENABLE_MVAPI"
@@ -215,7 +217,7 @@ if test "$echo_libs" = "yes"; then
 	    fi
 	fi
     else
-	libs="-Wl,-rpath,${PS_INSTALLDIR}/${LIB_DIRNAME} -Wl,--enable-new-dtags $libs"
+	libs="-Wl,-rpath,${PS_LIBDIR} -Wl,--enable-new-dtags $libs"
 	# using psport4std instead of psport4, because mpich should not use the static version.
 	if test "$lib_psport4" = "yes"; then
 	    libs="$libs -lpsport4std"
@@ -232,7 +234,7 @@ if test "$echo_libs" = "yes"; then
 	libs="$libs -lpsi"
     fi
 
-    libs="-L${PS_INSTALLDIR}/${LIB_DIRNAME} $libs"
+    libs="-L${PS_LIBDIR} $libs"
 
     echo $libs
 fi

@@ -30,12 +30,9 @@
 #include <netinet/in.h>
 #include <error.h>
 #include <errno.h>
-// Compat stuff for missing Extoll includes:
-//typedef struct RMA2_Connection_s RMA2_Connection;
-//typedef struct RMA2_Endpoint_s RMA2_Endpoint;
-//typedef struct RMA2_Region_s RMA2_Region;
+#include <unistd.h>
+#include <inttypes.h>
 
-#include <rma2.h>
 #include <velo2.h>
 
 #define VERSION "EXTOLL_VELO_PP1.0"
@@ -139,17 +136,17 @@ msg_buf_t	*r_buf;
 
 velo2_port_t	velo2_port; // by velo2_open()
 
-RMA2_Nodeid	remote_nodeid;
-RMA2_VPID	remote_vpid;
+velo2_nodeid_t	remote_nodeid;
+velo2_vpid_t	remote_vpid;
 velo2_connection_t remote_connection; // by velo2_connect()
 
-RMA2_Nodeid	my_nodeid;
-RMA2_VPID	my_vpid;
+velo2_nodeid_t	my_nodeid;
+velo2_vpid_t	my_vpid;
 
 
 typedef struct {
-	RMA2_Nodeid	nodeid;
-	RMA2_VPID	vpid;
+	velo2_nodeid_t	nodeid;
+	velo2_vpid_t	vpid;
 } pp_info_msg_t;
 
 
@@ -184,8 +181,6 @@ void extoll_ret_check(enum velo2_ret ret, char *msg)
 static
 void init_bufs(void)
 {
-	int rc;
-
 	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xee;
 	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xee;
 
@@ -216,10 +211,10 @@ void pp_info_set(pp_info_msg_t *msg)
 static
 void pp_info_write(FILE *peer, pp_info_msg_t *msg)
 {
-	printf("Lokal:  nodeid:%8hu vpid:%8hu\n",
+	printf("Lokal:  nodeid:%8" SCNu32 " vpid:%8" SCNu32 "\n",
 	       msg->nodeid, msg->vpid);
 
-	fprintf(peer, VERSION " nodeid:%8hu vpid:%8hu\n",
+	fprintf(peer, VERSION " nodeid:%8" SCNu32 " vpid:%8" SCNu32 "\n",
 		msg->nodeid, msg->vpid);
 	fflush(peer);
 }
@@ -229,12 +224,11 @@ static
 void pp_info_read(FILE *peer, pp_info_msg_t *msg)
 {
 	int rc;
-
-	rc = fscanf(peer, VERSION " nodeid:%8hu vpid:%8hu",
+	rc = fscanf(peer, VERSION " nodeid:%8" SCNu32 " vpid:%8" SCNu32,
 		    &msg->nodeid, &msg->vpid);
 	if (rc != 2) error(1, 0, "Parsing error! Only %d fields. Version mismatch?\n", rc);
 
-	printf("Remote: nodeid:%8hu vpid:%8hu\n",
+	printf("Remote: nodeid:%8" SCNu32 " vpid:%8" SCNu32 "\n",
 	       msg->nodeid, msg->vpid);
 }
 

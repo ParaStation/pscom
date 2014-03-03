@@ -29,7 +29,7 @@
 
 
 static
-int _pscom_extoll_do_read(pscom_con_t *con, psex_con_info_t *ci)
+int _pscom_extoll_rma2_do_read(pscom_con_t *con, psex_con_info_t *ci)
 {
 	void *buf;
 	int size;
@@ -54,17 +54,17 @@ int _pscom_extoll_do_read(pscom_con_t *con, psex_con_info_t *ci)
 
 
 static
-int pscom_extoll_do_read(pscom_poll_reader_t *reader)
+int pscom_extoll_rma2_do_read(pscom_poll_reader_t *reader)
 {
 	pscom_con_t *con = list_entry(reader, pscom_con_t, poll_reader);
 	psex_con_info_t *ci = con->arch.extoll.ci;
 
-	return _pscom_extoll_do_read(con, ci);
+	return _pscom_extoll_rma2_do_read(con, ci);
 }
 
 
 static
-void pscom_extoll_do_write(pscom_con_t *con)
+void pscom_extoll_rma2_do_write(pscom_con_t *con)
 {
 	unsigned int len;
 	struct iovec iov[2];
@@ -82,7 +82,7 @@ void pscom_extoll_do_write(pscom_con_t *con)
 			pscom_write_done(con, req, rlen);
 		} else if ((rlen == -EINTR) || (rlen == -EAGAIN)) {
 			// Busy: Maybe out of tokens? try to read more tokens:
-			_pscom_extoll_do_read(con, ci);
+			_pscom_extoll_rma2_do_read(con, ci);
 		} else {
 			// Error
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
@@ -117,6 +117,7 @@ void pscom_extoll_con_init(pscom_con_t *con, int con_fd,
 	close(con_fd);
 
 	con->arch.extoll.ci = ci;
+	con->arch.extoll.reading = 0;
 
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
@@ -124,8 +125,8 @@ void pscom_extoll_con_init(pscom_con_t *con, int con_fd,
 	con->read_start = pscom_poll_read_start;
 	con->read_stop = pscom_poll_read_stop;
 
-	con->poll_reader.do_read = pscom_extoll_do_read;
-	con->do_write = pscom_extoll_do_write;
+	con->poll_reader.do_read = pscom_extoll_rma2_do_read;
+	con->do_write = pscom_extoll_rma2_do_write;
 	con->close = pscom_extoll_close;
 
 //	con->rma_mem_register = pscom_extoll_rma_mem_register;
@@ -180,9 +181,10 @@ int pscom_extoll_connect(pscom_con_t *con, int con_fd)
 	psex_info_msg_t msg;
 	psex_info_msg_t my_msg;
 
-	if (psex_init() || !ci) goto dont_use;  /* Dont use extoll */
+	if (!ci) goto err_no_ci;
+	if (psex_init()) goto dont_use;  /* Dont use extoll */
 
-	if (psex_con_init(ci, NULL)) goto dont_use; /* Initialize connection */
+	if (psex_con_init(ci, NULL, con)) goto dont_use; /* Initialize connection */
 
 	/* We want talk extoll */
 	pscom_writeall(con_fd, &arch, sizeof(arch));
@@ -214,11 +216,10 @@ int pscom_extoll_connect(pscom_con_t *con, int con_fd)
 	/* --- */
 err_local:
 err_remote:
+	psex_con_cleanup(ci);
 dont_use:
-	if (ci) {
-		psex_con_cleanup(ci);
-		psex_con_free(ci);
-	}
+	psex_con_free(ci);
+err_no_ci:
 	return 0;
 }
 
@@ -230,9 +231,10 @@ int pscom_extoll_accept(pscom_con_t *con, int con_fd)
 	psex_con_info_t *ci = psex_con_create();
 	psex_info_msg_t msg;
 
-	if (psex_init() || !ci) goto out_noextoll;
+	if (!ci) goto err_no_ci;
+	if (psex_init()) goto out_noextoll;
 
-	if (psex_con_init(ci, NULL)) goto dont_use; /* Initialize connection */
+	if (psex_con_init(ci, NULL, con)) goto dont_use; /* Initialize connection */
 
 	/* step 1:  Yes, we talk extoll. */
 	pscom_writeall(con_fd, &arch, sizeof(arch));
@@ -259,11 +261,13 @@ int pscom_extoll_accept(pscom_con_t *con, int con_fd)
 err_local:
 err_remote:
 	if (ci) psex_con_cleanup(ci);
-dont_use:
 	if (ci) psex_con_free(ci);
 	return 0;
 	/* --- */
+dont_use:
 out_noextoll:
+	psex_con_free(ci);
+err_no_ci:
 	arch = PSCOM_ARCH_ERROR;
 	pscom_writeall(con_fd, &arch, sizeof(arch));
 	return 0; /* Dont use extoll */

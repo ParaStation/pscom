@@ -10,7 +10,6 @@ License:   QPL
 Group:     System/Development/Libraries
 Packager:  support@par-tec.de
 Source0:   %{name}-%{version}-%{release}.tar.gz
-Requires:  psmgmt
 
 # Dont use internal find_requires, because we dont want dependencies
 # to the infiniband libs. (Searching for a clean solution!)
@@ -19,7 +18,10 @@ Requires:  psmgmt
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
-Prefix: /opt/parastation
+# for now
+%global _prefix /opt/parastation
+%global _mandir %{_prefix}/share/man
+Prefix: %{_prefix}
 
 %description
 ParaStation Cluster Communication drivers and libraries.
@@ -31,26 +33,22 @@ ParaStation Cluster Communication drivers and libraries.
 %endif
 
 %prep
-
 %setup -q -n %{name}-%{version}-%{release}
 
 %build
-
-%configure ${EXTRA_ARGS}
-
-%{__make} %{?_smp_mflags}
+export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,' -e 's,-Wall,,' -e 's,-Wextra,,')"
+%configure
+make %{?_smp_mflags}
 
 %install
-%{__rm} -rf %{buildroot}
-%makeinstall
+rm -rf %{buildroot}
+make DESTDIR=%{buildroot} install
+
+# do not distribute .la files
+find %{buildroot} -name '*.la' -delete
 
 %clean
-%{__rm} -rf %{buildroot}
-
-
-#
-# build libs and bins
-#
+rm -rf %{buildroot}
 
 %files
-%attr(-,root,root) /opt/parastation
+%attr(-,root,root) %{_prefix}

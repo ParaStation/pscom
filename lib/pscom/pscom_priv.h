@@ -117,6 +117,7 @@ typedef struct pspsm_conn {
 
 typedef struct psextoll_conn {
 	struct psex_con_info *ci;
+	int                     reading : 1;
 } psextoll_conn_t;
 
 
@@ -276,7 +277,7 @@ struct PSCOM_sock
 	psgm_sock_t		gm;
 //	psdapl_sock_t		dapl;
 //	pselan_sock_t		elan;
-//	psextoll_sock_t		elan;
+//	psextoll_sock_t		extoll;
 
 	pscom_socket_t		pub;
 };

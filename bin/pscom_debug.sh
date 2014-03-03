@@ -2,10 +2,11 @@
 #
 # (c) 2009-07-02 Jens Hauke <hauke@par-tec.com>
 #
+PSIADMIN="@bindir@/psiadmin"
 
-arg_cmd='ssh -n $host gdb --batch -x /opt/parastation/config/pscom.gdb -ex bt -ex print_all -p $pid'
+arg_cmd='ssh -n $host gdb --batch -x @configdir@/pscom.gdb -ex bt -ex print_all -p $pid'
 # pssh command: "cat" is used to loose the pty on stdout
-arg_pssh_cmd='pssh -n $node gdb --batch -x /opt/parastation/config/pscom.gdb -ex bt -ex print_all -p $pid | cat'
+arg_pssh_cmd='pssh -n $node gdb --batch -x @configdir@/pscom.gdb -ex bt -ex print_all -p $pid | cat'
 arg_host=$(hostname)
 
 function vecho(){ [ -z $arg_verbose ] || echo "$@"; }
@@ -61,7 +62,7 @@ eval parse_arg "$TEMP"
 
 if [ -z "$arg_logger" ]; then
     # ToDo: Use -1 instead of hostname (need psmgmt > 5.0.16-2)
-    arg_logger=$(/opt/parastation/bin/psiadmin -c "l p $arg_host" | grep -E "\(L\)\$"| { read node tid ptid con uid rank cmd; echo $tid;})
+    arg_logger=$($PSIADMIN -c "l p $arg_host" | grep -E "\(L\)\$"| { read node tid ptid con uid rank cmd; echo $tid;})
     vecho "Use logger with tid: $arg_logger"
 fi
 if [ -z "$arg_logger" ]; then
@@ -76,14 +77,14 @@ function do_cmd(){
     local rank="$2"
     local node="${tid#*[}"; node="${node%:*}"
     local pid="${tid#*:}"; pid="${pid%]}"
-    local host="$(/opt/parastation/bin/psiadmin -c "reso $node"|{ read n h; echo $h; })"
+    local host="$($PSIADMIN -c "reso $node"|{ read n h; echo $h; })"
     echo "======== rank $rank ========== node:$node host:$host"
     eval "echo -E $arg_cmd"
     eval "$arg_cmd"
     :
 }
 
-/opt/parastation/bin/psiadmin -c "l p"| sort -nk 6 | while read node tid ptid con uid rank cmd; do
+$PSIADMIN -c "l p"| sort -nk 6 | while read node tid ptid con uid rank cmd; do
     case "$ptid" in
 	"$arg_logger"*)	    </dev/null do_cmd "$tid" "$rank";;
     esac

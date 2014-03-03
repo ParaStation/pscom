@@ -411,7 +411,6 @@ void run_send()
     int conid;
     char *buf;
     int i;
-    unsigned long t1, t2;
 
     printf("Start client from port %d to port %d\n",
 	   arg_clientport, arg_serverport);

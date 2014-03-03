@@ -303,6 +303,9 @@ void pscom_psm_init(void)
 
 	INIT_LIST_HEAD(&pspsm_poll.poll.next);
 	pspsm_poll.poll.do_read = pscom_psm_make_progress;
+
+	// Preinitialize pspsm. Ignore errors. pscom_psm_connect will see the error again.
+	pspsm_init();
 }
 
 
@@ -486,6 +489,7 @@ int pspsm_close_endpoint(void)
 
 	if (pspsm_ep){
 		ret = psm_ep_close(pspsm_ep, PSM_EP_CLOSE_GRACEFUL, 0);
+		pspsm_ep = NULL;
 		if (ret != PSM_OK) goto err;
 
 		if (sendbuf) free(sendbuf);
@@ -524,9 +528,6 @@ int pspsm_con_init(pspsm_con_info_t *con_info)
 {
 	static uint64_t id = 42;
 
-	if (pspsm_open_endpoint()) goto err_ep;
-	if (pspsm_init_mq()) goto err_mq;
-
 	con_info->con_broken = 0;
 	con_info->recv_id = id++;
 	con_info->rbuf = NULL;
@@ -541,12 +542,6 @@ int pspsm_con_init(pspsm_con_info_t *con_info)
 
 	pspsm_dprint(2, "pspsm_con_init: OK");
 	return 0;
-
- err_mq:
-	pspsm_close_endpoint();
- err_ep:
-	pspsm_dprint(1, "pspsm_con_init: NOT OK");
-	return -1;
 }
 
 
@@ -554,6 +549,11 @@ static
 int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 {
 	psm_error_t ret, ret1;
+
+	if (memcmp(info_msg->protocol_version, PSPSM_PROTOCOL_VERSION,
+		   sizeof(info_msg->protocol_version))) {
+		goto err_protocol;
+	}
 
 	ret = psm_ep_connect(pspsm_ep, 1, &info_msg->epid, NULL, &ret1,
 			     &con_info->epaddr, 0);
@@ -569,6 +569,15 @@ int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 	pspsm_err(psm_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_con_connect: %s", pspsm_err_str);
 	return -1;
+ err_protocol:
+	{
+		char str[80];
+		snprintf(str, sizeof(str), "protocol error : '%.8s' != '%.8s'",
+			 info_msg->protocol_version, PSPSM_PROTOCOL_VERSION);
+		pspsm_err(str);
+		pspsm_dprint(1, "pspsm_con_connect: %s", pspsm_err_str);
+	}
+	return -1;
 }
 
 
@@ -583,7 +592,6 @@ int pspsm_init(void)
 	if (init_state == PSPSM_INIT_START) {
 		ret = psm_init(&verno_major, &verno_minor);
 		if (ret != PSM_OK) {
-			init_state = PSPSM_INIT_DISABLED;
 			goto err_init;
 		}
 
@@ -611,14 +619,31 @@ int pspsm_init(void)
 			pspsm_dprint(2, "seeding PSM UUID with %u", pscom.env.psm_uniq_id);
 			pspsm_uuid.as_uint = pscom.env.psm_uniq_id;
 		}
-		pspsm_dprint(2, "pspsm_init: OK");
-	}
-	return 0;
 
- err_init:
+		/* Open the endpoint here in init with the hope that
+		   every mpi rank call indirect psm_ep_open() before
+		   transmitting any data from or to this endpoint.
+		   This is to avoid a race condition in
+		   libpsm_infinipath.  Downside: We consume PSM
+		   Contexts even in the case of only local
+		   communication. You could use PSP_PSM=0 in this
+		   case.
+		*/
+		if (pspsm_open_endpoint()) goto err_ep;
+		if (pspsm_init_mq()) goto err_mq;
+
+		pspsm_dprint(2, "pspsm_init: OK");
+		init_state = PSPSM_INIT_DONE;
+	}
+	return init_state; /* 0 = success, -1 = error */
+err_init:
 	pspsm_err(psm_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_init: %s", pspsm_err_str);
-	return -1;
+	// Fall through
+ err_ep:
+ err_mq:
+	init_state = PSPSM_INIT_FAILED;
+	return init_state; /* 0 = success, -1 = error */
 }
 
 
@@ -773,4 +798,6 @@ void pspsm_con_get_info_msg(pspsm_con_info_t *con_info,
 {
 	info_msg->epid = pspsm_epid;
 	info_msg->id = con_info->recv_id;
+	memcpy(info_msg->protocol_version, PSPSM_PROTOCOL_VERSION,
+	       sizeof(info_msg->protocol_version));
 }

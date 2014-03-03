@@ -194,7 +194,6 @@ void hello_received(pscom_request_t *req)
 static
 void do_accept(pscom_connection_t *con)
 {
-	pscom_err_t rc;
 	if (connections_received == arg_np) {
 		printf("Reject connection from %s\n", pscom_con_info_str(&con->remote_con_info));
 		pscom_close_connection(con);
@@ -300,7 +299,6 @@ void bcast_test2(unsigned xlen, unsigned buflen, unsigned groot)
 int main(int argc, char **argv)
 {
 	pscom_socket_t *sock_srv;
-	pscom_connection_t *con;
 	pscom_err_t rc;
 
 	parse_opt(argc, argv);
@@ -413,7 +411,7 @@ int main(int argc, char **argv)
 
 	/******************************************************
 	  my_rank		: my rank
-          connections_client[0:arg_np] : all client connections
+	  connections_client[0:arg_np] : all client connections
 	  sock_client           : socket of all connections
 	*/
 

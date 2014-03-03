@@ -310,7 +310,7 @@ void run_server()
 //printf("Bye %s\n", dumpstr(buf, len));
 //sleep(100);
 //exit(1);
-        if (len > 0) {
+	if (len > 0) {
 	    sock_send(sock, src, buf, len);
 	} else {
 	    ioctl(sock, P4_CLOSE_CON, src);
@@ -375,8 +375,6 @@ void run_client()
     for (i = 0; i < arg_cnt; i++) {
 	uint16_t dest = conid;
 	uint16_t src;
-	struct msghdr hdr;
-	struct iovec iov;
 	int len;
 
 	len = sock_send(sock, dest, buf, arg_size);

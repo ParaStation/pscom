@@ -211,8 +211,6 @@ int run_pp_c(PSP_PortH_t porth, int conid, int msize, int xsize, int loops)
     int cnt;
     void *sbuf = malloc(msize);
     void *rbuf = malloc(msize);
-    int ret;
-    PSP_RequestH_t sreq;
     PSP_RequestH_t rreq;
     struct {
 	PSP_Header_t head_psp;
@@ -226,8 +224,8 @@ int run_pp_c(PSP_PortH_t porth, int conid, int msize, int xsize, int loops)
 	    sheader.xhead[cnt] = cnt + 1;
 
     for (cnt = 0; cnt < loops; cnt++) {
-	sreq = PSP_ISend(porth, sbuf, msize,
-			 &sheader.head_psp, xsize, conid, 0);
+	PSP_ISend(porth, sbuf, msize,
+		  &sheader.head_psp, xsize, conid, 0);
 
 //	printf("SEND %d data :%s\n", msize,
 //	       dumpstr(sbuf, MIN(msize, 16)));
@@ -237,7 +235,6 @@ int run_pp_c(PSP_PortH_t porth, int conid, int msize, int xsize, int loops)
 	PSP_Wait(porth, rreq);
     }
 
- err_io:
     free(sbuf);
     free(rbuf);
     return 0;

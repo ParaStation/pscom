@@ -37,8 +37,8 @@ typedef struct hca_info hca_info_t;
 
 // contact endpoint info
 typedef struct psex_info_msg_s {
-	RMA2_Nodeid	nodeid;
-	RMA2_VPID	vpid;
+	RMA2_Nodeid	rma2_nodeid;
+	RMA2_VPID	rma2_vpid;
 	RMA2_NLA	rbuf_nla;
 } psex_info_msg_t;
 
@@ -69,7 +69,7 @@ psex_con_info_t *psex_con_create(void);
 void	psex_con_free(psex_con_info_t *con_info);
 
 
-int	psex_con_init(psex_con_info_t *con_info, hca_info_t *hca_info);
+int	psex_con_init(psex_con_info_t *con_info, hca_info_t *hca_info, void *priv);
 int	psex_con_connect(psex_con_info_t *con_info, psex_info_msg_t *info_msg);
 void	psex_con_cleanup(psex_con_info_t *con_info);
 

@@ -190,8 +190,6 @@ char *pspsm_uuid_str(psm_uuid_t uuid)
 static
 void pspsm_init_bufs(void)
 {
-	int rc;
-
 	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xee;
 	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xee;
 
@@ -219,7 +217,6 @@ static
 void pspsm_connect(void)
 {
 	psm_error_t ret;
-	uint64_t timeout = 20 * SEC_IN_NS;
 	psm_error_t errors[1];
 
 	ret = psm_ep_connect(my_ep, 1, &remote_epid, NULL, errors,
@@ -344,9 +341,6 @@ static inline
 unsigned pspsm_recv(void)
 {
 	psm_error_t ret;
-
-	uint32_t mlen;
-	int rlen;
 	psm_mq_req_t req;
 	psm_mq_status_t status;
 

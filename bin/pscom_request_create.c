@@ -60,7 +60,7 @@ int main(int argc, char **argv)
 	unsigned cnt = 1000;
 	unsigned loop = 10;
 
-	unsigned long t1, t2;
+	unsigned long t1;
 
 	printf("cnt\tusec\n");
 	while (loop--) {

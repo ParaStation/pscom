@@ -15,6 +15,7 @@
 #include "pscom_io.h"
 #include "pslib.h"
 #include <stdlib.h>
+#include <errno.h>
 
 static
 void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
@@ -211,10 +212,12 @@ pscom_err_t pscom_listen(pscom_socket_t *_socket, int portno)
 		struct sockaddr_in sa;
 		unsigned int size;
 		int listen_fd;
+		int retry_cnt = 0;
 
 		if (sock->pub.listen_portno != -1)
 			goto err_already_listening;
 
+	retry_listen:
 		listen_fd = socket(PF_INET, SOCK_STREAM, 0);
 		if (listen_fd < 0) goto err_socket;
 
@@ -235,8 +238,18 @@ pscom_err_t pscom_listen(pscom_socket_t *_socket, int portno)
 		if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0)
 			goto err_getsockname;
 
-		if (listen(listen_fd, pscom.env.tcp_backlog) < 0)
+		if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
+			if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
+				// Yes, this happens on 64 core machines. bind() rarely assign the same portno twice.
+				retry_cnt++; // Print warning every 10th retry, or with PSP_DEBUG >= 1
+				DPRINT((retry_cnt % 10 == 0) ? 0 : 1,
+				       "listen(port %d): Address already in use", (int)ntohs(sa.sin_port));
+				close(listen_fd);
+				sleep(1);
+				goto retry_listen;
+			}
 			goto err_listen;
+		}
 
 		sock->pub.listen_portno = ntohs(sa.sin_port);
 		pscom_listener_set_fd(&sock->listen, listen_fd);
@@ -245,9 +258,19 @@ pscom_err_t pscom_listen(pscom_socket_t *_socket, int portno)
 
 		/* error code */
 		if (0) {
-		err_listen:
-		err_getsockname:
-		err_bind:
+			switch (0) {
+			case -1:;
+			err_getsockname:
+				DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+				break;
+			err_listen:
+				DPRINT(1, "listen(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+				break;
+			err_bind:
+				DPRINT(1, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+				break;
+			}
+
 			close(listen_fd);
 		err_socket:
 			ret = PSCOM_ERR_STDERROR;

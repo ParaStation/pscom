@@ -497,8 +497,6 @@ int main(int argc, char **argv)
 
 	case 0:
 	default:{
-		int pid;
-
 		if (arg_verbose) fprintf(stderr, "run as server AND client.\n");
 		if (fork()) {
 			arg_one_connection = 1;

@@ -98,10 +98,7 @@ void init_final(void)
     };
     char *libdirs[] = {
 	"",
-#if defined( __x86_64 )
-	"/opt/parastation/lib64/",
-#endif
-	"/opt/parastation/lib/",
+	LIBDIR,
 	NULL
     };
     char **ln_p;

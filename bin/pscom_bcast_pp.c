@@ -187,7 +187,6 @@ void do_pp(pscom_connection_t *con_server, pscom_connection_t *con_client,
 	double throuput;
 	unsigned int msgsize;
 	double ms;
-	int res;
 	double loops = arg_loops;
 
 	if (arg_xheader > MAX_XHEADER) arg_xheader = MAX_XHEADER;

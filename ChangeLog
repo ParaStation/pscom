@@ -1,3 +1,16 @@
+2013-05-23  Jens Hauke  <hauke@par-tec.com>	-	5.0.41-1
+
+	* Update the buildsystem to automake 1.12.2
+
+	* Fix: Workaround for failing pscom_listen(PSCOM_ANYPORT) with
+	EADDRINUSE.
+
+	* Fix: Workaround for a race in the QLOGIC libpsm infinipath stack
+	(pscom4psm)
+
+	* Fix: Hanging Extoll connections under heavy load (progress
+	engine of pscom4extoll).
+
 2012-08-27  Jens Hauke  <hauke@par-tec.com>	-	5.0.40-1
 
 	* Feature: Terminate all ib connections on wrong cq opcodes.

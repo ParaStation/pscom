@@ -512,7 +512,6 @@ int main(int argc, char **argv)
 {
     char *buf, *buf2;
     PSP_PortH_t porth;
-    PSP_Header_t head;
 
     command_name = argv[0];
 

@@ -21,8 +21,6 @@
 #include "pscom.h"
 #include "pscom_priv.h"
 
-#define OFED 1
-
 #ifndef OFED
 #include "psoib.c"
 #else
