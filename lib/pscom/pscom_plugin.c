@@ -39,6 +39,10 @@ unsigned int pscom_plugin_uprio(const char *arch)
 {
 	char env_name[100];
 	unsigned res;
+#define ENV_EX_UNSET ((unsigned)~0U)
+	static int env_extoll_initialized = 0;
+	static unsigned env_extoll;
+	static unsigned env_velo;
 
 	strcpy(env_name, ENV_ARCH_PREFIX);
 	strcat(env_name, arch);
@@ -63,6 +67,33 @@ unsigned int pscom_plugin_uprio(const char *arch)
 		   !getenv(ENV_ARCH_NEW_P4S) && getenv(ENV_ARCH_OLD_P4S)) {
 		/* old style p4s var */
 		pscom_env_get_uint(&res, ENV_ARCH_OLD_P4S);
+	} else if ((strcmp(env_name, ENV_ARCH_PREFIX "EXTOLL") == 0) ||
+		   (strcmp(env_name, ENV_ARCH_PREFIX "VELO") == 0)) {
+		/* Extoll rma or velo? */
+		if (!env_extoll_initialized) {
+			env_extoll_initialized = 1;
+
+			env_velo = ENV_UINT_AUTO;
+			pscom_env_get_uint(&env_velo, ENV_ARCH_PREFIX "VELO");
+
+			env_extoll = (env_velo == 0 || env_velo == ENV_UINT_AUTO) ? 1 : 0;
+			pscom_env_get_uint(&env_extoll, ENV_ARCH_PREFIX "EXTOLL");
+
+			if (env_velo == ENV_UINT_AUTO) {
+				env_velo = env_extoll ? 0 : 1;
+			}
+			if (env_extoll && env_velo) {
+				DPRINT(1, "'" ENV_ARCH_PREFIX "VELO' and '"
+				       ENV_ARCH_PREFIX "EXTOLL' are mutually exclusive! Disabling '"
+				       ENV_ARCH_PREFIX "VELO'");
+				env_velo = 0;
+			}
+		}
+		if ((strcmp(env_name, ENV_ARCH_PREFIX "EXTOLL") == 0)) {
+			res = env_extoll;
+		} else {
+			res = env_velo;
+		}
 	} else {
 		pscom_env_get_uint(&res, env_name);
 	}
@@ -258,6 +289,7 @@ void pscom_plugins_init(void)
 		"gm",
 		"elan",
 		"extoll",
+		"velo",
 		"dapl",
 		NULL };
 	char **tmp;

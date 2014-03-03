@@ -43,7 +43,11 @@ void pscom_env_get_uint(unsigned int *val, const char *name)
 		*val = atoi(aval);
 		DPRINT(1, "set %s = %u", name, *val);
 	} else {
-		DPRINT(2, "default %s = %u", name, *val);
+		if (*val != ENV_UINT_AUTO) {
+			DPRINT(2, "default %s = %u", name, *val);
+		} else {
+			DPRINT(2, "default %s = auto", name);
+		}
 	}
 	pscom_info_set_uint(name, *val);
 }

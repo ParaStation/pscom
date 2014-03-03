@@ -187,6 +187,12 @@ lib/pscom4psm/Makefile.am \
 lib/pscom4psm/Makefile.in \
 lib/pscom4psm/pscom_psm.c \
 lib/pscom4psm/pscom_psm.h \
+lib/pscom4velo/Makefile.am \
+lib/pscom4velo/Makefile.in \
+lib/pscom4velo/pscom_extoll.c \
+lib/pscom4velo/pscom_extoll.h \
+lib/pscom4velo/psextoll.c \
+lib/pscom4velo/psextoll.h \
 lib/psport4/Makefile.am \
 lib/psport4/Makefile.in \
 lib/psport4/getid.c \

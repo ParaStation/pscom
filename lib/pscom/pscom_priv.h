@@ -337,6 +337,7 @@ extern pscom_t pscom;
 #define PSCOM_ARCH_OFED		112
 #define PSCOM_ARCH_EXTOLL	113
 #define PSCOM_ARCH_PSM		114
+#define PSCOM_ARCH_VELO		115
 
 
 #define PSCOM_TCP_PRIO		2

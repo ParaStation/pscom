@@ -117,6 +117,7 @@
 /* make progress every count itteration in iprobe */
 #define ENV_IPROBE_COUNT "PSP_IPROBE_COUNT"
 
+#define ENV_UINT_AUTO ((unsigned)~0U)
 
 struct PSCOM_env {
 	int		debug;

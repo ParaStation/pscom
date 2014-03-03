@@ -1,3 +1,8 @@
+2013-06-20  Jens Hauke  <hauke@par-tec.com>	-	5.0.42-1
+
+	* Feature: Extended Extoll VELO support. Use PSP_VELO=1 to use
+	velo instead of rma.
+
 2013-05-23  Jens Hauke  <hauke@par-tec.com>	-	5.0.41-1
 
 	* Update the buildsystem to automake 1.12.2

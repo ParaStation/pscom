@@ -12591,6 +12591,8 @@ ac_config_files="$ac_config_files lib/pscom4elan/Makefile"
 
 ac_config_files="$ac_config_files lib/pscom4extoll/Makefile"
 
+ac_config_files="$ac_config_files lib/pscom4velo/Makefile"
+
 ac_config_files="$ac_config_files lib/pscom4gm/Makefile"
 
 ac_config_files="$ac_config_files lib/pscom4ofed/Makefile"
@@ -13677,6 +13679,7 @@ do
     "lib/pscom4dapl/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4dapl/Makefile" ;;
     "lib/pscom4elan/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4elan/Makefile" ;;
     "lib/pscom4extoll/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4extoll/Makefile" ;;
+    "lib/pscom4velo/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4velo/Makefile" ;;
     "lib/pscom4gm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4gm/Makefile" ;;
     "lib/pscom4ofed/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4ofed/Makefile" ;;
     "lib/pscom4openib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4openib/Makefile" ;;

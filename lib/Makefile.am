@@ -30,6 +30,7 @@ endif
 # -- extoll --
 if EXTOLL_ENABLED
     SUBDIRS += pscom4extoll
+    SUBDIRS += pscom4velo
 endif
 
 # - gm -
