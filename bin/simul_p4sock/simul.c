@@ -216,50 +216,50 @@ int maxsqsize = 10000;
 
 
 conn_t con1 = {
-    SStart:	0,
-    SSeqNo:	0,
-    SAckNo:	-1,
-    SUntil:	-1,
-    SWindow:	0,
-    SWindowHack: 0,
-    Sacks_waiting: 0,
-    dev_SendQsize: 0,
-    RStart:	0,
-    RSeqNo:	0,
-    RWindow:	0,
-    Racks_waiting: 0,
-    Rresend:	0,
-    _userwantsenduntil : 0,
-    _userwantrecvuntil : 0,
-    _timerack : {0,0,0,0},
-    _sendbusyuntil : 0,
-    remote:	NULL,
-    pipesize:	0,
-    conname: "conn1"
+    .SStart = 	0,
+    .SSeqNo = 	0,
+    .SAckNo = 	-1,
+    .SUntil = 	-1,
+    .SWindow = 	0,
+    .SWindowHack =  0,
+    .Sacks_waiting =  0,
+    .dev_SendQsize =  0,
+    .RStart = 	0,
+    .RSeqNo = 	0,
+    .RWindow = 	0,
+    .Racks_waiting =  0,
+    .Rresend = 	0,
+    ._userwantsenduntil  =  0,
+    ._userwantrecvuntil  =  0,
+    ._timerack  =  {0,0,0,0},
+    ._sendbusyuntil  =  0,
+    .remote = 	NULL,
+    .pipesize = 0,
+    .conname =  "conn1"
 };
 
 conn_t con2 = {
-    SStart:	0,
-    SSeqNo:	0,
-    SAckNo:	-1,
-    SUntil:	-1,
-    SWindow:	0,
-    SWindowHack: 0,
-    Sacks_waiting: 0,
-    dev_SendQsize: 0,
+    .SStart = 	0,
+    .SSeqNo = 	0,
+    .SAckNo = 	-1,
+    .SUntil = 	-1,
+    .SWindow = 	0,
+    .SWindowHack =  0,
+    .Sacks_waiting =  0,
+    .dev_SendQsize =  0,
 
-    RStart:	0,
-    RSeqNo:	0,
-    RWindow:	0,
-    Racks_waiting: 0,
-    Rresend:	0,
-    _userwantsenduntil : 0,
-    _userwantrecvuntil : 0,
-    _timerack : {0,0,0,0},
-    _sendbusyuntil : 0,
-    remote:	NULL,
-    pipesize:	0,
-    conname: "conn2"
+    .RStart = 	0,
+    .RSeqNo = 	0,
+    .RWindow = 	0,
+    .Racks_waiting =  0,
+    .Rresend = 	0,
+    ._userwantsenduntil  =  0,
+    ._userwantrecvuntil  =  0,
+    ._timerack  =  {0,0,0,0},
+    ._sendbusyuntil  =  0,
+    .remote = 	NULL,
+    .pipesize = 0,
+    .conname =  "conn2"
 };
 
 
@@ -387,7 +387,7 @@ void netrecvack(conn_t *conn, long param)
 void netsendack(conn_t *conn)
 {
     msg_t msg;
-    long *ack = (long *)malloc(sizeof(long *) * 3);
+    long *ack = (long *)malloc(sizeof(long) * 3);
 
     ack[0] = conn->RSeqNo - 1;
     ack[1] = conn->RStart + maxrecvqsize;
@@ -405,6 +405,7 @@ void netsendack(conn_t *conn)
     print_coninfo(conn, "sack");
 
     conn->Racks_waiting = 0;
+    free(ack);
 }
 
 void timer_netsendack(unsigned long data)

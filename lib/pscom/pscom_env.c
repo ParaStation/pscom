@@ -13,6 +13,7 @@
 #include "pscom_env.h"
 #include <stdlib.h>
 #include "pscom_priv.h"
+#include "vc_version.h"
 #include "pslib.h"
 
 char *(*pscom_env_get)(const char *name) = getenv;
@@ -106,7 +107,7 @@ void pscom_env_init(void)
 		if (pscom.env.info) pscom_info_connect(pscom.env.info);
 	}
 
-	DPRINT(1,"# Version(PSCOM): %s", __DATE__);
+	DPRINT(1,"# Version(PSCOM): %s (%s)", __DATE__, VC_VERSION);
 	pscom_env_get_uint(&pscom.env.so_sndbuf, ENV_SO_SNDBUF);
 	pscom_env_get_uint(&pscom.env.so_rcvbuf, ENV_SO_RCVBUF);
 	pscom_env_get_int(&pscom.env.tcp_nodelay, ENV_TCP_NODELAY);

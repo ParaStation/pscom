@@ -106,7 +106,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libpscom4psm_la_DEPENDENCIES =
+libpscom4psm_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
 am_libpscom4psm_la_OBJECTS = libpscom4psm_la-pscom_psm.lo
 libpscom4psm_la_OBJECTS = $(am_libpscom4psm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -313,6 +313,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 	-I$(top_srcdir)/lib/pscom
+VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
 sed_verbose_0 = @echo "  SED   " $(@F);
@@ -338,7 +339,7 @@ lib_LTLIBRARIES = libpscom4psm.la
 libpscom4psm_la_SOURCES = pscom_psm.c pscom_psm.h
 libpscom4psm_la_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
 libpscom4psm_la_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
-libpscom4psm_la_LIBADD = -lpsm_infinipath
+libpscom4psm_la_LIBADD = -lpsm_infinipath $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:

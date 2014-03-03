@@ -160,7 +160,7 @@ void do_sending()
 {
 #define SENDBUFLEN 0
     PSP_PortH_t ph;
-    char *sendbuf = (char *) malloc(SENDBUFLEN);
+    char *sendbuf = (char *) malloc(SENDBUFLEN + 1);
     PSP_RequestH_t rh;
     struct {
 	PSP_Header_t phead;
@@ -199,6 +199,9 @@ void do_sending()
 	//usleep(5000000);
     }
     printf("Byee\n");
+
+    free(sendbuf);
+
     return;
 
  err_connect:

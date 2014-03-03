@@ -106,7 +106,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libpscom4velo_la_DEPENDENCIES =
+libpscom4velo_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
 am_libpscom4velo_la_OBJECTS = libpscom4velo_la-pscom_extoll.lo \
 	libpscom4velo_la-psextoll.lo
 libpscom4velo_la_OBJECTS = $(am_libpscom4velo_la_OBJECTS)
@@ -314,6 +314,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 	-I$(top_srcdir)/lib/pscom
+VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
 sed_verbose_0 = @echo "  SED   " $(@F);
@@ -339,7 +340,7 @@ lib_LTLIBRARIES = libpscom4velo.la
 libpscom4velo_la_SOURCES = pscom_extoll.c pscom_extoll.h psextoll.c psextoll.h
 libpscom4velo_la_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 libpscom4velo_la_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
-libpscom4velo_la_LIBADD = -lrma2 -lvelo2
+libpscom4velo_la_LIBADD = -lrma2 -lvelo2 $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:

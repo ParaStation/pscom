@@ -106,7 +106,8 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libpscom4openib_la_DEPENDENCIES =
+libpscom4openib_la_DEPENDENCIES =  \
+	$(top_builddir)/lib/pscom/libpscom.la
 am_libpscom4openib_la_OBJECTS = libpscom4openib_la-pscom_openib.lo \
 	libpscom4openib_la-psoib.lo
 libpscom4openib_la_OBJECTS = $(am_libpscom4openib_la_OBJECTS)
@@ -314,6 +315,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 	-I$(top_srcdir)/lib/pscom
+VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
 sed_verbose_0 = @echo "  SED   " $(@F);
@@ -339,7 +341,7 @@ lib_LTLIBRARIES = libpscom4openib.la
 libpscom4openib_la_SOURCES = pscom_openib.c pscom_openib.h psoib.c psoib.h
 libpscom4openib_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENIB_CPPFLAGS)
 libpscom4openib_la_LDFLAGS = $(AM_LDFLAGS) $(OPENIB_LDFLAGS)
-libpscom4openib_la_LIBADD = -libverbs
+libpscom4openib_la_LIBADD = -libverbs $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:

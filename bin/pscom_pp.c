@@ -221,7 +221,7 @@ int run_pp_c_histo(pscom_connection_t *con, int msize, int xsize, int loops)
 	int cnt;
 	void *sbuf = malloc(msize);
 	void *rbuf = malloc(msize);
-	unsigned long *time = malloc(sizeof(*time) * loops);
+	unsigned long *time = malloc(sizeof(*time) * loops + 1);
 
 	int ret;
 	pscom_request_t *sreq;
@@ -287,7 +287,7 @@ void do_pp_client(pscom_connection_t *con)
 	printf("Xheader : %d bytes\n", arg_xheader);
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
-	for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
+	for (ms = 1.4142135; (int)(ms + 0.5) <= arg_maxmsize; ms = ms * 1.4142135) {
 		unsigned int iloops = loops;
 		msgsize = ms + 0.5;
 

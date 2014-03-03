@@ -20,4 +20,4 @@ lib_LTLIBRARIES = libpscom4ofed.la
 libpscom4ofed_la_SOURCES = pscom_ofed.c pscom_ofed.h psofed.c psofed.h
 libpscom4ofed_la_CPPFLAGS = $(AM_CPPFLAGS) $(OFED_CPPFLAGS)
 libpscom4ofed_la_LDFLAGS = $(AM_LDFLAGS) $(OFED_LDFLAGS)
-libpscom4ofed_la_LIBADD = -libverbs
+libpscom4ofed_la_LIBADD = -libverbs $(top_builddir)/lib/pscom/libpscom.la

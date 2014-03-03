@@ -96,7 +96,7 @@ static char *getNLFromNodes(const char *nl_descr)
 	    memset(ret, 1, PSC_getNrOfNodes());
 	}
     } else {
-        char *tmp_descr = strdup(nl_descr);
+	char *tmp_descr = strdup(nl_descr);
 	if (!tmp_descr) {
 	    fprintf(stderr, "%s: no memory\n", __func__);
 	    ret = NULL;
@@ -394,9 +394,12 @@ int cmp_client_entry(const void *_arg1, const void *_arg2)
 
 int assign_clients(PSP_PortH_t porth, int cnt)
 {
-    client_entry_t *clients = malloc(sizeof(client_entry_t) * cnt);
-    int i;
+    client_entry_t *clients;
+    int i, ret;
 
+    if (cnt <= 0) return -1;
+
+    clients = malloc(sizeof(client_entry_t) * cnt);
     for (i = 0; i < cnt; i++) {
 	struct {
 	    PSP_Header_t head_psp;
@@ -450,7 +453,11 @@ int assign_clients(PSP_PortH_t porth, int cnt)
 	PSP_Wait(porth, req);
     }
 
-    return cnt > 0 ? clients[cnt - 1].con_id : -1;
+    ret = clients[cnt - 1].con_id;
+
+    free(clients);
+
+    return ret;
 }
 
 
@@ -766,6 +773,9 @@ void doServer(void)
     // Send eof:
     ps_send(&sinfo, NULL, 0);
     ps_send_close(&sinfo);
+
+    free(buf);
+    free(buf2);
 }
 
 void doClient(void)
@@ -831,6 +841,8 @@ void doClient(void)
     }
     ps_recv_close(&rinfo);
     ps_send_close(&sinfo);
+    free(buf2);
+    free(buf);
 }
 
 int main(int argc, char **argv)

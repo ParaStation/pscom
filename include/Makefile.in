@@ -267,6 +267,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include
+VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
 sed_verbose_0 = @echo "  SED   " $(@F);
@@ -301,9 +302,12 @@ configdir = $(prefix)/config
 # Author:       Thomas Moschny <moschny@par-tec.com>
 #
 include_HEADERS = pscom.h psport4.h
-noinst_HEADERS = gm_compat.h p4io.h p4log.h p4sockets.h psockt.h	\
-	ps_perf.h
 
+# ---- vc_version.h ----
+#
+noinst_HEADERS = gm_compat.h p4io.h p4log.h p4sockets.h psockt.h \
+	ps_perf.h vc_version.h
+CLEANFILES = vc_version.h
 all: all-am
 
 .SUFFIXES:
@@ -491,6 +495,7 @@ install-strip:
 mostlyclean-generic:
 
 clean-generic:
+	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -595,6 +600,17 @@ uninstall-am: uninstall-includeHEADERS
 	-r "$(PACKAGE_NAME)-$(PACKAGE_VERSION)" \
 	-v "ParaStation" $(TXT2MAN_KEYWORDS) \
 	$< > $@
+
+.PHONY: vc_version.h
+
+# modify vc_version.h only if $(VC_VERSION) has changed:
+vc_version.h:
+	@echo "#define VC_VERSION \"$(VC_VERSION)\"" > $@~
+	@if cmp -s "$@~" "$@"; then \
+		rm $@~; \
+	else \
+		mv $@~ $@; \
+	fi;
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

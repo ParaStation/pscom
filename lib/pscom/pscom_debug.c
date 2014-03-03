@@ -49,6 +49,9 @@ enum MPID_PSP_MSGTYPE {
 
 	MPID_PSP_MSGTYPE_RMA_UNLOCK_REQUEST,
 	MPID_PSP_MSGTYPE_RMA_UNLOCK_ANSWER,
+
+	MPID_PSP_MSGTYPE_DATA_CANCELLED,          /* Data message that should be cancelled */
+	MPID_PSP_MSGTYPE_MPROBE_RESERVED_REQUEST  /* Message that has been reserved by mprobe */
 };
 
 /* from mpid/psp/src/mpid_debug.c */
@@ -72,6 +75,8 @@ const char *mpid_msgtype_str(enum MPID_PSP_MSGTYPE msg_type)
 	case MPID_PSP_MSGTYPE_RMA_LOCK_ANSWER:	return "RMA_LOCK_ANSWER";
 	case MPID_PSP_MSGTYPE_RMA_UNLOCK_REQUEST: return "RMA_UNLOCK_REQUEST";
 	case MPID_PSP_MSGTYPE_RMA_UNLOCK_ANSWER: return "RMA_UNLOCK_ANSWER";
+	case MPID_PSP_MSGTYPE_DATA_CANCELLED:	return "DATA_CANCELLED";
+	case MPID_PSP_MSGTYPE_MPROBE_RESERVED_REQUEST: return "MPROBE_RESERVED_REQUEST";
 	}
 	return "UNKNOWN";
 }

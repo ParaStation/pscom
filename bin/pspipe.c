@@ -683,6 +683,9 @@ int main(int argc, char **argv)
 	print_stat(1);
     }
 
+    free(buf);
+    free(buf2);
+
     return 0;
     /* --- */
  err_psp_init:

@@ -14,7 +14,7 @@ include $(top_srcdir)/common.am
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = lib bin include doc scripts
+SUBDIRS = include lib bin doc scripts
 
 EXTRA_DIST = .gitignore lib/bcast
 EXTRA_DIST += dist/.gitignore dist/Makefile dist/Makefile.sources	\
@@ -22,22 +22,20 @@ EXTRA_DIST += dist/.gitignore dist/Makefile dist/Makefile.sources	\
 
 dist_doc_DATA = LICENSE.QPL ChangeLog
 
-PKG_VER := $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
-
 # ---- VERSION.pscom ----
 #
 nodist_doc_DATA = VERSION.pscom
 
 .PHONY: VERSION.pscom
 VERSION.pscom:
-	@echo "$(PACKAGE_NAME) $(PKG_VER) ($(shell LC_ALL=C date))" > $@
+	@echo "$(PACKAGE_NAME) $(VC_VERSION) ($(shell LC_ALL=C date))" > $@
 
 CLEANFILES = VERSION.pscom
 
 # ---- VERSION ----
 #
 dist-hook:
-	@echo "$(PKG_VER)" > $(top_distdir)/VERSION
+	@echo "$(VC_VERSION)" > $(top_distdir)/VERSION
 
 # ---- proxy to dist/Makefile
 #

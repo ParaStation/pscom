@@ -197,6 +197,8 @@ void print_list_sort(int *ilist,int size)
 	}
     }
     print_list(silist,sisize);
+
+    free(silist);
 }
 
 int answer_equal(int i,int j)

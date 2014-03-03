@@ -390,7 +390,7 @@ void run_client()
 //printf("Bye %s\n", dumpstr(buf, arg_size));
 //sleep(100);
 //exit(1);
-	len = sock_recv(sock, &src, buf, arg_size);
+	/*len = */sock_recv(sock, &src, buf, arg_size);
     }
 
     t2 = getusec();
@@ -401,6 +401,8 @@ void run_client()
 
 //    printf("Sleep...\n");
 //    sleep(5);
+    free(buf);
+
     return;
  err_socket:
     perror("socket()");

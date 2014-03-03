@@ -443,8 +443,8 @@ static
 int pscom_info_recv(int fd, unsigned *type, unsigned *size, void **data)
 {
 	int err = 0;
-	uint32_t ntype;
-	uint32_t nsize;
+	uint32_t ntype = 0;
+	uint32_t nsize = 0;
 
 	err = err || pscom_readall(fd, &ntype, sizeof(ntype)) != sizeof(ntype);
 	err = err || pscom_readall(fd, &nsize, sizeof(nsize)) != sizeof(nsize);

@@ -167,7 +167,7 @@ int pscom_parse_socket_ondemand_str(const char *socket_str, int *nodeid, int *po
 	if (nodeid) *nodeid = (int) ntohl(sock.sin_addr.s_addr);
 	if (portno) *portno = (int) ntohs(sock.sin_port);
 	if (name) {
-		memset(name, 0, sizeof(name));
+		memset(name, 0, sizeof(*name));
 		if (nametok) {
 			strncpy(*name, nametok, sizeof(*name));
 		}

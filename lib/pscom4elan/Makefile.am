@@ -20,4 +20,4 @@ lib_LTLIBRARIES = libpscom4elan.la
 libpscom4elan_la_SOURCES = pscom_elan.c pscom_elan.h pselan.c pselan.h
 libpscom4elan_la_CPPFLAGS = $(AM_CPPFLAGS) $(ELAN_CPPFLAGS)
 libpscom4elan_la_LDFLAGS = $(AM_LDFLAGS) $(ELAN_LDFLAGS)
-libpscom4elan_la_LIBADD = -lelan
+libpscom4elan_la_LIBADD = -lelan $(top_builddir)/lib/pscom/libpscom.la

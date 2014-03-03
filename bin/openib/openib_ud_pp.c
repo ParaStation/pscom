@@ -147,8 +147,7 @@ unsigned long getusec(void)
 static
 void psoib_error(const char *msg)
 {
-	fprintf(stderr, msg);
-	fprintf(stderr, " : %s", psoib_err_str ? psoib_err_str : "???");
+	fprintf(stderr, "%s : %s", msg, psoib_err_str ? psoib_err_str : "???");
 	exit(1);
 }
 

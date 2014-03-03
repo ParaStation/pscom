@@ -14,6 +14,9 @@
  */
 
 #include "pscom_psm.h"
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 
 pscom_plugin_t pscom_plugin = {
@@ -423,6 +426,22 @@ void pspsm_err(const char *str)
 	return;
 }
 
+
+/* Check for one of the device files /dev/ipath, ipath0 or ipath1.
+   return 0 if at least one file is there, -1 else. */
+static
+int pspsm_check_dev_ipath(void)
+{
+	struct stat s;
+	int rc;
+	rc = stat("/dev/ipath", &s);
+	if (rc) rc = stat("/dev/ipath0", &s);
+	if (rc) rc = stat("/dev/ipath1", &s);
+
+	return rc;
+}
+
+
 static
 int pspsm_open_endpoint(void)
 {
@@ -590,6 +609,12 @@ int pspsm_init(void)
 	psm_error_t ret;
 
 	if (init_state == PSPSM_INIT_START) {
+		/* Check for an available /dev/ipath */
+		ret = pspsm_check_dev_ipath();
+		if (ret != 0) {
+			goto err_dev_ipath;
+		}
+
 		ret = psm_init(&verno_major, &verno_minor);
 		if (ret != PSM_OK) {
 			goto err_init;
@@ -636,12 +661,16 @@ int pspsm_init(void)
 		init_state = PSPSM_INIT_DONE;
 	}
 	return init_state; /* 0 = success, -1 = error */
+err_dev_ipath:
+	pspsm_dprint(2, "pspsm_init: No \"/dev/ipath\" found. Arch psm is disabled.");
+	goto err_exit;
 err_init:
 	pspsm_err(psm_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_init: %s", pspsm_err_str);
 	// Fall through
  err_ep:
  err_mq:
+err_exit:
 	init_state = PSPSM_INIT_FAILED;
 	return init_state; /* 0 = success, -1 = error */
 }

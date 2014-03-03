@@ -22,7 +22,7 @@
 #include "psport_shm.h"
 
 
-#if defined(__x86_64__) && !(defined(__KNF__) || defined(__MIC__))
+#if defined(__x86_64__) && !(defined(__KNC__) || defined(__MIC__))
 /* We need memory barriers only for x86_64 (?) */
 #define shm_mb()    asm volatile("mfence":::"memory")
 #elif defined(__ia64__)
@@ -324,6 +324,8 @@ int PSP_connect_shm(PSP_Port_t *port, PSP_Connection_t *con, int con_fd)
 	(msg.shm_id == -1))
 	goto err_remote;
 
+    shm.local_com = NULL;
+    shm.remote_com = NULL;
     err = shm_initrecv(&shm) || shm_initsend(&shm, msg.shm_id);
 
     /* step 3 : send shm_id or error */

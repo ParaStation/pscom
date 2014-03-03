@@ -469,6 +469,7 @@ void run_send()
 	}
     }
 //    sleep(10);
+    free(buf);
     return;
  err_socket:
     perror("socket()");

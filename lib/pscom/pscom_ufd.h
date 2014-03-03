@@ -57,12 +57,12 @@ void ufd_add(ufd_t *ufd, ufd_info_t *ufd_info);
 			void *priv);
 */
 void ufd_del(ufd_t *ufd, ufd_info_t *ufd_info);
-void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, int event);
-void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, int event);
+void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, int event) __attribute__((nonnull (1, 2)));
+void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, int event) __attribute__((nonnull (1, 2)));
 
 /* return associated pollfd from ufd_info. Return NULL if no event set
    with udf_event_set */
-struct pollfd *ufd_get_pollfd(ufd_t *ufd, ufd_info_t *ufd_info);
+struct pollfd *ufd_get_pollfd(ufd_t *ufd, ufd_info_t *ufd_info) __attribute__((nonnull (1, 2)));
 
 int ufd_poll(ufd_t *ufd, int timeout);
 

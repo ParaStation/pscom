@@ -108,7 +108,7 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libpscom4dapl_la_DEPENDENCIES =
+libpscom4dapl_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
 am_libpscom4dapl_la_OBJECTS = libpscom4dapl_la-pscom_dapl.lo \
 	libpscom4dapl_la-psdapl.lo
 libpscom4dapl_la_OBJECTS = $(am_libpscom4dapl_la_OBJECTS)
@@ -317,6 +317,7 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 	-I$(top_srcdir)/lib/pscom
+VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
 sed_verbose_0 = @echo "  SED   " $(@F);
@@ -343,7 +344,7 @@ libpscom4dapl_la_SOURCES = pscom_dapl.c pscom_dapl.h psdapl.c psdapl.h
 noinst_HEADERS = psdapl_rdma.c
 libpscom4dapl_la_CPPFLAGS = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)
 libpscom4dapl_la_LDFLAGS = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
-libpscom4dapl_la_LIBADD = -ldat
+libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:

@@ -13,6 +13,7 @@ include $(top_srcdir)/common.am
 
 AM_LDFLAGS += -avoid-version
 AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\"
+AM_CPPFLAGS += -I$(top_builddir)/include
 
 lib_LTLIBRARIES = libpscom.la
 

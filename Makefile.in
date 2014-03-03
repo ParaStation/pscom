@@ -342,6 +342,7 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 AM_CPPFLAGS = -I$(top_srcdir)/include
+VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
 sed_verbose_0 = @echo "  SED   " $(@F);
@@ -364,11 +365,10 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 # FIXME: non-standard
 configdir = $(prefix)/config
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = lib bin include doc scripts
+SUBDIRS = include lib bin doc scripts
 EXTRA_DIST = .gitignore lib/bcast dist/.gitignore dist/Makefile \
 	dist/Makefile.sources dist/pscom.spec.templ
 dist_doc_DATA = LICENSE.QPL ChangeLog
-PKG_VER := $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 
 # ---- VERSION.pscom ----
 #
@@ -934,12 +934,12 @@ uninstall-am: uninstall-dist_docDATA uninstall-nodist_docDATA
 
 .PHONY: VERSION.pscom
 VERSION.pscom:
-	@echo "$(PACKAGE_NAME) $(PKG_VER) ($(shell LC_ALL=C date))" > $@
+	@echo "$(PACKAGE_NAME) $(VC_VERSION) ($(shell LC_ALL=C date))" > $@
 
 # ---- VERSION ----
 #
 dist-hook:
-	@echo "$(PKG_VER)" > $(top_distdir)/VERSION
+	@echo "$(VC_VERSION)" > $(top_distdir)/VERSION
 
 # ---- proxy to dist/Makefile
 #

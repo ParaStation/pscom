@@ -1,3 +1,17 @@
+2014-01-09  Jens Hauke  <hauke@par-tec.com>	-	5.0.43-1
+
+	* Feature: Add 2 new mpi messages types for debug with
+	PSP_DEBUG_REQ=1.
+
+2013-12-19  Jens Hauke  <hauke@par-tec.com>
+
+	* Fix: loading of pscom plugins when used in a RTLD_LOCAL dlopen()
+	context.
+
+2013-07-11  Jens Hauke  <hauke@par-tec.com>
+
+	* Feature: Arch psm: Disable psm if /dev/ipath is not present.
+
 2013-06-20  Jens Hauke  <hauke@par-tec.com>	-	5.0.42-1
 
 	* Feature: Extended Extoll VELO support. Use PSP_VELO=1 to use
