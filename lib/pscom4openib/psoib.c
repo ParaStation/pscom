@@ -27,6 +27,9 @@
 #include <infiniband/verbs.h>
 
 #include "list.h"
+#ifndef IB_DONT_USE_ZERO_COPY
+#include "pscom_priv.h"
+#endif
 #include "pscom_util.h"
 #include "psoib.h"
 
@@ -49,13 +52,6 @@
    if SEND_NOTIFICATION is disabled */
 #define ENABLE_SEND_NOTIFICATION 1
 
-
-typedef struct {
-    void *ptr;
-    struct ibv_mr *mr;
-} mem_info_t;
-
-
 typedef struct {
     mem_info_t	bufs;
     unsigned	pos; /* current position */
@@ -72,8 +68,18 @@ struct hca_info {
 
     /* misc */
     struct list_head list_con_info; /* list of all psoib_con_info.next_con_info */
+
+#ifdef IB_USE_ZERO_COPY
+    /* RMA */
+    struct list_head rma_reqs; /* list of active RMA requests : psiob_rma_req_t.next */
+    struct pscom_poll_reader rma_reqs_reader; /* calling psoib_progress(). Used if !list_empty(rma_reqs) */
+#endif
 };
 
+#ifdef IB_USE_ZERO_COPY
+static int psoib_rma_reqs_progress(pscom_poll_reader_t *reader);
+static psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info);
+#endif
 
 struct port_info {
     unsigned int port_num;
@@ -764,6 +770,7 @@ void psoib_cleanup_hca(hca_info_t *hca_info)
     }
 }
 
+
 static
 int psoib_init_hca(hca_info_t *hca_info)
 {
@@ -805,6 +812,11 @@ int psoib_init_hca(hca_info_t *hca_info)
 	    goto err_alloc;
     }
     hca_info->send.pos = 0;
+
+#ifdef IB_USE_ZERO_COPY
+    INIT_LIST_HEAD(&hca_info->rma_reqs);
+    hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
+#endif
 
     return 0;
     /* --- */
@@ -1181,6 +1193,13 @@ int psoib_check_cq(hca_info_t *hca_info)
 			     wc.status, ibv_wc_status_str(wc.status));
 		con->con_broken = 1;
 	    }
+#ifdef IB_USE_ZERO_COPY
+	} else  if (wc.opcode == IBV_WC_RDMA_READ) {
+		psoib_rma_req_t *req;
+		/* Dequeue and finish request: */
+		req = psoib_rma_reqs_deq(hca_info);
+		req->io_done(req);
+#endif
 	} else {
 	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
 			 "ibv_poll_cq(): Infiniband returned the wrong Opcode %d", wc.opcode);
@@ -1237,3 +1256,219 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 	info_msg->remote_ptr = con_info->recv.bufs.ptr;
 	info_msg->remote_rkey = con_info->recv.bufs.mr->rkey;
 }
+
+
+
+/*
+ * ++ RMA rendezvous begin
+ */
+#ifdef IB_USE_ZERO_COPY
+
+static
+int psoib_poll(hca_info_t *hca_info, int blocking);
+
+#ifdef IB_USE_MREG_CACHE
+static psoib_rma_mreg_t psoib_rma_mreg_cache[IB_MREG_CACHE_SIZE];
+
+static void psoib_rma_mreg_cache_init()
+{
+	int i;
+
+	for(i=0; i<IB_MREG_CACHE_SIZE; i++) {
+		psoib_rma_mreg_cache[i].size = 0;
+		psoib_rma_mreg_cache[i].key  = 0;
+	}
+}
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	int hit;
+	static int first_call=1;
+	hca_info_t *hca_info = ci->hca_info;
+	mem_info_t *mem_info = &mreg->mem_info;
+
+	if(first_call) {
+		psoib_rma_mreg_cache_init();
+		first_call = 0;
+	}
+
+	for(hit=0; hit<IB_MREG_CACHE_SIZE; hit++) {
+		if( (psoib_rma_mreg_cache[hit].size == size) && (psoib_rma_mreg_cache[hit].mem_info.ptr == buf) ) {
+			break;
+		}
+	}
+
+	if(hit == IB_MREG_CACHE_SIZE) {
+
+		mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
+		if(!mem_info->mr) goto err_reg_mr;
+		assert(mem_info->mr); // ToDo: catch error
+
+		mem_info->ptr = buf;
+		mreg->key = mem_info->mr->rkey;
+		mreg->size = size;
+
+	}else {
+		(*mreg) = psoib_rma_mreg_cache[hit];
+	}
+
+	return 0; /* success */
+
+err_reg_mr:
+	mem_info->ptr = NULL;
+	psoib_err_errno("ibv_reg_mr() failed", errno);
+	if (errno == ENOMEM) print_mlock_help(size);
+	return -1;
+}
+
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	int hit;
+	static int last = -1;
+	mem_info_t *mem_info = &mreg->mem_info;
+
+	for(hit=0; hit<IB_MREG_CACHE_SIZE; hit++) {
+		if(psoib_rma_mreg_cache[hit].key == mreg->key) {
+			break;
+		}
+	}
+
+	if(hit == IB_MREG_CACHE_SIZE) {
+
+		last = (last + 1) % IB_MREG_CACHE_SIZE;
+
+		if(psoib_rma_mreg_cache[last].size != 0 &&  psoib_rma_mreg_cache[last].key != 0) {
+			mem_info_t *cached_mem_info = &psoib_rma_mreg_cache[last].mem_info;
+			ibv_dereg_mr(cached_mem_info->mr);
+		}
+
+		psoib_rma_mreg_cache[last].size = mreg->size;
+		psoib_rma_mreg_cache[last].key  = mreg->key;
+		psoib_rma_mreg_cache[last].mem_info = mreg->mem_info;
+	}
+
+	return 0; /* success */
+}
+
+#else
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	hca_info_t *hca_info = ci->hca_info;
+	mem_info_t *mem_info = &mreg->mem_info;
+
+	mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
+	if(!mem_info->mr) goto err_reg_mr;
+	assert(mem_info->mr); // ToDo: catch error
+
+	mem_info->ptr = buf;
+	mreg->key = mem_info->mr->rkey;
+	mreg->size = size;
+
+	return 0; /* success */
+
+err_reg_mr:
+	mem_info->ptr = NULL;
+	psoib_err_errno("ibv_reg_mr() failed", errno);
+	if (errno == ENOMEM) print_mlock_help(size);
+	return -1;
+}
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	mem_info_t *mem_info = &mreg->mem_info;
+
+	ibv_dereg_mr(mem_info->mr);
+
+	return 0; /* success */
+}
+#endif
+
+static
+void psoib_rma_reqs_enq(psoib_rma_req_t *req)
+{
+	hca_info_t *hca_info = req->ci->hca_info;
+	int first = list_empty(&hca_info->rma_reqs);
+
+	list_add_tail(&req->next, &hca_info->rma_reqs);
+
+	if (first) {
+		// Start polling for completer notifications
+		list_add_tail(&hca_info->rma_reqs_reader.next, &pscom.poll_reader);
+	}
+}
+
+static
+psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info)
+{
+	struct list_head *pos;
+	psoib_rma_req_t *req = NULL;
+
+	list_for_each(pos, &hca_info->rma_reqs) {
+		req = list_entry(pos, psoib_rma_req_t, next);
+		break;
+	}
+
+	list_del(&req->next);
+
+	if (list_empty(&hca_info->rma_reqs)) {
+		// Stop polling for completer notifications
+		list_del(&hca_info->rma_reqs_reader.next);
+	}
+
+	return req;
+}
+
+
+int psoib_post_rma_get(psoib_rma_req_t *req)
+{
+	int error;
+
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) req->mreg.mem_info.ptr,
+		.length = req->mreg.size,
+		.lkey	= req->mreg.mem_info.mr->rkey,
+	};
+	struct ibv_send_wr wr = {
+		.next	= NULL,
+		.wr_id	= (uint64_t)req->ci,
+		.sg_list	= &list,
+		.num_sge	= 1,
+		.opcode	= IBV_WR_RDMA_READ,
+		.send_flags	= (
+			(ENABLE_SEND_NOTIFICATION ? IBV_SEND_SIGNALED : 0) | /* no cq entry, if unsignaled */
+			((list.length <= IB_MAX_INLINE) ? IBV_SEND_INLINE : 0)),
+		.imm_data	= 42117,
+
+		.wr.rdma = {
+			.remote_addr = req->remote_addr,
+			.rkey = req->remote_key,
+		},
+	};
+
+	struct ibv_send_wr *bad_wr;
+
+	error = ibv_post_send(req->ci->qp, &wr, &bad_wr);
+	assert(!error);
+
+	// Enqueue this request and wait for notification via completion queue.
+	psoib_rma_reqs_enq(req);
+
+	psoib_poll(req->ci->hca_info, 0);
+
+	return 0;
+}
+
+static
+int psoib_rma_reqs_progress(pscom_poll_reader_t *reader)
+{
+	hca_info_t *hca_info = list_entry(reader, hca_info_t, rma_reqs_reader);
+
+	psoib_poll(hca_info, 0);
+
+	return 0;
+}
+#endif
+/*
+ * -- RMA rendezvous end
+ */

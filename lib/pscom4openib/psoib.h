@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/uio.h>
+#include "list.h"
 
 typedef struct psoib_con_info psoib_con_info_t;
 typedef struct hca_info hca_info_t;
@@ -31,6 +32,59 @@ typedef struct psoib_info_msg_s {
 	void		*remote_ptr; /* Info about receive buffers */
 	uint32_t	remote_rkey;
 } psoib_info_msg_t;
+
+
+typedef struct {
+    void *ptr;
+    struct ibv_mr *mr;
+} mem_info_t;
+
+#define IB_USE_ZERO_COPY
+#define IB_RNDV_THRESHOLD 1024
+#define IB_USE_MREG_CACHE
+#define IB_MREG_CACHE_SIZE 16
+
+#if defined(IB_USE_ZERO_COPY) && defined(IB_DONT_USE_ZERO_COPY)
+#undef IB_USE_ZERO_COPY
+#endif
+
+#if !defined(IB_USE_ZERO_COPY) && defined(IB_RMA_MREG_CACHE_SIZE)
+#undef IB_RMA_MREG_CACHE_SIZE
+#endif
+
+/*
+ * ++ RMA rendezvous
+ */
+#ifdef IB_USE_ZERO_COPY
+/* registered memory region. (Opaque object for users of psoib_get_rma_mreg() and psoib_put_rma_mreg()) */
+typedef struct psoib_rma_req psoib_rma_req_t;
+
+typedef struct psoib_rma_mreg {
+	mem_info_t      mem_info;
+	uint32_t        key;
+	size_t          size;
+} psoib_rma_mreg_t;
+
+
+/* rendezvous data for the rma get request */
+struct psoib_rma_req {
+	struct list_head next;
+	size_t		 data_len;
+	psoib_rma_mreg_t  mreg;
+	psoib_con_info_t *ci;
+	uint32_t        remote_key;
+	uint64_t        remote_addr;
+	void		(*io_done)(psoib_rma_req_t *req);
+	void		*priv;
+};
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
+int psoib_post_rma_get(psoib_rma_req_t *req);
+#endif
+/*
+ *  -- RMA rendezvous end
+ */
 
 
 int psoib_init(void);

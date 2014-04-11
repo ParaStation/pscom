@@ -24,6 +24,7 @@
 #include "psport_priv.h"
 #include "psport_openib.h"
 
+#define IB_DONT_USE_ZERO_COPY
 #include "../pscom4openib/psoib.c"
 
 

@@ -156,6 +156,10 @@ typedef struct pscom_rendezvous_msg {
 		struct {
 			uint64_t /* RMA2_NLA */		rma2_nla; /* Network logical address of the sender */
 		} extoll;
+		struct {
+			uint32_t mr_key;
+			uint64_t mr_addr;
+		} openib;
 	}	arch;
 } pscom_rendezvous_msg_t;
 
@@ -173,6 +177,12 @@ typedef struct _pscom_rendezvous_data_extoll {
 } _pscom_rendezvous_data_extoll_t;
 
 
+typedef struct _pscom_rendezvous_data_openib {
+	/* placeholder for struct pscom_rendezvous_data_openib */
+	char /* struct psiob_rma_req */ _rma_req[128]; /* ??? */
+} _pscom_rendezvous_data_openib_t;
+
+
 typedef struct pscom_rendezvous_data {
 	pscom_rendezvous_msg_t	msg;
 	int	use_arch_read;
@@ -180,6 +190,7 @@ typedef struct pscom_rendezvous_data {
 		pscom_rendezvous_data_shm_t	shm;
 		_pscom_rendezvous_data_dapl_t	dapl;
 		_pscom_rendezvous_data_extoll_t	extoll;
+		_pscom_rendezvous_data_openib_t openib;
 	}		arch;
 } pscom_rendezvous_data_t;
 
