@@ -823,7 +823,7 @@ int psoib_init_hca(hca_info_t *hca_info)
     INIT_LIST_HEAD(&hca_info->rma_reqs);
     hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
 #ifdef IB_USE_MREG_CACHE
-    psoib_mregion_cache_cleanup();
+    psoib_mregion_cache_init();
 #endif
 #endif
 
@@ -1332,6 +1332,7 @@ int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib
 		mregc->use_cnt = 1; /* shortcut for psoib_mregion_use_inc(mreg); */
 	}
 
+	*mreg = mregc->mregion;
 	mreg->mreg_cache = mregc;
 
 	return 0;

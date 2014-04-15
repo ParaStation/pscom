@@ -21,7 +21,7 @@ struct psoib_mregion_cache {
 } psoib_mregion_cache_t;
 
 
-unsigned psoib_mregion_cache_max_size = 6;
+unsigned psoib_mregion_cache_max_size = IB_MREG_CACHE_SIZE;
 static unsigned psoib_mregion_cache_size = 0;
 static LIST_HEAD(psoib_mregion_cache);
 
@@ -106,15 +106,15 @@ psoib_mregion_cache_t *psoib_mregion_create(void *buf, size_t size, psoib_con_in
 
 	mregc->use_cnt = 0;
 
+	err = psoib_rma_mreg_register(&mregc->mregion, buf, size, ci);
+	if (err) goto err_register;
+
 	/* dec buf and inc size to page_size borders. */
 	unsigned long page_mask = (psoib_page_size - 1);
 	size += ((unsigned long) buf) & page_mask;
 	size = (size + page_mask) & ~page_mask;
 	buf = (void*)((unsigned long) buf & ~page_mask);
 	
-	err = psoib_rma_mreg_register(&mregc->mregion, buf, size, ci);
-	if (err) goto err_register;
-
 	mregc->buf = buf;
 	mregc->size = size;
 	mregc->ci = ci;
