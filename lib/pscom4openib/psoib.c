@@ -768,6 +768,12 @@ void psoib_cleanup_hca(hca_info_t *hca_info)
 	ibv_close_device(hca_info->ctx);
 	hca_info->ctx = NULL;
     }
+
+#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_MREG_CACHE
+    psoib_mregion_cache_cleanup();
+#endif
+#endif
 }
 
 
@@ -816,6 +822,9 @@ int psoib_init_hca(hca_info_t *hca_info)
 #ifdef IB_USE_ZERO_COPY
     INIT_LIST_HEAD(&hca_info->rma_reqs);
     hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
+#ifdef IB_USE_MREG_CACHE
+    psoib_mregion_cache_cleanup();
+#endif
 #endif
 
     return 0;
@@ -1267,99 +1276,16 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 static
 int psoib_poll(hca_info_t *hca_info, int blocking);
 
-#ifdef IB_USE_MREG_CACHE
-static psoib_rma_mreg_t psoib_rma_mreg_cache[IB_MREG_CACHE_SIZE];
 
-static void psoib_rma_mreg_cache_init()
-{
-	int i;
-
-	for(i=0; i<IB_MREG_CACHE_SIZE; i++) {
-		psoib_rma_mreg_cache[i].size = 0;
-		psoib_rma_mreg_cache[i].key  = 0;
-	}
-}
-
-int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
 {
 	int hit;
 	static int first_call=1;
 	hca_info_t *hca_info = ci->hca_info;
 	mem_info_t *mem_info = &mreg->mem_info;
 
-	if(first_call) {
-		psoib_rma_mreg_cache_init();
-		first_call = 0;
-	}
-
-	for(hit=0; hit<IB_MREG_CACHE_SIZE; hit++) {
-		if( (psoib_rma_mreg_cache[hit].size == size) && (psoib_rma_mreg_cache[hit].mem_info.ptr == buf) ) {
-			break;
-		}
-	}
-
-	if(hit == IB_MREG_CACHE_SIZE) {
-
-		mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
-		if(!mem_info->mr) goto err_reg_mr;
-		assert(mem_info->mr); // ToDo: catch error
-
-		mem_info->ptr = buf;
-		mreg->key = mem_info->mr->rkey;
-		mreg->size = size;
-
-	}else {
-		(*mreg) = psoib_rma_mreg_cache[hit];
-	}
-
-	return 0; /* success */
-
-err_reg_mr:
-	mem_info->ptr = NULL;
-	psoib_err_errno("ibv_reg_mr() failed", errno);
-	if (errno == ENOMEM) print_mlock_help(size);
-	return -1;
-}
-
-
-int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
-{
-	int hit;
-	static int last = -1;
-	mem_info_t *mem_info = &mreg->mem_info;
-
-	for(hit=0; hit<IB_MREG_CACHE_SIZE; hit++) {
-		if(psoib_rma_mreg_cache[hit].key == mreg->key) {
-			break;
-		}
-	}
-
-	if(hit == IB_MREG_CACHE_SIZE) {
-
-		last = (last + 1) % IB_MREG_CACHE_SIZE;
-
-		if(psoib_rma_mreg_cache[last].size != 0 &&  psoib_rma_mreg_cache[last].key != 0) {
-			mem_info_t *cached_mem_info = &psoib_rma_mreg_cache[last].mem_info;
-			ibv_dereg_mr(cached_mem_info->mr);
-		}
-
-		psoib_rma_mreg_cache[last].size = mreg->size;
-		psoib_rma_mreg_cache[last].key  = mreg->key;
-		psoib_rma_mreg_cache[last].mem_info = mreg->mem_info;
-	}
-
-	return 0; /* success */
-}
-
-#else
-int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
-{
-	hca_info_t *hca_info = ci->hca_info;
-	mem_info_t *mem_info = &mreg->mem_info;
-
 	mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size, IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ);
 	if(!mem_info->mr) goto err_reg_mr;
-	assert(mem_info->mr); // ToDo: catch error
 
 	mem_info->ptr = buf;
 	mreg->key = mem_info->mr->rkey;
@@ -1374,13 +1300,64 @@ err_reg_mr:
 	return -1;
 }
 
-int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+static
+int psoib_rma_mreg_deregister(psoib_rma_mreg_t *mreg)
 {
 	mem_info_t *mem_info = &mreg->mem_info;
-
 	ibv_dereg_mr(mem_info->mr);
 
 	return 0; /* success */
+}
+
+#ifdef IB_USE_MREG_CACHE
+
+#include "psoib_mregion_cache.c"
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	psoib_mregion_cache_t *mregc;
+
+	mregc = psoib_mregion_find(buf, size);
+	if (mregc) {
+		// cached mregion
+		psoib_mregion_use_inc(mregc);
+	} else {
+		psoib_mregion_gc(psoib_mregion_cache_max_size);
+
+		// create new mregion
+		mregc = psoib_mregion_create(buf, size, ci);
+		if (!mregc) goto err_register;
+
+		psoib_mregion_enq(mregc);
+		mregc->use_cnt = 1; /* shortcut for psoib_mregion_use_inc(mreg); */
+	}
+
+	mreg->mreg_cache = mregc;
+
+	return 0;
+err_register:
+	psoib_dprint(3, "psoib_get_mregion() failed");
+	return -1;
+}
+
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	psoib_mregion_use_dec(mreg->mreg_cache);
+	mreg->mreg_cache = NULL;
+
+	return 0;
+}
+
+#else
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	return psoib_rma_mreg_register(mreg, buf, size, ci);
+}
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	return psoib_rma_mreg_deregister(mreg);
 }
 #endif
 
@@ -1468,6 +1445,7 @@ int psoib_rma_reqs_progress(pscom_poll_reader_t *reader)
 
 	return 0;
 }
+
 #endif
 /*
  * -- RMA rendezvous end

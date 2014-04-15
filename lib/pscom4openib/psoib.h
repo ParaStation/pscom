@@ -63,6 +63,9 @@ typedef struct psoib_rma_mreg {
 	mem_info_t      mem_info;
 	uint32_t        key;
 	size_t          size;
+#ifdef IB_USE_MREG_CACHE
+	struct psoib_mregion_cache* mreg_cache;
+#endif
 } psoib_rma_mreg_t;
 
 
@@ -81,6 +84,11 @@ struct psoib_rma_req {
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
 int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
 int psoib_post_rma_get(psoib_rma_req_t *req);
+#ifdef IB_USE_MREG_CACHE
+void psoib_mregion_cache_cleanup(void);
+void psoib_mregion_cache_init(void);
+#endif
+
 #endif
 /*
  *  -- RMA rendezvous end
