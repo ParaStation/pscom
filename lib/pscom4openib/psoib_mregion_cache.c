@@ -109,11 +109,14 @@ psoib_mregion_cache_t *psoib_mregion_create(void *buf, size_t size, psoib_con_in
 	err = psoib_rma_mreg_register(&mregc->mregion, buf, size, ci);
 	if (err) goto err_register;
 
+#if 0   /* DON'T ALIGN FOR ibv_reg_mr()! */
+
 	/* dec buf and inc size to page_size borders. */
 	unsigned long page_mask = (psoib_page_size - 1);
 	size += ((unsigned long) buf) & page_mask;
 	size = (size + page_mask) & ~page_mask;
 	buf = (void*)((unsigned long) buf & ~page_mask);
+#endif
 	
 	mregc->buf = buf;
 	mregc->size = size;

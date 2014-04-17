@@ -1276,7 +1276,7 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 static
 int psoib_poll(hca_info_t *hca_info, int blocking);
 
-
+static
 int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
 {
 	int hit;
