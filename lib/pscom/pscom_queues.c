@@ -119,7 +119,12 @@ void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock)
 {
 	struct list_head *pos;
 
-	if (!sock->recv_req_cnt_any++ && !pscom.env.unexpected_receives) {
+	if (!sock->recv_req_cnt_any++) {
+		// BUG(?): && !pscom.env.unexpected_receives) {
+		// --> It at least may prevent the 'read_start' calls on the connections
+		//     in the case on an RMA-related ANY_SOURCE dummy request if
+		//     PSP_UNEXPECTED_RECEIVES=1 is set.
+
 		/* Loop only the first time and if not unexpected_receives is enabled */
 
 		list_for_each(pos, &sock->connections) {
