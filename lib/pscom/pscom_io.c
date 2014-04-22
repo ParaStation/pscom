@@ -513,6 +513,7 @@ void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 			/* found generated request.
 			   Continue after user post a recv. */
 			user_req->partner_req = get_req(req);
+			user_req->pub.state |= PSCOM_REQ_STATE_RENDEZVOUS_REQUEST;
 		}
 	} pscom_unlock();
 }
@@ -1140,7 +1141,16 @@ int _pscom_iprobe(pscom_req_t *req)
 	genreq = _pscom_net_recvq_user_find(req);
 
 	if (!genreq) {
+		/* not found: */
 		res = 0;
+	} else if(!(genreq->pub.state & PSCOM_REQ_STATE_DONE)) {
+		/* found but not done: */
+		if(genreq->pub.state & PSCOM_REQ_STATE_RENDEZVOUS_REQUEST) {
+			/* rendezvous request: (can't be DONE without posted recv) */
+			res = 1;
+		} else {
+			res = 0;
+		}
 	} else {
 		res = 1;
 
