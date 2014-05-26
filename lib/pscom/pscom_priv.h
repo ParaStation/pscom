@@ -159,6 +159,8 @@ typedef struct pscom_rendezvous_msg {
 		struct {
 			uint32_t mr_key;
 			uint64_t mr_addr;
+			int  padding_size;
+			char padding_data[4096]; // <= IB_PADDING_SIZE (see psoib.h)
 		} openib;
 	}	arch;
 } pscom_rendezvous_msg_t;

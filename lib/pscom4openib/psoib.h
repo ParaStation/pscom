@@ -39,23 +39,22 @@ typedef struct {
     struct ibv_mr *mr;
 } mem_info_t;
 
-#define IB_USE_ZERO_COPY
-#define IB_RNDV_THRESHOLD 1024
-#define IB_USE_MREG_CACHE
-#define IB_MREG_CACHE_SIZE 16
+#define IB_USE_RNDV
+#define IB_RNDV_THRESHOLD 4096
+#define IB_RNDV_USE_MREG_CACHE
+#define IB_RNDV_MREG_CACHE_SIZE 16
+#define IB_RNDV_USE_PADDING
+#define IB_RNDV_PADDING_SIZE 1024
+/* IB_RNDV_PADDING_SIZE should be adjusted to IB_MTU_SPEC and must not be bigger than 4096 (see pscom_priv.h) */
 
-#if defined(IB_USE_ZERO_COPY) && defined(IB_DONT_USE_ZERO_COPY)
-#undef IB_USE_ZERO_COPY
-#endif
-
-#if !defined(IB_USE_ZERO_COPY) && defined(IB_RMA_MREG_CACHE_SIZE)
-#undef IB_RMA_MREG_CACHE_SIZE
+#if defined(IB_USE_RNDV) && defined(IB_DONT_USE_ZERO_COPY)
+#undef IB_USE_RNDV
 #endif
 
 /*
  * ++ RMA rendezvous
  */
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
 /* registered memory region. (Opaque object for users of psoib_get_rma_mreg() and psoib_put_rma_mreg()) */
 typedef struct psoib_rma_req psoib_rma_req_t;
 
@@ -63,7 +62,7 @@ typedef struct psoib_rma_mreg {
 	mem_info_t      mem_info;
 	uint32_t        key;
 	size_t          size;
-#ifdef IB_USE_MREG_CACHE
+#ifdef IB_RNDV_USE_MREG_CACHE
 	struct psoib_mregion_cache* mreg_cache;
 #endif
 } psoib_rma_mreg_t;
@@ -84,7 +83,7 @@ struct psoib_rma_req {
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
 int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
 int psoib_post_rma_get(psoib_rma_req_t *req);
-#ifdef IB_USE_MREG_CACHE
+#ifdef IB_RNDV_USE_MREG_CACHE
 void psoib_mregion_cache_cleanup(void);
 void psoib_mregion_cache_init(void);
 #endif

@@ -69,14 +69,14 @@ struct hca_info {
     /* misc */
     struct list_head list_con_info; /* list of all psoib_con_info.next_con_info */
 
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
     /* RMA */
     struct list_head rma_reqs; /* list of active RMA requests : psiob_rma_req_t.next */
     struct pscom_poll_reader rma_reqs_reader; /* calling psoib_progress(). Used if !list_empty(rma_reqs) */
 #endif
 };
 
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
 static int psoib_rma_reqs_progress(pscom_poll_reader_t *reader);
 static psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info);
 #endif
@@ -769,8 +769,8 @@ void psoib_cleanup_hca(hca_info_t *hca_info)
 	hca_info->ctx = NULL;
     }
 
-#ifdef IB_USE_ZERO_COPY
-#ifdef IB_USE_MREG_CACHE
+#ifdef IB_USE_RNDV
+#ifdef IB_RNDV_USE_MREG_CACHE
     psoib_mregion_cache_cleanup();
 #endif
 #endif
@@ -819,10 +819,10 @@ int psoib_init_hca(hca_info_t *hca_info)
     }
     hca_info->send.pos = 0;
 
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
     INIT_LIST_HEAD(&hca_info->rma_reqs);
     hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
-#ifdef IB_USE_MREG_CACHE
+#ifdef IB_RNDV_USE_MREG_CACHE
     psoib_mregion_cache_init();
 #endif
 #endif
@@ -1202,7 +1202,7 @@ int psoib_check_cq(hca_info_t *hca_info)
 			     wc.status, ibv_wc_status_str(wc.status));
 		con->con_broken = 1;
 	    }
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
 	} else  if (wc.opcode == IBV_WC_RDMA_READ) {
 		psoib_rma_req_t *req;
 		/* Dequeue and finish request: */
@@ -1271,7 +1271,7 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 /*
  * ++ RMA rendezvous begin
  */
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
 
 static
 int psoib_poll(hca_info_t *hca_info, int blocking);
@@ -1309,7 +1309,7 @@ int psoib_rma_mreg_deregister(psoib_rma_mreg_t *mreg)
 	return 0; /* success */
 }
 
-#ifdef IB_USE_MREG_CACHE
+#ifdef IB_RNDV_USE_MREG_CACHE
 
 #include "psoib_mregion_cache.c"
 

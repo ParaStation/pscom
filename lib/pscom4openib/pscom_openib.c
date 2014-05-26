@@ -126,7 +126,7 @@ void pscom_openib_do_write(pscom_con_t *con)
 /*
  * ++ RMA rendezvous begin
  */
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
 
 typedef struct pscom_rendezvous_data_openib {
 	struct psoib_rma_req	rma_req;
@@ -152,6 +152,27 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 	psoib_con_info_t *ci = con->arch.openib.mcon;
 	psoib_rma_mreg_t *mreg = &openib_rd->rma_req.mreg;
 
+#ifdef IB_RNDV_USE_PADDING
+
+        rd->msg.arch.openib.padding_size = (IB_RNDV_PADDING_SIZE - ((long long int)rd->msg.data) % IB_RNDV_PADDING_SIZE) % IB_RNDV_PADDING_SIZE;
+
+        memcpy(rd->msg.arch.openib.padding_data, rd->msg.data, rd->msg.arch.openib.padding_size);
+
+        rd->msg.data += rd->msg.arch.openib.padding_size;
+        rd->msg.data_len -= rd->msg.arch.openib.padding_size;
+
+        /* get mem region */
+        err = psoib_acquire_rma_mreg(mreg, rd->msg.data, rd->msg.data_len, ci);
+        assert(!err);
+
+        if (err) goto err_get_region;
+
+        rd->msg.arch.openib.mr_key  = mreg->key;
+        rd->msg.arch.openib.mr_addr = (uint64_t)mreg->mem_info.ptr;
+
+        return sizeof(rd->msg.arch.openib) - IB_RNDV_PADDING_SIZE + rd->msg.arch.openib.padding_size;
+#else
+
 	/* get mem region */
 	err = psoib_acquire_rma_mreg(mreg, rd->msg.data, rd->msg.data_len, ci);
 	assert(!err);
@@ -162,6 +183,7 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 	rd->msg.arch.openib.mr_addr = (uint64_t)mreg->mem_info.ptr;
 
 	return sizeof(rd->msg.arch.openib);
+#endif
 
 err_get_region:
 	// ToDo: Handle Errors!
@@ -202,6 +224,11 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 	psoib_rma_req_t *dreq = &psopenib_rd->rma_req;
 	pscom_con_t *con = get_con(rendezvous_req->pub.connection);
 	psoib_con_info_t *ci = con->arch.openib.mcon;
+
+#ifdef IB_RNDV_USE_PADDING
+        memcpy(rendezvous_req->pub.data, rd->msg.arch.openib.padding_data, rd->msg.arch.openib.padding_size);
+        rendezvous_req->pub.data += rd->msg.arch.openib.padding_size;
+#endif
 
 	err = psoib_acquire_rma_mreg(&dreq->mreg, rendezvous_req->pub.data, rendezvous_req->pub.data_len, ci);
 	assert(!err); // ToDo: Catch error
@@ -263,7 +290,7 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 	con->do_write = pscom_openib_do_write;
 	con->close = pscom_openib_close;
 
-#ifdef IB_USE_ZERO_COPY
+#ifdef IB_USE_RNDV
 	con->rma_mem_register = pscom_openib_rma_mem_register;
 	con->rma_mem_deregister = pscom_openib_rma_mem_deregister;
 	con->rma_read = pscom_openib_rma_read;

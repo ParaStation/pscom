@@ -21,7 +21,7 @@ struct psoib_mregion_cache {
 } psoib_mregion_cache_t;
 
 
-unsigned psoib_mregion_cache_max_size = IB_MREG_CACHE_SIZE;
+unsigned psoib_mregion_cache_max_size = IB_RNDV_MREG_CACHE_SIZE;
 static unsigned psoib_mregion_cache_size = 0;
 static LIST_HEAD(psoib_mregion_cache);
 
