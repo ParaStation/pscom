@@ -68,11 +68,17 @@ struct hca_info {
 
     /* misc */
     struct list_head list_con_info; /* list of all psoib_con_info.next_con_info */
+
+#ifdef IB_USE_RNDV
+    /* RMA */
+    struct list_head rma_reqs; /* list of active RMA requests : psiob_rma_req_t.next */
+    struct pscom_poll_reader rma_reqs_reader; /* calling psoib_progress(). Used if !list_empty(rma_reqs) */
+#endif
 };
 
 #ifdef IB_USE_RNDV
 static int psoib_rma_reqs_progress(pscom_poll_reader_t *reader);
-static psoib_rma_req_t *psoib_rma_reqs_deq(psoib_con_info_t *con_info);
+static psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info, psoib_con_info_t *con_info);
 #endif
 
 struct port_info {
@@ -109,12 +115,6 @@ struct psoib_con_info {
     unsigned int n_tosend_toks;
 
     int con_broken;
-
-#ifdef IB_USE_RNDV
-    /* RMA */
-    struct list_head rma_reqs; /* list of active RMA requests : psiob_rma_req_t.next */
-    struct pscom_poll_reader rma_reqs_reader; /* calling psoib_progress(). Used if !list_empty(rma_reqs) */
-#endif
 
     /* misc */
     struct list_head next_con_info;
@@ -700,11 +700,6 @@ int psoib_con_init(psoib_con_info_t *con_info, hca_info_t *hca_info, port_info_t
     con_info->remote_recv_pos = 0;
     con_info->recv.pos = 0;
 
-#ifdef IB_USE_RNDV
-    INIT_LIST_HEAD(&con_info->rma_reqs);
-    con_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
-#endif
-
     list_add_tail(&con_info->next_con_info, &hca_info->list_con_info);
     return 0;
     /* --- */
@@ -825,6 +820,8 @@ int psoib_init_hca(hca_info_t *hca_info)
     hca_info->send.pos = 0;
 
 #ifdef IB_USE_RNDV
+    INIT_LIST_HEAD(&hca_info->rma_reqs);
+    hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
 #ifdef IB_RNDV_USE_MREG_CACHE
     psoib_mregion_cache_init();
 #endif
@@ -1206,12 +1203,18 @@ int psoib_check_cq(hca_info_t *hca_info)
 		con->con_broken = 1;
 	    }
 #ifdef IB_USE_RNDV
-	} else  if (wc.opcode == IBV_WC_RDMA_READ) {
-		psoib_con_info_t *con = (psoib_con_info_t *)(unsigned long)wc.wr_id;
-		psoib_rma_req_t *req;
-		/* Dequeue and finish request: */
-		req = psoib_rma_reqs_deq(con);
-		req->io_done(req);
+	} else if (wc.opcode == IBV_WC_RDMA_READ) {
+                psoib_con_info_t *con = (psoib_con_info_t *)(unsigned long)wc.wr_id;
+                if (wc.status == IBV_WC_SUCCESS) {
+                        psoib_rma_req_t *req;
+                        /* Dequeue and finish request: */
+                        req = psoib_rma_reqs_deq(hca_info, con);
+                        req->io_done(req);
+                } else {
+                        psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
+				     wc.status, ibv_wc_status_str(wc.status));
+                        con->con_broken = 1;
+                }
 #endif
 	} else {
 	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
@@ -1369,36 +1372,38 @@ int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
 static
 void psoib_rma_reqs_enq(psoib_rma_req_t *req)
 {
-	psoib_con_info_t *con_info = req->ci;
-	int first = list_empty(&con_info->rma_reqs);
+	hca_info_t *hca_info = req->ci->hca_info;
+	int first = list_empty(&hca_info->rma_reqs);
 
-	list_add_tail(&req->next, &con_info->rma_reqs);
+	list_add_tail(&req->next, &hca_info->rma_reqs);
 
 	if (first) {
 		// Start polling for completer notifications
-		list_add_tail(&con_info->rma_reqs_reader.next, &pscom.poll_reader);
+		list_add_tail(&hca_info->rma_reqs_reader.next, &pscom.poll_reader);
 	}
 }
 
 static
-psoib_rma_req_t *psoib_rma_reqs_deq(psoib_con_info_t *con_info)
+psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info, psoib_con_info_t *con_info)
 {
-	struct list_head *pos;
-	psoib_rma_req_t *req = NULL;
+        struct list_head *pos;
+        psoib_rma_req_t *req = NULL;
 
-	list_for_each(pos, &con_info->rma_reqs) {
-		req = list_entry(pos, psoib_rma_req_t, next);
-		break;
-	}
+        assert(con_info->hca_info == hca_info);
 
-	list_del(&req->next);
+        list_for_each(pos, &hca_info->rma_reqs) {
+                req = list_entry(pos, psoib_rma_req_t, next);
+                if(req->ci == con_info) break;
+        }
 
-	if (list_empty(&con_info->rma_reqs)) {
-		// Stop polling for completer notifications
-		list_del(&con_info->rma_reqs_reader.next);
-	}
+        list_del(&req->next);
 
-	return req;
+        if (list_empty(&hca_info->rma_reqs)) {
+                // Stop polling for completer notifications
+                list_del(&hca_info->rma_reqs_reader.next);
+        }
+
+        return req;
 }
 
 
@@ -1442,8 +1447,7 @@ int psoib_post_rma_get(psoib_rma_req_t *req)
 static
 int psoib_rma_reqs_progress(pscom_poll_reader_t *reader)
 {
-	psoib_con_info_t *con_info = list_entry(reader, psoib_con_info_t, rma_reqs_reader);
-	hca_info_t *hca_info = con_info->hca_info;
+	hca_info_t *hca_info = list_entry(reader, hca_info_t, rma_reqs_reader);
 
 	psoib_poll(hca_info, 0);
 
