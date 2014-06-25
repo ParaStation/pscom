@@ -154,23 +154,20 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 
 #ifdef IB_RNDV_USE_PADDING
 
-        rd->msg.arch.openib.padding_size = (IB_RNDV_PADDING_SIZE - ((long long int)rd->msg.data) % IB_RNDV_PADDING_SIZE) % IB_RNDV_PADDING_SIZE;
+	rd->msg.arch.openib.padding_size = (IB_RNDV_PADDING_SIZE - ((long long int)rd->msg.data) % IB_RNDV_PADDING_SIZE) % IB_RNDV_PADDING_SIZE;
 
-        memcpy(rd->msg.arch.openib.padding_data, rd->msg.data, rd->msg.arch.openib.padding_size);
+	memcpy(rd->msg.arch.openib.padding_data, rd->msg.data, rd->msg.arch.openib.padding_size);
 
-        rd->msg.data += rd->msg.arch.openib.padding_size;
-        rd->msg.data_len -= rd->msg.arch.openib.padding_size;
+	/* get mem region */
+	err = psoib_acquire_rma_mreg(mreg, rd->msg.data + rd->msg.arch.openib.padding_size, rd->msg.data_len - rd->msg.arch.openib.padding_size, ci);
+	assert(!err);
 
-        /* get mem region */
-        err = psoib_acquire_rma_mreg(mreg, rd->msg.data, rd->msg.data_len, ci);
-        assert(!err);
+	if (err) goto err_get_region;
 
-        if (err) goto err_get_region;
+	rd->msg.arch.openib.mr_key  = mreg->key;
+	rd->msg.arch.openib.mr_addr = (uint64_t)mreg->mem_info.ptr;
 
-        rd->msg.arch.openib.mr_key  = mreg->key;
-        rd->msg.arch.openib.mr_addr = (uint64_t)mreg->mem_info.ptr;
-
-        return sizeof(rd->msg.arch.openib) - IB_RNDV_PADDING_SIZE + rd->msg.arch.openib.padding_size;
+	return sizeof(rd->msg.arch.openib) - IB_RNDV_PADDING_SIZE + rd->msg.arch.openib.padding_size;
 #else
 
 	/* get mem region */
@@ -226,8 +223,9 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 	psoib_con_info_t *ci = con->arch.openib.mcon;
 
 #ifdef IB_RNDV_USE_PADDING
-        memcpy(rendezvous_req->pub.data, rd->msg.arch.openib.padding_data, rd->msg.arch.openib.padding_size);
-        rendezvous_req->pub.data += rd->msg.arch.openib.padding_size;
+	memcpy(rendezvous_req->pub.data, rd->msg.arch.openib.padding_data, rd->msg.arch.openib.padding_size);
+	rendezvous_req->pub.data += rd->msg.arch.openib.padding_size;
+	rendezvous_req->pub.data_len -= rd->msg.arch.openib.padding_size;
 #endif
 
 	err = psoib_acquire_rma_mreg(&dreq->mreg, rendezvous_req->pub.data, rendezvous_req->pub.data_len, ci);
