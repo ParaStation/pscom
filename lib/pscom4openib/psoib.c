@@ -78,7 +78,7 @@ struct hca_info {
 
 #ifdef IB_USE_RNDV
 static int psoib_rma_reqs_progress(pscom_poll_reader_t *reader);
-static psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info, psoib_con_info_t *con_info);
+static void psoib_rma_reqs_deq(psoib_rma_req_t *dreq);
 #endif
 
 struct port_info {
@@ -1204,16 +1204,15 @@ int psoib_check_cq(hca_info_t *hca_info)
 	    }
 #ifdef IB_USE_RNDV
 	} else if (wc.opcode == IBV_WC_RDMA_READ) {
-                psoib_con_info_t *con = (psoib_con_info_t *)(unsigned long)wc.wr_id;
-                if (wc.status == IBV_WC_SUCCESS) {
-                        psoib_rma_req_t *req;
-                        /* Dequeue and finish request: */
-                        req = psoib_rma_reqs_deq(hca_info, con);
-                        req->io_done(req);
-                } else {
-                        psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
+		psoib_rma_req_t *req = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
+		if (wc.status == IBV_WC_SUCCESS) {
+			/* Dequeue and finish request: */
+			psoib_rma_reqs_deq(req);
+			req->io_done(req);
+		} else {
+			psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
 				     wc.status, ibv_wc_status_str(wc.status));
-                        con->con_broken = 1;
+			req->ci->con_broken = 1;
                 }
 #endif
 	} else {
@@ -1295,7 +1294,6 @@ int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoi
 	if(!mem_info->mr) goto err_reg_mr;
 
 	mem_info->ptr = buf;
-	mreg->key = mem_info->mr->rkey;
 	mreg->size = size;
 
 	return 0; /* success */
@@ -1310,13 +1308,100 @@ err_reg_mr:
 static
 int psoib_rma_mreg_deregister(psoib_rma_mreg_t *mreg)
 {
+	int ret;
 	mem_info_t *mem_info = &mreg->mem_info;
-	ibv_dereg_mr(mem_info->mr);
+	ret = ibv_dereg_mr(mem_info->mr);
+	assert(ret == 0);
 
 	return 0; /* success */
 }
 
 #ifdef IB_RNDV_USE_MREG_CACHE
+
+#ifdef IB_RNDV_MREG_CACHE_IS_STATIC
+
+psoib_rma_mreg_t psoib_rma_mreg_cache[IB_RNDV_MREG_CACHE_SIZE];
+
+void psoib_mregion_cache_cleanup(void) {}
+void psoib_mregion_cache_init(void) {}
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	int hit;
+	static int first = 1;
+
+	if(first) {
+		first = 0;
+		for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
+			psoib_rma_mreg_cache[hit].size = 0;
+			psoib_rma_mreg_cache[hit].used = 0;
+			psoib_rma_mreg_cache[hit].mem_info.ptr = NULL;
+		}
+	}
+
+	for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
+		if( (psoib_rma_mreg_cache[hit].size == size) && (psoib_rma_mreg_cache[hit].mem_info.ptr == buf) ) {
+			break;
+		}
+	}
+
+	if(hit < IB_RNDV_MREG_CACHE_SIZE) {
+		/* HIT */
+		psoib_rma_mreg_cache[hit].used++;
+		mreg->size = psoib_rma_mreg_cache[hit].size;
+		mreg->mem_info = psoib_rma_mreg_cache[hit].mem_info;
+		assert(psoib_rma_mreg_cache[hit].size == mreg->mem_info.mr->length);
+		assert(psoib_rma_mreg_cache[hit].mem_info.ptr == mreg->mem_info.mr->addr);
+		
+		return 0;
+
+	} else {
+		/* MISS */
+		return psoib_rma_mreg_register(mreg, buf, size, ci);
+	}
+}
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	int hit, ret;
+	static int last = 0;
+
+	for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
+		if( (psoib_rma_mreg_cache[hit].size == mreg->size) && (psoib_rma_mreg_cache[hit].mem_info.ptr == mreg->mem_info.ptr) ) {
+			break;
+		}
+	}
+
+	if(hit < IB_RNDV_MREG_CACHE_SIZE) {
+		psoib_rma_mreg_cache[hit].used--;
+	} else {
+
+		for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
+			last = (last + 1) % IB_RNDV_MREG_CACHE_SIZE;
+			if(!psoib_rma_mreg_cache[last].used) {
+				break;
+			}
+		}
+
+		if(hit < IB_RNDV_MREG_CACHE_SIZE) {
+			if(psoib_rma_mreg_cache[last].size != 0) {
+				ret = psoib_rma_mreg_deregister(&psoib_rma_mreg_cache[last]);
+				assert(ret == 0);
+			}
+			psoib_rma_mreg_cache[last].size = mreg->size;
+			psoib_rma_mreg_cache[last].mem_info = mreg->mem_info;
+			assert(psoib_rma_mreg_cache[last].size == mreg->mem_info.mr->length);
+			assert(psoib_rma_mreg_cache[last].mem_info.ptr == mreg->mem_info.mr->addr);
+		} else {
+			ret = psoib_rma_mreg_deregister(mreg);
+			assert(ret == 0);
+		}
+	}
+
+	return 0;
+}
+
+#else /* dynamic registration cache: */
 
 #include "psoib_mregion_cache.c"
 
@@ -1357,6 +1442,8 @@ int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
 	return 0;
 }
 
+#endif
+
 #else
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
 {
@@ -1384,17 +1471,17 @@ void psoib_rma_reqs_enq(psoib_rma_req_t *req)
 }
 
 static
-psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info, psoib_con_info_t *con_info)
+void psoib_rma_reqs_deq(psoib_rma_req_t *dreq)
 {
         struct list_head *pos;
         psoib_rma_req_t *req = NULL;
-
-        assert(con_info->hca_info == hca_info);
+	hca_info_t *hca_info = dreq->ci->hca_info;
 
         list_for_each(pos, &hca_info->rma_reqs) {
                 req = list_entry(pos, psoib_rma_req_t, next);
-                if(req->ci == con_info) break;
+                if(req == dreq) break;
         }
+	assert(req != NULL);
 
         list_del(&req->next);
 
@@ -1402,8 +1489,6 @@ psoib_rma_req_t *psoib_rma_reqs_deq(hca_info_t *hca_info, psoib_con_info_t *con_
                 // Stop polling for completer notifications
                 list_del(&hca_info->rma_reqs_reader.next);
         }
-
-        return req;
 }
 
 
@@ -1414,11 +1499,11 @@ int psoib_post_rma_get(psoib_rma_req_t *req)
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) req->mreg.mem_info.ptr,
 		.length = req->mreg.size,
-		.lkey	= req->mreg.mem_info.mr->rkey,
+		.lkey	= req->mreg.mem_info.mr->lkey,
 	};
 	struct ibv_send_wr wr = {
 		.next	= NULL,
-		.wr_id	= (uint64_t)req->ci,
+		.wr_id	= (uint64_t)req,
 		.sg_list	= &list,
 		.num_sge	= 1,
 		.opcode	= IBV_WR_RDMA_READ,

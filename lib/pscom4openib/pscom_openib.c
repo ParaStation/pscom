@@ -24,6 +24,9 @@
 #include <unistd.h>
 #include <assert.h>
 
+#include <malloc.h>
+#include <infiniband/verbs.h>
+
 #include "pscom_priv.h"
 #include "pscom_io.h"
 #include "pscom_openib.h"
@@ -164,7 +167,7 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 
 	if (err) goto err_get_region;
 
-	rd->msg.arch.openib.mr_key  = mreg->key;
+	rd->msg.arch.openib.mr_key  = mreg->mem_info.mr->rkey;
 	rd->msg.arch.openib.mr_addr = (uint64_t)mreg->mem_info.ptr;
 
 	return sizeof(rd->msg.arch.openib) - IB_RNDV_PADDING_SIZE + rd->msg.arch.openib.padding_size;
@@ -176,7 +179,7 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 
 	if (err) goto err_get_region;
 
-	rd->msg.arch.openib.mr_key  = mreg->key;
+	rd->msg.arch.openib.mr_key  = mreg->mem_info.mr->rkey;
 	rd->msg.arch.openib.mr_addr = (uint64_t)mreg->mem_info.ptr;
 
 	return sizeof(rd->msg.arch.openib);
@@ -294,6 +297,12 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 	con->rma_read = pscom_openib_rma_read;
 
 	con->rendezvous_size = IB_RNDV_THRESHOLD;
+
+#ifdef IB_RNDV_DISABLE_FREE_TO_OS
+	/* disable free() returning memory to the OS: */
+	mallopt(M_TRIM_THRESHOLD, -1);
+	mallopt(M_MMAP_MAX, 0);
+#endif
 #endif
 }
 

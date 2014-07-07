@@ -42,13 +42,20 @@ typedef struct {
 #define IB_USE_RNDV
 #define IB_RNDV_THRESHOLD 4096
 #define IB_RNDV_USE_MREG_CACHE
-#define IB_RNDV_MREG_CACHE_SIZE 16
+#define IB_RNDV_MREG_CACHE_SIZE 256
+#define IB_RNDV_MREG_CACHE_IS_STATIC
+#define IB_RNDV_DISABLE_FREE_TO_OS
 #define IB_RNDV_USE_PADDING
 #define IB_RNDV_PADDING_SIZE 64
 /* IB_RNDV_PADDING_SIZE must not be bigger than 64 (or adjust pscom_priv.h respectively!) */
 
 #if defined(IB_USE_RNDV) && defined(IB_DONT_USE_ZERO_COPY)
 #undef IB_USE_RNDV
+#endif
+
+#if defined(IB_RNDV_USE_MREG_CACHE)
+/* if we use a registration cache, we _have_ to disable free() returning memory to the OS: */
+#define IB_RNDV_DISABLE_FREE_TO_OS
 #endif
 
 /*
@@ -60,8 +67,8 @@ typedef struct psoib_rma_req psoib_rma_req_t;
 
 typedef struct psoib_rma_mreg {
 	mem_info_t      mem_info;
-	uint32_t        key;
 	size_t          size;
+	int             used;
 #ifdef IB_RNDV_USE_MREG_CACHE
 	struct psoib_mregion_cache* mreg_cache;
 #endif
