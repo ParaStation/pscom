@@ -43,7 +43,6 @@ typedef struct {
 #define IB_RNDV_THRESHOLD 4096
 #define IB_RNDV_USE_MREG_CACHE
 #define IB_RNDV_MREG_CACHE_SIZE 256
-#define IB_RNDV_MREG_CACHE_IS_STATIC
 #define IB_RNDV_DISABLE_FREE_TO_OS
 #define IB_RNDV_USE_PADDING
 #define IB_RNDV_PADDING_SIZE 64
@@ -68,7 +67,6 @@ typedef struct psoib_rma_req psoib_rma_req_t;
 typedef struct psoib_rma_mreg {
 	mem_info_t      mem_info;
 	size_t          size;
-	int             used;
 #ifdef IB_RNDV_USE_MREG_CACHE
 	struct psoib_mregion_cache* mreg_cache;
 #endif

@@ -1318,91 +1318,6 @@ int psoib_rma_mreg_deregister(psoib_rma_mreg_t *mreg)
 
 #ifdef IB_RNDV_USE_MREG_CACHE
 
-#ifdef IB_RNDV_MREG_CACHE_IS_STATIC
-
-psoib_rma_mreg_t psoib_rma_mreg_cache[IB_RNDV_MREG_CACHE_SIZE];
-
-void psoib_mregion_cache_cleanup(void) {}
-void psoib_mregion_cache_init(void) {}
-
-int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
-{
-	int hit;
-	static int first = 1;
-
-	if(first) {
-		first = 0;
-		for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
-			psoib_rma_mreg_cache[hit].size = 0;
-			psoib_rma_mreg_cache[hit].used = 0;
-			psoib_rma_mreg_cache[hit].mem_info.ptr = NULL;
-		}
-	}
-
-	for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
-		if( (psoib_rma_mreg_cache[hit].size == size) && (psoib_rma_mreg_cache[hit].mem_info.ptr == buf) ) {
-			break;
-		}
-	}
-
-	if(hit < IB_RNDV_MREG_CACHE_SIZE) {
-		/* HIT */
-		psoib_rma_mreg_cache[hit].used++;
-		mreg->size = psoib_rma_mreg_cache[hit].size;
-		mreg->mem_info = psoib_rma_mreg_cache[hit].mem_info;
-		assert(psoib_rma_mreg_cache[hit].size == mreg->mem_info.mr->length);
-		assert(psoib_rma_mreg_cache[hit].mem_info.ptr == mreg->mem_info.mr->addr);
-		
-		return 0;
-
-	} else {
-		/* MISS */
-		return psoib_rma_mreg_register(mreg, buf, size, ci);
-	}
-}
-
-int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
-{
-	int hit, ret;
-	static int last = 0;
-
-	for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
-		if( (psoib_rma_mreg_cache[hit].size == mreg->size) && (psoib_rma_mreg_cache[hit].mem_info.ptr == mreg->mem_info.ptr) ) {
-			break;
-		}
-	}
-
-	if(hit < IB_RNDV_MREG_CACHE_SIZE) {
-		psoib_rma_mreg_cache[hit].used--;
-	} else {
-
-		for(hit=0; hit<IB_RNDV_MREG_CACHE_SIZE; hit++) {
-			last = (last + 1) % IB_RNDV_MREG_CACHE_SIZE;
-			if(!psoib_rma_mreg_cache[last].used) {
-				break;
-			}
-		}
-
-		if(hit < IB_RNDV_MREG_CACHE_SIZE) {
-			if(psoib_rma_mreg_cache[last].size != 0) {
-				ret = psoib_rma_mreg_deregister(&psoib_rma_mreg_cache[last]);
-				assert(ret == 0);
-			}
-			psoib_rma_mreg_cache[last].size = mreg->size;
-			psoib_rma_mreg_cache[last].mem_info = mreg->mem_info;
-			assert(psoib_rma_mreg_cache[last].size == mreg->mem_info.mr->length);
-			assert(psoib_rma_mreg_cache[last].mem_info.ptr == mreg->mem_info.mr->addr);
-		} else {
-			ret = psoib_rma_mreg_deregister(mreg);
-			assert(ret == 0);
-		}
-	}
-
-	return 0;
-}
-
-#else /* dynamic registration cache: */
-
 #include "psoib_mregion_cache.c"
 
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
@@ -1424,7 +1339,9 @@ int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib
 		mregc->use_cnt = 1; /* shortcut for psoib_mregion_use_inc(mreg); */
 	}
 
-	*mreg = mregc->mregion;
+	mreg->mem_info.ptr = buf;
+	mreg->size = size;
+	mreg->mem_info.mr = mregc->mregion.mem_info.mr;
 	mreg->mreg_cache = mregc;
 
 	return 0;
@@ -1441,8 +1358,6 @@ int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
 
 	return 0;
 }
-
-#endif
 
 #else
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
