@@ -269,6 +269,40 @@ void pscom_openib_close(pscom_con_t *con)
 	con->arch.openib.mcon = NULL;
 }
 
+#ifdef IB_USE_RNDV
+#ifdef IB_RNDV_USE_MALLOC_HOOKS
+static void *pscom_openib_morecore_hook(ptrdiff_t incr)
+{
+	/* Do not return memory back to the OS: (do not trim) */
+	if(incr < 0) {
+		return __default_morecore(0);
+	} else {
+		return __default_morecore(incr);
+	}
+}
+
+static void pscom_openib_free_hook(void *ptr, const void *caller)
+{
+	static void *(*old_malloc_hook)(size_t, const void *);
+	static void (*old_free_hook)(void *, const void *);
+
+	/* !!! __malloc_hook and __free_hook are deprecated !!! */
+	
+	__malloc_hook = old_malloc_hook;
+	__free_hook = old_free_hook;
+
+	/* !!! TODO: Check registration cache !!! */
+
+	/* Call recursively */
+	free (ptr);
+
+	/* Save underlying hooks */
+	old_malloc_hook = __malloc_hook;
+	old_free_hook = __free_hook;
+}
+#endif
+#endif
+
 
 static
 void pscom_openib_con_init(pscom_con_t *con, int con_fd,
@@ -299,9 +333,25 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 	con->rendezvous_size = IB_RNDV_THRESHOLD;
 
 #ifdef IB_RNDV_DISABLE_FREE_TO_OS
-	/* disable free() returning memory to the OS: */
-	mallopt(M_TRIM_THRESHOLD, -1);
+
+	/* We have to prevent free() from returning memory back to the OS: */
+
+#ifndef IB_RNDV_USE_MALLOC_HOOKS
+
+	/* See 'man mallopt(3) / M_MMAP_MAX': Setting this parameter to 0 disables the use of mmap(2) for servicing large allocation requests. */
 	mallopt(M_MMAP_MAX, 0);
+
+	/* See 'man mallopt(3) / M_TRIM_THRESHOLD': Setting M_TRIM_THRESHOLD to -1 disables trimming completely. */
+	mallopt(M_TRIM_THRESHOLD, -1);
+#else
+	if(__morecore == __default_morecore) {
+		/* Switch to our own function pscom_openib_morecore() that does not trim: */
+		__morecore = pscom_openib_morecore_hook;
+	}
+
+	__free_hook = pscom_openib_free_hook;
+#endif
+
 #endif
 #endif
 }

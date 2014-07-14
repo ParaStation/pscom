@@ -44,6 +44,7 @@ typedef struct {
 #define IB_RNDV_USE_MREG_CACHE
 #define IB_RNDV_MREG_CACHE_SIZE 256
 #define IB_RNDV_DISABLE_FREE_TO_OS
+#undef  IB_RNDV_USE_MALLOC_HOOKS
 #define IB_RNDV_USE_PADDING
 #define IB_RNDV_PADDING_SIZE 64
 /* IB_RNDV_PADDING_SIZE must not be bigger than 64 (or adjust pscom_priv.h respectively!) */
