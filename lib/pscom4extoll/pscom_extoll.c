@@ -27,6 +27,41 @@
 #include "pscom_io.h"
 #include "pscom_extoll.h"
 
+static struct {
+	struct pscom_poll_reader reader; // pscom_extoll_make_progress
+	unsigned reader_user;
+} pscom_extoll;
+
+
+static
+void reader_inc(void)
+{
+	if (!pscom_extoll.reader_user) {
+		// enqueue to polling reader
+		list_add_tail(&pscom_extoll.reader.next, &pscom.poll_reader);
+	}
+	pscom_extoll.reader_user++;
+}
+
+
+static
+void reader_dec(void)
+{
+	pscom_extoll.reader_user--;
+	if (!pscom_extoll.reader_user) {
+		// dequeue from polling reader
+		list_del_init(&pscom_extoll.reader.next);
+	}
+}
+
+static
+int pscom_extoll_make_progress(pscom_poll_reader_t *reader)
+{
+	psex_progress();
+	return 0; // Nothing received
+}
+
+
 
 static
 int _pscom_extoll_rma2_do_read(pscom_con_t *con, psex_con_info_t *ci)
@@ -104,6 +139,7 @@ void pscom_extoll_close(pscom_con_t *con)
 	psex_con_free(ci);
 
 	con->arch.extoll.ci = NULL;
+	reader_dec();
 }
 
 
@@ -134,6 +170,8 @@ void pscom_extoll_con_init(pscom_con_t *con, int con_fd,
 //	con->rma_read = pscom_extoll_rma_read;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_extoll;
+
+	reader_inc();
 }
 
 /*********************************************************************/
@@ -164,6 +202,10 @@ void pscom_extoll_init(void)
 //		psex_event_count = 0;
 //	}
 	pscom_env_get_int(&psex_event_count, ENV_EXTOLL_EVENT_CNT);
+
+	INIT_LIST_HEAD(&pscom_extoll.reader.next);
+	pscom_extoll.reader.do_read = pscom_extoll_make_progress;
+	pscom_extoll.reader_user = 0;
 }
 
 

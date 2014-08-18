@@ -261,7 +261,6 @@ int ufd_poll(ufd_t *ufd, int timeout)
 				fprintf(stderr, "Deadlock detected! Process %u will wait forever.\n",
 					getpid());
 				fprintf(stderr, "('wait' called without outstanding send or recv requests).\n");
-				fprintf(stderr, "(For single sided communications set PSP_UNEXPECTED_RECEIVES=1)\n");
 				pscom_dump_info(stderr);
 				fflush(stderr);
 				warn = 60; // warn again after warn timeouts

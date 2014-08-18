@@ -22,3 +22,6 @@ noinst_HEADERS = psdapl_rdma.c
 libpscom4dapl_la_CPPFLAGS = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)
 libpscom4dapl_la_LDFLAGS = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
 libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
+
+install-exec-hook:
+	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)

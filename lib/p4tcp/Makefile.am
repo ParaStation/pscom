@@ -16,3 +16,6 @@ AM_LDFLAGS += -avoid-version
 lib_LTLIBRARIES = libp4tcp.la
 
 libp4tcp_la_SOURCES = p4tcp.c
+
+install-exec-hook:
+	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)

@@ -32,11 +32,19 @@ typedef struct shm_msg_s {
 	volatile uint32_t msg_type;
 } shm_msg_t;
 
+#if !(defined(__KNC__) || defined(__MIC__))
 #define SHM_BUFS 8
 #define SHM_BUFLEN (8192 - sizeof(shm_msg_t))
+#else
+/* On KNC use more, but much smaller shm buffers. Using direct shm to archive a good throughput. */
+#define SHM_BUFS 16
+#define SHM_BUFLEN ((1 * 1024) - sizeof(shm_msg_t))
+#endif
 
 #define SHM_MSGTYPE_NONE 0
 #define SHM_MSGTYPE_STD	 1
+#define SHM_MSGTYPE_DIRECT 2
+#define SHM_MSGTYPE_DIRECT_DONE 3
 
 #define SHM_DATA(buf, len) ((char*)(&(buf)->header) - (((len) + 7) & ~7))
 
@@ -52,10 +60,15 @@ typedef struct shm_com_s {
 typedef struct shm_conn_s {
 	shm_com_t	*local_com;  /* local */
 	shm_com_t	*remote_com; /* remote */
-	int		local_id;
-	int		remote_id;
 	int		recv_cur;
 	int		send_cur;
+	long		direct_offset; /* base offset for shm direct */
+	int		local_id;
+	int		remote_id;
+	void		*direct_base; /* shm direct base */
+
+	struct list_head pending_io_next_conn; /* next shm_conn_t with pending io. Head: shm_pending_io.shm_conn_head */
+	struct shm_pending *shm_pending; /* first pending io request of this connection */
 } shm_conn_t;
 
 typedef struct shm_sock_s {

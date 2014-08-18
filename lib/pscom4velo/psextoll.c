@@ -25,6 +25,7 @@
 
 #include "pscom_util.h"
 #include "pscom_env.h"
+#include "pscom_priv.h"
 #include "psextoll.h"
 
 /* Size of the send, receive and completion queue */
@@ -49,19 +50,22 @@ typedef struct {
 } ringbuf_t;
 #endif
 
-
 struct hca_info {
 	velo2_port_t	velo2_port;	/* velo2 port from velo2_open(&velo2_port) */
-#ifndef DISABLE_RMA2
 	RMA2_Port	rma2_port;	/* rma2 port from rma2_open(&rma2_port) */
 
+#ifndef DISABLE_RMA2
 	/* RMA2 */
 	/* send */
 	ringbuf_t	send;	/* global send queue */
+#endif
 
 	RMA2_Nodeid	rma2_nodeid;	/* local rma2 nodeid */
 	RMA2_VPID	rma2_vpid;	/* local rma2 vpid */
-#endif
+
+	/* rma2 rendezvous */
+	struct list_head rma2_reqs;	/* list of active RMA requests : psex_rma_req_t.next */
+	struct pscom_poll_reader rma2_reqs_reader; // calling psex_progress(). Used if !list_empty(rma2_reqs)
 
 	/* VELO2 */
 	velo2_nodeid_t	velo2_nodeid;	/* local velo2 nodeid */
@@ -75,10 +79,10 @@ struct psex_con_info {
 	/* low level */
 	hca_info_t	*hca_info;
 
-#ifndef DISABLE_RMA2
 	RMA2_Port	rma2_port;	/* extoll port from rma2_open(&rma2_port) (copied from hca_info) */
 	RMA2_Handle	rma2_handle;	/* Connection handle from rma2_connect(..&rma2_handle); */
 
+#ifndef DISABLE_RMA2
 	/* send */
 	unsigned int	remote_recv_pos; /* next to use receive buffer (= remote recv_pos) */
 
@@ -93,10 +97,12 @@ struct psex_con_info {
 	/* misc */
 	void		*priv;		/* priv data from psex_con_init() */
 
+#ifndef DISABLE_RMA2
 	/* higher level */
 	unsigned int n_send_toks;
 	unsigned int n_recv_toks;
 	unsigned int n_tosend_toks;
+#endif
 
 	velo2_connection_t velo2_con;	/* velo connection from velo2_connect() */
 	uint32_t	velo2_srcid;	/* srcid which could be compared against srcid from velo2_recv().*/
@@ -140,12 +146,14 @@ char *psex_err_str = NULL; /* last error string */
 int psex_debug = 2;
 FILE *psex_debug_stream = NULL;
 
+#ifndef DISABLE_RMA2
 unsigned int psex_sendq_size = _SIZE_SEND_QUEUE;
 unsigned int psex_recvq_size = _SIZE_RECV_QUEUE;
 unsigned int psex_pending_tokens = _SIZE_RECV_QUEUE - 6;
 
 int psex_global_sendq = 0;	/* bool. Use one sendqueue for all connections? */
 int psex_event_count = 0;	/* bool. Be busy if psex_pending_global_sends is to high? */
+#endif
 
 struct psex_stat_s {
 	unsigned busy_notokens;		// connection out of tokens for sending
@@ -196,7 +204,6 @@ void psex_err_errno(char *str, int err_no)
 }
 
 
-#ifndef DISABLE_RMA2
 static
 void psex_err_rma2_error(char *str, int rc)
 {
@@ -218,7 +225,6 @@ void psex_err_rma2_error(char *str, int rc)
 	psex_err(msg);
 	free(msg);
 }
-#endif
 
 
 static
@@ -253,6 +259,7 @@ void psex_err_velo2_error(char *msg, velo2_ret_t vrc)
 }
 
 
+#ifndef DISABLE_RMA2
 unsigned psex_pending_tokens_suggestion(void)
 {
 	unsigned res = 0;
@@ -275,7 +282,6 @@ unsigned psex_pending_tokens_suggestion(void)
 }
 
 
-#ifndef DISABLE_RMA2
 static
 void psex_rma2_free(hca_info_t *hca_info, mem_info_t *mem_info)
 {
@@ -284,6 +290,7 @@ void psex_rma2_free(hca_info_t *hca_info, mem_info_t *mem_info)
 	free(mem_info->ptr);
 	mem_info->ptr = NULL;
 }
+#endif
 
 
 static
@@ -304,6 +311,7 @@ void print_mlock_help(unsigned size)
 }
 
 
+#ifndef DISABLE_RMA2
 static
 int psex_rma2_alloc(hca_info_t *hca_info, int size, mem_info_t *mem_info)
 {
@@ -331,6 +339,177 @@ err_malloc:
 	return -1;
 }
 #endif
+
+/*
+ * RMA2 rendezvous
+ */
+
+static
+int psex_mregion_register(RMA2_Region *rma2_region, RMA2_NLA *rma2_nla,
+			  RMA2_Port rma2_port, void *buf, size_t size)
+{
+	RMA2_ERROR rma2_error;
+
+	rma2_error = rma2_register_nomalloc(rma2_port, buf, size, rma2_region);
+	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
+
+	rma2_error = rma2_get_nla(rma2_region, 0, rma2_nla);
+	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
+
+	// printf("%s:%u:%s  buf:%p nla:%lx size:%lu\n", __FILE__, __LINE__, __func__, buf, mreg->rma2_nla, size);
+	return 0; /* success */
+}
+
+
+static
+int psex_mregion_deregister(RMA2_Region *rma2_region, RMA2_Port rma2_port)
+{
+	RMA2_ERROR rma2_error;
+
+	rma2_error = rma2_unregister_nofree(rma2_port, rma2_region);
+	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
+
+	return 0; /* success */
+}
+
+#if PSEX_USE_MREGION_CACHE
+/* Use mregion cache */
+
+#include "psextoll_mregion_cache.c"
+
+#else
+/* No mregion cache */
+
+int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info_t *ci)
+{
+	int err;
+	err = psex_mregion_register(&mreg->rma2_region, &mreg->rma2_nla,
+				    ci->rma2_port, buf, size);
+	return err;
+}
+
+
+void psex_put_mregion(psex_mregion_t *mreg, psex_con_info_t *ci)
+{
+	if (!mreg->rma2_nla) return;
+	psex_mregion_deregister(&mreg->rma2_region, ci->rma2_port);
+	mreg->rma2_nla = 0;
+}
+
+#endif /* ! PSEX_USE_MREGION_CACHE */
+
+/*
+RMA2_ERROR rma2_register(RMA2_Port port, void* address, size_t size, RMA2_Region** region);
+RMA2_ERROR rma2_unregister(RMA2_Port port, RMA2_Region* region);
+RMA2_ERROR rma2_get_nla(RMA2_Region* region, size_t offset, RMA2_NLA* nla);
+RMA2_ERROR rma2_post_get_bt(RMA2_Port port,RMA2_Handle handle, RMA2_Region* src_region, uint32_t src_offset, uint32_t size, RMA2_NLA dest_address,
+			    RMA2_Notification_Spec spec, RMA2_Command_Modifier modifier);
+RMA2_ERROR rma2_post_get_bt_direct(RMA2_Port port,RMA2_Handle handle, RMA2_NLA src,  uint32_t size, RMA2_NLA dest_address,
+				   RMA2_Notification_Spec spec, RMA2_Command_Modifier modifier);*/
+
+static
+void psex_rma2_reqs_enq(psex_rma_req_t *req)
+{
+	hca_info_t *hca_info = req->ci->hca_info;
+	int first = list_empty(&hca_info->rma2_reqs);
+
+	list_add_tail(&req->next, &hca_info->rma2_reqs);
+
+	if (first) {
+		// Start polling for completer notifications
+		list_add_tail(&hca_info->rma2_reqs_reader.next, &pscom.poll_reader);
+	}
+}
+
+
+static
+void psex_rma2_reqs_deq(psex_rma_req_t *req)
+{
+	hca_info_t *hca_info = req->ci->hca_info;
+
+	list_del(&req->next);
+
+	if (list_empty(&hca_info->rma2_reqs)) {
+		// Stop polling for completer notifications
+		list_del(&hca_info->rma2_reqs_reader.next);
+	}
+}
+
+
+int psex_post_rma_get(psex_rma_req_t *req)
+{
+	RMA2_ERROR rma2_error;
+	psex_con_info_t *ci = req->ci;
+	// printf("%s:%u:%s nla_src:%lx nla_dest:%lx size:%lu\n", __FILE__, __LINE__, __func__,
+	//        req->rma2_nla, req->mreg.rma2_nla, req->data_len);
+
+	rma2_error = rma2_post_get_bt_direct(ci->rma2_port, ci->rma2_handle,
+					     req->mreg.rma2_nla, req->data_len, req->rma2_nla,
+					     RMA2_COMPLETER_NOTIFICATION, RMA2_CMD_DEFAULT);
+	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
+
+	// Queue this request and wait for completer notification.
+	psex_rma2_reqs_enq(req);
+
+	return 0;
+}
+
+
+static
+void psex_handle_notification(hca_info_t *hca_info, RMA2_Notification *notification)
+{
+	// rma2_noti_dump(notification);
+	// RMA2_Command rma2_noti_get_cmd(RMA2_Notification* noti);
+	// RMA2_Notification_Spec rma2_noti_get_notification_type(RMA2_Notification* noti);
+	// RMA2_Notification_Modifier rma2_noti_get_mode(RMA2_Notification *noti);
+	// uint64_t rma2_noti_get_local_address(RMA2_Notification* noti);
+
+	struct list_head *pos;
+	list_for_each(pos, &hca_info->rma2_reqs) {
+		psex_rma_req_t *req = list_entry(pos, psex_rma_req_t, next);
+
+		/*
+		printf("req:( nla_src:%lx nla_dest:%lx data_len:%zu) noti:(notiaddr:%lx  len:%u)\n",
+		       req->rma2_nla, req->mreg.rma2_nla, req->data_len,
+		       rma2_noti_get_local_address(notification),
+		       rma2_noti_get_size(notification));
+		*/
+		if (req->mreg.rma2_nla + req->data_len ==
+		    notification->word0.value /* NLA */ + (notification->word1.value & 0x7fffffl) + 1/* payload*/) {
+
+			psex_rma2_reqs_deq(req);
+			req->io_done(req);
+			return;
+		}
+	}
+
+	/* Probably we will leak a request if we where here */
+	psex_dprint(0, "rma2_noti_probe() : Unknown RMA2_Notification (nla: 0x%lx, len:%lu)",
+		    notification->word0.value /* NLA */, (notification->word1.value & 0x7fffffl) + 1/* payload*/);
+}
+
+
+static
+int psex_rma2_reqs_progress(pscom_poll_reader_t *reader)
+{
+	hca_info_t *hca_info = list_entry(reader, hca_info_t, rma2_reqs_reader);
+	RMA2_Notification *notification;
+	RMA2_ERROR rc;
+	RMA2_Port rma2_port = hca_info->rma2_port;
+
+	rc = rma2_noti_probe(rma2_port, &notification);
+	if (rc == RMA2_SUCCESS) {
+		psex_handle_notification(hca_info, notification);
+		rma2_noti_free(rma2_port, notification);
+	}
+
+	return 0;
+}
+
+
+/*
+ * RMA2 rendezvous end
+ */
 
 
 static
@@ -393,11 +572,11 @@ void psex_con_cleanup(psex_con_info_t *con_info)
 		psex_rma2_free(hca_info, &con_info->recv.bufs);
 		con_info->recv.bufs.mr = 0;
 	}
+#endif
 	if (con_info->rma2_handle) {
 		rma2_disconnect(hca_info->rma2_port, con_info->rma2_handle);
 		con_info->rma2_handle = NULL;
 	}
-#endif
 	if (con_info->velo2_con.dest.raw || con_info->velo2_con.state_map) {
 		velo2_disconnect(&hca_info->velo2_port, &con_info->velo2_con);
 		con_info->velo2_con.dest.raw = 0;
@@ -452,10 +631,10 @@ int psex_con_init(psex_con_info_t *con_info, hca_info_t *hca_info, void *priv)
 	// Initialize receive tokens
 	con_info->n_recv_toks = 0;
 	con_info->n_tosend_toks = 0;
-#endif
 
 	// Initialize send tokens
 	con_info->n_send_toks = psex_recvq_size; // #tokens = length of _receive_ queue!
+#endif
 
 	return 0;
 	/* --- */
@@ -472,16 +651,16 @@ int psex_con_connect(psex_con_info_t *con_info, psex_info_msg_t *info_msg)
 	int rc;
 	velo2_ret_t vrc;
 
-#ifndef DISABLE_RMA2
 	con_info->rma2_port = hca_info->rma2_port; // Copy port for faster access.
 
+#ifndef DISABLE_RMA2
 	con_info->remote_rbuf_nla = info_msg->rbuf_nla;
 
 
+#endif
 	rc = rma2_connect(con_info->rma2_port, info_msg->rma2_nodeid,
 			  info_msg->rma2_vpid, RMA2_CONN_DEFAULT, &con_info->rma2_handle);
 	if (rc) goto err_rma2_connect;
-#endif
 
 	vrc = velo2_connect(&hca_info->velo2_port, &con_info->velo2_con,
 			    info_msg->velo2_nodeid, info_msg->velo2_vpid);
@@ -492,12 +671,10 @@ int psex_con_connect(psex_con_info_t *con_info, psex_info_msg_t *info_msg)
 
 	return 0;
 	/* --- */
-#ifndef DISABLE_RMA2
 err_rma2_connect:
 	psex_err_rma2_error("rma2_connect()", rc);
 	psex_dprint(1, "psex_con_connect() : %s", psex_err_str);
 	return -1;
-#endif
 err_velo2_connect:
 	psex_err_velo2_error("velo2_connect()", vrc);
 	psex_dprint(1, "psex_con_connect() : %s", psex_err_str);
@@ -515,11 +692,14 @@ void psex_cleanup_hca(hca_info_t *hca_info)
 		psex_rma2_free(hca_info, &hca_info->send.bufs);
 		hca_info->send.bufs.mr = 0;
 	}
+#endif
+#if PSEX_USE_MREGION_CACHE
+	psex_mregion_cache_cleanup();
+#endif
 	if (hca_info->rma2_port) {
 		rma2_close(hca_info->rma2_port);
 		hca_info->rma2_port = NULL;
 	}
-#endif
 	if (hca_info->velo2_port.map) {
 		velo2_close(&hca_info->velo2_port);
 		hca_info->velo2_port.map = NULL;
@@ -546,6 +726,7 @@ int psex_init_hca(hca_info_t *hca_info)
 			    psex_pending_tokens, psex_recvq_size);
 		psex_pending_tokens = psex_recvq_size;
 	}
+#endif
 
 	rc = rma2_open(&hca_info->rma2_port);
 	if (rc != RMA2_SUCCESS) {
@@ -554,15 +735,19 @@ int psex_init_hca(hca_info_t *hca_info)
 	}
 
 
+#ifndef DISABLE_RMA2
 	if (psex_global_sendq) {
 		if (psex_rma2_alloc(hca_info, PSEX_RMA2_MTU * psex_sendq_size, &hca_info->send.bufs))
 			goto err_alloc;
 		hca_info->send.pos = 0;
 	}
 
+#endif
 	hca_info->rma2_nodeid = rma2_get_nodeid(hca_info->rma2_port);
 	hca_info->rma2_vpid = rma2_get_vpid(hca_info->rma2_port);
-#endif
+
+	INIT_LIST_HEAD(&hca_info->rma2_reqs);
+	hca_info->rma2_reqs_reader.do_read = psex_rma2_reqs_progress;
 
 	/*
 	 * VELO2
@@ -576,17 +761,14 @@ int psex_init_hca(hca_info_t *hca_info)
 	hca_info->velo2_nodeid = velo2_get_nodeid(&hca_info->velo2_port);
 	hca_info->velo2_vpid = velo2_get_vpid(&hca_info->velo2_port);
 
-#ifndef DISABLE_RMA2
 	psex_dprint(2, "nodeid:%5u VELO vpid:%5u RMA vpid:%5u",
 		    hca_info->velo2_nodeid,
 		    hca_info->velo2_vpid,
 		    hca_info->rma2_vpid);
-#else
-	psex_dprint(2, "nodeid:%5u VELO vpid:%5u",
-		    hca_info->velo2_nodeid,
-		    hca_info->velo2_vpid);
-#endif
 
+#if PSEX_USE_MREGION_CACHE
+	psex_mregion_cache_init();
+#endif
 	return 0;
 	/* --- */
 err_velo2_open:
@@ -743,6 +925,7 @@ void psex_progress(psex_con_info_t *con_info)
 
 	rc = rma2_noti_probe(rma2_port, &notification);
 	if (rc == RMA2_SUCCESS) {
+		psex_handle_notification(notification);
 		rma2_noti_free(rma2_port, notification);
 	}
 }
@@ -934,13 +1117,12 @@ void psex_con_get_info_msg(psex_con_info_t *con_info /* in */, psex_info_msg_t *
 	int rc;
 	hca_info_t *hca_info = con_info->hca_info;
 
-#ifndef DISABLE_RMA2
 	info_msg->rma2_nodeid	= hca_info->rma2_nodeid;
 	info_msg->rma2_vpid	= hca_info->rma2_vpid;
+#ifndef DISABLE_RMA2
 	rc = rma2_get_nla(con_info->recv.bufs.mr, 0, &info_msg->rbuf_nla);
 	assert(rc == RMA2_SUCCESS);
 #endif
-
 	info_msg->velo2_nodeid	= hca_info->velo2_nodeid;
 	info_msg->velo2_vpid	= hca_info->velo2_vpid;
 }

@@ -59,6 +59,9 @@ pscom_t pscom = {
 		.probes = 0,
 		.iprobes_ok = 0,
 		.probes_any_source = 0,
+		.shm_direct = 0,
+		.shm_direct_nonshmptr = 0,
+		.shm_direct_failed = 0,
 	},
 };
 

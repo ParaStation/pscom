@@ -76,7 +76,7 @@ noinst_PROGRAMS = p4logd$(EXEEXT) porttest$(EXEEXT) \
 	port_pp$(EXEEXT) pscom_maxcon$(EXEEXT) $(am__EXEEXT_2) \
 	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
 	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8) \
-	$(am__EXEEXT_9) $(am__EXEEXT_10)
+	$(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
 check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
 bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
@@ -96,6 +96,8 @@ bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
 # -- mem usage diagnostics --
 @OPENIB_ENABLED_TRUE@am__append_9 = pscom_memusage_openib
 @OFED_ENABLED_TRUE@am__append_10 = pscom_memusage_ofed
+@EXTOLL_ENABLED_TRUE@am__append_11 = pscom_memusage_extoll \
+@EXTOLL_ENABLED_TRUE@	pscom_memusage_velo
 subdir = bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -127,6 +129,8 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 @EXTOLL_ENABLED_TRUE@	extoll_one_message$(EXEEXT)
 @OPENIB_ENABLED_TRUE@am__EXEEXT_9 = pscom_memusage_openib$(EXEEXT)
 @OFED_ENABLED_TRUE@am__EXEEXT_10 = pscom_memusage_ofed$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_extoll$(EXEEXT) \
+@EXTOLL_ENABLED_TRUE@	pscom_memusage_velo$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
 am_dapl_pp_OBJECTS = dapl/dapl_pp-dapl_pp.$(OBJEXT) \
@@ -249,6 +253,14 @@ pscom_bcast_test_DEPENDENCIES = $(libpscom)
 am_pscom_maxcon_OBJECTS = pscom_maxcon.$(OBJEXT)
 pscom_maxcon_OBJECTS = $(am_pscom_maxcon_OBJECTS)
 pscom_maxcon_DEPENDENCIES = $(libpscom)
+am_pscom_memusage_extoll_OBJECTS =  \
+	pscom_memusage_extoll-pscom_memusage.$(OBJEXT)
+pscom_memusage_extoll_OBJECTS = $(am_pscom_memusage_extoll_OBJECTS)
+pscom_memusage_extoll_DEPENDENCIES =
+pscom_memusage_extoll_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(pscom_memusage_extoll_LDFLAGS) \
+	$(LDFLAGS) -o $@
 am_pscom_memusage_ofed_OBJECTS =  \
 	pscom_memusage_ofed-pscom_memusage.$(OBJEXT)
 pscom_memusage_ofed_OBJECTS = $(am_pscom_memusage_ofed_OBJECTS)
@@ -264,6 +276,14 @@ pscom_memusage_openib_DEPENDENCIES =
 pscom_memusage_openib_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(pscom_memusage_openib_LDFLAGS) \
+	$(LDFLAGS) -o $@
+am_pscom_memusage_velo_OBJECTS =  \
+	pscom_memusage_velo-pscom_memusage.$(OBJEXT)
+pscom_memusage_velo_OBJECTS = $(am_pscom_memusage_velo_OBJECTS)
+pscom_memusage_velo_DEPENDENCIES =
+pscom_memusage_velo_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
+	$(AM_CFLAGS) $(CFLAGS) $(pscom_memusage_velo_LDFLAGS) \
 	$(LDFLAGS) -o $@
 am_pscom_ondemand_OBJECTS = pscom_ondemand.$(OBJEXT)
 pscom_ondemand_OBJECTS = $(am_pscom_ondemand_OBJECTS)
@@ -386,8 +406,10 @@ SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
 	$(ps4_ib_pp_rdma_SOURCES) $(pscom_bcast_pp_SOURCES) \
 	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
+	$(pscom_memusage_extoll_SOURCES) \
 	$(pscom_memusage_ofed_SOURCES) \
-	$(pscom_memusage_openib_SOURCES) $(pscom_ondemand_SOURCES) \
+	$(pscom_memusage_openib_SOURCES) \
+	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
 	$(pscom_test_SOURCES) $(pscp_SOURCES) $(psm_pp_SOURCES) \
 	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
@@ -402,8 +424,10 @@ DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
 	$(ps4_ib_pp_rdma_SOURCES) $(pscom_bcast_pp_SOURCES) \
 	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
+	$(pscom_memusage_extoll_SOURCES) \
 	$(pscom_memusage_ofed_SOURCES) \
-	$(pscom_memusage_openib_SOURCES) $(pscom_ondemand_SOURCES) \
+	$(pscom_memusage_openib_SOURCES) \
+	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
 	$(pscom_test_SOURCES) $(pscp_SOURCES) $(psm_pp_SOURCES) \
 	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
@@ -644,7 +668,7 @@ CLEANFILES = $(bin_SCRIPTS) list_test.ok
 
 # -- /file lists
 libpsport4 = $(top_builddir)/lib/psport4/libpsport4std.la
-libpscom = $(top_builddir)/lib/pscom/libpscom.la
+libpscom = $(top_builddir)/lib/pscom/libpscom.la $(top_builddir)/lib/psmalloc/libpsmalloc.la
 
 # -- psport --
 p4stat_SOURCES = p4stat.c
@@ -787,7 +811,7 @@ extoll_one_message_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 extoll_one_message_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 extoll_one_message_LDADD = -lrma2 -lpopt
 pscom_memusage_openib_SOURCES = pscom_memusage.c
-pscom_memusage_openib_CPPFLAGS = $(AM_CPPFLAGS)			\
+pscom_memusage_openib_CPPFLAGS = $(AM_CPPFLAGS) -DOPENIB=1	\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4openib
 
 pscom_memusage_openib_LDFLAGS = $(AM_LDFLAGS) $(OPENIB_LDFLAGS)
@@ -798,6 +822,20 @@ pscom_memusage_ofed_CPPFLAGS = $(AM_CPPFLAGS) -DOFED=1		\
 
 pscom_memusage_ofed_LDFLAGS = $(AM_LDFLAGS) $(OFED_LDFLAGS)
 pscom_memusage_ofed_LDADD = -libverbs
+pscom_memusage_extoll_SOURCES = pscom_memusage.c
+pscom_memusage_extoll_CPPFLAGS = $(AM_CPPFLAGS) -DEXTOLL=1	\
+	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4extoll \
+	$(EXTOLL_CPPFLAGS)
+
+pscom_memusage_extoll_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
+pscom_memusage_extoll_LDADD = -lrma2
+pscom_memusage_velo_SOURCES = pscom_memusage.c
+pscom_memusage_velo_CPPFLAGS = $(AM_CPPFLAGS) -DVELO=1	\
+	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4velo \
+	$(EXTOLL_CPPFLAGS)
+
+pscom_memusage_velo_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
+pscom_memusage_velo_LDADD = -lrma2 -lvelo2
 all: all-recursive
 
 .SUFFIXES:
@@ -1029,12 +1067,18 @@ pscom_bcast_test$(EXEEXT): $(pscom_bcast_test_OBJECTS) $(pscom_bcast_test_DEPEND
 pscom_maxcon$(EXEEXT): $(pscom_maxcon_OBJECTS) $(pscom_maxcon_DEPENDENCIES) $(EXTRA_pscom_maxcon_DEPENDENCIES) 
 	@rm -f pscom_maxcon$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pscom_maxcon_OBJECTS) $(pscom_maxcon_LDADD) $(LIBS)
+pscom_memusage_extoll$(EXEEXT): $(pscom_memusage_extoll_OBJECTS) $(pscom_memusage_extoll_DEPENDENCIES) $(EXTRA_pscom_memusage_extoll_DEPENDENCIES) 
+	@rm -f pscom_memusage_extoll$(EXEEXT)
+	$(AM_V_CCLD)$(pscom_memusage_extoll_LINK) $(pscom_memusage_extoll_OBJECTS) $(pscom_memusage_extoll_LDADD) $(LIBS)
 pscom_memusage_ofed$(EXEEXT): $(pscom_memusage_ofed_OBJECTS) $(pscom_memusage_ofed_DEPENDENCIES) $(EXTRA_pscom_memusage_ofed_DEPENDENCIES) 
 	@rm -f pscom_memusage_ofed$(EXEEXT)
 	$(AM_V_CCLD)$(pscom_memusage_ofed_LINK) $(pscom_memusage_ofed_OBJECTS) $(pscom_memusage_ofed_LDADD) $(LIBS)
 pscom_memusage_openib$(EXEEXT): $(pscom_memusage_openib_OBJECTS) $(pscom_memusage_openib_DEPENDENCIES) $(EXTRA_pscom_memusage_openib_DEPENDENCIES) 
 	@rm -f pscom_memusage_openib$(EXEEXT)
 	$(AM_V_CCLD)$(pscom_memusage_openib_LINK) $(pscom_memusage_openib_OBJECTS) $(pscom_memusage_openib_LDADD) $(LIBS)
+pscom_memusage_velo$(EXEEXT): $(pscom_memusage_velo_OBJECTS) $(pscom_memusage_velo_DEPENDENCIES) $(EXTRA_pscom_memusage_velo_DEPENDENCIES) 
+	@rm -f pscom_memusage_velo$(EXEEXT)
+	$(AM_V_CCLD)$(pscom_memusage_velo_LINK) $(pscom_memusage_velo_OBJECTS) $(pscom_memusage_velo_LDADD) $(LIBS)
 pscom_ondemand$(EXEEXT): $(pscom_ondemand_OBJECTS) $(pscom_ondemand_DEPENDENCIES) $(EXTRA_pscom_ondemand_DEPENDENCIES) 
 	@rm -f pscom_ondemand$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pscom_ondemand_OBJECTS) $(pscom_ondemand_LDADD) $(LIBS)
@@ -1139,8 +1183,10 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_bcast_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_bcast_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_maxcon.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_memusage_ofed-pscom_memusage.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_memusage_openib-pscom_memusage.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_memusage_velo-pscom_memusage.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_ondemand.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_request_create.Po@am__quote@
@@ -1374,6 +1420,20 @@ mellanox/ps4_ib_pp_rdma-ps4_ib_pp_rdma.obj: mellanox/ps4_ib_pp_rdma.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ps4_ib_pp_rdma_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mellanox/ps4_ib_pp_rdma-ps4_ib_pp_rdma.obj `if test -f 'mellanox/ps4_ib_pp_rdma.c'; then $(CYGPATH_W) 'mellanox/ps4_ib_pp_rdma.c'; else $(CYGPATH_W) '$(srcdir)/mellanox/ps4_ib_pp_rdma.c'; fi`
 
+pscom_memusage_extoll-pscom_memusage.o: pscom_memusage.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_extoll_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_memusage_extoll-pscom_memusage.o -MD -MP -MF $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Tpo -c -o pscom_memusage_extoll-pscom_memusage.o `test -f 'pscom_memusage.c' || echo '$(srcdir)/'`pscom_memusage.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Tpo $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_memusage.c' object='pscom_memusage_extoll-pscom_memusage.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_extoll_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_memusage_extoll-pscom_memusage.o `test -f 'pscom_memusage.c' || echo '$(srcdir)/'`pscom_memusage.c
+
+pscom_memusage_extoll-pscom_memusage.obj: pscom_memusage.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_extoll_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_memusage_extoll-pscom_memusage.obj -MD -MP -MF $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Tpo -c -o pscom_memusage_extoll-pscom_memusage.obj `if test -f 'pscom_memusage.c'; then $(CYGPATH_W) 'pscom_memusage.c'; else $(CYGPATH_W) '$(srcdir)/pscom_memusage.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Tpo $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_memusage.c' object='pscom_memusage_extoll-pscom_memusage.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_extoll_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_memusage_extoll-pscom_memusage.obj `if test -f 'pscom_memusage.c'; then $(CYGPATH_W) 'pscom_memusage.c'; else $(CYGPATH_W) '$(srcdir)/pscom_memusage.c'; fi`
+
 pscom_memusage_ofed-pscom_memusage.o: pscom_memusage.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_ofed_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_memusage_ofed-pscom_memusage.o -MD -MP -MF $(DEPDIR)/pscom_memusage_ofed-pscom_memusage.Tpo -c -o pscom_memusage_ofed-pscom_memusage.o `test -f 'pscom_memusage.c' || echo '$(srcdir)/'`pscom_memusage.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_memusage_ofed-pscom_memusage.Tpo $(DEPDIR)/pscom_memusage_ofed-pscom_memusage.Po
@@ -1401,6 +1461,20 @@ pscom_memusage_openib-pscom_memusage.obj: pscom_memusage.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_memusage.c' object='pscom_memusage_openib-pscom_memusage.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_openib_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_memusage_openib-pscom_memusage.obj `if test -f 'pscom_memusage.c'; then $(CYGPATH_W) 'pscom_memusage.c'; else $(CYGPATH_W) '$(srcdir)/pscom_memusage.c'; fi`
+
+pscom_memusage_velo-pscom_memusage.o: pscom_memusage.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_velo_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_memusage_velo-pscom_memusage.o -MD -MP -MF $(DEPDIR)/pscom_memusage_velo-pscom_memusage.Tpo -c -o pscom_memusage_velo-pscom_memusage.o `test -f 'pscom_memusage.c' || echo '$(srcdir)/'`pscom_memusage.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_memusage_velo-pscom_memusage.Tpo $(DEPDIR)/pscom_memusage_velo-pscom_memusage.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_memusage.c' object='pscom_memusage_velo-pscom_memusage.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_velo_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_memusage_velo-pscom_memusage.o `test -f 'pscom_memusage.c' || echo '$(srcdir)/'`pscom_memusage.c
+
+pscom_memusage_velo-pscom_memusage.obj: pscom_memusage.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_velo_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_memusage_velo-pscom_memusage.obj -MD -MP -MF $(DEPDIR)/pscom_memusage_velo-pscom_memusage.Tpo -c -o pscom_memusage_velo-pscom_memusage.obj `if test -f 'pscom_memusage.c'; then $(CYGPATH_W) 'pscom_memusage.c'; else $(CYGPATH_W) '$(srcdir)/pscom_memusage.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_memusage_velo-pscom_memusage.Tpo $(DEPDIR)/pscom_memusage_velo-pscom_memusage.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_memusage.c' object='pscom_memusage_velo-pscom_memusage.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_velo_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_memusage_velo-pscom_memusage.obj `if test -f 'pscom_memusage.c'; then $(CYGPATH_W) 'pscom_memusage.c'; else $(CYGPATH_W) '$(srcdir)/pscom_memusage.c'; fi`
 
 pscp-pscp.o: pscp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscp-pscp.o -MD -MP -MF $(DEPDIR)/pscp-pscp.Tpo -c -o pscp-pscp.o `test -f 'pscp.c' || echo '$(srcdir)/'`pscp.c

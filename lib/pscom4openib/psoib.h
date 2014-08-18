@@ -80,6 +80,7 @@ extern unsigned int psoib_pending_tokens;
 extern int psoib_global_sendq; /* bool. Use one sendqueue for all connections? */
 extern int psoib_event_count; /* bool. Be busy if outstanding_cq_entries is to high? */
 extern int psoib_ignore_wrong_opcodes; /* bool: ignore wrong cq opcodes */
+extern int psoib_lid_offset; /* int: offset to base LID (adaptive routing) */
 
 /*
  * Information

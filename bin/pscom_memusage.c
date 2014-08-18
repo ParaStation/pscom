@@ -21,10 +21,17 @@
 #include "pscom.h"
 #include "pscom_priv.h"
 
-#ifndef OFED
+#ifdef OPENIB
 #include "psoib.c"
-#else
+#endif
+
+#ifdef OFED
 #include "psofed.c"
+#endif
+
+#if defined(EXTOLL) || defined(VELO)
+#include "psextoll.c"
+pscom_t pscom; // fake pscom
 #endif
 
 #define USAGE(sof) printf("%8zu : %s\n", sof, #sof)
@@ -32,12 +39,21 @@
 int main(int argc, char **argv)
 {
 	USAGE(sizeof(struct PSCOM_con));
-#ifndef OFED
+#ifdef OPENIB
 	USAGE(sizeof(psoib_con_info_t));
 	USAGE(sizeof(struct PSCOM_con) + sizeof(psoib_con_info_t));
-#else
+#endif
+#ifdef OFED
 	USAGE(sizeof(psofed_con_info_t));
 	USAGE(sizeof(struct PSCOM_con) + sizeof(psofed_con_info_t));
+#endif
+#ifdef EXTOLL
+	USAGE(sizeof(struct psex_con_info));
+	USAGE(sizeof(struct PSCOM_con) + sizeof(struct psex_con_info));
+#endif
+#ifdef VELO
+	USAGE(sizeof(struct psex_con_info));
+	USAGE(sizeof(struct PSCOM_con) + sizeof(struct psex_con_info));
 #endif
 	return 0;
 }

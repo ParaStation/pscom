@@ -129,6 +129,104 @@ void pscom_extoll_velo2_do_write(pscom_con_t *con)
 }
 
 
+/*
+ * RMA rendezvous
+ */
+
+typedef struct pscom_rendezvous_data_extoll {
+	struct psex_rma_req	rma_req;
+	pscom_req_t		*rendezvous_req; // Receiving side: users receive request (or generated request)
+} pscom_rendezvous_data_extoll_t;
+
+
+static inline
+pscom_rendezvous_data_extoll_t *get_req_data(pscom_rendezvous_data_t *rd)
+{
+	_pscom_rendezvous_data_extoll_t *data = &rd->arch.extoll;
+	pscom_rendezvous_data_extoll_t *res = (pscom_rendezvous_data_extoll_t *) data;
+	assert(sizeof(*res) <= sizeof(*data));
+	return res;
+}
+
+
+static
+unsigned int pscom_extoll_rma_mem_register(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+{
+	pscom_rendezvous_data_extoll_t *extoll_rd = get_req_data(rd);
+	psex_con_info_t *ci = con->arch.extoll.ci;
+	psex_mregion_t *mreg = &extoll_rd->rma_req.mreg;
+	/* get mem region */
+	int err = psex_get_mregion(mreg, rd->msg.data, rd->msg.data_len, ci);
+	if (err) goto err_get_region;
+
+	rd->msg.arch.extoll.rma2_nla = mreg->rma2_nla;
+
+	return sizeof(rd->msg.arch.extoll);
+err_get_region:
+	// ToDo: Count get_mregion errors!
+	return 0;
+}
+
+
+static
+void pscom_extoll_rma_mem_deregister(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+{
+	pscom_rendezvous_data_extoll_t *extoll_rd = get_req_data(rd);
+	psex_mregion_t *mreg = &extoll_rd->rma_req.mreg;
+	psex_con_info_t *ci = con->arch.extoll.ci;
+
+	psex_put_mregion(mreg, ci);
+}
+
+
+static
+void pscom_extoll_rma_read_io_done(psex_rma_req_t *dreq)
+{
+	pscom_rendezvous_data_extoll_t *extoll_rd =
+		(pscom_rendezvous_data_extoll_t *)dreq->priv;
+	pscom_req_t *rendezvous_req = extoll_rd->rendezvous_req;
+	psex_mregion_t *mreg = &extoll_rd->rma_req.mreg;
+	psex_con_info_t *ci = dreq->ci;
+
+	psex_put_mregion(mreg, ci);
+
+	/* called via
+	   psex_handle_notification() -> io_done.
+
+	   we have the global lock!
+	   Use locked version of req_done: */
+
+	_pscom_recv_req_done(rendezvous_req);
+}
+
+
+static
+int pscom_extoll_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd)
+{
+	pscom_rendezvous_data_extoll_t *extoll_rd = get_req_data(rd);
+	psex_rma_req_t *dreq = &extoll_rd->rma_req;
+	pscom_con_t *con = get_con(rendezvous_req->pub.connection);
+	psex_con_info_t *ci = con->arch.extoll.ci;
+	int err;
+
+	err = psex_get_mregion(&dreq->mreg,
+			       rendezvous_req->pub.data,
+			       rendezvous_req->pub.data_len, ci);
+	assert(!err); // ToDo: Catch error
+
+	dreq->rma2_nla = rd->msg.arch.extoll.rma2_nla; // nla of the sender
+	dreq->data_len = rendezvous_req->pub.data_len;
+	dreq->ci = ci;
+	dreq->io_done = pscom_extoll_rma_read_io_done;
+	dreq->priv = extoll_rd;
+
+	extoll_rd->rendezvous_req = rendezvous_req;
+
+	return psex_post_rma_get(dreq);
+}
+
+/* RMA rendezvous end */
+
 #if 0
 static
 int _pscom_extoll_rma2_do_read(pscom_con_t *con, psex_con_info_t *ci)
@@ -243,11 +341,11 @@ void pscom_extoll_con_init(pscom_con_t *con, int con_fd,
 
 	con->close = pscom_extoll_close;
 
-//	con->rma_mem_register = pscom_extoll_rma_mem_register;
-//	con->rma_mem_deregister = pscom_extoll_rma_mem_deregister;
-//	con->rma_read = pscom_extoll_rma_read;
+	con->rma_mem_register = pscom_extoll_rma_mem_register;
+	con->rma_mem_deregister = pscom_extoll_rma_mem_deregister;
+	con->rma_read = pscom_extoll_rma_read;
 
-	con->rendezvous_size = pscom.env.rendezvous_size_extoll;
+	con->rendezvous_size = pscom.env.rendezvous_size_velo;
 }
 
 /*********************************************************************/
@@ -257,6 +355,7 @@ void pscom_extoll_init(void)
 	psex_debug = pscom.env.debug;
 	psex_debug_stream = pscom_debug_stream();
 
+#ifndef DISABLE_RMA2
 	pscom_env_get_uint(&psex_recvq_size, ENV_EXTOLL_RECVQ_SIZE);
 
 	pscom_env_get_int(&psex_global_sendq, ENV_EXTOLL_GLOBAL_SENDQ);
@@ -278,6 +377,12 @@ void pscom_extoll_init(void)
 //		psex_event_count = 0;
 //	}
 	pscom_env_get_int(&psex_event_count, ENV_EXTOLL_EVENT_CNT);
+#endif
+
+#if PSEX_USE_MREGION_CACHE
+	pscom_env_get_uint(&psex_mregion_cache_max_size, ENV_EXTOLL_MCACHE_SIZE);
+	if (!psex_mregion_cache_max_size) psex_mregion_cache_max_size = 1; // 0 not allowed.
+#endif
 
 	INIT_LIST_HEAD(&pscom_extoll.reader.next);
 	pscom_extoll.reader.do_read = pscom_extoll_velo2_do_read;

@@ -192,6 +192,7 @@ void pscom_openib_init(void)
 //	}
 	pscom_env_get_int(&psoib_event_count, ENV_OPENIB_EVENT_CNT);
 	pscom_env_get_int(&psoib_ignore_wrong_opcodes, ENV_OPENIB_IGNORE_WRONG_OPCODES);
+	pscom_env_get_int(&psoib_lid_offset, ENV_OPENIB_LID_OFFSET);
 
 	INIT_LIST_HEAD(&pscom_cq_poll.next);
 	pscom_cq_poll.do_read = pscom_poll_cq;

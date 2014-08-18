@@ -16,6 +16,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS =
 SUBDIRS += pscom
+SUBDIRS += psmalloc
 
 # - dapl -
 if DAPL_ENABLED

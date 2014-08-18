@@ -112,3 +112,6 @@ if GM_ENABLED
   libpsport4all_la_LDFLAGS += $(GM_LDFLAGS)
   libpsport4all_la_LIBADD += -lgm
 endif
+
+install-exec-hook:
+	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)

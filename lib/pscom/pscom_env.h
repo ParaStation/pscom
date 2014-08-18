@@ -42,6 +42,7 @@
 #define ENV_RENDEZVOUS_DAPL "PSP_RENDEZVOUS_DAPL"
 #define ENV_RENDEZVOUS_ELAN "PSP_RENDEZVOUS_ELAN"
 #define ENV_RENDEZVOUS_EXTOLL "PSP_RENDEZVOUS_EXTOLL"
+#define ENV_RENDEZVOUS_VELO "PSP_RENDEZVOUS_VELO"
 
 /* Used in constructing the UUID for QLogic */
 #define ENV_PSM_UNIQ_ID "PSP_PSM_UNIQ_ID"
@@ -80,6 +81,7 @@
 #define ENV_OPENIB_GLOBAL_SENDQ "PSP_OPENIB_GLOBAL_SENDQ" /* bool: Use one sendq for all connections? default: 0(no) */
 #define ENV_OPENIB_EVENT_CNT "PSP_OPENIB_EVENT_CNT" /* bool: Be busy if outstanding_cq_entries is to high? default: 1(yes) */
 #define ENV_OPENIB_IGNORE_WRONG_OPCODES "PSP_OPENIB_IGNORE_WRONG_OPCODES" /* bool: ignore wrong cq opcodes */
+#define ENV_OPENIB_LID_OFFSET "PSP_OPENIB_LID_OFFSET" /* int: offset to base LID (adaptive routing) */
 
 
 /* OFED HCA and port */
@@ -99,6 +101,7 @@
 
 
 #define ENV_OFED_EVENT_CNT "PSP_OFED_EVENT_CNT" /* bool: Be busy if outstanding_cq_entries is to high? default: 1(yes) */
+#define ENV_OFED_LID_OFFSET "PSP_OFED_LID_OFFSET" /* int: offset to base LID (adaptive routing) */
 
 /* Extoll */
 #define ENV_EXTOLL_RECVQ_SIZE "PSP_EXTOLL_RECVQ_SIZE"
@@ -106,7 +109,18 @@
 #define ENV_EXTOLL_GLOBAL_SENDQ "PSP_EXTOLL_GLOBAL_SENDQ" /* bool: Use one sendq for all connections? default: 0(no) */
 #define ENV_EXTOLL_EVENT_CNT "PSP_EXTOLL_EVENT_CNT" /* bool: Be busy on empty global sendq? default: 0(no) */
 #define ENV_EXTOLL_PENDING_TOKENS "PSP_EXTOLL_PENDING_TOKENS"
+#define ENV_EXTOLL_MCACHE_SIZE "PSP_EXTOLL_MCACHE_SIZE"
 
+/* Allocate memory in a shared mem segment */
+/* "PSP_MALLOC*" settings have to be known already in the __malloc_initialize_hook() before we
+   run through pscom_pslib_init(). Therefore they are not printed with PSP_DEBUG > 0 and can only set from
+   the environment (not from pslib). */
+#define ENV_MALLOC "PSP_MALLOC" /* bool: Use a hook into glibc malloc (__morecore())? default: 1(yes) */
+#define ENV_MALLOC_MIN "PSP_MALLOC_MIN" /* ulong: minimum size of the shared mem segment */
+#define ENV_MALLOC_MAX "PSP_MALLOC_MAX" /* ulong: maximum size of the shared mem segment */
+
+/* Use shm direct for messages >= PSP_SHM_DIRECT. Set PSP_SHM_DIRECT=-1 to disable shm direct. */
+#define ENV_SHM_DIRECT "PSP_SHM_DIRECT" /* min message size to use shm direct */
 
 /* Manage a list of all requests for debug dumps (decrease performance!) */
 #define ENV_DEBUG_REQ     "PSP_DEBUG_REQ"
@@ -134,6 +148,7 @@ struct PSCOM_env {
 	unsigned int	rendezvous_size_dapl;
 	unsigned int	rendezvous_size_elan;
 	unsigned int	rendezvous_size_extoll;
+	unsigned int	rendezvous_size_velo;
 	unsigned int	psm_uniq_id;
 	int		sigquit;
 	unsigned int	readahead;
@@ -164,6 +179,7 @@ struct PSCOM_env {
 	.rendezvous_size_dapl = ~0, /* default rendezvous_size for dapl */ \
 	.rendezvous_size_elan = ~0, /* default rendezvous_size for elan */ \
 	.rendezvous_size_extoll = ~0, /* default rendezvous_size for extoll */ \
+	.rendezvous_size_velo = 1024, /* default rendezvous_size for velo */ \
 	.psm_uniq_id = 0,						\
 	.sigquit = 0,							\
 	.readahead = 100,						\

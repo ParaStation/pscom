@@ -59,6 +59,7 @@ struct PSCOM_req
 	unsigned int skip; /* recv: overread skip bytes at the end.
 			    * send: skip bytes to send, but currently
 			    *       not available (forwards/bcasts) */
+	unsigned int pending_io; /* count pending io send requests */
 
 	/* partner_req:
 	   rma send:
@@ -145,6 +146,9 @@ typedef struct pscom_rendezvous_msg {
 			uint32_t /* DAT_RMR_CONTEXT */	rmr_context;
 			uint64_t /* DAT_CONTEXT */	rmr_vaddr;
 		} dapl;
+		struct {
+			uint64_t /* RMA2_NLA */		rma2_nla; /* Network logical address of the sender */
+		} extoll;
 	}	arch;
 } pscom_rendezvous_msg_t;
 
@@ -156,6 +160,11 @@ typedef struct _pscom_rendezvous_data_dapl {
 	char /* struct psdapl_rdma_req */ data[128];
 } _pscom_rendezvous_data_dapl_t;
 
+typedef struct _pscom_rendezvous_data_extoll {
+	/* placeholder for struct pscom_rendezvous_data_extoll */
+	char /* struct psex_rma_req */ _rma_req[128];
+} _pscom_rendezvous_data_extoll_t;
+
 
 typedef struct pscom_rendezvous_data {
 	pscom_rendezvous_msg_t	msg;
@@ -163,6 +172,7 @@ typedef struct pscom_rendezvous_data {
 	union {
 		pscom_rendezvous_data_shm_t	shm;
 		_pscom_rendezvous_data_dapl_t	dapl;
+		_pscom_rendezvous_data_extoll_t	extoll;
 	}		arch;
 } pscom_rendezvous_data_t;
 
@@ -314,6 +324,10 @@ struct PSCOM
 		unsigned int	probes;		// All probes (including any)
 		unsigned int	iprobes_ok;	// All iprobes returning 1 = "received"
 		unsigned int	probes_any_source; // All ANY_SOURCE probes
+
+		unsigned int	shm_direct;	// successful shm direct sends
+		unsigned int	shm_direct_nonshmptr; // shm direct with copy because !is_psshm_ptr(data)
+		unsigned int	shm_direct_failed; // failed shm direct because !is_psshm_ptr(malloc(data))
 	}			stat;
 };
 
@@ -445,6 +459,13 @@ int pscom_read_is_at_message_start(pscom_con_t *con);
 
 pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2]);
 void pscom_write_done(pscom_con_t *con, pscom_req_t *req, size_t len);
+
+/* Asynchronous write. len bytes consumed, but not save for reuse (pending io in data)
+ * Call pscom_write_pending_done, if io has finished. */
+void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len);
+
+/* Asynchronous write on req done. */
+void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req);
 
 
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error);

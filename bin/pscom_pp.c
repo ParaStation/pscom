@@ -34,7 +34,7 @@ int arg_lport = 7100;
 int arg_loops = 1024;
 int arg_maxtime = 3000;
 #define MAX_XHEADER 100
-int arg_xheader = 10;
+int arg_xheader = 12;
 int arg_maxmsize = 4 * 1024 * 1024;
 int arg_run_once = 0;
 int arg_verbose = 0;
@@ -202,6 +202,7 @@ int run_pp_c(pscom_connection_t *con, int msize, int xsize, int loops)
 		//       pscom_dumpstr(sbuf, MIN(msize, 16)));
 		pscom_post_recv(rreq);
 
+		pscom_wait(sreq);
 		pscom_wait(rreq);
 	}
 

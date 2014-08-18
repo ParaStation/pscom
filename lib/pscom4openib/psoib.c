@@ -157,6 +157,7 @@ unsigned int psoib_pending_tokens = _SIZE_RECV_QUEUE - 6;
 int psoib_global_sendq = 0; /* bool. Use one sendqueue for all connections? */
 int psoib_event_count = 1; /* bool. Be busy if outstanding_cq_entries is to high? */
 int psoib_ignore_wrong_opcodes = 0; /* bool: ignore wrong cq opcodes */
+int psoib_lid_offset; /* int: offset to base LID (adaptive routing) */
 
 struct psoib_stat_s {
     unsigned busy_notokens;	// connection out of tokens for sending
@@ -831,7 +832,7 @@ int psoib_init_port(hca_info_t *hca_info, port_info_t *port_info)
 	if (attr.lid == 0)
 	    goto err_no_lid;
 
-	port_info->lid = attr.lid;
+	port_info->lid = attr.lid + (uint16_t)psoib_lid_offset;
     }
 
     return 0;

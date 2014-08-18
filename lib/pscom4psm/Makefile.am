@@ -21,3 +21,6 @@ libpscom4psm_la_SOURCES = pscom_psm.c pscom_psm.h
 libpscom4psm_la_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
 libpscom4psm_la_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
 libpscom4psm_la_LIBADD = -lpsm_infinipath $(top_builddir)/lib/pscom/libpscom.la
+
+install-exec-hook:
+	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)

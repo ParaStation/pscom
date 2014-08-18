@@ -130,6 +130,7 @@ void pscom_req_prepare_send_pending(pscom_req_t *req, unsigned msg_type, unsigne
 	req->cur_data.iov_len = req->pub.data_len - data_pending;
 
 	req->skip = data_pending;
+	req->pending_io = 0;
 }
 
 
@@ -778,7 +779,7 @@ pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2])
 		iov[0] = req->cur_header;
 		iov[1] = req->cur_data;
 
-		if (!req->skip || req->cur_data.iov_len || req->cur_header.iov_len) {
+		if (req->cur_data.iov_len || req->cur_header.iov_len) {
 			req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
 			return req;
 		} else {
@@ -798,16 +799,29 @@ void pscom_write_done(pscom_con_t *con, pscom_req_t *req, size_t len)
 {
 	pscom_forward_iov(&req->cur_header, len);
 
-	if (!req->cur_header.iov_len && !req->cur_data.iov_len) {
-		if (!req->skip) {
-			_pscom_sendq_deq(con, req);
-			_pscom_send_req_done(req); // done
-		} else {
-			/* broadcast/forward.
-			   Wait until we have received more data to forward. */
-			con->write_stop(con);
-			assert(req->pub.connection == &con->pub);
-		}
+	if (!req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+		_pscom_sendq_deq(con, req);
+		if (!req->pending_io) _pscom_send_req_done(req); // done
+	}
+}
+
+
+void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
+{
+	pscom_forward_iov(&req->cur_header, len);
+
+	req->pending_io++;
+	if (!req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+		_pscom_sendq_deq(con, req);
+	}
+}
+
+
+void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
+{
+	req->pending_io--;
+	if (!req->pending_io && !req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+		_pscom_send_req_done(req); // done
 	}
 }
 
@@ -1125,7 +1139,7 @@ int _pscom_iprobe(pscom_req_t *req)
 
 	genreq = _pscom_net_recvq_user_find(req);
 
-	if (!genreq || (!(genreq->pub.state & PSCOM_REQ_STATE_DONE))) {
+	if (!genreq) {
 		res = 0;
 	} else {
 		res = 1;

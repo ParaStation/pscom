@@ -362,7 +362,7 @@ void pscom_con_setup(pscom_con_t *con)
 		pscom_con_info_set(con, "remote", pscom_con_info_str(&con->pub.remote_con_info));
 	}
 
-	if (con->recv_req_cnt) {
+	if (con->recv_req_cnt || pscom.env.unexpected_receives) {
 		con->read_start(con);
 	}
 
@@ -419,8 +419,8 @@ typedef struct {
 	uint32_t	ver_to;
 } pscom_info_version_t;
 
-#define VER_FROM 0x0100
-#define VER_TO   0x0100
+#define VER_FROM 0x0101
+#define VER_TO   0x0101
 
 
 static

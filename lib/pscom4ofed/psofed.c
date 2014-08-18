@@ -51,7 +51,7 @@
 #define TRACE(cmd)
 
 typedef struct {
-        void *ptr;
+	void *ptr;
 	struct ibv_mr *mr;
 } mem_info_t;
 
@@ -203,6 +203,8 @@ unsigned long psofed_resend_timeout = 10000; // resend in usec. 4 times the time
 unsigned int psofed_resend_timeout_shift = 11; // Never wait longer then psofed_resend_timeout << psofed_resend_timeout_shift
 
 int psofed_event_count = 1; /* bool. Be busy if outstanding_cq_entries is to high? */
+int psofed_lid_offset = 0; /* int: offset to base LID (adaptive routing) */
+
 
 struct psofed_stat_s {
 	unsigned busy_notokens;	// connection out of tokens for sending (win closed)
@@ -536,7 +538,7 @@ uint16_t psofed_get_lid(struct ibv_context *ctx, unsigned port_num)
 	if (attr.lid == 0)
 		goto err_no_lid;
 
-	return attr.lid;
+	return attr.lid + (uint16_t)psofed_lid_offset;
 	/* --- */
 err_query_port:
 	if (errno != EINVAL) {

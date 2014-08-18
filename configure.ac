@@ -176,6 +176,7 @@ AC_CONFIG_FILES(lib/pscom4gm/Makefile)
 AC_CONFIG_FILES(lib/pscom4ofed/Makefile)
 AC_CONFIG_FILES(lib/pscom4openib/Makefile)
 AC_CONFIG_FILES(lib/pscom4psm/Makefile)
+AC_CONFIG_FILES(lib/psmalloc/Makefile)
 AC_CONFIG_FILES(lib/psport4/Makefile)
 AC_CONFIG_FILES(scripts/Makefile)
 

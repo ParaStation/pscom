@@ -46,7 +46,7 @@
 
 int arg_loops = 1024;
 int arg_maxtime = 3000;
-#define MAX_MSIZE (4 * 1024 - 8)
+#define MAX_MSIZE (4 * 1024 * 1024 - 8)
 int arg_maxmsize = MAX_MSIZE;
 int arg_verbose = 0;
 int arg_with_completion_notification = 0;
@@ -208,11 +208,11 @@ void init_bufs(void)
 	r_buf->mark = 0;
 	s_buf->mark = 0;
 
-	assert(sizeof(*s_buf) == 4 * 1024);
+//	assert(sizeof(*s_buf) == 4 * 1024);
 	rc = rma2_register(extoll_port, s_buf, sizeof(*s_buf), &extoll_s_region);
 	extoll_rc_check(rc, "rma2_register() for s_buf");
 
-	assert(sizeof(*r_buf) == 4 * 1024);
+//	assert(sizeof(*r_buf) == 4 * 1024);
 	rc = rma2_register(extoll_port, r_buf, sizeof(*r_buf), &extoll_r_region);
 	extoll_rc_check(rc, "rma2_register() for r_buf");
 
@@ -428,7 +428,7 @@ void do_pp_client(void)
 
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
-	for (ms = 0/*1.4142135*/; ms < arg_maxmsize; ms =ms+1){// ms * 1.4142135) {
+	for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
 		unsigned int iloops = loops;
 		msgsize = ms + 0.5;
 

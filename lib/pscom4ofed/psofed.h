@@ -147,6 +147,7 @@ extern unsigned int psofed_resend_timeout_shift; /* Never wait longer then psofe
 
 
 extern int psofed_event_count; /* bool. Be busy if outstanding_cq_entries is to high? */
+extern int psofed_lid_offset; /* int: offset to base LID (adaptive routing) */
 
 /*
  * Information

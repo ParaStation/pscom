@@ -26,10 +26,9 @@
 //typedef struct RMA2_Connection_s RMA2_Connection;
 //typedef struct RMA2_Endpoint_s RMA2_Endpoint;
 //typedef struct RMA2_Region_s RMA2_Region;
-#ifndef DISABLE_RMA2
 #include "rma2.h" /* Extoll librma interface */
-#endif
 #include "velo2.h" /* Extoll libvelo interface */
+#include "list.h"
 
 /* rma2.h includes extoll/include/list.h which clash with pscom/list.h.
    If so, do not include pscom/list.h again:*/
@@ -42,9 +41,9 @@ typedef struct hca_info hca_info_t;
 
 // contact endpoint info
 typedef struct psex_info_msg_s {
-#ifndef DISABLE_RMA2
 	RMA2_Nodeid	rma2_nodeid;
 	RMA2_VPID	rma2_vpid;
+#ifndef DISABLE_RMA2
 	RMA2_NLA	rbuf_nla;
 #endif
 
@@ -140,18 +139,73 @@ void psex_velo2_send_eof(psex_con_info_t *con_info);
  */
 int psex_velo2_recv(hca_info_t *hca_info, void **priv, void *msg, size_t msglen);
 
+/*
+ * RMA2 rendezvous
+ */
+
+/* registered memory region. (Opaque object for users of psex_get_mregion() and psex_put_mregion()) */
+typedef struct psex_rma_req psex_rma_req_t;
+
+#define PSEX_USE_MREGION_CACHE 1
+#if PSEX_USE_MREGION_CACHE
+/* Using mregion cache */
+
+typedef struct psex_mregion_cache psex_mregion_cache_t;
+
+typedef struct psex_mregion {
+	RMA2_NLA		rma2_nla;
+	psex_mregion_cache_t	*mreg_cache;
+} psex_mregion_t;
+
+#else
+/* Not using mregion cache */
+
+typedef struct psex_mregion {
+	RMA2_NLA	rma2_nla;
+	RMA2_Region	rma2_region;
+} psex_mregion_t;
+
+#endif
+
+/* rendezvous data for the rma get request */
+struct psex_rma_req {
+	struct list_head next;
+	RMA2_NLA	rma2_nla; /* Network logical address of the sender */
+	size_t		data_len;
+	psex_mregion_t	mreg; /* contain Network logical address of the receiver */
+	psex_con_info_t	*ci;
+
+	void		(*io_done)(psex_rma_req_t *req);
+	void		*priv;
+};
+
+
+/* get memory handles from mem region buf:size.
+ * call psdapl_put_mregion() after usage!
+ * return -1 on error. */
+int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info_t *ci);
+
+void psex_put_mregion(psex_mregion_t *mreg, psex_con_info_t *ci);
+
+/* return -1 on error */
+int psex_post_rma_get(psex_rma_req_t *req);
+
+
 
 /*
  * Configuration
  */
 extern int psex_debug;
 extern FILE *psex_debug_stream; /* Stream to use for debug output */
+#ifndef DISABLE_RMA2
 extern unsigned int psex_sendq_size; /* sendqueue size. Used when psex_global_sendq == 0 */
 extern unsigned int psex_gsendq_size; /* Global sendqueue size. Used when psex_global_sendq == 1 */
 extern unsigned int psex_recvq_size;
 extern unsigned int psex_pending_tokens;
 extern int psex_global_sendq; /* bool. Use one sendqueue for all connections? */
 extern int psex_event_count; /* bool. Be busy if outstanding_cq_entries is to high? */
+#endif /* DISABLE_RMA2 */
+extern unsigned psex_mregion_cache_max_size; /* max size of the cache */
 
 /*
  * Information

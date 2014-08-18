@@ -1,3 +1,17 @@
+2014-07-01  Jens Hauke  <hauke@par-tec.com>	-	5.0.44-1
+
+	* Feature: configurable LID offset for
+	infiniband. PSP_OFED_LID_OFFSET for UD and PSP_OPENIB_LID_OFFSET
+	for rc communication.
+
+2014-06-16  Jens Hauke  <hauke@par-tec.com>
+
+	* Feature: pscom4shm with "direct shared memory". To enable, link
+	with "-lpsmalloc", to disable set PSP_MALLOC=0.
+
+	* Feature: pscom4velo using rma for large messages (rendezvous
+	over velo).
+
 2014-01-09  Jens Hauke  <hauke@par-tec.com>	-	5.0.43-1
 
 	* Feature: Add 2 new mpi messages types for debug with

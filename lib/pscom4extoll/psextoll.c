@@ -573,17 +573,21 @@ void psex_recvdone(psex_con_info_t *con_info)
 }
 
 
-static
-void psex_progress(psex_con_info_t *con_info)
+void psex_progress(void)
 {
+	hca_info_t *hca_info = &default_hca;
+#if 1
+	rma2_replay_buffer_drain(hca_info->rma2_port);
+#else
 	RMA2_Notification *notification;
 	RMA2_ERROR rc;
-	RMA2_Port rma2_port = con_info->rma2_port;
+	RMA2_Port rma2_port = hca_info->rma2_port;
 
 	rc = rma2_noti_probe(rma2_port, &notification);
 	if (rc == RMA2_SUCCESS) {
 		rma2_noti_free(rma2_port, notification);
 	}
+#endif
 }
 
 
@@ -602,7 +606,7 @@ int psex_recvlook(psex_con_info_t *con_info, void **buf)
 			*buf = NULL;
 			// Maybe we have to send tokens before we can receive more:
 			_psex_send_tokens(con_info);
-			psex_progress(con_info);
+			// psex_progress(con_info); Called outside the loop over all connections.
 			return (con_info->con_broken) ? -EPIPE : -EAGAIN;
 		}
 

@@ -102,6 +102,10 @@ void psex_recvdone(psex_con_info_t *con_info);
 int psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size);
 void psex_send_eof(psex_con_info_t *con_info);
 
+
+/* Flush the notification queue and make progress in the rma2 engine. */
+void psex_progress(void);
+
 /* Suggest a value for psex_pending_tokens. Result depends on psex_recvq_size. */
 unsigned psex_pending_tokens_suggestion(void);
 

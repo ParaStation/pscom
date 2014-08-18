@@ -24,7 +24,8 @@ libpscom_la_SOURCES = pscom.c pscom_con.c pscom_debug.c			\
 	pscom_dprint.c pscom_env.c pscom_group.c pscom_group_bcast.c	\
 	pscom_io.c pscom_listener.c pscom_ondemand.c pscom_p4s.c	\
 	pscom_plugin.c pscom_queues.c pscom_req.c pscom_shm.c		\
-	pscom_sock.c pscom_str_util.c pscom_tcp.c pscom_ufd.c pslib.c
+	pscom_sock.c pscom_str_util.c pscom_tcp.c pscom_ufd.c pslib.c	\
+	psshmalloc.c
 
 noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_gm.h pscom_group.h pscom_io.h pscom_p4s.h			\
@@ -40,3 +41,6 @@ libpslib_la_LIBADD = -ldl
 libpscom_env_la_SOURCES = pscom_env.c pscom_env.h
 libpscom_dprint_la_SOURCES = pscom_dprint.c
 libperf_la_SOURCES = perf.c perf.h
+
+install-exec-hook:
+	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)

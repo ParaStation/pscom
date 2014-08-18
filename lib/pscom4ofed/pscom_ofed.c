@@ -198,6 +198,7 @@ void pscom_ofed_init(void)
 
 	pscom_env_get_uint(&psofed_resend_timeout_shift, ENV_OFED_RESEND_TIMEOUT_SHIFT);
 	pscom_env_get_int(&psofed_event_count, ENV_OFED_EVENT_CNT);
+	pscom_env_get_int(&psofed_lid_offset, ENV_OFED_LID_OFFSET);
 
 	INIT_LIST_HEAD(&pscom_ofed.reader.next);
 	pscom_ofed.reader.do_read = pscom_ofed_do_read;

@@ -504,6 +504,12 @@ void pscom_psm_finalize(void){
 static
 int pspsm_close_endpoint(void)
 {
+#if 1
+	/* psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
+	   the cleanup always helps.
+	   (Seen with infinipath-libs-3.2-32129.1162_rhel6_qlc.x86_64) */
+	return 0;
+#else
 	psm_error_t ret;
 
 	if (pspsm_ep){
@@ -521,6 +527,7 @@ int pspsm_close_endpoint(void)
 	pspsm_err(psm_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_close_endpoint: %s", pspsm_err_str);
 	return -1;
+#endif
 }
 
 

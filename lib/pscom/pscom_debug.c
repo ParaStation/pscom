@@ -255,6 +255,12 @@ void pscom_dump_reqstat(FILE *out)
 			pscom.stat.probes_any_source,
 			pscom.stat.iprobes_ok);
 	}
+	if (pscom.stat.shm_direct || pscom.stat.shm_direct_nonshmptr || pscom.stat.shm_direct_failed) {
+		fprintf(out, "shmDirect:%u shmDirectNonShmptr:%u shmDirectFailed:%u\n",
+			pscom.stat.shm_direct,
+			pscom.stat.shm_direct_nonshmptr,
+			pscom.stat.shm_direct_failed);
+	}
 }
 
 
