@@ -76,7 +76,8 @@ noinst_PROGRAMS = p4logd$(EXEEXT) porttest$(EXEEXT) \
 	port_pp$(EXEEXT) pscom_maxcon$(EXEEXT) $(am__EXEEXT_2) \
 	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
 	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8) \
-	$(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11)
+	$(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11) \
+	$(am__EXEEXT_12)
 check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
 bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
@@ -92,11 +93,12 @@ bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
 # noinst_PROGRAMS += elan_pp
 @ELAN_ENABLED_TRUE@am__append_7 = elan_pp_lowlevel
 @EXTOLL_ENABLED_TRUE@am__append_8 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
+@MXM_ENABLED_TRUE@am__append_9 = mxm_pp
 
 # -- mem usage diagnostics --
-@OPENIB_ENABLED_TRUE@am__append_9 = pscom_memusage_openib
-@OFED_ENABLED_TRUE@am__append_10 = pscom_memusage_ofed
-@EXTOLL_ENABLED_TRUE@am__append_11 = pscom_memusage_extoll \
+@OPENIB_ENABLED_TRUE@am__append_10 = pscom_memusage_openib
+@OFED_ENABLED_TRUE@am__append_11 = pscom_memusage_ofed
+@EXTOLL_ENABLED_TRUE@am__append_12 = pscom_memusage_extoll \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo
 subdir = bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -127,9 +129,10 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 @EXTOLL_ENABLED_TRUE@am__EXEEXT_8 = extoll_pp_lowlevel$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_pp_velo$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_one_message$(EXEEXT)
-@OPENIB_ENABLED_TRUE@am__EXEEXT_9 = pscom_memusage_openib$(EXEEXT)
-@OFED_ENABLED_TRUE@am__EXEEXT_10 = pscom_memusage_ofed$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_extoll$(EXEEXT) \
+@MXM_ENABLED_TRUE@am__EXEEXT_9 = mxm_pp$(EXEEXT)
+@OPENIB_ENABLED_TRUE@am__EXEEXT_10 = pscom_memusage_openib$(EXEEXT)
+@OFED_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_ofed$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_extoll$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -193,6 +196,12 @@ gm_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 am_list_test_OBJECTS = list_test.$(OBJEXT)
 list_test_OBJECTS = $(am_list_test_OBJECTS)
 list_test_LDADD = $(LDADD)
+am_mxm_pp_OBJECTS = mxm/mxm_pp-mxm_pp.$(OBJEXT)
+mxm_pp_OBJECTS = $(am_mxm_pp_OBJECTS)
+mxm_pp_DEPENDENCIES =
+mxm_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(mxm_pp_LDFLAGS) $(LDFLAGS) -o $@
 am_openib_pp_OBJECTS = openib/openib_pp-openib_pp.$(OBJEXT)
 openib_pp_OBJECTS = $(am_openib_pp_OBJECTS)
 am__DEPENDENCIES_1 = $(top_builddir)/lib/pscom/libpscom_env.la \
@@ -400,10 +409,10 @@ am__v_CCLD_1 =
 SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(elan_pp_lowlevel_SOURCES) $(extoll_one_message_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
-	$(gm_pp_SOURCES) $(list_test_SOURCES) $(openib_pp_SOURCES) \
-	$(openib_ud_pp_SOURCES) $(p4logd_SOURCES) $(p4stat_SOURCES) \
-	$(p4tcp_SOURCES) $(port_pp_SOURCES) $(porttest_SOURCES) \
-	$(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
+	$(gm_pp_SOURCES) $(list_test_SOURCES) $(mxm_pp_SOURCES) \
+	$(openib_pp_SOURCES) $(openib_ud_pp_SOURCES) $(p4logd_SOURCES) \
+	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(port_pp_SOURCES) \
+	$(porttest_SOURCES) $(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
 	$(ps4_ib_pp_rdma_SOURCES) $(pscom_bcast_pp_SOURCES) \
 	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
 	$(pscom_memusage_extoll_SOURCES) \
@@ -418,10 +427,10 @@ SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(elan_pp_lowlevel_SOURCES) $(extoll_one_message_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
-	$(gm_pp_SOURCES) $(list_test_SOURCES) $(openib_pp_SOURCES) \
-	$(openib_ud_pp_SOURCES) $(p4logd_SOURCES) $(p4stat_SOURCES) \
-	$(p4tcp_SOURCES) $(port_pp_SOURCES) $(porttest_SOURCES) \
-	$(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
+	$(gm_pp_SOURCES) $(list_test_SOURCES) $(mxm_pp_SOURCES) \
+	$(openib_pp_SOURCES) $(openib_ud_pp_SOURCES) $(p4logd_SOURCES) \
+	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(port_pp_SOURCES) \
+	$(porttest_SOURCES) $(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
 	$(ps4_ib_pp_rdma_SOURCES) $(pscom_bcast_pp_SOURCES) \
 	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
 	$(pscom_memusage_extoll_SOURCES) \
@@ -540,6 +549,8 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MELLANOX_CPPFLAGS = @MELLANOX_CPPFLAGS@
 MELLANOX_LDFLAGS = @MELLANOX_LDFLAGS@
 MKDIR_P = @MKDIR_P@
+MXM_CPPFLAGS = @MXM_CPPFLAGS@
+MXM_LDFLAGS = @MXM_LDFLAGS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -810,6 +821,12 @@ extoll_one_message_SOURCES = extoll/extoll_one_message.c
 extoll_one_message_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 extoll_one_message_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 extoll_one_message_LDADD = -lrma2 -lpopt
+
+# -- mxm -- 
+mxm_pp_SOURCES = mxm/mxm_pp.c
+mxm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(MXM_CPPFLAGS)
+mxm_pp_LDFLAGS = $(AM_LDFLAGS) $(MXM_LDFLAGS)
+mxm_pp_LDADD = -lmxm -lpopt
 pscom_memusage_openib_SOURCES = pscom_memusage.c
 pscom_memusage_openib_CPPFLAGS = $(AM_CPPFLAGS) -DOPENIB=1	\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4openib
@@ -1006,6 +1023,17 @@ gm_pp$(EXEEXT): $(gm_pp_OBJECTS) $(gm_pp_DEPENDENCIES) $(EXTRA_gm_pp_DEPENDENCIE
 list_test$(EXEEXT): $(list_test_OBJECTS) $(list_test_DEPENDENCIES) $(EXTRA_list_test_DEPENDENCIES) 
 	@rm -f list_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(list_test_OBJECTS) $(list_test_LDADD) $(LIBS)
+mxm/$(am__dirstamp):
+	@$(MKDIR_P) mxm
+	@: > mxm/$(am__dirstamp)
+mxm/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) mxm/$(DEPDIR)
+	@: > mxm/$(DEPDIR)/$(am__dirstamp)
+mxm/mxm_pp-mxm_pp.$(OBJEXT): mxm/$(am__dirstamp) \
+	mxm/$(DEPDIR)/$(am__dirstamp)
+mxm_pp$(EXEEXT): $(mxm_pp_OBJECTS) $(mxm_pp_DEPENDENCIES) $(EXTRA_mxm_pp_DEPENDENCIES) 
+	@rm -f mxm_pp$(EXEEXT)
+	$(AM_V_CCLD)$(mxm_pp_LINK) $(mxm_pp_OBJECTS) $(mxm_pp_LDADD) $(LIBS)
 openib/$(am__dirstamp):
 	@$(MKDIR_P) openib
 	@: > openib/$(am__dirstamp)
@@ -1167,6 +1195,7 @@ mostlyclean-compile:
 	-rm -f extoll/*.$(OBJEXT)
 	-rm -f gm/*.$(OBJEXT)
 	-rm -f mellanox/*.$(OBJEXT)
+	-rm -f mxm/*.$(OBJEXT)
 	-rm -f openib/*.$(OBJEXT)
 	-rm -f psm/*.$(OBJEXT)
 
@@ -1210,6 +1239,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@mellanox/$(DEPDIR)/ps4_ib-ps4_ib.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mellanox/$(DEPDIR)/ps4_ib_pp-ps4_ib_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@mellanox/$(DEPDIR)/ps4_ib_pp_rdma-ps4_ib_pp_rdma.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@mxm/$(DEPDIR)/mxm_pp-mxm_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@openib/$(DEPDIR)/openib_pp-openib_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@openib/$(DEPDIR)/openib_ud_pp-openib_ud_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@psm/$(DEPDIR)/psm_pp-psm_pp.Po@am__quote@
@@ -1349,6 +1379,20 @@ gm/gm_pp-gm_pp.obj: gm/gm_pp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='gm/gm_pp.c' object='gm/gm_pp-gm_pp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(gm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o gm/gm_pp-gm_pp.obj `if test -f 'gm/gm_pp.c'; then $(CYGPATH_W) 'gm/gm_pp.c'; else $(CYGPATH_W) '$(srcdir)/gm/gm_pp.c'; fi`
+
+mxm/mxm_pp-mxm_pp.o: mxm/mxm_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mxm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mxm/mxm_pp-mxm_pp.o -MD -MP -MF mxm/$(DEPDIR)/mxm_pp-mxm_pp.Tpo -c -o mxm/mxm_pp-mxm_pp.o `test -f 'mxm/mxm_pp.c' || echo '$(srcdir)/'`mxm/mxm_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mxm/$(DEPDIR)/mxm_pp-mxm_pp.Tpo mxm/$(DEPDIR)/mxm_pp-mxm_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mxm/mxm_pp.c' object='mxm/mxm_pp-mxm_pp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mxm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mxm/mxm_pp-mxm_pp.o `test -f 'mxm/mxm_pp.c' || echo '$(srcdir)/'`mxm/mxm_pp.c
+
+mxm/mxm_pp-mxm_pp.obj: mxm/mxm_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mxm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mxm/mxm_pp-mxm_pp.obj -MD -MP -MF mxm/$(DEPDIR)/mxm_pp-mxm_pp.Tpo -c -o mxm/mxm_pp-mxm_pp.obj `if test -f 'mxm/mxm_pp.c'; then $(CYGPATH_W) 'mxm/mxm_pp.c'; else $(CYGPATH_W) '$(srcdir)/mxm/mxm_pp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mxm/$(DEPDIR)/mxm_pp-mxm_pp.Tpo mxm/$(DEPDIR)/mxm_pp-mxm_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mxm/mxm_pp.c' object='mxm/mxm_pp-mxm_pp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(mxm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mxm/mxm_pp-mxm_pp.obj `if test -f 'mxm/mxm_pp.c'; then $(CYGPATH_W) 'mxm/mxm_pp.c'; else $(CYGPATH_W) '$(srcdir)/mxm/mxm_pp.c'; fi`
 
 openib/openib_pp-openib_pp.o: openib/openib_pp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(openib_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT openib/openib_pp-openib_pp.o -MD -MP -MF openib/$(DEPDIR)/openib_pp-openib_pp.Tpo -c -o openib/openib_pp-openib_pp.o `test -f 'openib/openib_pp.c' || echo '$(srcdir)/'`openib/openib_pp.c
@@ -1896,6 +1940,8 @@ distclean-generic:
 	-rm -f gm/$(am__dirstamp)
 	-rm -f mellanox/$(DEPDIR)/$(am__dirstamp)
 	-rm -f mellanox/$(am__dirstamp)
+	-rm -f mxm/$(DEPDIR)/$(am__dirstamp)
+	-rm -f mxm/$(am__dirstamp)
 	-rm -f openib/$(DEPDIR)/$(am__dirstamp)
 	-rm -f openib/$(am__dirstamp)
 	-rm -f psm/$(DEPDIR)/$(am__dirstamp)
@@ -1910,7 +1956,7 @@ clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
 	clean-libtool clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ../lib/pscom4dapl/$(DEPDIR) ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
+	-rm -rf ../lib/pscom4dapl/$(DEPDIR) ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -1956,7 +2002,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ../lib/pscom4dapl/$(DEPDIR) ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
+	-rm -rf ../lib/pscom4dapl/$(DEPDIR) ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

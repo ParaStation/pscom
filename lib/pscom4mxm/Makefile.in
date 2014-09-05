@@ -65,7 +65,7 @@ host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 	$(top_srcdir)/common.am $(top_srcdir)/scripts/depcomp
-subdir = lib/pscom4psm
+subdir = lib/pscom4mxm
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
 	$(top_srcdir)/m4/ax_check_library.m4 \
@@ -106,16 +106,17 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libpscom4psm_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
-am_libpscom4psm_la_OBJECTS = libpscom4psm_la-pscom_psm.lo
-libpscom4psm_la_OBJECTS = $(am_libpscom4psm_la_OBJECTS)
+libpscom4mxm_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
+am_libpscom4mxm_la_OBJECTS = libpscom4mxm_la-pscom_mxm.lo \
+	libpscom4mxm_la-psmxm.lo
+libpscom4mxm_la_OBJECTS = $(am_libpscom4mxm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libpscom4psm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+libpscom4mxm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libpscom4psm_la_LDFLAGS) $(LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(libpscom4mxm_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -151,8 +152,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libpscom4psm_la_SOURCES)
-DIST_SOURCES = $(libpscom4psm_la_SOURCES)
+SOURCES = $(libpscom4mxm_la_SOURCES)
+DIST_SOURCES = $(libpscom4mxm_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -169,7 +170,7 @@ AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
 #
 # ParaStation
 #
-# Copyright (C) 2012 ParTec Cluster Competence Center GmbH, Munich
+# Copyright (C) 2012,2014 ParTec Cluster Competence Center GmbH, Munich
 #
 # This file may be distributed under the terms of the Q Public License
 # as defined in the file LICENSE.QPL included in the packaging of this
@@ -337,11 +338,11 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 
 # FIXME: non-standard
 configdir = $(prefix)/config
-lib_LTLIBRARIES = libpscom4psm.la
-libpscom4psm_la_SOURCES = pscom_psm.c pscom_psm.h
-libpscom4psm_la_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
-libpscom4psm_la_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
-libpscom4psm_la_LIBADD = -lpsm_infinipath $(top_builddir)/lib/pscom/libpscom.la
+lib_LTLIBRARIES = libpscom4mxm.la
+libpscom4mxm_la_SOURCES = pscom_mxm.c pscom_mxm.h psmxm.c psmxm.h
+libpscom4mxm_la_CPPFLAGS = $(AM_CPPFLAGS) $(MXM_CPPFLAGS)
+libpscom4mxm_la_LDFLAGS = $(AM_LDFLAGS) $(MXM_LDFLAGS)
+libpscom4mxm_la_LIBADD = -lmxm $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:
@@ -355,9 +356,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign lib/pscom4psm/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign lib/pscom4mxm/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign lib/pscom4psm/Makefile
+	  $(AUTOMAKE) --foreign lib/pscom4mxm/Makefile
 .PRECIOUS: Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
@@ -411,8 +412,8 @@ clean-libLTLIBRARIES:
 	  echo rm -f $${locs}; \
 	  rm -f $${locs}; \
 	}
-libpscom4psm.la: $(libpscom4psm_la_OBJECTS) $(libpscom4psm_la_DEPENDENCIES) $(EXTRA_libpscom4psm_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libpscom4psm_la_LINK) -rpath $(libdir) $(libpscom4psm_la_OBJECTS) $(libpscom4psm_la_LIBADD) $(LIBS)
+libpscom4mxm.la: $(libpscom4mxm_la_OBJECTS) $(libpscom4mxm_la_DEPENDENCIES) $(EXTRA_libpscom4mxm_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libpscom4mxm_la_LINK) -rpath $(libdir) $(libpscom4mxm_la_OBJECTS) $(libpscom4mxm_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -420,7 +421,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4psm_la-pscom_psm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4mxm_la-pscom_mxm.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4mxm_la-psmxm.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -446,12 +448,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-libpscom4psm_la-pscom_psm.lo: pscom_psm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4psm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4psm_la-pscom_psm.lo -MD -MP -MF $(DEPDIR)/libpscom4psm_la-pscom_psm.Tpo -c -o libpscom4psm_la-pscom_psm.lo `test -f 'pscom_psm.c' || echo '$(srcdir)/'`pscom_psm.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4psm_la-pscom_psm.Tpo $(DEPDIR)/libpscom4psm_la-pscom_psm.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_psm.c' object='libpscom4psm_la-pscom_psm.lo' libtool=yes @AMDEPBACKSLASH@
+libpscom4mxm_la-pscom_mxm.lo: pscom_mxm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4mxm_la-pscom_mxm.lo -MD -MP -MF $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Tpo -c -o libpscom4mxm_la-pscom_mxm.lo `test -f 'pscom_mxm.c' || echo '$(srcdir)/'`pscom_mxm.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Tpo $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_mxm.c' object='libpscom4mxm_la-pscom_mxm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4psm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4psm_la-pscom_psm.lo `test -f 'pscom_psm.c' || echo '$(srcdir)/'`pscom_psm.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4mxm_la-pscom_mxm.lo `test -f 'pscom_mxm.c' || echo '$(srcdir)/'`pscom_mxm.c
+
+libpscom4mxm_la-psmxm.lo: psmxm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4mxm_la-psmxm.lo -MD -MP -MF $(DEPDIR)/libpscom4mxm_la-psmxm.Tpo -c -o libpscom4mxm_la-psmxm.lo `test -f 'psmxm.c' || echo '$(srcdir)/'`psmxm.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4mxm_la-psmxm.Tpo $(DEPDIR)/libpscom4mxm_la-psmxm.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psmxm.c' object='libpscom4mxm_la-psmxm.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4mxm_la-psmxm.lo `test -f 'psmxm.c' || echo '$(srcdir)/'`psmxm.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

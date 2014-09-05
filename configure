@@ -639,6 +639,10 @@ LTLIBOBJS
 LIBOBJS
 AM_LDFLAGS
 AM_CFLAGS
+MXM_ENABLED_FALSE
+MXM_ENABLED_TRUE
+MXM_LDFLAGS
+MXM_CPPFLAGS
 EXTOLL_ENABLED_FALSE
 EXTOLL_ENABLED_TRUE
 EXTOLL_LDFLAGS
@@ -814,6 +818,7 @@ enable_ofed
 enable_dapl
 enable_elan
 enable_extoll
+enable_mxm
 '
       ac_precious_vars='build_alias
 host_alias
@@ -839,7 +844,9 @@ DAPL_LDFLAGS
 ELAN_CPPFLAGS
 ELAN_LDFLAGS
 EXTOLL_CPPFLAGS
-EXTOLL_LDFLAGS'
+EXTOLL_LDFLAGS
+MXM_CPPFLAGS
+MXM_LDFLAGS'
 
 
 # Initialize some variables set by options.
@@ -1482,6 +1489,7 @@ Optional Features:
   --disable-dapl          disable DAPL support
   --disable-elan          disable ELAN support
   --disable-extoll        disable EXTOLL support
+  --disable-mxm           disable MXM support
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -1530,6 +1538,9 @@ Some influential environment variables:
               C preprocessor flags for EXTOLL headers
   EXTOLL_LDFLAGS
               linker flags for EXTOLL libraries
+  MXM_CPPFLAGS
+              C preprocessor flags for MXM headers
+  MXM_LDFLAGS linker flags for MXM libraries
 
 Use these variables to override the choices made by `configure' or to help
 it to find libraries and programs with nonstandard names/locations.
@@ -6498,7 +6509,7 @@ ia64-*-hpux*)
   rm -rf conftest*
   ;;
 
-x86_64-*kfreebsd*-gnu|x86_64-*linux*|ppc*-*linux*|powerpc*-*linux*| \
+x86_64-*kfreebsd*-gnu|x86_64-*linux*|powerpc*-*linux*| \
 s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
   # Find out which ABI we are using.
   echo 'int i;' > conftest.$ac_ext
@@ -6516,7 +6527,10 @@ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
 	  x86_64-*linux*)
 	    LD="${LD-ld} -m elf_i386"
 	    ;;
-	  ppc64-*linux*|powerpc64-*linux*)
+	  powerpc64le-*linux*)
+	    LD="${LD-ld} -m elf32lppclinux"
+	    ;;
+	  powerpc64-*linux*)
 	    LD="${LD-ld} -m elf32ppclinux"
 	    ;;
 	  s390x-*linux*)
@@ -6535,7 +6549,10 @@ s390*-*linux*|s390*-*tpf*|sparc*-*linux*)
 	  x86_64-*linux*)
 	    LD="${LD-ld} -m elf_x86_64"
 	    ;;
-	  ppc*-*linux*|powerpc*-*linux*)
+	  powerpcle-*linux*)
+	    LD="${LD-ld} -m elf64lppc"
+	    ;;
+	  powerpc-*linux*)
 	    LD="${LD-ld} -m elf64ppc"
 	    ;;
 	  s390*-*linux*|s390*-*tpf*)
@@ -12492,6 +12509,109 @@ else
 fi
 
 
+# -- MXM --
+
+# fixme: brute force current standard search path
+MXM_CPPFLAGS="${MXM_CPPFLAGS-"-I/opt/mellanox/mxm/include"}"
+MXM_LDFLAGS="${MXM_LDFLAGS-"-L/opt/mellanox/mxm/lib"}"
+
+# Check whether --enable-mxm was given.
+if test "${enable_mxm+set}" = set; then :
+  enableval=$enable_mxm;
+fi
+
+if test "x$enable_mxm" != xno; then :
+
+
+
+
+  if ${ax_cv_have_MXM+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CPPFLAGS="$CPPFLAGS"
+     save_LDFLAGS="$LDFLAGS"
+     save_LIBS="$LIBS"
+
+     if test "x$MXM_CPPFLAGS" != "x"; then :
+  CPPFLAGS="$CPPFLAGS $MXM_CPPFLAGS"
+fi
+
+     if test "x$MXM_LDFLAGS" != "x"; then :
+  LDFLAGS="$LDFLAGS $MXM_LDFLAGS"
+fi
+
+     ac_fn_c_check_header_mongrel "$LINENO" "mxm/api/mxm_api.h" "ac_cv_header_mxm_api_mxm_api_h" "$ac_includes_default"
+if test "x$ac_cv_header_mxm_api_mxm_api_h" = xyes; then :
+
+       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lmxm" >&5
+$as_echo_n "checking for main in -lmxm... " >&6; }
+if ${ac_cv_lib_mxm_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lmxm  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_mxm_main=yes
+else
+  ac_cv_lib_mxm_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_mxm_main" >&5
+$as_echo "$ac_cv_lib_mxm_main" >&6; }
+if test "x$ac_cv_lib_mxm_main" = xyes; then :
+  ax_cv_have_MXM=yes
+else
+  ax_cv_have_MXM=no
+fi
+
+
+else
+  ax_cv_have_MXM=no
+fi
+
+
+
+     CPPFLAGS="$save_CPPFLAGS"
+     LDFLAGS="$save_LDFLAGS"
+     LIBS="$save_LIBS"
+
+fi
+
+
+  if test "$ax_cv_have_MXM" = "yes"; then :
+  have_mxm=yes
+else
+  have_mxm=no
+fi
+
+fi
+if test "x$have_mxm" = xno -a "x$enable_mxm" = xyes; then :
+  as_fn_error $? "mxm support requested but not found" "$LINENO" 5
+fi
+ if test "x$enable_mxm" != xno -a "x$have_mxm" = xyes; then
+  MXM_ENABLED_TRUE=
+  MXM_ENABLED_FALSE='#'
+else
+  MXM_ENABLED_TRUE='#'
+  MXM_ENABLED_FALSE=
+fi
+
+
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -O3" >&5
 $as_echo_n "checking whether C compiler accepts -O3... " >&6; }
 if ${ax_cv_check_cflags___O3+:} false; then :
@@ -12528,14 +12648,14 @@ else
 fi
 
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wall -Wextra -Wno-unused" >&5
-$as_echo_n "checking whether C compiler accepts -Wall -Wextra -Wno-unused... " >&6; }
-if ${ax_cv_check_cflags___Wall__Wextra__Wno_unused+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wall -Wextra -Wno-unused -Wno-unused-parameter" >&5
+$as_echo_n "checking whether C compiler accepts -Wall -Wextra -Wno-unused -Wno-unused-parameter... " >&6; }
+if ${ax_cv_check_cflags___Wall__Wextra__Wno_unused__Wno_unused_parameter+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
   ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -Wall -Wextra -Wno-unused"
+  CFLAGS="$CFLAGS  -Wall -Wextra -Wno-unused -Wno-unused-parameter"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -12548,17 +12668,17 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___Wall__Wextra__Wno_unused=yes
+  ax_cv_check_cflags___Wall__Wextra__Wno_unused__Wno_unused_parameter=yes
 else
-  ax_cv_check_cflags___Wall__Wextra__Wno_unused=no
+  ax_cv_check_cflags___Wall__Wextra__Wno_unused__Wno_unused_parameter=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   CFLAGS=$ax_check_save_flags
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Wall__Wextra__Wno_unused" >&5
-$as_echo "$ax_cv_check_cflags___Wall__Wextra__Wno_unused" >&6; }
-if test x"$ax_cv_check_cflags___Wall__Wextra__Wno_unused" = xyes; then :
-  AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wno-unused"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Wall__Wextra__Wno_unused__Wno_unused_parameter" >&5
+$as_echo "$ax_cv_check_cflags___Wall__Wextra__Wno_unused__Wno_unused_parameter" >&6; }
+if test x"$ax_cv_check_cflags___Wall__Wextra__Wno_unused__Wno_unused_parameter" = xyes; then :
+  AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wno-unused -Wno-unused-parameter"
 else
   :
 fi
@@ -12592,6 +12712,8 @@ ac_config_files="$ac_config_files lib/pscom4elan/Makefile"
 ac_config_files="$ac_config_files lib/pscom4extoll/Makefile"
 
 ac_config_files="$ac_config_files lib/pscom4velo/Makefile"
+
+ac_config_files="$ac_config_files lib/pscom4mxm/Makefile"
 
 ac_config_files="$ac_config_files lib/pscom4gm/Makefile"
 
@@ -12815,6 +12937,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${EXTOLL_ENABLED_TRUE}" && test -z "${EXTOLL_ENABLED_FALSE}"; then
   as_fn_error $? "conditional \"EXTOLL_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${MXM_ENABLED_TRUE}" && test -z "${MXM_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"MXM_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -13682,6 +13808,7 @@ do
     "lib/pscom4elan/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4elan/Makefile" ;;
     "lib/pscom4extoll/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4extoll/Makefile" ;;
     "lib/pscom4velo/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4velo/Makefile" ;;
+    "lib/pscom4mxm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4mxm/Makefile" ;;
     "lib/pscom4gm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4gm/Makefile" ;;
     "lib/pscom4ofed/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4ofed/Makefile" ;;
     "lib/pscom4openib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4openib/Makefile" ;;
@@ -14949,6 +15076,13 @@ $as_echo "$as_me: EXTOLL_ENABLED:   yes" >&6;}
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: EXTOLL_ENABLED:   no" >&5
 $as_echo "$as_me: EXTOLL_ENABLED:   no" >&6;}
+fi
+if test -z "$MXM_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:      yes" >&5
+$as_echo "$as_me: MXM_ENABLED:      yes" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:      no" >&5
+$as_echo "$as_me: MXM_ENABLED:      no" >&6;}
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: =====================" >&5
 $as_echo "$as_me: =====================" >&6;}

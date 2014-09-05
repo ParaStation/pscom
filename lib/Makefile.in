@@ -89,14 +89,17 @@ DIST_COMMON = $(srcdir)/Makefile.am $(srcdir)/Makefile.in \
 # - gm -
 @GM_ENABLED_TRUE@am__append_4 = pscom4gm
 
+# -- mxm --
+@MXM_ENABLED_TRUE@am__append_5 = pscom4mxm
+
 # -- ofed --
-@OFED_ENABLED_TRUE@am__append_5 = pscom4ofed
+@OFED_ENABLED_TRUE@am__append_6 = pscom4ofed
 
 # -- openib --
-@OPENIB_ENABLED_TRUE@am__append_6 = pscom4openib
+@OPENIB_ENABLED_TRUE@am__append_7 = pscom4openib
 
 # -- psm --
-@PSM_ENABLED_TRUE@am__append_7 = pscom4psm
+@PSM_ENABLED_TRUE@am__append_8 = pscom4psm
 subdir = lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -143,8 +146,8 @@ AM_RECURSIVE_TARGETS = $(RECURSIVE_TARGETS:-recursive=) \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = pscom psmalloc pscom4dapl pscom4elan pscom4extoll \
-	pscom4velo pscom4gm pscom4ofed pscom4openib pscom4psm psport4 \
-	p4tcp
+	pscom4velo pscom4gm pscom4mxm pscom4ofed pscom4openib \
+	pscom4psm psport4 p4tcp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
   dir0=`pwd`; \
@@ -226,6 +229,8 @@ MANIFEST_TOOL = @MANIFEST_TOOL@
 MELLANOX_CPPFLAGS = @MELLANOX_CPPFLAGS@
 MELLANOX_LDFLAGS = @MELLANOX_LDFLAGS@
 MKDIR_P = @MKDIR_P@
+MXM_CPPFLAGS = @MXM_CPPFLAGS@
+MXM_LDFLAGS = @MXM_LDFLAGS@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
@@ -334,7 +339,7 @@ configdir = $(prefix)/config
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = pscom psmalloc $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7) psport4 p4tcp
+	$(am__append_6) $(am__append_7) $(am__append_8) psport4 p4tcp
 all: all-recursive
 
 .SUFFIXES:
