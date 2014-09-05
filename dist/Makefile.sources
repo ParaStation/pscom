@@ -38,6 +38,8 @@ bin/list_test.c \
 bin/mellanox/ps4_ib.c \
 bin/mellanox/ps4_ib_pp.c \
 bin/mellanox/ps4_ib_pp_rdma.c \
+bin/mxm/mxm_pp.c \
+bin/mxm/mxm_util.c \
 bin/openib/openib_pp.c \
 bin/openib/openib_ud_pp.c \
 bin/p4logd.c \
@@ -173,6 +175,12 @@ lib/pscom4gm/Makefile.in \
 lib/pscom4gm/pscom_gm.c \
 lib/pscom4gm/psgm.c \
 lib/pscom4gm/psgm.h \
+lib/pscom4mxm/Makefile.am \
+lib/pscom4mxm/Makefile.in \
+lib/pscom4mxm/pscom_mxm.c \
+lib/pscom4mxm/pscom_mxm.h \
+lib/pscom4mxm/psmxm.c \
+lib/pscom4mxm/psmxm.h \
 lib/pscom4ofed/Makefile.am \
 lib/pscom4ofed/Makefile.in \
 lib/pscom4ofed/pscom_ofed.c \
