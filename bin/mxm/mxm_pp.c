@@ -244,20 +244,23 @@ void init_reqs(struct mxm_pp_context *ctx)
 
 	init_send_req(ctx, &ctx->sreq, s_buf, sizeof(*s_buf));
 	init_recv_req(ctx, &ctx->rreq, r_buf, sizeof(*r_buf));
+
+	ctx->sreq.base.conn = ctx->mxm_conn;
+	// ctx->rreq.base.conn = ctx->mxm_conn; // NULL = Any, conn = Sourced
 }
 
 
 static
 void pp_info_get(pp_info_msg_t *msg)
 {
-	*msg->mxm_ep_addr = *mxm_ctx.mxm_ep_addr;
+	memcpy(msg->mxm_ep_addr, mxm_ctx.mxm_ep_addr, sizeof(msg->mxm_ep_addr));
 }
 
 
 static
 void pp_info_set(pp_info_msg_t *msg)
 {
-	*mxm_ctx.mxm_remote_ep_addr = *msg->mxm_ep_addr;
+	memcpy(mxm_ctx.mxm_remote_ep_addr, msg->mxm_ep_addr, sizeof(mxm_ctx.mxm_remote_ep_addr));
 }
 
 
@@ -334,9 +337,11 @@ void mxm_send(unsigned len)
 	s_buf->mark = 1;
 
 	mxm_ctx.sreq.base.data.buffer.length = msglen;
+	mxm_ctx.sreq.base.conn = mxm_ctx.mxm_conn;
 
 	mxm_req_send(&mxm_ctx.sreq);
 	mxm_req_wait(&mxm_ctx.sreq.base);
+
 	assert(mxm_ctx.sreq.base.error == MXM_OK);
 
 	// printf ("send msglen: %d cachelines %d sizeof(s_buf) %d  %p %p\n", msglen, (msglen >> 6) - 1, (int)sizeof(*s_buf), s_buf, r_buf);
@@ -385,6 +390,7 @@ int run_pp_c(int msize, int loops)
 		mxm_send(len);
 
 		mxm_recv();
+		// assert(r_buf->len == len);
 	}
 	return 0;
 }
