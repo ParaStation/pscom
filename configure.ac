@@ -150,11 +150,27 @@ AS_IF([test "x$have_extoll" = xno -a "x$enable_extoll" = xyes],
 AM_CONDITIONAL([EXTOLL_ENABLED],
 	       [test "x$enable_extoll" != xno -a "x$have_extoll" = xyes])
 
+# -- MXM --
+
+# fixme: brute force current standard search path
+MXM_CPPFLAGS="${MXM_CPPFLAGS-"-I/opt/mellanox/mxm/include"}"
+MXM_LDFLAGS="${MXM_LDFLAGS-"-L/opt/mellanox/mxm/lib"}"
+
+AC_ARG_ENABLE([mxm],[AS_HELP_STRING([--disable-mxm],
+	      [disable MXM support])])
+AS_IF([test "x$enable_mxm" != xno],
+      [AX_CHECK_LIBRARY([MXM], [mxm/api/mxm_api.h], [mxm],
+      [have_mxm=yes], [have_mxm=no])])
+AS_IF([test "x$have_mxm" = xno -a "x$enable_mxm" = xyes],
+      [AC_MSG_ERROR([mxm support requested but not found])])
+AM_CONDITIONAL([MXM_ENABLED],
+	       [test "x$enable_mxm" != xno -a "x$have_mxm" = xyes])
+
 AX_CHECK_COMPILE_FLAG([-O3],
   [AM_CFLAGS="$AM_CFLAGS -O3"])
 
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused],
-  [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wno-unused"])
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wno-unused -Wno-unused-parameter],
+  [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wno-unused -Wno-unused-parameter"])
 
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
@@ -172,6 +188,7 @@ AC_CONFIG_FILES(lib/pscom4dapl/Makefile)
 AC_CONFIG_FILES(lib/pscom4elan/Makefile)
 AC_CONFIG_FILES(lib/pscom4extoll/Makefile)
 AC_CONFIG_FILES(lib/pscom4velo/Makefile)
+AC_CONFIG_FILES(lib/pscom4mxm/Makefile)
 AC_CONFIG_FILES(lib/pscom4gm/Makefile)
 AC_CONFIG_FILES(lib/pscom4ofed/Makefile)
 AC_CONFIG_FILES(lib/pscom4openib/Makefile)
@@ -215,6 +232,9 @@ AM_COND_IF([ELAN_ENABLED],
 AM_COND_IF([EXTOLL_ENABLED],
   [AC_MSG_NOTICE([EXTOLL_ENABLED:   yes])],
   [AC_MSG_NOTICE([EXTOLL_ENABLED:   no])])
+AM_COND_IF([MXM_ENABLED],
+  [AC_MSG_NOTICE([MXM_ENABLED:      yes])],
+  [AC_MSG_NOTICE([MXM_ENABLED:      no])])
 AC_MSG_NOTICE([=====================])
 
 # Local Variables:

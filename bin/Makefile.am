@@ -68,6 +68,10 @@ if EXTOLL_ENABLED
   noinst_PROGRAMS += extoll_pp_lowlevel extoll_pp_velo extoll_one_message
 endif
 
+if MXM_ENABLED
+  noinst_PROGRAMS += mxm_pp
+endif
+
 # -- /file lists
 
 libpsport4 = $(top_builddir)/lib/psport4/libpsport4std.la
@@ -243,6 +247,13 @@ extoll_one_message_SOURCES = extoll/extoll_one_message.c
 extoll_one_message_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 extoll_one_message_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 extoll_one_message_LDADD = -lrma2 -lpopt
+
+# -- mxm -- 
+
+mxm_pp_SOURCES = mxm/mxm_pp.c
+mxm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(MXM_CPPFLAGS)
+mxm_pp_LDFLAGS = $(AM_LDFLAGS) $(MXM_LDFLAGS)
+mxm_pp_LDADD = -lmxm -lpopt
 
 # -- mem usage diagnostics --
 

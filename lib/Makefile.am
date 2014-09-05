@@ -39,6 +39,11 @@ if GM_ENABLED
     SUBDIRS += pscom4gm
 endif
 
+# -- mxm --
+if MXM_ENABLED
+    SUBDIRS += pscom4mxm
+endif
+
 # -- ofed --
 if OFED_ENABLED
     SUBDIRS += pscom4ofed
