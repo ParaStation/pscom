@@ -53,7 +53,10 @@ static int init_ctx(struct mxm_pp_context *ctx)
 	/* allocate memory for rdma */
 	ctx->mem_access_buf = NULL;
 	ctx->mem_access_buf_size = sizeof(msg_buf_t) * 2;
-
+#if 1
+	ctx->mem_access_buf = malloc(ctx->mem_access_buf_size);
+	printf("Using unmapped memory\n");
+#else
 	error = mxm_mem_map(ctx->mxm_mxmh, &ctx->mem_access_buf, &ctx->mem_access_buf_size,
 			    0, NULL, 0);
 	if (error != MXM_OK) {
@@ -66,7 +69,7 @@ static int init_ctx(struct mxm_pp_context *ctx)
 		fprintf(stderr, "Failed to get memory key: %s.\n", mxm_error_string(error));
 		return -1;
 	}
-
+#endif
 	mxm_config_free_context_opts(mxm_opts);
 	mxm_config_free_ep_opts(ep_opts);
 	return 0;
