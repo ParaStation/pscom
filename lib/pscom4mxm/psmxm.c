@@ -58,6 +58,7 @@ struct psmxm_con_info {
 };
 
 
+static
 mxm_socket_t mxm_socket;
 
 /*

@@ -87,6 +87,7 @@ int pscom_mxm_make_progress(pscom_poll_reader_t *reader)
 		pscom_process_rreq(rreq);
 		return 1;
 	} else {
+		psmxm_progress();
 		return 0;
 	}
 }
