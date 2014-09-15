@@ -226,9 +226,17 @@ void psmxm_recvq_append(psmxm_recv_req_t *rreq)
 static
 void psmxm_init_endpoint(mxm_socket_t *mxm_socket)
 {
-	int i;
 	memset(mxm_socket, 0, sizeof(*mxm_socket));
 	INIT_LIST_HEAD(&mxm_socket->recvq);
+}
+
+
+static
+void psmxm_post_recv_buffers(mxm_socket_t *mxm_socket)
+{
+	int i;
+
+	if (!list_empty(&mxm_socket->recvq)) return; // Already posted
 
 	for (i = 0; i < PSMXM_RECV_BUFFER_COUNT; i++) {
 		psmxm_recv_req_t *rreq = &mxm_socket->rreqs[i];
@@ -273,6 +281,8 @@ int psmxm_open_endpoint(mxm_socket_t *mxm_socket)
 
 	mxm_config_free_context_opts(mxm_opts);
 	mxm_config_free_ep_opts(ep_opts);
+
+	psmxm_post_recv_buffers(mxm_socket);
 
 	return 0;
 err_mxm_mq_create:
@@ -454,7 +464,7 @@ int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, int size)
 	con_info->sreq.iov[1].length = data_len;
 
 	error = mxm_req_send(&con_info->sreq.mxm_sreq);
-	assert(error != MXM_OK); // ToDo: Catch error
+	if (error != MXM_OK) goto err_sendv;
 
 	con_info->sending = size;
 	assert(size > 0);
@@ -463,6 +473,10 @@ int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, int size)
 err_busy:
 	return -EAGAIN;
 err_broken:
+	return -EPIPE;
+err_sendv:
+	psmxm_msg_err("mxm_req_send()", error);
+	psmxm_dprint(0, "psmxm_sendv: %s", psmxm_err_str);
 	return -EPIPE;
 }
 
