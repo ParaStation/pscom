@@ -16,7 +16,7 @@
 
 #define MXM_EP_ADDR_LEN       (256)
 #define PSMXM_PROTOCOL_VERSION	(0x00000100)
-#define PSMXM_MTU (8192)
+#define PSMXM_MTU (16*1024)
 
 typedef struct psmxm_con_info psmxm_con_info_t;
 typedef struct {

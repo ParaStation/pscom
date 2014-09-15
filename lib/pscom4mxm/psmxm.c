@@ -25,7 +25,6 @@ static char *psmxm_err_str = NULL; /* last error string */
 #define MXM_TAG_ANY (31)
 #define MXM_TAG_FIRST_CON  (MXM_TAG_ANY + 1)
 
-#define PSMXM_MTU (8192)
 #define PSMXM_RECV_BUFFER_COUNT (1024)
 
 /*
@@ -467,10 +466,9 @@ int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, int size)
 	error = mxm_req_send(&con_info->sreq.mxm_sreq);
 	if (error != MXM_OK) goto err_sendv;
 
-	con_info->sending = size;
-	assert(size > 0);
+	assert(length > 0);
 
-	return size;
+	return length;
 err_busy:
 	return -EAGAIN;
 err_broken:
