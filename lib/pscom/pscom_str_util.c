@@ -285,10 +285,12 @@ pscom_con_type_str(pscom_con_type_t type)
 	case PSCOM_CON_TYPE_OPENIB:	return "openib";
 	case PSCOM_CON_TYPE_OFED:	return "ofed";
 	case PSCOM_CON_TYPE_ELAN:	return "elan";
+	case PSCOM_CON_TYPE_CBC:	return "cbc";
 	case PSCOM_CON_TYPE_EXTOLL:	return "extoll";
 	case PSCOM_CON_TYPE_VELO:	return "velo";
 	case PSCOM_CON_TYPE_DAPL:	return "dapl";
 	case PSCOM_CON_TYPE_ONDEMAND:	return "demand";
+	case PSCOM_CON_TYPE_MXM:	return "mxm";
 	}
 
 	{

@@ -122,6 +122,13 @@ typedef struct psextoll_conn {
 } psextoll_conn_t;
 
 
+typedef struct psmxm_conn {
+	struct psmxm_con_info	*ci;
+	int			reading : 1;
+	pscom_req_t		*sreq;
+} psmxm_conn_t;
+
+
 typedef struct ondemand_conn {
 	int node_id; /* on demand node_id to connect to */
 	int portno;  /*           portno to connect to */
@@ -242,6 +249,7 @@ struct PSCOM_con
 		psdapl_conn_t	dapl;
 		pselan_conn_t	elan;
 		psextoll_conn_t	extoll;
+		psmxm_conn_t	mxm;
 		ondemand_conn_t ondemand;
 		pspsm_conn_t    psm;
 		user_conn_t	user; // Future usage (new plugins)
@@ -352,6 +360,8 @@ extern pscom_t pscom;
 #define PSCOM_ARCH_EXTOLL	113
 #define PSCOM_ARCH_PSM		114
 #define PSCOM_ARCH_VELO		115
+#define PSCOM_ARCH_CBC		116
+#define PSCOM_ARCH_MXM		117
 
 
 #define PSCOM_TCP_PRIO		2
@@ -365,6 +375,7 @@ extern pscom_t pscom;
 #define PSCOM_OFED_PRIO		30
 #define PSCOM_EXTOLL_PRIO	30
 #define PSCOM_PSM_PRIO		30
+#define PSCOM_MXM_PRIO		30
 
 
 #define PSCOM_MSGTYPE_USER	0

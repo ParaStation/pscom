@@ -70,7 +70,9 @@ typedef enum PSCOM_con_type {
 	PSCOM_CON_TYPE_OFED	= 0x0b,
 	PSCOM_CON_TYPE_EXTOLL	= 0x0c,
 	PSCOM_CON_TYPE_PSM      = 0x0d,
-	PSCOM_CON_TYPE_VELO	= 0x0e
+	PSCOM_CON_TYPE_VELO	= 0x0e,
+	PSCOM_CON_TYPE_CBC      = 0x0f,
+	PSCOM_CON_TYPE_MXM      = 0x10
 } pscom_con_type_t;
 
 

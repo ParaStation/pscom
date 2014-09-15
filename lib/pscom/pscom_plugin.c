@@ -291,6 +291,7 @@ void pscom_plugins_init(void)
 		"extoll",
 		"velo",
 		"dapl",
+		"mxm",
 		NULL };
 	char **tmp;
 
