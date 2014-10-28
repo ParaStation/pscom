@@ -350,6 +350,10 @@ void pscom_con_destroy(pscom_con_t *con)
 	assert(list_empty(&con->poll_next_send));
 	assert(list_empty(&con->poll_reader.next));
 
+	if(con->in.readahead.iov_base) {
+		free(con->in.readahead.iov_base);
+	}
+
 	con->magic = 0;
 	free(con);
 }
