@@ -372,68 +372,6 @@ int pscom_is_valid_con(pscom_con_t *con)
 }
 
 
-#define PSCOM_INFO_EOF		0x100000	/* Last info message */
-#define PSCOM_INFO_ANSWER	0x100001	/* request remote side, to send answers */
-#define PSCOM_INFO_CON_INFO	0x100002	/* pscom_con_info_t */
-#define PSCOM_INFO_VERSION	0x100003	/* pscom_info_version_t */
-#define PSCOM_INFO_BACK_CONNECT	0x100004	/* pscom_con_info_t Request a back connect */
-
-
-typedef struct {
-	/* supported version range from sender,
-	   overlap must be non empty. */
-	uint32_t	ver_from;
-	uint32_t	ver_to;
-} pscom_info_version_t;
-
-#define VER_FROM 0x0101
-#define VER_TO   0x0101
-
-
-static
-int pscom_info_send(int fd, unsigned type, unsigned size, void *data)
-{
-	uint32_t ntype = htonl(type);
-	uint32_t nsize = htonl(size);
-	int err = 0;
-
-	err = err || pscom_writeall(fd, &ntype, sizeof(ntype)) != sizeof(ntype);
-	err = err || pscom_writeall(fd, &nsize, sizeof(nsize)) != sizeof(nsize);
-	err = err || pscom_writeall(fd, data, size) != (int)size;
-
-	return err;
-}
-
-
-/* will receive into *type, *size and *data = realloc(*data, *size) */
-static
-int pscom_info_recv(int fd, unsigned *type, unsigned *size, void **data)
-{
-	int err = 0;
-	uint32_t ntype = 0;
-	uint32_t nsize = 0;
-
-	err = err || pscom_readall(fd, &ntype, sizeof(ntype)) != sizeof(ntype);
-	err = err || pscom_readall(fd, &nsize, sizeof(nsize)) != sizeof(nsize);
-
-	*size = ntohl(nsize);
-	*type = ntohl(ntype);
-
-	if (!err) {
-		*data = realloc(*data, *size);
-		err = err || pscom_readall(fd, *data, *size) != (int)*size;
-	}
-
-	if (err) {
-		*type = PSCOM_INFO_EOF;
-		*size = 0;
-		free(*data);
-		*data = NULL;
-	}
-	return err;
-}
-
-
 void pscom_ondemand_indirect_connect(pscom_con_t *con)
 {
 	int nodeid = con->arch.ondemand.node_id;
