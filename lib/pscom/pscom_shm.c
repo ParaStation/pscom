@@ -112,26 +112,6 @@ err_shmat:
 }
 
 
-static
-void shm_init(shm_conn_t *shm)
-{
-	memset(shm, 0, sizeof(*shm));
-	shm->local_id = -1;
-	shm->remote_id = -1;
-}
-
-
-static
-void shm_cleanup(shm_conn_t *shm)
-{
-	if (shm->local_com) shmdt(shm->local_com);
-	shm->local_com = NULL;
-
-	if (shm->remote_com) shmdt(shm->remote_com);
-	shm->remote_com = NULL;
-}
-
-
 static inline
 int shm_cansend(shm_conn_t *shm)
 {
@@ -511,6 +491,8 @@ void shm_init_shm_conn(shm_conn_t *shm)
 	shm->local_com = NULL;
 	shm->remote_com = NULL;
 	shm->direct_base = NULL;
+	shm->local_id = -1;
+	shm->remote_id = -1;
 }
 
 
@@ -546,11 +528,7 @@ void shm_close(pscom_con_t *con)
 			}
 		}
 
-<<<<<<< HEAD
-		shm_cleanup(shm);
-=======
 		shm_cleanup_shm_conn(shm);
->>>>>>> master
 
 		assert(list_empty(&con->poll_next_send));
 		assert(list_empty(&con->poll_reader.next));
@@ -632,7 +610,7 @@ void pscom_shm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 
 	switch (type) {
 	case PSCOM_INFO_ARCH_REQ: {
-		shm_init(shm);
+		shm_init_shm_conn(shm);
 		if (shm_initrecv(shm)) goto error_initsend;
 
 		shm_info_msg_t msg;
@@ -650,7 +628,7 @@ void pscom_shm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	}
 	case PSCOM_INFO_ARCH_NEXT:
 		/* Cleanup shm */
-		shm_cleanup(shm);
+		shm_cleanup_shm_conn(shm);
 		break;
 	case PSCOM_INFO_EOF:
 		shm_init_con(con);
@@ -661,7 +639,7 @@ void pscom_shm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	/* --- */
 error_initrecv:
 error_initsend:
-	shm_cleanup(shm);
+	shm_cleanup_shm_conn(shm);
 	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pre);
 }
 
