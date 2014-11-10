@@ -130,6 +130,8 @@ lib/pscom/pscom_p4s.c \
 lib/pscom/pscom_p4s.h \
 lib/pscom/pscom_plugin.c \
 lib/pscom/pscom_plugin.h \
+lib/pscom/pscom_precon.c \
+lib/pscom/pscom_precon.h \
 lib/pscom/pscom_priv.h \
 lib/pscom/pscom_queues.c \
 lib/pscom/pscom_queues.h \

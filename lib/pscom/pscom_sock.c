@@ -14,8 +14,12 @@
 #include "pscom_con.h"
 #include "pscom_io.h"
 #include "pslib.h"
+#include "pscom_precon.h"
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 
 static
 void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
@@ -251,6 +255,12 @@ pscom_err_t pscom_listen(pscom_socket_t *_socket, int portno)
 			goto err_listen;
 		}
 
+		DPRINT(PRECON_LL, "precon: listen(%d, %d) on port %u", listen_fd,
+		       pscom.env.tcp_backlog, ntohs(sa.sin_port));
+
+		if (fcntl(listen_fd, F_SETFL, O_NONBLOCK) < 0)
+			goto err_nonblock;
+
 		sock->pub.listen_portno = ntohs(sa.sin_port);
 		pscom_listener_set_fd(&sock->listen, listen_fd);
 
@@ -260,6 +270,9 @@ pscom_err_t pscom_listen(pscom_socket_t *_socket, int portno)
 		if (0) {
 			switch (0) {
 			case -1:;
+			err_nonblock:
+				DPRINT(1, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
+				break;
 			err_getsockname:
 				DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
 				break;

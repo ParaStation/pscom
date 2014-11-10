@@ -29,6 +29,7 @@
 #define ENV_SO_RCVBUF "PSP_SO_RCVBUF"
 #define ENV_TCP_NODELAY "PSP_TCP_NODELAY"
 #define ENV_TCP_BACKLOG "PSP_TCP_BACKLOG"
+#define ENV_TCP_ACCEPT_BACKLOG "PSP_TCP_ACCEPT_BACKLOG"
 
 /* Receive from a connection without receives posted? 0: No 1: Yes */
 #define ENV_UNEXPECTED_RECEIVES "PSP_UNEXPECTED_RECEIVES"
@@ -184,7 +185,7 @@ struct PSCOM_env {
 	.sigquit = 0,							\
 	.readahead = 100,						\
 	.skipblocksize = 8192,						\
-	.retry = 4,							\
+	.retry = 10,							\
 	.iprobe_count = 0,						\
 									\
 	.network = NULL,						\

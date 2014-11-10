@@ -52,6 +52,8 @@ typedef enum PSCOM_con_state {
 	PSCOM_CON_STATE_W	= 0x2,
 	PSCOM_CON_STATE_RW	= 0x3,
 	PSCOM_CON_STATE_CLOSED  = 0x4,
+	PSCOM_CON_STATE_CONNECTING = 0x8,
+	PSCOM_CON_STATE_ACCEPTING = 0x10,
 } pscom_con_state_t;
 
 
@@ -79,6 +81,7 @@ typedef enum PSCOM_con_type {
 typedef enum PSCOM_op {
 	PSCOM_OP_READ = 1,
 	PSCOM_OP_WRITE = 2,
+	PSCOM_OP_CONNECT = 3,
 } pscom_op_t;
 
 #define PSCOM_REQ_STATE_SEND_REQUEST		0x00000001

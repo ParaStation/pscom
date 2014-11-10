@@ -84,6 +84,37 @@ typedef struct loopback_conn {
 } loopback_conn_t;
 
 
+#define MAGIC_PRECON	0x4a656e73
+typedef struct precon {
+	/* Pre connection data. Used for the initial TCP handshake. */
+	unsigned long	magic;
+	ufd_info_t	ufd_info;
+	unsigned	send_len;	// Length of send
+	unsigned	recv_len;	// Length of recv
+	char		*send;		// Send buffer
+	char		*recv;		// Receive buffer
+
+	int		recv_done : 1;
+	int		closefd_on_cleanup : 1; // Call close(fd) on cleanup?
+
+	int		nodeid, portno; // Retry connect to nodeid:portno on ECONNREFUSED
+	unsigned	reconnect_cnt;
+
+	pscom_con_t	*con;
+	pscom_sock_t	*sock;
+
+	unsigned long		last_poll; // usec of last poll
+	pscom_poll_reader_t	poll_reader; // timeout handling
+
+	unsigned	stat_send;	// bytes send
+	unsigned	stat_recv;	// bytes received
+	unsigned	stat_poll_cnt;	// loops in poll
+
+	/* state information */
+	pscom_plugin_t	*plugin;	// Current plugin.
+} precon_t;
+
+
 typedef struct psib_conn {
 	void	*priv;
 } psib_conn_t;
@@ -193,7 +224,7 @@ struct PSCOM_con
 	void (*read_stop)(pscom_con_t *con);
 	void (*write_start)(pscom_con_t *con);
 	void (*write_stop)(pscom_con_t *con);
-	void (*do_write)(pscom_con_t *con);
+	void (*do_write)(pscom_con_t *con); // used only if .write_start = pscom_poll_write_start
 	void (*close)(pscom_con_t *con);
 
 	/* RMA functions: */
@@ -207,6 +238,8 @@ struct PSCOM_con
 	/* return -1 on error.
 	   see _pscom_rendezvous_read_data()  */
 	int (*rma_read)(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd);
+
+	precon_t		*precon;	// Pre connection handshake data.
 
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection

@@ -13,7 +13,7 @@
 #ifndef _PSCOM_PLUGIN_H_
 #define _PSCOM_PLUGIN_H_
 
-#define PSCOM_PLUGIN_VERSION 0x0104
+#define PSCOM_PLUGIN_VERSION 0x0105
 
 typedef struct pscom_plugin {
 	char	name[8];
@@ -26,8 +26,9 @@ typedef struct pscom_plugin {
 	void	(*destroy)(void);
 	void	(*sock_init)(pscom_sock_t *sock);
 	void	(*sock_destroy)(pscom_sock_t *sock);
-	int	(*con_connect)(pscom_con_t *con, int con_fd);
-	int	(*con_accept)(pscom_con_t *con, int con_fd);
+
+	int	(*con_init)(pscom_con_t *con); // return 0, if init succeeded, -1 for errors or disabled plugins.
+	void	(*con_handshake)(pscom_con_t *con, int type, void *data, unsigned size);
 
 	struct list_head next;
 } pscom_plugin_t;
@@ -42,6 +43,11 @@ void pscom_plugins_sock_destroy(pscom_sock_t *sock);
 
 pscom_plugin_t *pscom_plugin_by_name(const char *arch);
 pscom_plugin_t *pscom_plugin_by_archid(unsigned int arch_id);
+
+/* return first plugin or NULL */
+pscom_plugin_t *pscom_plugin_first(void);
+/* return cur's next plugin or NULL. If cur == NULL return first plugin */
+pscom_plugin_t *pscom_plugin_next(pscom_plugin_t *cur);
 
 extern struct list_head pscom_plugins;
 

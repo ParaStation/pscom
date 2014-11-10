@@ -197,6 +197,27 @@ AC_CONFIG_FILES(lib/psmalloc/Makefile)
 AC_CONFIG_FILES(lib/psport4/Makefile)
 AC_CONFIG_FILES(scripts/Makefile)
 
+# ToDo: implement
+if test x"$OFED_ENABLED" == x"yes"; then
+   echo Warning: asyc connect not implemented for OFED.
+   OFED_ENABLED=no
+fi
+# ToDo: implement
+if test x"$GM_ENABLED" == x"yes"; then
+   echo Warning: asyc connect not implemented for GM.
+   GM_ENABLED=no
+fi
+# ToDo: implement
+if test x"$DAPL_ENABLED" == x"yes"; then
+   echo Warning: asyc connect not implemented in DAPL.
+   DAPL_ENABLED=no
+fi
+# ToDo: implement
+if test x"$ELAN_ENABLED" == x"yes"; then
+   echo Warning: asyc connect not implemented in ELAN.
+   ELAN_ENABLED=no
+fi
+
 AC_OUTPUT
 
 # copy hand written Makefiles

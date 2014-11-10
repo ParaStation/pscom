@@ -260,6 +260,8 @@ pscom_con_state_str(pscom_con_state_t state)
 	case PSCOM_CON_STATE_W:		return "wo";
 	case PSCOM_CON_STATE_RW:	return "open";
 	case PSCOM_CON_STATE_CLOSED:	return "closed";
+	case PSCOM_CON_STATE_CONNECTING:return "connecting";
+	case PSCOM_CON_STATE_ACCEPTING:	return "accepting";
 	}
 
 	{
@@ -420,6 +422,7 @@ pscom_op_str(pscom_op_t operation)
 	switch (operation) {
 	case PSCOM_OP_READ: return "read";
 	case PSCOM_OP_WRITE: return "write";
+	case PSCOM_OP_CONNECT: return "connect";
 	}
 
 	{

@@ -47,8 +47,8 @@ void pscom_ondemand_cleanup(pscom_con_t *con)
 	pscom_ondemand_read_stop(con);
 	pscom_listener_user_dec(&sock->listen);
 
-	con->pub.state = PSCOM_CON_STATE_CLOSED;
-	con->pub.type = PSCOM_CON_TYPE_NONE;
+	//con->pub.state = PSCOM_CON_STATE_CLOSED;
+	//con->pub.type = PSCOM_CON_TYPE_NONE;
 }
 
 
@@ -60,9 +60,6 @@ void pscom_ondemand_direct_connect(pscom_con_t *con)
 	int portno = con->arch.ondemand.portno;
 
 	pscom_ondemand_cleanup(con);
-
-	/* remove from list of available connections (&sock->connections) */
-	list_del(&con->next);
 
 	/* reopen via tcp connection */
 	int rc = pscom_con_connect_via_tcp(con, nodeid, portno);
@@ -148,8 +145,6 @@ pscom_con_t *pscom_ondemand_get_con(pscom_sock_t *sock, const char name[8])
 	pscom_con_t *con = pscom_ondemand_find_con(sock, name);
 	if (con) {
 		pscom_ondemand_cleanup(con);
-		/* remove from list of available connections (&sock->connections) */
-		list_del(&con->next);
 	}
 	return con;
 }
@@ -186,6 +181,7 @@ pscom_err_t pscom_con_connect_ondemand(pscom_con_t *con,
 	con->read_stop = pscom_ondemand_read_stop;
 	con->close = pscom_ondemand_close;
 
+	assert(list_empty(&con->next));
 	list_add_tail(&con->next, &sock->connections);
 
 	pscom_con_setup(con);

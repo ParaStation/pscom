@@ -19,11 +19,16 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con);
 void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info);
 // start send and receive queue
 void pscom_con_setup(pscom_con_t *con);
+void pscom_con_setup_ok(pscom_con_t *con);
+void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err);
+
+pscom_con_t *pscom_con_create(pscom_sock_t *sock);
 
 // clear all recvq's of this connection. finish all recv requests
 // of this connection with error. (keep recv any!)
 void pscom_con_terminate_recvq(pscom_con_t *con);
 void pscom_con_close(pscom_con_t *con);
+void pscom_con_destroy(pscom_con_t *con);
 
 // {read,write}_{start,stop} default hook.
 void pscom_no_rw_start_stop(pscom_con_t *con);

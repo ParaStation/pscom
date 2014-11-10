@@ -1,0 +1,149 @@
+-*- text -*-
+
+= Aufbau =
+
+Verbindungsaufbau mit dest.
+
+ * Ist dest gleich src? -> gehe zu "Loopback Verbindung"
+
+Es wird eine initiale Verbindung über TCP aufgebaut. Über diese werden
+asynchrone Daten ausgetauscht:
+
+ * Versionscheck
+ * Einigung auf eine Kommunikationspfad
+ * Kontaktdaten für das highspeed Netzwerk (z.B. Queuepair IDs).
+
+
+Aktive Seite:
+try
+	contcp = connect(dest.ip:dest.port);
+	send(PSCOM_INFO_VERSION);
+	send(PSCOM_INFO_CON_INFO, { my.IP, my.port, my.id });
+	send(PSCOM_INFO_ARCH_REQ, { first arch });
+	sendlocal(PSCOM_INFO_ARCH_REQ, { first arch });
+	receiveloop;
+
+Passive Seite:
+
+listen(port);
+try
+	contcp = accept();
+
+	send(PSCOM_INFO_VERSION);
+	send(PSCOM_INFO_CON_INFO, { my.IP, my.port, my.id });
+	receiveloop;
+
+
+receiveloop:
+	while msg = recv()
+
+		switch(msg.type)
+
+		PSCOM_INFO_VERSION)
+			if (!compatible_version(msg.version)) raise "Inkompatibel";
+		PSCOM_INFO_CON_INFO)
+			con.remote.info = msg.info
+		PSCOM_INFO_ARCH_REQ)
+		PSCOM_INFO_ARCH_OK)
+		PSCOM_INFO_ARCH_STEP*)
+		PSCOM_INFO_ARCH_EOF)
+			plugin_t(arch).con_handshake(msg.type)
+
+		PSCOM_INFO_ARCH_NEXT)
+			plugin_t(arch).con_handshake(msg.type)
+			send(PSCOM_INFO_ARCH_REQ, { next arch})
+
+
+= Plugin Interface für Handshake =
+
+plugin_t.con_init(con):
+	Wird vor einem con_handshake(con) aufgerufen. Soll dieser
+	Kommunikationspfad nicht benutzt werden, sollte -1
+	zurückgegeben werden. Im Erfolgsfall 0. Es geht weiter mit
+	con_handshake(con, PSCOM_INFO_ARCH_REQ).
+	Die aktive Seite ist im state:
+	 con->pub.state == PSCOM_CON_STATE_CONNECTING
+	die passive Seite
+	 con->pub.state == PSCOM_CON_STATE_ACCEPTING
+	pscom_precon_send(con->precon) darf noch nicht aufgerufen
+	werden.
+plugin_t.con_handshake(con, type, data):
+	Wird von der receiveloop aufgerufen mit folgenden Typen:
+ * PSCOM_INFO_ARCH_REQ:
+	Initialer Request für diese Architektur. Es wird erwartet,
+	dass .con_handshake 
+	pscom_precon_send(con->precon, PSCOM_ARCH_STEP*) aufruft. Im
+	Fehlerfall muss
+	pscom_precon_send(con->precon, PSCOM_ARCH_NEXT) aufgerufen
+	werden.
+
+ * PSCOM_INFO_ARCH_STEP*:
+   PSCOM_INFO_ARCH_OK:
+	Im Fehlerfall muss
+	pscom_precon_send(con->precon, PSCOM_ARCH_NEXT) aufgerufen
+	werden.
+	Sonst Architekturabhängig einer von
+	pscom_precon_send(con->precon, PSCOM_ARCH_STEP*)
+	pscom_precon_send(con->precon, PSCOM_ARCH_OK)
+	pscom_precon_close()
+	pscom_precon_close() wird bei einem PSCOM_INFO_ARCK_OK
+	automatisch aufgerufen.
+ * PSCOM_INFO_ARCH_NEXT:
+	Diese Architektur soll nicht benutzt werden. con->arch.* muss
+	aufgeräumt werden. Entweder hat die Gegenseite explizit
+	ARCH_NEXT aufgerufen, oder es kam zu einem Verbindungsfehler.
+ * PSCOM_INFO_EOF:
+	Wird nach einem pscom_precon_close() aufgerufen sobald die
+	precon Sendequeue leer ist. Hier sollte folgendes gesetzt
+	werden um die Verbindung in den "connected" state zu bringen:
+
+	con->pub.type = PSCOM_CON_TYPE_{ARCH};
+
+	con->write_start = { z.B. pscom_poll_write_start };
+	con->write_stop = { z.B. pscom_poll_write_stop };
+	con->read_start = { z.B. pscom_poll_read_start };
+	con->read_stop = { z.B. pscom_poll_read_stop };
+
+	con->close = pscom_{arch}_con_close;
+
+	gefolgt von:
+
+	pscom_con_setup_ok(con);
+
+
+= On Demand Verbindungsaufbau =
+
+Mit dem ersten Aufruf von Send wird die Verbindung aufgebaut. Beiden
+Seiten sind IP:port der Gegenseite bekannt. Seite A ist die Seite,
+deren src.{IP:port} < dest.{IP:port}. Die aktive Seite ist die zuerst
+Send aufrufende Seite.
+
+Fall 1: A ist aktive Seite
+Fall 2: B ist aktive Seite
+Fall 3: A und B rufen gleichzeitig Send auf. d.H. Bevor die passive
+Seite von der aktiven Seite etwas empfängt, wird Send aufgerufen.
+
+Im Fall 3 bestehen zeitweilig zwei TCP Verbindungen zwischen A und B.
+
+Aktuell:
+Es wird immer eine Verbindung von A nach B aufgebaut. Ist B die aktive
+Seite, sendet B lediglich einen Verbindungswunsch nach A, ohne dass
+hierdurch eine Verbindung aufgebaut wird. Daraufhin baut A die
+Verbindung zu B auf, als wäre A die aktive Seite. Der Fall 3 wird
+dadurch behandelt, das der Verbindungswunsch einfach verworfen
+wird. Beim eintreffen des Verbindungswunsches ist A bereits mit dem
+Verbindungsaufbau beschäftigt.
+
+Geplant:
+Die aktive Seite baut die Verbindung auf. Sollte während des
+Verbindungsaufbaues bemerkt werden, dass eine 2. Verbindung im Aufbau
+ist (Fall 3), so wird die Verbindung "B nach A" geschlossen.
+
+
+"Loopback Verbindung"
+
+
+
+Local Variables:
+  ispell-local-dictionary: "de"
+End:
