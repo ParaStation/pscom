@@ -121,7 +121,8 @@ am_libpscom_la_OBJECTS = pscom.lo pscom_con.lo pscom_debug.lo \
 	pscom_group_bcast.lo pscom_io.lo pscom_listener.lo \
 	pscom_ondemand.lo pscom_p4s.lo pscom_plugin.lo pscom_queues.lo \
 	pscom_req.lo pscom_shm.lo pscom_sock.lo pscom_str_util.lo \
-	pscom_tcp.lo pscom_ufd.lo pslib.lo psshmalloc.lo
+	pscom_tcp.lo pscom_ufd.lo pslib.lo psshmalloc.lo \
+	pscom_precon.lo
 libpscom_la_OBJECTS = $(am_libpscom_la_OBJECTS)
 libpscom_dprint_la_LIBADD =
 am_libpscom_dprint_la_OBJECTS = pscom_dprint.lo
@@ -365,7 +366,7 @@ libpscom_la_SOURCES = pscom.c pscom_con.c pscom_debug.c			\
 	pscom_io.c pscom_listener.c pscom_ondemand.c pscom_p4s.c	\
 	pscom_plugin.c pscom_queues.c pscom_req.c pscom_shm.c		\
 	pscom_sock.c pscom_str_util.c pscom_tcp.c pscom_ufd.c pslib.c	\
-	psshmalloc.c
+	psshmalloc.c pscom_precon.c
 
 noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_gm.h pscom_group.h pscom_io.h pscom_p4s.h			\
@@ -491,6 +492,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_ondemand.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_p4s.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_plugin.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_precon.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_queues.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_req.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_shm.Plo@am__quote@

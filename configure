@@ -12730,26 +12730,6 @@ ac_config_files="$ac_config_files lib/psport4/Makefile"
 ac_config_files="$ac_config_files scripts/Makefile"
 
 
-# ToDo: implement
-if test x"$OFED_ENABLED" == x"yes"; then
-   echo Warning: asyc connect not implemented for OFED.
-   OFED_ENABLED=no
-fi
-# ToDo: implement
-if test x"$GM_ENABLED" == x"yes"; then
-   echo Warning: asyc connect not implemented for GM.
-   GM_ENABLED=no
-fi
-# ToDo: implement
-if test x"$DAPL_ENABLED" == x"yes"; then
-   echo Warning: asyc connect not implemented in DAPL.
-   DAPL_ENABLED=no
-fi
-# ToDo: implement
-if test x"$ELAN_ENABLED" == x"yes"; then
-   echo Warning: asyc connect not implemented in ELAN.
-   ELAN_ENABLED=no
-fi
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
