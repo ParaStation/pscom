@@ -829,7 +829,7 @@ void psofed_con_cleanup(psofed_con_info_t *con_info)
 }
 
 
-int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context)
+int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context, void *priv)
 {
 	int rc;
 
@@ -838,7 +838,7 @@ int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context)
 	con_info->context = context;
 	con_info->ah = NULL;
 	con_info->qp_num = 0;
-	con_info->priv = NULL;
+	con_info->priv = priv;
 	con_info->con_broken = 0;
 
 	con_info->sending_count = 0;
@@ -891,12 +891,6 @@ err_version:
 	psofed_dprint(1, "psofed_con_connect() : version handshake failed (%03x expect %03x)",
 		      info_msg->version, PSOFED_INFO_VERSION);
 	return -1;
-}
-
-
-void psofed_con_set_priv(psofed_con_info_t *con_info, void *priv)
-{
-	con_info->priv = priv;
 }
 
 
