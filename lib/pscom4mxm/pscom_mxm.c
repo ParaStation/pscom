@@ -178,6 +178,8 @@ void pscom_mxm_init_con(pscom_con_t *con)
 
 	con->do_write = pscom_mxm_do_write;
 	con->close = pscom_mxm_con_close;
+
+	pscom_con_setup_ok(con);
 }
 
 

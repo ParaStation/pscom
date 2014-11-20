@@ -350,6 +350,8 @@ void pscom_extoll_init_con(pscom_con_t *con)
 	con->rma_read = pscom_extoll_rma_read;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_velo;
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/

@@ -277,6 +277,8 @@ void pscom_psm_init_con(pscom_con_t *con)
 
 	con->do_write = pscom_psm_do_write;
 	con->close = pscom_psm_con_close;
+
+	pscom_con_setup_ok(con);
 }
 
 
