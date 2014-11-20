@@ -14,23 +14,11 @@
  */
 
 #include "pscom_psm.h"
+#include "pscom_con.h"
+#include "pscom_precon.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
-
-
-pscom_plugin_t pscom_plugin = {
-	.name		= "psm",
-	.version	= PSCOM_PLUGIN_VERSION,
-	.arch_id	= PSCOM_ARCH_PSM,
-	.priority	= PSCOM_PSM_PRIO,
-	.init		= pscom_psm_init,
-	.destroy	= pscom_psm_finalize,
-	.sock_init	= NULL,
-	.sock_destroy	= NULL,
-	.con_connect	= pscom_psm_connect,
-	.con_accept	= pscom_psm_accept,
-};
 
 
 /*
@@ -253,13 +241,10 @@ void pscom_psm_do_write(pscom_con_t *con)
 
 
 static
-void pscom_psm_close(pscom_con_t *con)
+void pscom_psm_con_cleanup(pscom_con_t *con)
 {
 	pspsm_con_info_t *ci = con->arch.psm.ci;
-
 	if (!ci) return;
-
-	pspsm_send_eof(ci);
 
 	pspsm_con_cleanup(ci);
 	pspsm_con_free(ci);
@@ -269,16 +254,21 @@ void pscom_psm_close(pscom_con_t *con)
 
 
 static
-void pscom_psm_con_init(pscom_con_t *con, int con_fd,
-			pspsm_con_info_t *ci)
+void pscom_psm_con_close(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
+	pspsm_con_info_t *ci = con->arch.psm.ci;
+	if (!ci) return;
+
+	pspsm_send_eof(ci);
+
+	pscom_psm_con_cleanup(con);
+}
+
+
+static
+void pscom_psm_init_con(pscom_con_t *con)
+{
 	con->pub.type = PSCOM_CON_TYPE_PSM;
-
-	close(con_fd);
-
-	con->arch.psm.ci = ci;
-	con->arch.psm.reading = 0;
 
 	con->write_start = pscom_poll_write_start;
 	con->write_stop = pscom_poll_write_stop;
@@ -286,9 +276,7 @@ void pscom_psm_con_init(pscom_con_t *con, int con_fd,
 	con->read_stop = pscom_psm_read_stop;
 
 	con->do_write = pscom_psm_do_write;
-	con->close = pscom_psm_close;
-
-	ci->con = con;
+	con->close = pscom_psm_con_close;
 }
 
 
@@ -312,104 +300,58 @@ void pscom_psm_init(void)
 }
 
 
+#define PSCOM_INFO_PSM_ID PSCOM_INFO_ARCH_STEP1
+
+
 static
-int pscom_psm_connect(pscom_con_t *con, int con_fd)
+int pscom_psm_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_PSM;
-	pspsm_con_info_t *ci = pspsm_con_create();
-	pspsm_info_msg_t msg;
-	pspsm_info_msg_t my_msg;
-
-	if (pspsm_init() || !ci) goto dont_use;
-	if (pspsm_con_init(ci)) goto dont_use;
-
-	ci->con = con;
-
-	/* We want talk psm */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_PSM)) {
-		goto err_remote;
-	}
-
-	/* step 2 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg))) {
-		goto err_remote;
-	}
-
-	/* step 3: send my connection id's */
-	pspsm_con_get_info_msg(ci, &my_msg);
-	pscom_writeall(con_fd, &my_msg, sizeof(my_msg));
-
-	/* Connect */
-	if (pspsm_con_connect(ci, &msg)) {
-		/* ToDo: bad! How to inform the peer about the error? */
-		DPRINT(0, "Psm pspsm_con_connect() failed!");
-		goto err_local;
-	}
-
-	pscom_psm_con_init(con, con_fd, ci);
-
-	return 1;
-	/* --- */
- err_local:
- err_remote:
- dont_use:
-	if (ci) {
-		pspsm_con_cleanup(ci);
-		pspsm_con_free(ci);
-	}
-	return 0;
+	return pspsm_init();
 }
 
 
 static
-int pscom_psm_accept(pscom_con_t *con, int con_fd)
+void pscom_psm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_PSM;
-	pspsm_con_info_t *ci = pspsm_con_create();
-	pspsm_info_msg_t msg;
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		pspsm_info_msg_t msg;
+		pspsm_con_info_t *ci = pspsm_con_create();
 
-	if (pspsm_init() || !ci) goto out_nopsm;
-	if (pspsm_con_init(ci)) goto dont_use;
+		con->arch.psm.ci = ci;
+		con->arch.psm.reading = 0;
 
-	/* step 1:  Yes, we talk psm. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
+		if (pspsm_con_init(ci, con)) goto error_con_init;
 
-	/* step 2: Send Connection id's */
-	pspsm_con_get_info_msg(ci, &msg);
-	pscom_writeall(con_fd, &msg, sizeof(msg));
+		/* send my connection id's */
+		pspsm_con_get_info_msg(ci, &msg);
 
-	/* step 3 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg))) {
-		goto err_remote;
+		pscom_precon_send(con->precon, PSCOM_INFO_PSM_ID, &msg, sizeof(msg));
+		break; /* Next is PSCOM_INFO_PSM_ID or PSCOM_INFO_ARCH_NEXT */
 	}
+	case PSCOM_INFO_PSM_ID: {
+		pspsm_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
 
-	/* Connect */
-	if (pspsm_con_connect(ci, &msg)) {
-		/* ToDo: bad! How to inform the peer about the error? */
-		DPRINT(0, "Psm pspsm_con_connect() failed!");
-		goto err_local;
+		if (pspsm_con_connect(con->arch.psm.ci, msg)) goto error_con_connect;
+
+		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break; /* Next is EOF or ARCH_NEXT */
 	}
-
-	pscom_psm_con_init(con, con_fd, ci);
-
-	return 1;
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Something failed. Cleanup. */
+		pscom_psm_con_cleanup(con);
+		break; /* Done. Psm failed */
+	case PSCOM_INFO_EOF:
+		pscom_psm_init_con(con);
+		break; /* Done. Use Psm */
+	}
+	return;
 	/* --- */
- err_local:
- err_remote:
-	if (ci) pspsm_con_cleanup(ci);
- dont_use:
-	if (ci) pspsm_con_free(ci);
-	return 0;
-	/* --- */
- out_nopsm:
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-	return 0;
-	/* --- */
+error_con_connect:
+error_con_init:
+	pscom_psm_con_cleanup(con);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -550,7 +492,7 @@ int pspsm_finalize_mq(void)
 
 
 static
-int pspsm_con_init(pspsm_con_info_t *con_info)
+int pspsm_con_init(pspsm_con_info_t *con_info, pscom_con_t *con)
 {
 	static uint64_t id = 42;
 
@@ -562,6 +504,8 @@ int pspsm_con_init(pspsm_con_info_t *con_info)
 	con_info->rreq = PSM_MQ_REQINVALID;
 	con_info->sreqs[0] = PSM_MQ_REQINVALID;
 	con_info->sreqs[1] = PSM_MQ_REQINVALID;
+
+	con_info->con = con;
 
 	/* debug */
 	con_info->magic = UINTMAX_C(0xdeadbeefcafebabe);
@@ -837,3 +781,17 @@ void pspsm_con_get_info_msg(pspsm_con_info_t *con_info,
 	memcpy(info_msg->protocol_version, PSPSM_PROTOCOL_VERSION,
 	       sizeof(info_msg->protocol_version));
 }
+
+
+pscom_plugin_t pscom_plugin = {
+	.name		= "psm",
+	.version	= PSCOM_PLUGIN_VERSION,
+	.arch_id	= PSCOM_ARCH_PSM,
+	.priority	= PSCOM_PSM_PRIO,
+	.init		= pscom_psm_init,
+	.destroy	= pscom_psm_finalize,
+	.sock_init	= NULL,
+	.sock_destroy	= NULL,
+	.con_init	= pscom_psm_con_init,
+	.con_handshake	= pscom_psm_handshake,
+};

@@ -107,7 +107,6 @@ typedef struct {
 static int pspsm_init(void);
 static pspsm_con_info_t *pspsm_con_create(void);
 static void pspsm_con_free(pspsm_con_info_t *con_info);
-static int pspsm_con_init(pspsm_con_info_t *con_info);
 static int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg);
 static void pspsm_con_cleanup(pspsm_con_info_t *con_info);
 static void pspsm_con_get_info_msg(pspsm_con_info_t *con_info /* in */, pspsm_info_msg_t *info /* out */);
@@ -118,7 +117,6 @@ static void pspsm_send_eof(pspsm_con_info_t *con_info);
 static int pscom_psm_do_read(pscom_con_t *con);
 static void pscom_psm_do_write(pscom_con_t *con);
 static void pscom_psm_close(pscom_con_t *con);
-static void pscom_psm_con_init(pscom_con_t *con, int con_fd, pspsm_con_info_t *ci);
 static void pscom_psm_init(void);
 static int pscom_psm_connect(pscom_con_t *con, int con_fd);
 static int pscom_psm_accept(pscom_con_t *con, int con_fd);
@@ -128,7 +126,7 @@ static int pspsm_init_mq(void);
 static int pspsm_close_endpoint(void);
 static void pscom_psm_finalize();
 static int pspsm_finalize_mq(void);
-static int pspsm_con_init(pspsm_con_info_t *con_info);
+static int pspsm_con_init(pspsm_con_info_t *con_info, pscom_con_t *con);
 static int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg);
 
 /*
