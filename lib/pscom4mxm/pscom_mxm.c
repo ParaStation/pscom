@@ -12,6 +12,8 @@
 
 #include "pscom_mxm.h"
 #include "psmxm.h"
+#include "pscom_con.h"
+#include "pscom_precon.h"
 #include "pscom_priv.h"
 
 #include <errno.h>
@@ -140,13 +142,10 @@ void pscom_mxm_do_write(pscom_con_t *con)
 
 
 static
-void pscom_mxm_close(pscom_con_t *con)
+void pscom_mxm_con_cleanup(pscom_con_t *con)
 {
 	psmxm_con_info_t *ci = con->arch.mxm.ci;
-
 	if (!ci) return;
-
-	// ToDo: implement psmxm_send_eof() and send EOF.
 
 	psmxm_con_cleanup(ci);
 	psmxm_con_free(ci);
@@ -156,17 +155,21 @@ void pscom_mxm_close(pscom_con_t *con)
 
 
 static
-void pscom_mxm_con_init(pscom_con_t *con, int con_fd,
-			psmxm_con_info_t *ci)
+void pscom_mxm_con_close(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
+	psmxm_con_info_t *ci = con->arch.mxm.ci;
+	if (!ci) return;
+
+	// ToDo: implement psmxm_send_eof() and send EOF.
+
+	pscom_mxm_con_cleanup(con);
+}
+
+
+static
+void pscom_mxm_init_con(pscom_con_t *con)
+{
 	con->pub.type = PSCOM_CON_TYPE_MXM;
-
-	close(con_fd);
-
-	con->arch.mxm.ci = ci;
-	con->arch.mxm.reading = 0;
-	con->arch.mxm.sreq = NULL;
 
 	con->write_start = pscom_poll_write_start;
 	con->write_stop = pscom_poll_write_stop;
@@ -174,7 +177,7 @@ void pscom_mxm_con_init(pscom_con_t *con, int con_fd,
 	con->read_stop = pscom_mxm_read_stop;
 
 	con->do_write = pscom_mxm_do_write;
-	con->close = pscom_mxm_close;
+	con->close = pscom_mxm_con_close;
 }
 
 
@@ -194,102 +197,59 @@ void pscom_mxm_init(void)
 }
 
 
+#define PSCOM_INFO_MXM_ID PSCOM_INFO_ARCH_STEP1
+
+
 static
-int pscom_mxm_connect(pscom_con_t *con, int con_fd)
+int pscom_mxm_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_MXM;
-	psmxm_con_info_t *ci = psmxm_con_create();
-	psmxm_info_msg_t msg;
-	psmxm_info_msg_t my_msg;
-
-	if (psmxm_init() || !ci) goto dont_use;
-	if (psmxm_con_init(ci)) goto dont_use;
-
-	/* We want talk mxm */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_MXM)) {
-		goto err_remote;
-	}
-
-	/* step 2 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg))) {
-		goto err_remote;
-	}
-
-	/* step 3: send my connection id's */
-	psmxm_con_get_info_msg(ci, &my_msg);
-	pscom_writeall(con_fd, &my_msg, sizeof(my_msg));
-
-	/* Connect */
-	if (psmxm_con_connect(ci, &msg, con)) {
-		/* ToDo: bad! How to inform the peer about the error? */
-		DPRINT(0, "Mxm psmxm_con_connect() failed!");
-		goto err_local;
-	}
-
-	pscom_mxm_con_init(con, con_fd, ci);
-
-	return 1;
-	/* --- */
- err_local:
- err_remote:
- dont_use:
-	if (ci) {
-		psmxm_con_cleanup(ci);
-		psmxm_con_free(ci);
-	}
-	return 0;
+	return psmxm_init();
 }
 
 
 static
-int pscom_mxm_accept(pscom_con_t *con, int con_fd)
+void pscom_mxm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_MXM;
-	psmxm_con_info_t *ci = psmxm_con_create();
-	psmxm_info_msg_t msg;
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		psmxm_info_msg_t msg;
+		psmxm_con_info_t *ci = psmxm_con_create();
 
-	if (psmxm_init() || !ci) goto out_nomxm;
-	if (psmxm_con_init(ci)) goto dont_use;
+		con->arch.mxm.ci = ci;
+		con->arch.mxm.reading = 0;
+		con->arch.mxm.sreq = NULL;
 
-	/* step 1:  Yes, we talk mxm. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
+		if (psmxm_con_init(ci)) goto error_con_init;
 
-	/* step 2: Send Connection id's */
-	psmxm_con_get_info_msg(ci, &msg);
-	pscom_writeall(con_fd, &msg, sizeof(msg));
+		/* send my connection id's */
+		psmxm_con_get_info_msg(ci, &msg);
 
-	/* step 3 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg))) {
-		goto err_remote;
+		pscom_precon_send(con->precon, PSCOM_INFO_MXM_ID, &msg, sizeof(msg));
+		break; /* Next is PSCOM_INFO_MXM_ID or PSCOM_INFO_ARCH_NEXT */
 	}
+	case PSCOM_INFO_MXM_ID: {
+		psmxm_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
 
-	/* Connect */
-	if (psmxm_con_connect(ci, &msg, con)) {
-		/* ToDo: bad! How to inform the peer about the error? */
-		DPRINT(0, "Mxm psmxm_con_connect() failed!");
-		goto err_local;
+		if (psmxm_con_connect(con->arch.mxm.ci, msg, con)) goto error_con_connect;
+
+		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break; /* Next is EOF or ARCH_NEXT */
 	}
-
-	pscom_mxm_con_init(con, con_fd, ci);
-
-	return 1;
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Something failed. Cleanup. */
+		pscom_mxm_con_cleanup(con);
+		break; /* Done. Mxm failed */
+	case PSCOM_INFO_EOF:
+		pscom_mxm_init_con(con);
+		break; /* Done. Use Mxm */
+	}
+	return;
 	/* --- */
- err_local:
- err_remote:
-	if (ci) psmxm_con_cleanup(ci);
- dont_use:
-	if (ci) psmxm_con_free(ci);
-	return 0;
-	/* --- */
- out_nomxm:
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-	return 0;
-	/* --- */
+error_con_connect:
+error_con_init:
+	pscom_mxm_con_cleanup(con);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -311,6 +271,6 @@ pscom_plugin_t pscom_plugin = {
 	.destroy	= pscom_mxm_finalize,
 	.sock_init	= NULL,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_mxm_connect,
-	.con_accept	= pscom_mxm_accept,
+	.con_init	= pscom_mxm_con_init,
+	.con_handshake	= pscom_mxm_handshake,
 };
