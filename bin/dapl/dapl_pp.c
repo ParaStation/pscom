@@ -329,10 +329,10 @@ int main(int argc, char **argv)
 		rc = psdapl_listen(socket);
 		assert(rc == 0);
 		do {
+			psdapl_info_msg_t msg;
+			psdapl_con_get_info_msg(ci, &msg);
 			printf("Waiting for client.\nCall client with:\n");
-			printf("%s %s\n", argv[0],
-			       psdapl_addr2str(psdapl_socket_get_addr(socket),
-					       psdapl_socket_get_conn_qual(socket)));
+			printf("%s %s\n", argv[0], psdapl_addr2str(&msg));
 			fflush(stdout);
 
 			rc = psdapl_accept_wait(ci);
@@ -344,16 +344,15 @@ int main(int argc, char **argv)
 
 		} while (!arg_run_once);
 	} else {
-		DAT_SOCK_ADDR sock_addr;
-		DAT_CONN_QUAL conn_qual;
+		psdapl_info_msg_t msg;
 
-		rc = psdapl_str2addr(&sock_addr, &conn_qual,  arg_server_addr);
+		rc = psdapl_str2addr(&msg,  arg_server_addr);
 		if (rc) {
 			printf("Can parse server address \"%s\"\n", arg_server_addr);
 			exit(1);
 		}
 
-		rc = psdapl_connect(ci, &sock_addr, conn_qual);
+		rc = psdapl_connect(ci, &msg);
 		if (rc) {
 			printf("Connect server at \"%s\" failed\n", arg_server_addr);
 			exit(1);

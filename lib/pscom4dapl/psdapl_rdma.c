@@ -355,7 +355,7 @@ err_rdma_read:
 static
 void do_DTO_COMPLETION_EVENT(psdapl_con_info_t *ci, DAT_DTO_COMPLETION_EVENT_DATA *event)
 {
-	if (event->status != DAT_SUCCESS) {
+	if (event->status != DAT_DTO_SUCCESS /* DAT_SUCCESS*/) {
 		psdapl_dprint_dat_err(0, event->status, "Warning: do_DTO_COMPLETION_EVENT() failed");
 	}
 

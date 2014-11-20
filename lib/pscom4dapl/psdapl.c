@@ -369,8 +369,10 @@ err_pz_create:
 }
 
 
-const char *psdapl_addr2str(DAT_SOCK_ADDR *addr, DAT_CONN_QUAL conn_qual)
+const char *psdapl_addr2str(const psdapl_info_msg_t *msg /* in */)
 {
+	DAT_SOCK_ADDR *addr = &msg->sock_addr;
+	DAT_CONN_QUAL conn_qual = msg->conn_qual;
 	static char buf[sizeof(
 			"ffffff_000:001:002:003:004:005:006:007:008:009:010:011:012:013_12345678910_save_")];
 	snprintf(buf, sizeof(buf),
@@ -389,8 +391,10 @@ const char *psdapl_addr2str(DAT_SOCK_ADDR *addr, DAT_CONN_QUAL conn_qual)
 
 
 /* return -1 on parse error */
-int psdapl_str2addr(DAT_SOCK_ADDR *addr, DAT_CONN_QUAL *conn_qual, const char *str)
+int psdapl_str2addr(psdapl_info_msg_t *msg, const char *str)
 {
+	DAT_SOCK_ADDR *addr = &msg->sock_addr;
+
 	if (!addr || !str) return -1;
 	unsigned data[14];
 	unsigned long cq;
@@ -407,15 +411,10 @@ int psdapl_str2addr(DAT_SOCK_ADDR *addr, DAT_CONN_QUAL *conn_qual, const char *s
 
 	addr->sa_family = fam;
 	for (i = 0; i < 14; i++) addr->sa_data[i] = data[i];
-	*conn_qual = cq;
+	msg->conn_qual = cq;
 	return rc == 16 ? 0 : -1;
 }
 
-
-DAT_SOCK_ADDR *psdapl_socket_get_addr(psdapl_socket_t *socket)
-{
-	return &socket->sock_addr;
-}
 
 DAT_CONN_QUAL psdapl_socket_get_conn_qual(psdapl_socket_t *socket)
 {
@@ -854,7 +853,7 @@ int psdapl_wait4event(psdapl_con_info_t *ci, unsigned ev, const char *ev_name)
 
 /* Connect a remote PSP at addr : conn_qual
  * return -1 on error */
-int psdapl_connect(psdapl_con_info_t *ci, DAT_SOCK_ADDR *addr, DAT_CONN_QUAL conn_qual)
+int psdapl_connect(psdapl_con_info_t *ci, psdapl_info_msg_t *msg)
 {
 	int rc;
 	DAT_RETURN dat_rc;
@@ -869,8 +868,8 @@ int psdapl_connect(psdapl_con_info_t *ci, DAT_SOCK_ADDR *addr, DAT_CONN_QUAL con
 	psdapl_init_init_msg(&res_imsg, ci);
 
 	dat_rc = dat_ep_connect(ci->ep_handle,
-				addr,
-				conn_qual,
+				&msg->sock_addr,
+				msg->conn_qual,
 				DAT_TIMEOUT_INFINITE /* 5 * 1000 * 1000 */,
 
 				sizeof(res_imsg) /* private_data_size */,
@@ -1248,4 +1247,11 @@ void psdapl_get_fresh_tokens(psdapl_con_info_t *ci)
 
 		psdapl_recvdone(ci);
 	}
+}
+
+
+void psdapl_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */)
+{
+	memcpy(&msg->sock_addr, &ci->socket->sock_addr, sizeof(msg->sock_addr));
+	msg->conn_qual = ci->socket->listen_conn_qual;
 }
