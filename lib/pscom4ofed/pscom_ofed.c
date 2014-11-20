@@ -171,6 +171,8 @@ void pscom_ofed_init_con(pscom_con_t *con)
 
 	con->do_write = pscom_ofed_do_write;
 	con->close = pscom_ofed_con_close;
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/
