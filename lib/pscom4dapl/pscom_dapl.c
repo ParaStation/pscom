@@ -239,6 +239,8 @@ void pscom_dapl_init_con(pscom_con_t *con)
 	con->rma_read = pscom_dapl_rma_read;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_dapl;
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/
@@ -308,25 +310,30 @@ void pscom_dapl_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 
 			pscom_precon_send(con->precon, PSCOM_INFO_DAPL_ID, &msg, sizeof(msg));
 			 /* Next is PSCOM_INFO_DAPL_ACCEPT or PSCOM_INFO_ARCH_NEXT */
-		} /* else {
-		     Send nothing, wait for PSCOM_INFO_DAPL_ID
-		     }
-		  */
+		} else {
+			// ToDo: FixMe: "ok" should be send after a non blocking psdapl_connect().
+			pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		}
 		break;
 	}
 	case PSCOM_INFO_DAPL_ID: {
 		psdapl_info_msg_t *msg = data;
 		assert(sizeof(*msg) == size);
 
+		// ToDo: FixMe: psdapl_connect() is blocking!
 		if (psdapl_connect(con->arch.dapl.ci, msg)) goto error_connect;
 
-		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
 		break; /* Next is EOF or ARCH_NEXT */
 	}
 	case PSCOM_INFO_ARCH_OK: {
 		// ToDo: psdapl_accept_wait() is blocking, but handshake should not block!
-		if (psdapl_accept_wait(con->arch.dapl.ci)) goto error_accept;
+		if (con->pub.state == PSCOM_CON_STATE_CONNECTING) {
 
+			// ToDo: FixMe: psdapl_accept_wait() is blocking!
+			if (psdapl_accept_wait(con->arch.dapl.ci)) goto error_accept;
+
+			pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		}
 		break; /* Next is PSCOM_INFO_EOF */
 	}
 	case PSCOM_INFO_ARCH_NEXT:

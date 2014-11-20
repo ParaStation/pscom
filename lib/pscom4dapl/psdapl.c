@@ -371,8 +371,8 @@ err_pz_create:
 
 const char *psdapl_addr2str(const psdapl_info_msg_t *msg /* in */)
 {
-	DAT_SOCK_ADDR *addr = &msg->sock_addr;
-	DAT_CONN_QUAL conn_qual = msg->conn_qual;
+	const DAT_SOCK_ADDR *addr = &msg->sock_addr;
+	const DAT_CONN_QUAL conn_qual = msg->conn_qual;
 	static char buf[sizeof(
 			"ffffff_000:001:002:003:004:005:006:007:008:009:010:011:012:013_12345678910_save_")];
 	snprintf(buf, sizeof(buf),
