@@ -390,6 +390,7 @@ int main(int argc, char **argv)
 		PSCALL(pscom_connect_socket_str(con, arg_server));
 
 		do_pp_client(con);
+		pscom_close_connection(con);
 		if (arg_verbose) pscom_dump_info(stdout);
 	}
 
