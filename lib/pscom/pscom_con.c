@@ -24,6 +24,8 @@
 #include <netinet/tcp.h>
 #include <errno.h>
 
+static
+void _pscom_con_destroy(pscom_con_t *con);
 
 static
 void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
@@ -166,7 +168,8 @@ void pscom_con_error_write_failed(pscom_con_t *con, pscom_err_t error)
 }
 
 
-void pscom_con_close(pscom_con_t *con)
+static
+void _pscom_con_cleanup(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
@@ -178,9 +181,7 @@ void pscom_con_close(pscom_con_t *con)
 
 		_pscom_con_terminate_net_queues(con);
 
-		assert(con->pub.state == PSCOM_CON_STATE_NO_RW ||
-		       con->pub.state == PSCOM_CON_STATE_CONNECTING ||
-		       con->pub.state == PSCOM_CON_STATE_ACCEPTING);
+		assert(con->pub.state == PSCOM_CON_STATE_CLOSING);
 		assert(list_empty(&con->sendq));
 		assert(list_empty(&con->recvq_user));
 		assert(list_empty(&con->net_recvq_user));
@@ -197,6 +198,17 @@ void pscom_con_close(pscom_con_t *con)
 		    // !list_empty(&con->net_recvq_bcast) ||
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
 
+		if (con->pub.state == PSCOM_CON_STATE_CLOSING) {
+			DPRINT(1, "DISCONNECT %s via %s",
+			       pscom_con_str(&con->pub),
+			       pscom_con_type_str(con->pub.type));
+		} else {
+			DPRINT(5, "cleanup %s via %s : %s",
+			       pscom_con_str(&con->pub),
+			       pscom_con_type_str(con->pub.type),
+			       pscom_con_state_str(con->pub.state));
+		}
+
 		if (con->close) con->close(con);
 
 		list_del_init(&con->next);
@@ -205,6 +217,59 @@ void pscom_con_close(pscom_con_t *con)
 		_pscom_step();
 	} else {
 		list_del_init(&con->next); // May dequeue multiple times.
+	}
+
+	if (con->pub.state == PSCOM_CON_STATE_CLOSED && con->state.close_called) {
+		_pscom_con_destroy(con);
+	}
+}
+
+
+static
+void _write_start_closing(pscom_con_t *con)
+{
+	DPRINT(1, "Writing to the closed connection %s (%s)",
+	       pscom_con_str(&con->pub), pscom_con_type_str(con->pub.type));
+}
+
+
+static
+void io_done_send_eof(pscom_req_state_t state, void *priv_con)
+{
+	pscom_con_t *con = priv_con;
+	pscom_lock(); {
+		_pscom_con_cleanup(con);
+	} pscom_unlock();
+
+}
+
+
+static
+void pscom_con_send_eof(pscom_con_t *con)
+{
+	_pscom_send_inplace(con, PSCOM_MSGTYPE_EOF,
+			    NULL, 0,
+			    NULL, 0,
+			    io_done_send_eof, con);
+}
+
+
+void pscom_con_close(pscom_con_t *con)
+{
+	int send_eof;
+	assert(con->magic == MAGIC_CONNECTION);
+
+	send_eof = (con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W;
+
+	if (send_eof) {
+		pscom_con_send_eof(con);
+		con->write_start = _write_start_closing; // No further writes
+	}
+
+	con->pub.state = PSCOM_CON_STATE_CLOSING;
+
+	if (!send_eof) {
+		_pscom_con_cleanup(con);
 	}
 }
 
@@ -297,11 +362,16 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 
 	con->rendezvous_size = pscom.env.rendezvous_size;
 
+	/* State */
+	con->state.eof_received = 0;
+	con->state.close_called = 0;
+
 	return con;
 }
 
 
-void pscom_con_destroy(pscom_con_t *con)
+static
+void _pscom_con_destroy(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
@@ -623,8 +693,8 @@ void pscom_close_connection(pscom_connection_t *connection)
 {
 	pscom_lock(); {
 		pscom_con_t *con = get_con(connection);
+		con->state.close_called = 1;
 		pscom_con_close(con);
-		pscom_con_destroy(con);
 	} pscom_unlock();
 }
 

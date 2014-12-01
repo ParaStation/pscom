@@ -288,6 +288,11 @@ struct PSCOM_con
 		user_conn_t	user; // Future usage (new plugins)
 	}			arch;
 
+	struct {
+		int		eof_received : 1;
+		int		close_called : 1;
+	}			state;
+
 	pscom_connection_t	pub;
 };
 
@@ -419,6 +424,7 @@ extern pscom_t pscom;
 #define PSCOM_MSGTYPE_RENDEZVOUS_FIN	5 /* Rendezvous done */
 #define PSCOM_MSGTYPE_BCAST	6
 #define PSCOM_MSGTYPE_BARRIER	7
+#define PSCOM_MSGTYPE_EOF	8
 
 extern int mt_locked;
 

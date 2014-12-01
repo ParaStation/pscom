@@ -262,6 +262,7 @@ pscom_con_state_str(pscom_con_state_t state)
 	case PSCOM_CON_STATE_CLOSED:	return "closed";
 	case PSCOM_CON_STATE_CONNECTING:return "connecting";
 	case PSCOM_CON_STATE_ACCEPTING:	return "accepting";
+	case PSCOM_CON_STATE_CLOSING:	return "closing";
 	}
 
 	{

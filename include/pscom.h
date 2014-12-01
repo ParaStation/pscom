@@ -54,6 +54,7 @@ typedef enum PSCOM_con_state {
 	PSCOM_CON_STATE_CLOSED  = 0x4,
 	PSCOM_CON_STATE_CONNECTING = 0x8,
 	PSCOM_CON_STATE_ACCEPTING = 0x10,
+	PSCOM_CON_STATE_CLOSING = 0x20,
 } pscom_con_state_t;
 
 

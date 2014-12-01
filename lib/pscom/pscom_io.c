@@ -37,6 +37,7 @@ inline	      pscom_req_t *_pscom_get_ctrl_receiver(pscom_con_t *con, pscom_heade
 static        pscom_req_t *pscom_get_rma_write_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con, pscom_header_net_t *nh);
+static        pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        void         pscom_rendezvous_read_data_io_done(pscom_request_t *request);
 static        void         pscom_rendezvous_receiver_io_done(pscom_request_t *req);
 static        pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t *nh);
@@ -561,6 +562,15 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 }
 
 
+static
+pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh)
+{
+	con->state.eof_received = 1;
+	pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_EOF);
+	return NULL;
+}
+
+
 /* return a request, which will receive this message.
    return NULL if this message should be discarded */
 static
@@ -595,6 +605,9 @@ pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 			break;
 		case PSCOM_MSGTYPE_BARRIER:
 			req = _pscom_get_ctrl_receiver(con, nh);
+			break;
+		case PSCOM_MSGTYPE_EOF:
+			req = _pscom_get_eof_receiver(con, nh);
 			break;
 		default:
 			DPRINT(0, "Receive unknown msg_type %u", nh->msg_type);
@@ -766,7 +779,11 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 	return;
 	/* --- */
 err_eof:
-	pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_EOF);
+	if (!con->state.eof_received && !con->state.close_called) {
+		/* Received an transport layer eof, without
+		   a previous received PSCOM_MSGTYPE_EOF or call to close. -> Throw an IOERROR: */
+		pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_IOERROR);
+	}
 	return;
 }
 
