@@ -259,7 +259,7 @@ void pscom_con_close(pscom_con_t *con)
 	int send_eof;
 	assert(con->magic == MAGIC_CONNECTION);
 
-	send_eof = (con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W;
+	send_eof = ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W) && (con->pub.type != PSCOM_CON_TYPE_ONDEMAND);
 
 	if (send_eof) {
 		pscom_con_send_eof(con);

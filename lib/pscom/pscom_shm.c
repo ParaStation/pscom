@@ -60,11 +60,31 @@ struct {
 	struct list_head	shm_conn_head; // shm_conn_t.pending_io_next_conn.
 } shm_pending_io;
 
+typedef struct shm_info_msg_s {
+	int shm_id;
+	int direct_shm_id;	/* shm direct shared mem id */
+	void *direct_base;	/* base pointer of the shared mem segment */
+} shm_info_msg_t;
 
 struct shm_direct_header {
 	void	*base;
 	size_t	len;
 };
+
+static
+void shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
+{
+       if (shmid == -1) {
+               shm->direct_offset = 0;
+               shm->direct_base = NULL;
+               return;
+       }
+       void *buf = shmat(shmid, 0, SHM_RDONLY);
+       assert(buf != (void *) -1 && buf);
+
+       shm->direct_base = buf;
+       shm->direct_offset = (char *)buf - (char *)remote_base;
+}
 
 static
 int shm_initrecv(shm_conn_t *shm)
@@ -96,11 +116,14 @@ err:
 
 
 static
-int shm_initsend(shm_conn_t *shm, int rem_shmid)
+int shm_initsend(shm_conn_t *shm, shm_info_msg_t *msg)
 {
 	void *buf;
+	int rem_shmid = msg->shm_id;
 	buf = shmat(rem_shmid, 0, 0);
 	if (((long)buf == -1) || !buf) goto err_shmat;
+
+	shm_init_direct(shm, msg->direct_shm_id, msg->direct_base);
 
 	shm->remote_id = rem_shmid;
 	shm->remote_com = buf;
@@ -562,13 +585,6 @@ int shm_is_local(pscom_con_t *con)
 	return con->pub.remote_con_info.node_id == pscom_get_nodeid();
 }
 
-
-typedef struct shm_info_msg_s {
-	int shm_id;
-	int direct_shm_id;	/* shm direct shared mem id */
-	void *direct_base;	/* base pointer of the shared mem segment */
-} shm_info_msg_t;
-
 /****************************************************************/
 static
 void pscom_shm_sock_init(pscom_sock_t *sock)
@@ -614,14 +630,14 @@ void pscom_shm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 		if (shm_initrecv(shm)) goto error_initsend;
 
 		shm_info_msg_t msg;
-		msg.shm_id = shm->local_id;
+		pscom_shm_info_msg(shm, &msg);
 		pscom_precon_send(pre, PSCOM_INFO_SHM_SHMID, &msg, sizeof(msg));
 		break;
 	}
 	case PSCOM_INFO_SHM_SHMID: {
 		shm_info_msg_t *msg = data;
 		assert(size == sizeof(*msg));
-		if (shm_initsend(shm, msg->shm_id)) goto error_initrecv;
+		if (shm_initsend(shm, msg)) goto error_initrecv;
 		pscom_precon_send(pre, PSCOM_INFO_ARCH_OK, NULL, 0);
 		break;
 
