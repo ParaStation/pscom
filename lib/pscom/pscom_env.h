@@ -142,6 +142,7 @@ struct PSCOM_env {
 	unsigned int	so_rcvbuf;
 	int		tcp_nodelay;
 	unsigned int	tcp_backlog;
+	unsigned int	precon_reconnect_timeout;
 	int		unexpected_receives;
 	int		sched_yield;
 	unsigned int	rendezvous_size;
@@ -172,6 +173,7 @@ struct PSCOM_env {
 	.so_rcvbuf = 32768,						\
 	.tcp_nodelay = 1,						\
 	.tcp_backlog = 262144 /*SOMAXCONN = 128 */,			\
+	.precon_reconnect_timeout = 2000, /* try reconnect in [ms] */	\
 									\
 	.unexpected_receives = 0,					\
 	.sched_yield = 0,						\

@@ -370,7 +370,10 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		break;
 	case PSCOM_INFO_FD_ERROR:
 		if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
-		if (con) pscom_con_setup_failed(con, PSCOM_ERR_IOERROR);
+		if (con) {
+			int err = data ? *(int*)data : 0;
+			pscom_con_setup_failed(con, err == ECONNREFUSED ? PSCOM_ERR_CONNECTION_REFUSED : PSCOM_ERR_IOERROR);
+		}
 		pscom_precon_terminate(pre);
 		break;
 	case PSCOM_INFO_CON_INFO: {
@@ -540,18 +543,30 @@ void pscom_precon_destroy(precon_t *pre)
 
 
 static
+int pscom_precon_isconnected(precon_t *pre) {
+	return pre->ufd_info.fd >= 0;
+}
+
+
+static
+void pscom_precon_connect_terminate(precon_t *pre) {
+	if (!pscom_precon_isconnected(pre)) return;
+
+	close(pre->ufd_info.fd);
+	ufd_del(&pscom.ufd, &pre->ufd_info);
+	pre->ufd_info.fd = -1;
+}
+
+
+static
 void pscom_precon_reconnect(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
-	if (pre->ufd_info.fd >= 0) {
-		close(pre->ufd_info.fd);
-		ufd_del(&pscom.ufd, &pre->ufd_info);
-		pre->ufd_info.fd = -1;
-	}
+
+	pscom_precon_connect_terminate(pre);
 
 	if (pre->reconnect_cnt < pscom.env.retry) {
 		pre->reconnect_cnt++;
-		sleep(1); // ToDo: Avoid blocking sleep!
 		DPRINT(1, "precon(%p):pscom_precon_reconnect count %u",
 		       pre, pre->reconnect_cnt);
 		int fd = _pscom_tcp_connect(pre->nodeid, pre->portno, pre);
@@ -726,7 +741,9 @@ check_read_error:
 		return;
 	} else if (errno == ECONNREFUSED) {
 		DPRINT(3, "precon(%p): read(%d,...) : %s", pre, fd, strerror(errno));
-		pscom_precon_reconnect(pre);
+		/* pscom_precon_reconnect(pre); */
+		/* Terminate this connection. Reconnect after pscom.env.precon_reconnect_timeout.*/
+		pscom_precon_connect_terminate(pre);
 	} else {
 		/* Connection error. Handle the pseudo message FD_ERROR. */
 		int error_code = errno;
@@ -829,11 +846,29 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 	assert(pre->magic == MAGIC_PRECON);
 	unsigned long now = getusec();
 
-	if (now - pre->last_poll > 500 /* ms */ * 1000) {
-		pre->last_poll = now;
-		pre->stat_poll_cnt++;
+	if (pscom.env.debug >= PRECON_LL) {
+		if (now - pre->last_print_stat > 500 /* ms */ * 1000) {
+			pre->stat_poll_cnt++;
 
-		pscom_precon_print_stat(pre);
+			pre->last_print_stat = now;
+			pscom_precon_print_stat(pre);
+		}
+	}
+
+	if (now - pre->last_reconnect > pscom.env.precon_reconnect_timeout /* ms */ * 1000UL) {
+		pre->last_reconnect = now;
+
+		if (!pscom_precon_isconnected(pre) || (pre->stat_recv == 0)) {
+			if (pscom_precon_isconnected(pre) && (pre->stat_recv == 0)) {
+				/* ToDo:
+				   If the peer is just busy, we should wait further, but if
+				   this connection is broken we should reconnect. How to detect that
+				   the remote missed the accept event? */
+				DPRINT(3, "precon(%p): connection stalled", pre);
+			} else {
+				pscom_precon_reconnect(pre);
+			}
+		}
 	}
 
 	return 0;
@@ -856,13 +891,12 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 
 	pre->ufd_info.fd = -1;
 
-	if (pscom.env.debug >= PRECON_LL) {
-		pre->last_poll = getusec();
-		pre->poll_reader.do_read = pscom_precon_do_read_poll;
-		list_add_tail(&pre->poll_reader.next, &pscom.poll_reader);
-	} else {
-		INIT_LIST_HEAD(&pre->poll_reader.next);
-	}
+	pre->last_reconnect =
+		pre->last_print_stat = getusec();
+
+	pre->poll_reader.do_read = pscom_precon_do_read_poll;
+	list_add_tail(&pre->poll_reader.next, &pscom.poll_reader);
+
 	pre->stat_send = 0;
 	pre->stat_recv = 0;
 	pre->stat_poll_cnt = 0;

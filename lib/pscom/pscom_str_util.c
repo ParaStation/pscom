@@ -409,6 +409,7 @@ pscom_err_str(pscom_err_t error)
 	case PSCOM_ERR_EOF:	return "End of file";
 	case PSCOM_ERR_IOERROR:	return "IO Error";
 	case PSCOM_ERR_UNSUPPORTED_VERSION: return "Unsupported version";
+	case PSCOM_ERR_CONNECTION_REFUSED: return "Connection refused";
 	case PSCOM_ERR_STDERROR:
 		return strerror(errno);
 	}

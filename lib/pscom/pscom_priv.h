@@ -103,7 +103,8 @@ typedef struct precon {
 	pscom_con_t	*con;
 	pscom_sock_t	*sock;
 
-	unsigned long		last_poll; // usec of last poll
+	unsigned long		last_print_stat; // usec of last print_stat
+	unsigned long		last_reconnect; // usec of last reconnect
 	pscom_poll_reader_t	poll_reader; // timeout handling
 
 	unsigned	stat_send;	// bytes send

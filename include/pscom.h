@@ -43,6 +43,7 @@ typedef enum PSCOM_err {
 	PSCOM_ERR_EOF = -5,		/* End of file */
 	PSCOM_ERR_IOERROR = -6,		/* IO Error */
 	PSCOM_ERR_UNSUPPORTED_VERSION = -7, /* Unsupported version */
+	PSCOM_ERR_CONNECTION_REFUSED = -8, /* Connection refused */
 } pscom_err_t;
 
 
