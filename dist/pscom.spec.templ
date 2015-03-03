@@ -36,7 +36,7 @@ ParaStation Cluster Communication drivers and libraries.
 %setup -q -n %{name}-%{version}-%{release}
 
 %build
-export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,' -e 's,-Wall,,' -e 's,-Wextra,,')"
+export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,')"
 %configure
 make %{?_smp_mflags}
 
