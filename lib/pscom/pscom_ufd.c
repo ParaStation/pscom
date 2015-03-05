@@ -175,7 +175,10 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
 			   timeout < 0 : Maybe a race with another thread?
 					 To prevent a deadlock return with 0
 					 and behave, as if we would poll. */
-			pscom_lock_yield(); // allow other threads to progress.
+			pscom_unlock();
+			sched_yield(); // allow other threads to progress.
+			pscom_lock();
+			// pscom_lock_yield(); // allow other threads to progress.
 			return 0;
 		}
 	}
@@ -196,6 +199,9 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
 	  How to handle races in ufd->ufd_info.next ?
 	*/
 	pscom_unlock();
+
+	timeout  = 0; // workaround to avoid starvation
+	sched_yield(); // allow other threads to progress.
 
 	nfds = poll(ufd_local->ufd_pollfd, ufd_local->n_ufd_pollfd, timeout);
 
