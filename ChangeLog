@@ -1,3 +1,10 @@
+2015-03-09  Jens Hauke  <hauke@par-tec.com>	-	5.0.45-1
+
+	* Feature: Add basic support for Mellanoxs Messaging Accelerator
+	(MXM).
+
+	* Fix: potential deadlock when running multithreaded.
+
 2014-07-01  Jens Hauke  <hauke@par-tec.com>	-	5.0.44-1
 
 	* Feature: configurable LID offset for

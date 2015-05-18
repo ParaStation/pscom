@@ -26,7 +26,7 @@ static int init_ctx(struct mxm_pp_context *ctx)
 
 	if (!ctx->params.flag_no_optimization) {
 		// Fast mode. Might be not portable.
-		ep_opts->ud.rx.queue_len = 1024;
+		ep_opts->ud.ib.rx.queue_len = 1024;
 		mxm_opts->async_mode     = MXM_ASYNC_MODE_SIGNAL;
 	}
 

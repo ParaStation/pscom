@@ -50,11 +50,15 @@ unsigned int pscom_plugin_uprio(const char *arch)
 
 	res = 1;
 	if (strcmp(arch, "elan") == 0 ||
+	    strcmp(arch, "mxm") == 0 ||
 	    strcmp(arch, "ofed") == 0) {
 		/* default of ELAN is 'off'. mpiexec will switch
 		   it on, after setting up the elan environment.*/
 		/* ToDo: Check for ELAN environment variables inside
 		   elan plugin! And remove this if. */
+		/* default for MXM is 'off', but with a higher minor
+		   priority than OPENIB. With PSP_MXM=1 mxm will be used
+		   preferred. */
 		/* default for ofed is 'off'. Until ofed support
 		   resends for lost messages. */
 		res = 0;
