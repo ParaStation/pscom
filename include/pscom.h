@@ -638,6 +638,7 @@ const char *pscom_dumpstr(const void *buf, int size);
 #define pscom_min(a,b)      (((a)<(b))?(a):(b))
 #define pscom_max(a,b)      (((a)>(b))?(a):(b))
 
+void pscom_dump_connection(FILE *out, pscom_connection_t *connection);
 void pscom_dump_reqstat(FILE *out);
 void pscom_dump_info(FILE *out);
 

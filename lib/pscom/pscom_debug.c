@@ -171,8 +171,7 @@ void pscom_dump_requests(FILE *out)
 }
 
 
-static
-void pscom_dump_connection(FILE *out, pscom_con_t *con)
+void pscom_dump_con(FILE *out, pscom_con_t *con)
 {
 	unsigned cnt;
 	fprintf(out, "    con#%p type:%6s state:%8s dest:%s recvcnt:%5d", &con->pub,
@@ -207,7 +206,7 @@ void pscom_dump_connections(FILE *out, pscom_sock_t *sock)
 	fprintf(out, "  Connections:\n");
 	list_for_each(pos, &sock->connections) {
 		pscom_con_t *con = list_entry(pos, pscom_con_t, next);
-		pscom_dump_connection(out, con);
+		pscom_dump_con(out, con);
 	}
 }
 
@@ -235,6 +234,15 @@ void pscom_dump_sockets(FILE *out)
 
 		pscom_dump_socket(out, sock);
 	}
+}
+
+
+void pscom_dump_connection(FILE *out, pscom_connection_t *connection)
+{
+	pscom_con_t *con = get_con(connection);
+	assert(con->magic == MAGIC_CONNECTION);
+
+	pscom_dump_con(out, con);
 }
 
 

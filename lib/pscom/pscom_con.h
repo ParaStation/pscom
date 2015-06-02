@@ -39,4 +39,12 @@ pscom_con_t *pscom_ondemand_find_con(pscom_sock_t *sock, const char name[8]);
 pscom_con_t *pscom_ondemand_get_con(pscom_sock_t *sock, const char name[8]);
 void pscom_ondemand_indirect_connect(pscom_con_t *con);
 
+/* Start the connection guard on con.
+   - con must have an active con->precon
+   - precon->closefd_on_cleanup will be set to false
+   - precon's fd will be monitored for EOF
+*/
+void pscom_con_guard_start(pscom_con_t *con);
+void pscom_con_guard_stop(pscom_con_t *con);
+
 #endif /* _PSCOM_CON_H_ */

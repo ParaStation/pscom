@@ -339,6 +339,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	INIT_LIST_HEAD(&con->poll_reader.next);
 	INIT_LIST_HEAD(&con->poll_next_send);
 
+	con->con_guard.fd = -1;
 	con->precon = NULL;
 	con->in.req	= 0;
 	con->in.req_locked = 0;
@@ -384,6 +385,10 @@ void _pscom_con_destroy(pscom_con_t *con)
 
 	if(con->in.readahead.iov_base) {
 		free(con->in.readahead.iov_base);
+	}
+
+	if (con->con_guard.fd != -1) {
+		pscom_con_guard_stop(con);
 	}
 
 	con->magic = 0;
@@ -487,8 +492,9 @@ void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 
 	if (pre) {
 		pscom_precon_close(pre);
-		//pscom_precon_destroy(pre);
-		con->precon = NULL;
+		/* pre destroys itself in pscom_precon_check_end()
+		   after the send buffer is drained.*/
+		// pscom_precon_destroy(pre); con->precon = NULL;
 	}
 
 	con->pub.state = PSCOM_CON_STATE_CLOSED;
@@ -635,6 +641,29 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 	}
 
 	return PSCOM_SUCCESS;
+}
+
+
+void pscom_con_guard_start(pscom_con_t *con)
+{
+	precon_t *pre = con->precon;
+	int fd;
+	assert(pre);
+	assert(pre->magic == MAGIC_PRECON);
+
+	fd = pre->ufd_info.fd;
+	pre->closefd_on_cleanup = 0;
+	con->con_guard.fd = fd;
+	DPRINT(5, "precon(%p): Start guard on fd %d", pre, fd);
+}
+
+
+void pscom_con_guard_stop(pscom_con_t *con)
+{
+	int fd = con->con_guard.fd;
+	con->con_guard.fd = -1;
+	close(fd);
+	DPRINT(5, "Stop guard on fd %d", fd);
 }
 
 

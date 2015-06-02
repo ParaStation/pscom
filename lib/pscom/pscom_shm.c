@@ -74,16 +74,16 @@ struct shm_direct_header {
 static
 void shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
 {
-       if (shmid == -1) {
-               shm->direct_offset = 0;
-               shm->direct_base = NULL;
-               return;
-       }
-       void *buf = shmat(shmid, 0, SHM_RDONLY);
-       assert(buf != (void *) -1 && buf);
+	if (shmid == -1) {
+		shm->direct_offset = 0;
+		shm->direct_base = NULL;
+		return;
+	}
+	void *buf = shmat(shmid, 0, SHM_RDONLY);
+	assert(buf != (void *) -1 && buf);
 
-       shm->direct_base = buf;
-       shm->direct_offset = (char *)buf - (char *)remote_base;
+	shm->direct_base = buf;
+	shm->direct_offset = (char *)buf - (char *)remote_base;
 }
 
 static
@@ -645,6 +645,10 @@ void pscom_shm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	case PSCOM_INFO_ARCH_NEXT:
 		/* Cleanup shm */
 		shm_cleanup_shm_conn(shm);
+		break;
+
+	case PSCOM_INFO_ARCH_OK:
+		pscom_con_guard_start(con);
 		break;
 	case PSCOM_INFO_EOF:
 		shm_init_con(con);

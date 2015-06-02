@@ -30,6 +30,38 @@
 #define PSCOM_INFO_ARCH_STEP4	0x100016
 
 
+#define MAGIC_PRECON	0x4a656e73
+typedef struct precon {
+	/* Pre connection data. Used for the initial TCP handshake. */
+	unsigned long	magic;
+	ufd_info_t	ufd_info;
+	unsigned	send_len;	// Length of send
+	unsigned	recv_len;	// Length of recv
+	char		*send;		// Send buffer
+	char		*recv;		// Receive buffer
+
+	int		recv_done : 1;
+	int		closefd_on_cleanup : 1; // Call close(fd) on cleanup?
+
+	int		nodeid, portno; // Retry connect to nodeid:portno on ECONNREFUSED
+	unsigned	reconnect_cnt;
+
+	pscom_con_t	*con;
+	pscom_sock_t	*sock;
+
+	unsigned long		last_print_stat; // usec of last print_stat
+	unsigned long		last_reconnect; // usec of last reconnect
+	pscom_poll_reader_t	poll_reader; // timeout handling
+
+	unsigned	stat_send;	// bytes send
+	unsigned	stat_recv;	// bytes received
+	unsigned	stat_poll_cnt;	// loops in poll
+
+	/* state information */
+	pscom_plugin_t	*plugin;	// Current plugin.
+} precon_t;
+
+
 typedef struct {
 	unsigned int arch_id;
 } pscom_info_arch_req_t;
