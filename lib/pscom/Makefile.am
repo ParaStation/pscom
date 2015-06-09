@@ -25,7 +25,7 @@ libpscom_la_SOURCES = pscom.c pscom_con.c pscom_debug.c			\
 	pscom_io.c pscom_listener.c pscom_ondemand.c pscom_p4s.c	\
 	pscom_plugin.c pscom_queues.c pscom_req.c pscom_shm.c		\
 	pscom_sock.c pscom_str_util.c pscom_tcp.c pscom_ufd.c pslib.c	\
-	psshmalloc.c pscom_precon.c
+	psshmalloc.c pscom_precon.c pscom_async.c
 
 noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_gm.h pscom_group.h pscom_io.h pscom_p4s.h			\
@@ -34,6 +34,7 @@ noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_types.h pscom_ufd.h pscom_util.h
 
 libpscom_la_LIBADD = -ldl
+libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
 
 # intermediate libs needed elsewhere, in bin
 libpslib_la_SOURCES = pslib.c pslib.h

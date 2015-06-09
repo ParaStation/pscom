@@ -32,6 +32,7 @@ typedef struct {
 static unsigned pscom_precon_count = 0;
 
 static void pscom_precon_recv_stop(precon_t *pre);
+static void pscom_precon_check_end(precon_t *pre);
 
 
 static
@@ -109,6 +110,8 @@ void pscom_precon_print_stat(precon_t *pre)
 {
 	int fd = pre->ufd_info.fd;
 	char state[10] = "no fd";
+	assert(pre->magic == MAGIC_PRECON);
+
 	if (fd != -1) {
 		struct pollfd *pollfd = ufd_get_pollfd(&pscom.ufd, &pre->ufd_info);
 		if (pollfd) {
@@ -222,6 +225,7 @@ int _pscom_tcp_connect(int nodeid, int portno, void *debug_id)
 {
 	struct sockaddr_in si;
 	int rc;
+	int optval;
 
 	/* Open the socket */
 	int fd = socket(PF_INET , SOCK_STREAM, 0);
@@ -229,6 +233,13 @@ int _pscom_tcp_connect(int nodeid, int portno, void *debug_id)
 
 	/* Try a nonblocking connect. Ignoring fcntl errors and use blocking connect in this case. */
 	fcntl(fd, F_SETFL, O_NONBLOCK);
+
+	/* Close on exec. Ignore errors. */
+	fcntl(fd, F_SETFD, FD_CLOEXEC);
+
+	/* Enable keep alive. Ignore errors. */
+	optval = 1;
+	setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &optval, sizeof(optval));
 
 	pscom_sockaddr_init(&si, nodeid, portno);
 
@@ -296,6 +307,8 @@ const char *pscom_precon_str(precon_t *pre)
 static
 void pscom_precon_terminate(precon_t *pre)
 {
+	assert(pre->magic == MAGIC_PRECON);
+
 	DPRINT(1, "precon(%p): terminated", pre);
 	pscom_precon_recv_stop(pre);
 	// trow away the sendbuffer
@@ -308,6 +321,7 @@ void pscom_precon_terminate(precon_t *pre)
 		pre->send_len = 0;
 		ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
 	}
+	pscom_precon_check_end(pre);
 }
 
 
@@ -550,6 +564,8 @@ int pscom_precon_isconnected(precon_t *pre) {
 
 static
 void pscom_precon_connect_terminate(precon_t *pre) {
+	assert(pre->magic == MAGIC_PRECON);
+
 	if (!pscom_precon_isconnected(pre)) return;
 
 	close(pre->ufd_info.fd);

@@ -17,6 +17,7 @@
 #include "pscom_req.h"
 #include "pscom_precon.h"
 #include "pscom_plugin.h"
+#include "pscom_async.h"
 #include "pslib.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -644,6 +645,17 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 }
 
 
+static
+void pscom_guard_eof(ufd_t *ufd, ufd_info_t *ufd_info) {
+	pscom_con_t *con = (pscom_con_t *)ufd_info->priv;
+	/* Callback called in the async thread!! */
+	DPRINT(0, "pscom guard con:%p terminated", con);
+
+	// Stop listening
+	ufd_event_clr(ufd, ufd_info, POLLIN);
+}
+
+
 void pscom_con_guard_start(pscom_con_t *con)
 {
 	precon_t *pre = con->precon;
@@ -655,14 +667,18 @@ void pscom_con_guard_start(pscom_con_t *con)
 	pre->closefd_on_cleanup = 0;
 	con->con_guard.fd = fd;
 	DPRINT(5, "precon(%p): Start guard on fd %d", pre, fd);
+	pscom_async_on_readable(fd, pscom_guard_eof, con);
 }
 
 
 void pscom_con_guard_stop(pscom_con_t *con)
 {
 	int fd = con->con_guard.fd;
-	con->con_guard.fd = -1;
-	close(fd);
+	if (fd != -1) {
+		con->con_guard.fd = -1;
+		pscom_async_off_readable(fd, pscom_guard_eof, con);
+		close(fd);
+	}
 	DPRINT(5, "Stop guard on fd %d", fd);
 }
 

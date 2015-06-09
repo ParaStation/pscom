@@ -60,10 +60,16 @@ void ufd_del(ufd_t *ufd, ufd_info_t *ufd_info);
 void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, int event) __attribute__((nonnull (1, 2)));
 void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, int event) __attribute__((nonnull (1, 2)));
 
+/* find ufd_info_t associated with fd. Return NULL if not found. */
+ufd_info_t *ufd_info_find_fd(ufd_t *ufd, int fd);
+
 /* return associated pollfd from ufd_info. Return NULL if no event set
    with udf_event_set */
 struct pollfd *ufd_get_pollfd(ufd_t *ufd, ufd_info_t *ufd_info) __attribute__((nonnull (1, 2)));
 
 int ufd_poll(ufd_t *ufd, int timeout);
+
+/* Threadsafe version of ufd_poll. Will release the pscom_lock() when sleeping. */
+int ufd_poll_threaded(ufd_t *ufd, int timeout);
 
 #endif /* _PSCOM_UFD_H_ */

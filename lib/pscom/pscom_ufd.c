@@ -162,6 +162,19 @@ void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, int event)
 }
 
 
+ufd_info_t *ufd_info_find_fd(ufd_t *ufd, int fd)
+{
+	struct list_head *pos;
+
+	list_for_each(pos, &ufd->ufd_info) {
+		ufd_info_t *ufd_info = list_entry(pos, ufd_info_t, next);
+
+		if (ufd_info->fd == fd) return ufd_info;
+	}
+	return NULL;
+}
+
+
 int ufd_poll_threaded(ufd_t *ufd, int timeout)
 {
 	int nfds;
@@ -215,9 +228,6 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
 
 		/* ToDo: ufd_info still valid? Another thread might destruct *ufd_info */
 
-		if (!pollfd) continue; /* done ? should not happen.
-					  Empty pollfd's are behind all non empty pollfd's */
-
 		if (pollfd->revents & POLLIN) {
 			pollfd->revents &= ~POLLIN;
 			ufd_info->can_read(ufd, ufd_info);
@@ -255,9 +265,7 @@ int ufd_poll(ufd_t *ufd, int timeout)
 {
 	int nfds;
 	struct list_head *pos, *next;
-
-//    printf("Poll with timeout %d\n", timeout);
-	if (unlikely(pscom.threaded)) return ufd_poll_threaded(ufd, timeout);
+	unsigned i;
 
 	if (unlikely(!ufd->n_ufd_pollfd)) {
 		if (timeout == 0) return 0;
@@ -291,36 +299,37 @@ int ufd_poll(ufd_t *ufd, int timeout)
 
 	nfds = poll(ufd->ufd_pollfd, ufd->n_ufd_pollfd, timeout);
 
-	if (nfds <= 0) return 0;
+	if (nfds <= 0) return 0; // Timeout or failure
 
-	list_for_each_safe(pos, next, &ufd->ufd_info) {
-		ufd_info_t *ufd_info = list_entry(pos, ufd_info_t, next);
-		struct pollfd *pollfd = ufd_get_pollfd(ufd, ufd_info);
-
-		if (!pollfd) continue; /* done ? should not happen.
-					  Empty pollfd's are behind all non empty pollfd's */
+	for (i = ufd->n_ufd_pollfd; i--;) {
+		ufd_info_t *ufd_info = ufd->ufd_pollfd_info[i];
+		struct pollfd *pollfd = &ufd->ufd_pollfd[i];
 
 		if (pollfd->revents & POLLIN) {
 			pollfd->revents &= ~POLLIN;
 			ufd_info->can_read(ufd, ufd_info);
 
 			/* if can_read() calls ufd_del(), *pollfd is
-			   replaced by the last pollfd and therefore
-			   associated with a different ufd_info.  this
-			   could be checked with
-			   (next->prev == &ufd_info->next) */
-			if ((pollfd->revents & POLLOUT) &&
-			    (next->prev == &ufd_info->next)) {
+			   replaced by the last pollfd (associated with
+			   a different ufd_info. As the loop start at
+			   the end, this (pollfd->revents & POLLOUT) is
+			   already 0. */
+			if (pollfd->revents & POLLOUT) {
 				pollfd->revents &= ~POLLOUT;
 				ufd_info->can_write(ufd, ufd_info);
 			}
-			if (!(--nfds)) return 1;
+			if (!(--nfds)) {
+				return 1;
+			}
 		} else if (pollfd->revents & POLLOUT) {
 			pollfd->revents &= ~POLLOUT;
 			ufd_info->can_write(ufd, ufd_info);
-			if (!(--nfds)) return 1;
+			if (!(--nfds)) {
+				return 1;
+			}
 		}
 	}
-	/* Never be here. nfds == 0. */
+
+	/* Could be here (nfds != 0), if someone calls ufd_del(). */
 	return 1;
 }

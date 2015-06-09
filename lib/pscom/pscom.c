@@ -13,6 +13,7 @@
 
 #include "pscom.h"
 #include "pscom_priv.h"
+#include "pscom_util.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -220,14 +221,19 @@ int pscom_progress(int timeout)
 		timeout = 0; // enable polling
 	}
 
-	if (ufd_poll(&pscom.ufd, timeout)) {
-		return 1;
-	} else {
-		if (pscom.env.sched_yield) {
-			sched_yield();
+	if (likely(!pscom.threaded)) {
+		if (ufd_poll(&pscom.ufd, timeout)) {
+			return 1;
 		}
-		return 0;
+	} else {
+		if (ufd_poll_threaded(&pscom.ufd, timeout)) {
+			return 1;
+		}
 	}
+	if (pscom.env.sched_yield) {
+		sched_yield();
+	}
+	return 0;
 }
 
 
