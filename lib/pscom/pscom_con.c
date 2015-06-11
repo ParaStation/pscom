@@ -297,6 +297,7 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 		pscom_con_error_write_failed(con, error);
 		break;
 	case PSCOM_OP_CONNECT:
+	case PSCOM_OP_RW:
 		pscom_con_error_write_failed(con, error);
 		pscom_con_error_read_failed(con, error);
 		break;
@@ -646,6 +647,14 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 
 
 static
+void pscom_con_guard_error(void *_con) {
+	pscom_con_t *con = (pscom_con_t *)_con;
+
+	pscom_con_error(con, PSCOM_OP_RW, PSCOM_ERR_IOERROR);
+}
+
+
+static
 void pscom_guard_eof(ufd_t *ufd, ufd_info_t *ufd_info) {
 	pscom_con_t *con = (pscom_con_t *)ufd_info->priv;
 	/* Callback called in the async thread!! */
@@ -653,6 +662,9 @@ void pscom_guard_eof(ufd_t *ufd, ufd_info_t *ufd_info) {
 
 	// Stop listening
 	ufd_event_clr(ufd, ufd_info, POLLIN);
+
+	// Call pscom_con_guard_error in the main thread
+	pscom_backlog_push(pscom_con_guard_error, con);
 }
 
 

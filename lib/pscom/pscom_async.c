@@ -20,26 +20,6 @@
 #include "pscom_debug.h"
 #include "pscom_priv.h"
 
-#if 0
-struct ufd_info_s {
-	struct list_head next; /* Used by: - list ufd_t.ufd_info */
-	int fd;		/* fd to monitor */
-	int pollfd_idx;	/* position in ufd_pollfd or -1 */
-
-	void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info);
-	void (*can_write)(ufd_t *ufd, ufd_info_t *ufd_info);
-	int (*poll)(ufd_t *ufd, ufd_info_t *ufd_info, int timeout);
-
-	void *priv;	/* free usage */
-};
-
-
-
-PIPE_BUF  atomic pipe writes bytes
-
-
-#endif
-
 typedef struct pscom_async_ipc_s pscom_async_ipc_t;
 
 struct pscom_async_ipc_s {
@@ -106,6 +86,41 @@ static
 pscom_async_ipc_t pscom_async_ipc = {
 	.running = 0,
 };
+
+
+static
+pscom_backlog_t *pscom_backlog_pop(void) {
+	pscom_backlog_t *bl;
+	pthread_mutex_lock(&pscom.backlog_lock);{
+		if (list_empty(&pscom.backlog)) {
+			bl = NULL;
+		} else {
+			// pop first entry
+			bl = list_entry(pscom.backlog.next, pscom_backlog_t, next);
+			list_del(&bl->next);
+		}
+	} pthread_mutex_unlock(&pscom.backlog_lock);
+	return bl;
+}
+
+
+void pscom_backlog_push(void (*call)(void *priv), void *priv) {
+	pscom_backlog_t *bl = malloc(sizeof(*bl));
+	pthread_mutex_lock(&pscom.backlog_lock);{
+		bl->call = call;
+		bl->priv = priv;
+		list_add_tail(&bl->next, &pscom.backlog);
+	} pthread_mutex_unlock(&pscom.backlog_lock);
+}
+
+
+void pscom_backlog_execute() {
+	pscom_backlog_t *bl;
+	while ( (bl = pscom_backlog_pop()) ) {
+		bl->call(bl->priv);
+		free(bl);
+	}
+}
 
 
 static

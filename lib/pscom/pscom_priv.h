@@ -188,6 +188,13 @@ typedef struct pscom_rendezvous_data {
 } pscom_rendezvous_data_t;
 
 
+typedef struct pscom_backlog {
+	struct list_head next;
+	void (*call)(void *priv);
+	void *priv;
+} pscom_backlog_t;
+
+
 #define MAGIC_CONNECTION	0x78626c61
 struct PSCOM_con
 {
@@ -328,6 +335,9 @@ struct PSCOM
 
 	struct list_head	poll_reader;	// List of pscom_poll_reader_t.next
 	struct list_head	poll_sender;	// List of pscom_con_t.poll_next_send
+	struct list_head	backlog;	// List of pscom_backlog_t.next
+
+	pthread_mutex_t		backlog_lock;	// Lock for backlog
 
 	struct PSCOM_env	env;
 

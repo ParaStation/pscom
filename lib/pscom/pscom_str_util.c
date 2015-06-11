@@ -425,6 +425,7 @@ pscom_op_str(pscom_op_t operation)
 	case PSCOM_OP_READ: return "read";
 	case PSCOM_OP_WRITE: return "write";
 	case PSCOM_OP_CONNECT: return "connect";
+	case PSCOM_OP_RW: return "rw";
 	}
 
 	{

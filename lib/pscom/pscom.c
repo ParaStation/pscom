@@ -43,6 +43,7 @@
 #include "pscom_con.h"
 #include "pscom_env.h"
 #include "pslib.h"
+#include "pscom_async.h"
 
 pscom_t pscom = {
 	.threaded = 0, /* default is unthreaded */
@@ -221,6 +222,10 @@ int pscom_progress(int timeout)
 		timeout = 0; // enable polling
 	}
 
+	if (unlikely(!pscom_backlog_empty())) {
+		pscom_backlog_execute();
+	}
+
 	if (likely(!pscom.threaded)) {
 		if (ufd_poll(&pscom.ufd, timeout)) {
 			return 1;
@@ -281,6 +286,8 @@ int pscom_init(int pscom_version)
 		assert(res_mutex_init == 0);
 		res_mutex_init = pthread_mutex_init(&pscom.lock_requests, NULL);
 		assert(res_mutex_init == 0);
+		res_mutex_init = pthread_mutex_init(&pscom.backlog_lock, NULL);
+		assert(res_mutex_init == 0);
 	}
 
 	ufd_init(&pscom.ufd);
@@ -290,6 +297,7 @@ int pscom_init(int pscom_version)
 
 	INIT_LIST_HEAD(&pscom.poll_reader);
 	INIT_LIST_HEAD(&pscom.poll_sender);
+	INIT_LIST_HEAD(&pscom.backlog);
 
 	pscom_pslib_init();
 	pscom_env_init();
