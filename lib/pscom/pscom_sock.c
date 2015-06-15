@@ -136,6 +136,7 @@ pscom_sock_t *pscom_sock_create(unsigned int userdata_size)
 	INIT_LIST_HEAD(&sock->recvq_any);
 	INIT_LIST_HEAD(&sock->groups);
 	INIT_LIST_HEAD(&sock->group_req_unknown);
+	INIT_LIST_HEAD(&sock->pendingioq);
 
 	sock->recv_req_cnt_any = 0;
 

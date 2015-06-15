@@ -48,6 +48,10 @@ void pscom_no_rw_start_stop(pscom_con_t *con)
 static
 void _pscom_con_terminate_sendq(pscom_con_t *con)
 {
+	pscom_sock_t *sock = get_sock(con->pub.socket);
+	struct list_head *pos, *next;
+
+	// Sendq
 	while (!list_empty(&con->sendq)) {
 		pscom_req_t *req = list_entry(con->sendq.next, pscom_req_t, next);
 
@@ -55,6 +59,15 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 
 		req->pub.state |= PSCOM_REQ_STATE_ERROR;
 		_pscom_send_req_done(req); // done
+	}
+
+	// PendingIO queue
+	list_for_each_safe(pos, next, &sock->pendingioq) {
+		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
+
+		if (req->pub.connection == &con->pub) {
+			req->pub.state |= PSCOM_REQ_STATE_ERROR;
+		}
 	}
 }
 

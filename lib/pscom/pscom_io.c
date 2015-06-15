@@ -830,6 +830,7 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 	req->pending_io++;
 	if (!req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
 		_pscom_sendq_deq(con, req);
+		_pscom_pendingio_enq(con, req);
 	}
 }
 
@@ -838,6 +839,7 @@ void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 {
 	req->pending_io--;
 	if (!req->pending_io && !req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+		_pscom_pendingio_deq(con, req);
 		_pscom_send_req_done(req); // done
 	}
 }

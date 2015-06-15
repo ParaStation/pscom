@@ -302,6 +302,7 @@ struct PSCOM_sock
 
 	unsigned int		recv_req_cnt_any; // count all ANY_SOURCE receive requests on this socket
 
+	struct list_head	pendingioq;	// List of pscom_req_t.next, requests with pending io
 
 	uint64_t		con_type_mask;	/* allowed con_types.
 						   Or'd value from: (1 << (pscom_con_type_t) con_type)

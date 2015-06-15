@@ -22,6 +22,12 @@
 void _pscom_sendq_enq(pscom_con_t *con, pscom_req_t *req);
 void _pscom_sendq_deq(pscom_con_t *con, pscom_req_t *req);
 
+/*************
+ * Pending io queue
+ */
+
+void _pscom_pendingio_enq(pscom_con_t *con, pscom_req_t *req);
+void _pscom_pendingio_deq(pscom_con_t *con, pscom_req_t *req);
 
 /*************
  * Receive requests

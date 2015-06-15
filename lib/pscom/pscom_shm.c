@@ -355,7 +355,10 @@ static
 void shm_check_pending_io(shm_conn_t *shm)
 {
 	struct shm_pending *sp;
-	while (((sp = shm->shm_pending)) && sp->msg->msg_type == SHM_MSGTYPE_DIRECT_DONE) {
+	while (((sp = shm->shm_pending)) && (
+		       (sp->msg->msg_type == SHM_MSGTYPE_DIRECT_DONE) ||
+		       (sp->req && (sp->req->pub.state & PSCOM_REQ_STATE_ERROR))
+	       )) {
 		// finish request
 		if (sp->req) pscom_write_pending_done(sp->con, sp->req); // direct send done
 		if (sp->data) free(sp->data); // indirect send done
