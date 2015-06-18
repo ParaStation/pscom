@@ -244,6 +244,9 @@ void pscom_openib_handshake(pscom_con_t *con, int type, void *data, unsigned siz
 		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
 		break; /* Next is EOF or ARCH_NEXT */
 	}
+	case PSCOM_INFO_ARCH_OK:
+		pscom_con_guard_start(con);
+		break;
 	case PSCOM_INFO_ARCH_NEXT:
 		/* Cleanup con */
 		pscom_openib_con_cleanup(con);
