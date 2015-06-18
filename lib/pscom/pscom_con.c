@@ -696,6 +696,7 @@ void pscom_con_guard_start(pscom_con_t *con)
 	int fd;
 	assert(pre);
 	assert(pre->magic == MAGIC_PRECON);
+	if (!pscom.env.guard) return;
 
 	fd = pre->ufd_info.fd;
 	pre->closefd_on_cleanup = 0;

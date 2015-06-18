@@ -54,6 +54,9 @@
 #define ENV_READAHEAD "PSP_READAHEAD"
 #define ENV_RETRY "PSP_RETRY"
 
+/* Enable/Disable the connection guard */
+#define ENV_GUARD "PSP_GUARD"
+
 #define ENV_PLUGINDIR "PSP_PLUGINDIR"
 #define ENV_ARCH_PREFIX "PSP_"
 
@@ -155,6 +158,7 @@ struct PSCOM_env {
 	int		sigquit;
 	unsigned int	readahead;
 	unsigned int	retry;
+	unsigned int	guard;
 	unsigned int	skipblocksize;
 	unsigned int	iprobe_count;
 
@@ -188,6 +192,7 @@ struct PSCOM_env {
 	.readahead = 100,						\
 	.skipblocksize = 8192,						\
 	.retry = 10,							\
+	.guard = 1,							\
 	.iprobe_count = 0,						\
 									\
 	.network = NULL,						\
