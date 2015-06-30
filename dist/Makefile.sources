@@ -57,6 +57,7 @@ bin/pscom_ondemand.c \
 bin/pscom_pp.c \
 bin/pscom_request_create.c \
 bin/pscom_test.c \
+bin/pscom_test_fault.c \
 bin/pscp.c \
 bin/psm/psm_pp.c \
 bin/psock_pp.c \
@@ -81,6 +82,7 @@ dist/pscom.spec.templ \
 doc/Makefile.am \
 doc/Makefile.in \
 doc/README_any_source_receives.txt \
+doc/Verbindungsaufbau.txt \
 doc/bcast.txt \
 doc/p4stat.txt \
 doc/p4tcp.txt \
@@ -111,6 +113,8 @@ lib/pscom/list.h \
 lib/pscom/perf.c \
 lib/pscom/perf.h \
 lib/pscom/pscom.c \
+lib/pscom/pscom_async.c \
+lib/pscom/pscom_async.h \
 lib/pscom/pscom_con.c \
 lib/pscom/pscom_con.h \
 lib/pscom/pscom_debug.c \
