@@ -222,7 +222,7 @@ int pscom_extoll_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 
 	extoll_rd->rendezvous_req = rendezvous_req;
 
-	return psex_post_rma_get(dreq);
+	return psex_post_rma_gets(dreq);
 }
 
 /* RMA rendezvous end */

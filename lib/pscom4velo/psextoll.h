@@ -172,6 +172,7 @@ struct psex_rma_req {
 	struct list_head next;
 	RMA2_NLA	rma2_nla; /* Network logical address of the sender */
 	size_t		data_len;
+	size_t		pos;	  /* rma get requests posted up to rma2_nla + pos */
 	psex_mregion_t	mreg; /* contain Network logical address of the receiver */
 	psex_con_info_t	*ci;
 
@@ -188,7 +189,7 @@ int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info
 void psex_put_mregion(psex_mregion_t *mreg, psex_con_info_t *ci);
 
 /* return -1 on error */
-int psex_post_rma_get(psex_rma_req_t *req);
+int psex_post_rma_gets(psex_rma_req_t *req);
 
 
 

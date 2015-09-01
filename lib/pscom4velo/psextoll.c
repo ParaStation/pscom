@@ -36,6 +36,7 @@
 /* Used buffersize */
 #define PSEX_RMA2_MTU		(4*1024)
 #define PSEX_RMA2_PAYLOAD	(PSEX_RMA2_MTU - sizeof(psex_msgheader_t)) /* must be < 65536, or change sizeof psex_msgheader_t.payload */
+#define PSEX_RMA2_GET_MAX	0x800000
 
 #ifndef DISABLE_RMA2
 typedef struct {
@@ -436,17 +437,30 @@ void psex_rma2_reqs_deq(psex_rma_req_t *req)
 }
 
 
-int psex_post_rma_get(psex_rma_req_t *req)
+static
+void psex_rma_get_continue(psex_rma_req_t *req)
 {
 	RMA2_ERROR rma2_error;
 	psex_con_info_t *ci = req->ci;
-	// printf("%s:%u:%s nla_src:%lx nla_dest:%lx size:%lu\n", __FILE__, __LINE__, __func__,
-	//        req->rma2_nla, req->mreg.rma2_nla, req->data_len);
+	// printf("%s:%u:%s nla_src:%lx nla_dest:%lx size:%lu pos:%lu\n", __FILE__, __LINE__, __func__,
+	//        req->rma2_nla, req->mreg.rma2_nla, req->data_len, req->pos);
+	size_t len = req->data_len - req->pos;
+	if (len > PSEX_RMA2_GET_MAX) len = PSEX_RMA2_GET_MAX;
 
 	rma2_error = rma2_post_get_bt_direct(ci->rma2_port, ci->rma2_handle,
-					     req->mreg.rma2_nla, req->data_len, req->rma2_nla,
+					     req->mreg.rma2_nla + req->pos, len,
+					     req->rma2_nla + req->pos,
 					     RMA2_COMPLETER_NOTIFICATION, RMA2_CMD_DEFAULT);
 	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
+	req->pos += len;
+}
+
+
+int psex_post_rma_gets(psex_rma_req_t *req)
+{
+	req->pos = 0;
+	// Post step 0;
+	psex_rma_get_continue(req);
 
 	// Queue this request and wait for completer notification.
 	psex_rma2_reqs_enq(req);
@@ -474,11 +488,14 @@ void psex_handle_notification(hca_info_t *hca_info, RMA2_Notification *notificat
 		       rma2_noti_get_local_address(notification),
 		       rma2_noti_get_size(notification));
 		*/
-		if (req->mreg.rma2_nla + req->data_len ==
+		if (req->mreg.rma2_nla + req->pos ==
 		    notification->word0.value /* NLA */ + (notification->word1.value & 0x7fffffl) + 1/* payload*/) {
-
-			psex_rma2_reqs_deq(req);
-			req->io_done(req);
+			if (req->data_len - req->pos) {
+				psex_rma_get_continue(req);
+			} else {
+				psex_rma2_reqs_deq(req);
+				req->io_done(req);
+			}
 			return;
 		}
 	}
