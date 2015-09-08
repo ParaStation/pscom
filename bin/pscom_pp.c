@@ -36,6 +36,7 @@ int arg_maxtime = 3000;
 #define MAX_XHEADER 100
 int arg_xheader = 12;
 int arg_maxmsize = 4 * 1024 * 1024;
+int arg_minmsize = 0;
 int arg_run_once = 0;
 int arg_verbose = 0;
 int arg_histo = 0;
@@ -59,6 +60,8 @@ void parse_opt(int argc, char **argv)
 		  &arg_loops , 0, "pp loops", "count" },
 		{ "time"  , 't', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_maxtime, 0, "max time", "ms" },
+		{ "minsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
+		  &arg_minmsize , 0, "minimal messagesize", "size" },
 		{ "maxsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_maxmsize , 0, "maximal messagesize", "size" },
 		{ "xheader"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
@@ -288,7 +291,7 @@ void do_pp_client(pscom_connection_t *con)
 	printf("Xheader : %d bytes\n", arg_xheader);
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
-	for (ms = 1.4142135; (int)(ms + 0.5) <= arg_maxmsize; ms = ms * 1.4142135) {
+	for (ms = arg_minmsize; (int)(ms + 0.5) <= arg_maxmsize; ms = ms < 2.0 ? ms + 1 : ms * 1.4142135623730950488) {
 		unsigned int iloops = loops;
 		msgsize = ms + 0.5;
 
