@@ -13,6 +13,7 @@
 #include <stdio.h>
 #include <sys/types.h>
 #include <unistd.h>
+#include <string.h>
 
 #include "perf.h"
 
@@ -50,6 +51,7 @@ void cycles_cal(void)
 }
 
 #define LOG_SIZE (1024 * 32)
+#define ID_INDEX_SIZE 1024
 
 typedef struct log_s {
     unsigned long time;
@@ -61,6 +63,21 @@ static log_t perf_log[LOG_SIZE];
 
 static log_t *logpos = perf_log;
 
+static const char *id_index[ID_INDEX_SIZE];
+
+static
+unsigned get_id_index(const char *id) {
+    unsigned idx = 0;
+    for (idx = 0; id_index[idx]; idx++) {
+	if (strcmp(id, id_index[idx]) == 0) {
+	    return idx;
+	}
+    }
+    if (idx < ID_INDEX_SIZE) {
+	id_index[idx] = id;
+    }
+    return idx;
+}
 
 void perf_print(void)
 {
@@ -70,18 +87,29 @@ void perf_print(void)
     int pid = getpid();
 
     cycles_cal();
-    printf("#%5s %12s %12s %20s %s\n",
-	   "pid", "dtime", "dtime prev", "id", "abs time");
+    printf("#%5s %12s %12s %2s %20s %s\n",
+	   "pid", "dtime", "dtime prev", "#id", "id", "abs time");
     for (i = 0; i < LOG_SIZE; i++) {
 	log_t *cur = &perf_log[i];
 	if (!cur->id) break;
-	printf("%6d %12.2f %12.2f %20s %lu\n", pid,
-	       (cur->time - firsttime)* cycles_us,
-	       (cur->time - lasttime) * cycles_us,
-	       cur->id,
-	       cur->time);
-	lasttime = cur->time;
+	while (1) {
+	    printf("pid_%06d %12.2f %12.2f %2u %20s %lu\n", pid,
+		   (unsigned long)(cur->time - firsttime) * cycles_us,
+		   (unsigned long)(cur->time - lasttime) * cycles_us,
+		   get_id_index(cur->id),
+		   cur->id,
+		   cur->time);
+	    lasttime = cur->time;
+
+	    if (strncmp(cur->id, "reset_",6) == 0 && firsttime != cur->time) {
+		firsttime = cur->time;
+		printf("\n");
+		continue;
+	    }
+	    break;
+	};
     }
+    fflush(stdout);
     logpos = perf_log;
 }
 

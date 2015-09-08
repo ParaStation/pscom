@@ -247,6 +247,7 @@ void pscom_cleanup(void)
 	pscom_plugins_destroy();
 	pscom_pslib_cleanup();
 	if (pscom.env.debug_stats) pscom_dump_reqstat(pscom_debug_stream());
+	perf_print();
 	DPRINT(1,"Byee.");
 }
 
@@ -263,6 +264,8 @@ void pscom_set_debug(unsigned int level)
 int pscom_init(int pscom_version)
 {
 	static int init=0;
+
+	perf_add("init");
 
 	if (((pscom_version & 0xff00) != (PSCOM_VERSION & 0xff00)) ||
 	    (pscom_version > PSCOM_VERSION)) {
