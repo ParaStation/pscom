@@ -31,6 +31,7 @@
 #include "pscom_priv.h"
 #endif
 #include "pscom_util.h"
+#include "perf.h"
 #include "psoib.h"
 
 /* Size of the send, receive and completion queue */
@@ -1207,13 +1208,14 @@ int psoib_check_cq(hca_info_t *hca_info)
 		psoib_rma_req_t *req = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
 		if (wc.status == IBV_WC_SUCCESS) {
 			/* Dequeue and finish request: */
+			perf_add("openib_post_rma_get_done");
 			psoib_rma_reqs_deq(req);
 			req->io_done(req);
 		} else {
 			psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
 				     wc.status, ibv_wc_status_str(wc.status));
 			req->ci->con_broken = 1;
-                }
+		}
 #endif
 	} else {
 	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
@@ -1388,22 +1390,22 @@ void psoib_rma_reqs_enq(psoib_rma_req_t *req)
 static
 void psoib_rma_reqs_deq(psoib_rma_req_t *dreq)
 {
-        struct list_head *pos;
-        psoib_rma_req_t *req = NULL;
+	struct list_head *pos;
+	psoib_rma_req_t *req = NULL;
 	hca_info_t *hca_info = dreq->ci->hca_info;
 
-        list_for_each(pos, &hca_info->rma_reqs) {
-                req = list_entry(pos, psoib_rma_req_t, next);
-                if(req == dreq) break;
-        }
+	list_for_each(pos, &hca_info->rma_reqs) {
+		req = list_entry(pos, psoib_rma_req_t, next);
+		if(req == dreq) break;
+	}
 	assert(req != NULL);
 
-        list_del(&req->next);
+	list_del(&req->next);
 
-        if (list_empty(&hca_info->rma_reqs)) {
-                // Stop polling for completer notifications
-                list_del(&hca_info->rma_reqs_reader.next);
-        }
+	if (list_empty(&hca_info->rma_reqs)) {
+		// Stop polling for completer notifications
+		list_del(&hca_info->rma_reqs_reader.next);
+	}
 }
 
 
@@ -1432,6 +1434,8 @@ int psoib_post_rma_get(psoib_rma_req_t *req)
 	};
 
 	struct ibv_send_wr *bad_wr;
+
+	perf_add("openib_post_rma_get");
 
 	error = ibv_post_send(req->ci->qp, &wr, &bad_wr);
 	assert(!error);

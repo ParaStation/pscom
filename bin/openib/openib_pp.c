@@ -121,6 +121,7 @@ void parse_opt(int argc, char **argv)
 
 
 /* !!!! C Source include !!! */
+#define perf_add(id) do {} while (0)
 #include "psoib.c"
 pscom_t pscom = {
 	/* parameter from environment */

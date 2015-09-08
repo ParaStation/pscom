@@ -465,6 +465,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 		static unsigned work_cnt = 0;
 		static unsigned fail_cnt = 0;
 #endif
+		perf_add("rndv_con_rma_read");
 		if (con->rma_read(rendezvous_req, rd))  {
 #ifdef RMA_CNT
 			fail_cnt++;
@@ -482,6 +483,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 #endif
 	} else {
 	rma_read_fallback:
+		perf_add("rndv_fallbaack_rma_read");
 		_pscom_post_rma_read(rendezvous_req);
 	}
 }
@@ -493,6 +495,7 @@ void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 	pscom_rendezvous_data_t *rd =
 		(pscom_rendezvous_data_t *) req->user;
 
+	perf_add("rndv_receiver_io_done");
 	/* rewrite the header */
 	req->header.msg_type = PSCOM_MSGTYPE_USER;
 	/* req->header.xheader_len already set */
@@ -524,6 +527,7 @@ pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t 
 {
 	pscom_req_t *req;
 
+	perf_add("rndv_receiver");
 	req = pscom_req_create(nh->xheader_len, sizeof(pscom_rendezvous_data_t));
 	pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *) req->pub.user;
 
@@ -556,6 +560,7 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 	_pscom_recv_req_cnt_dec(con); // inc in pscom_post_send_rendezvous()
 	pscom_request_free(&req->pub);
 
+	perf_add("rndv_send_done");
 	_pscom_send_req_done(user_req); // done
 
 	return NULL;
@@ -1110,6 +1115,7 @@ void pscom_post_recv(pscom_request_t *request)
 
 	pscom_lock(); {
 		pscom_req_t *genreq;
+		perf_add("pscom_post_recv");
 
 		req->pub.state = PSCOM_REQ_STATE_RECV_REQUEST | PSCOM_REQ_STATE_POSTED;
 
@@ -1307,9 +1313,11 @@ void pscom_post_send(pscom_request_t *request)
 	assert(request->connection != NULL);
 
 	if (req->pub.data_len < get_con(request->connection)->rendezvous_size) {
+		perf_add("reset_send_direct");
 		// printf("Send s %d\n", request->data_len);
 		pscom_post_send_direct(req, PSCOM_MSGTYPE_USER);
 	} else {
+		perf_add("reset_send_rndv");
 		// printf("Send r %d\n", request->data_len);
 		pscom_post_send_rendezvous(req);
 	}
