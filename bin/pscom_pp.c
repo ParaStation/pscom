@@ -40,6 +40,7 @@ int arg_minmsize = 0;
 int arg_run_once = 0;
 int arg_verbose = 0;
 int arg_histo = 0;
+int arg_valloc = 0;
 
 static
 void parse_opt(int argc, char **argv)
@@ -66,6 +67,9 @@ void parse_opt(int argc, char **argv)
 		  &arg_maxmsize , 0, "maximal messagesize", "size" },
 		{ "xheader"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_xheader , 0, "xheader size", "size" },
+
+		{ "valloc"  , 0, POPT_ARGFLAG_OR | POPT_ARG_VAL,
+		  &arg_valloc , 0, "use valloc() instead of malloc for send/receive buffers", NULL },
 
 		{ "histo" , 'i', POPT_ARGFLAG_OR | POPT_ARG_VAL,
 		  &arg_histo, 1, "Measure each ping pong", NULL },
@@ -134,7 +138,7 @@ unsigned long getusec(void)
 static
 void run_pp_server(pscom_connection_t *con)
 {
-	void *buf = malloc(arg_maxmsize);
+	void *buf = arg_valloc ? valloc(arg_maxmsize) : malloc(arg_maxmsize);
 	pscom_request_t *req;
 	int i;
 
@@ -142,6 +146,10 @@ void run_pp_server(pscom_connection_t *con)
 
 	for (i = 0; i < MAX_XHEADER; i++) {
 		req->xheader.user[i] = i + 0xe1;
+	}
+
+	if (arg_verbose) {
+		printf("Buffer: buf:%p\n", buf);
 	}
 
 	while (1) {
@@ -177,8 +185,8 @@ static
 int run_pp_c(pscom_connection_t *con, int msize, int xsize, int loops)
 {
 	int cnt;
-	void *sbuf = malloc(msize);
-	void *rbuf = malloc(msize);
+	void *sbuf = arg_valloc ? valloc(msize) : malloc(msize);
+	void *rbuf = arg_valloc ? valloc(msize) : malloc(msize);
 	int ret;
 	pscom_request_t *sreq;
 	pscom_request_t *rreq;
@@ -190,6 +198,7 @@ int run_pp_c(pscom_connection_t *con, int msize, int xsize, int loops)
 	rreq = pscom_request_create(xsize, 0);
 
 	if (arg_verbose) {
+		printf("Buffers: sbuf:%p rbuf:%p\n", sbuf, rbuf);
 		for (cnt = 0; cnt < xsize; cnt++) {
 			sreq->xheader.user[cnt] = cnt + 1;
 		}
@@ -223,8 +232,8 @@ static
 int run_pp_c_histo(pscom_connection_t *con, int msize, int xsize, int loops)
 {
 	int cnt;
-	void *sbuf = malloc(msize);
-	void *rbuf = malloc(msize);
+	void *sbuf = arg_valloc ? valloc(msize) : malloc(msize);
+	void *rbuf = arg_valloc ? valloc(msize) : malloc(msize);
 	unsigned long *time = malloc(sizeof(*time) * loops + 1);
 
 	int ret;
