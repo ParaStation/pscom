@@ -94,8 +94,8 @@ void perf_print(void)
 	if (!cur->id) break;
 	while (1) {
 	    printf("pid_%06d %12.2f %12.2f %2u %20s %lu\n", pid,
-		   (unsigned long)(cur->time - firsttime) * cycles_us,
-		   (unsigned long)(cur->time - lasttime) * cycles_us,
+		   (unsigned /*long*/)(cur->time - firsttime) * cycles_us,
+		   (unsigned /*long*/)(cur->time - lasttime) * cycles_us,
 		   get_id_index(cur->id),
 		   cur->id,
 		   cur->time);
