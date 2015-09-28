@@ -372,20 +372,72 @@ pscom_req_t *pscom_get_rma_write_receiver(pscom_con_t *con, pscom_header_net_t *
 
 
 static
-pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *nh)
+void rma_write_io_done(void *priv)
 {
-	pscom_xheader_rma_read_t *rma_header = &nh->xheader->rma_read;
+	pscom_req_t *req = (pscom_req_t *)priv;
+	pscom_rendezvous_data_t *rd =
+		(pscom_rendezvous_data_t *) req->pub.user;
+	pscom_req_t *req_send = (pscom_req_t *)rd->msg.id;
+	pscom_con_t *con = get_con(req->pub.connection);
 
+
+	// ToDo: release local mem lock from con->rma_mem_register
+
+	pscom_xheader_rma_read_t *rma_header = &req->pub.xheader.rma_read;
 	pscom_xheader_rma_read_answer_t rma_answer;
 
 	rma_answer.id = rma_header->id;
-
 	_pscom_send_inplace(con, PSCOM_MSGTYPE_RMA_READ_ANSWER,
 			    &rma_answer, sizeof(rma_answer),
-			    rma_header->src, rma_header->src_len,
+			    NULL, 0,
 			    NULL, 0);
+	pscom_req_free(req);
+}
 
-	return NULL;
+
+static
+void pscom_get_rma_read_receiver_io_done(pscom_request_t *request)
+{
+	pscom_req_t *req = get_req(request);
+	pscom_rendezvous_data_t *rd =
+		(pscom_rendezvous_data_t *) req->pub.user;
+
+	pscom_req_t *req_send = (pscom_req_t *)rd->msg.id;
+	pscom_con_t *con = get_con(req->pub.connection);
+
+	pscom_lock();{
+		con->rma_write(req_send, rd, rma_write_io_done, req);
+		// ToDo: on error call _pscom_send_inplace(PSCOM_MSGTYPE_RMA_READ_ANSWER).
+	} pscom_unlock();
+}
+
+
+static
+pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *nh)
+{
+	if (!nh->data_len) {
+		pscom_xheader_rma_read_t *rma_header = &nh->xheader->rma_read;
+		pscom_xheader_rma_read_answer_t rma_answer;
+		rma_answer.id = rma_header->id;
+		_pscom_send_inplace(con, PSCOM_MSGTYPE_RMA_READ_ANSWER,
+				    &rma_answer, sizeof(rma_answer),
+				    rma_header->src, rma_header->src_len,
+				    NULL, 0);
+		return NULL;
+	} else {
+		pscom_req_t *req = pscom_req_create(nh->xheader_len, sizeof(pscom_rendezvous_data_t) /*nh->data_len*/);
+		pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *) req->pub.user;
+
+		req->pub.state = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST | PSCOM_REQ_STATE_PASSIVE_SIDE;
+		assert(nh->data_len <= sizeof(rd->msg));
+
+		req->pub.data = &rd->msg;
+		req->pub.data_len = nh->data_len;
+		req->pub.xheader_len = nh->xheader_len;
+		req->pub.ops.io_done = pscom_get_rma_read_receiver_io_done;
+
+		return req;
+	}
 }
 
 
@@ -455,6 +507,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 
 	/* rendezvous_req->pub.connection already set */
 	rendezvous_req->pub.xheader.rma_read.src = rd->msg.data;
+	rendezvous_req->pub.xheader.rma_read.id = rd->msg.id;
 
 	rendezvous_req->pub.ops.io_done = pscom_rendezvous_read_data_io_done;
 	rendezvous_req->partner_req = user_recv_req;
@@ -540,7 +593,7 @@ pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t 
 
 	req->pub.ops.io_done = pscom_rendezvous_receiver_io_done;
 
-	rd->use_arch_read = nh->data_len > (sizeof(rd->msg) - sizeof(rd->msg.arch));
+	rd->use_arch_read = nh->data_len > pscom_rendezvous_msg_size(0);
 
 	return req;
 }
@@ -974,7 +1027,7 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 			       sizeof(pscom_rendezvous_data_t));
 
 	req->pub.xheader_len = user_req->pub.xheader_len;
-	req->pub.data_len = sizeof(rd->msg) - sizeof(rd->msg.arch);
+	req->pub.data_len = pscom_rendezvous_msg_size(0);
 	req->pub.data = req->pub.user;
 
 	rd = (pscom_rendezvous_data_t *)req->pub.data;
@@ -985,7 +1038,7 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 
 	pscom_con_t *con = get_con(user_req->pub.connection);
 
-	if (con->rma_mem_register) {
+	if (con->rma_read && con->rma_mem_register) {
 		req->pub.data_len += con->rma_mem_register(con, rd);
 	}
 
@@ -1020,8 +1073,28 @@ void _pscom_post_rma_read(pscom_req_t *req)
 	xheader.src = req->pub.xheader.rma_read.src;
 	xheader.src_len = req->pub.data_len;
 
-	_pscom_send(con,
-		    PSCOM_MSGTYPE_RMA_READ, &xheader, sizeof(xheader), NULL, 0);
+	if (con->rma_write && con->rma_mem_register) {
+		// register local mem as destination
+		pscom_rendezvous_data_t rd;
+		unsigned len;
+		unsigned rd_len = sizeof(rd.msg) - sizeof(rd.msg.arch);
+
+		rd.msg.id = req->pub.xheader.rma_read.id;
+		rd.msg.data = req->pub.data;
+		rd.msg.data_len = req->pub.data_len;
+
+		len = con->rma_mem_register(con, &rd);
+		if (len) {
+			rd_len += len;
+		} else {
+			rd_len = 0; // fallback to RMA_READ without con->rma_write
+		}
+		_pscom_send(con,
+			    PSCOM_MSGTYPE_RMA_READ, &xheader, sizeof(xheader), &rd, rd_len);
+	} else {
+		_pscom_send(con,
+			    PSCOM_MSGTYPE_RMA_READ, &xheader, sizeof(xheader), NULL, 0);
+	}
 }
 
 

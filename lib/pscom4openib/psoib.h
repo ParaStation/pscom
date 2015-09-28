@@ -40,12 +40,14 @@ typedef struct {
 } mem_info_t;
 
 #define IB_USE_RNDV
+#define IB_RNDV_RDMA_WRITE
 #define IB_RNDV_THRESHOLD 4096
 #define IB_RNDV_USE_MREG_CACHE
 #define IB_RNDV_MREG_CACHE_SIZE 256
 #define IB_RNDV_DISABLE_FREE_TO_OS
 #undef  IB_RNDV_USE_MALLOC_HOOKS
-#define IB_RNDV_USE_PADDING
+/* Use IB_RNDV_USE_PADDING not together with IB_RNDV_RDMA_WRITE! */
+// #define IB_RNDV_USE_PADDING
 #define IB_RNDV_PADDING_SIZE 64
 /* IB_RNDV_PADDING_SIZE must not be bigger than 64 (or adjust pscom_priv.h respectively!) */
 
@@ -82,13 +84,14 @@ struct psoib_rma_req {
 	psoib_con_info_t *ci;
 	uint32_t        remote_key;
 	uint64_t        remote_addr;
-	void		(*io_done)(psoib_rma_req_t *req);
+	void		(*io_done)(void *priv);
 	void		*priv;
 };
 
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
 int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
 int psoib_post_rma_get(psoib_rma_req_t *req);
+int psoib_post_rma_put(psoib_rma_req_t *req);
 #ifdef IB_RNDV_USE_MREG_CACHE
 void psoib_mregion_cache_cleanup(void);
 void psoib_mregion_cache_init(void);
