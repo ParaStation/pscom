@@ -225,8 +225,8 @@ struct PSCOM_con
 	/* return -1 on error.
 	   see _pscom_rendezvous_read_data()  */
 	int (*rma_read)(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd);
-	int (*rma_write)(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd,
-			 void io_done(void *priv), void *priv);
+	int (*rma_write)(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
+			 void (*io_done)(void *priv), void *priv);
 
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection

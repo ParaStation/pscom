@@ -1182,7 +1182,6 @@ int psoib_check_cq(hca_info_t *hca_info)
 		}
 #ifdef IB_USE_RNDV
 	    } else {
-		printf("%s:%u:%s\n", __FILE__, __LINE__, __func__);
 		// request from a RDMA write (rendezvous and MPI_Put)
 		psoib_rma_req_t *dreq = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
 		if (wc.status == IBV_WC_SUCCESS) {
@@ -1317,7 +1316,7 @@ int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoi
 	mem_info_t *mem_info = &mreg->mem_info;
 
 	mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size,
-				  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ /*| IBV_ACCESS_REMOTE_WRITE*/);
+				  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE);
 	if(!mem_info->mr) goto err_reg_mr;
 
 	mem_info->ptr = buf;

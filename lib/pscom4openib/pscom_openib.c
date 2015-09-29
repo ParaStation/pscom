@@ -136,6 +136,9 @@ void pscom_openib_do_write(pscom_con_t *con)
 typedef struct pscom_rendezvous_data_openib {
 	struct psoib_rma_req	rma_req;
 	pscom_req_t		*rendezvous_req; // Receiving side: users receive request (or generated request)
+	pscom_con_t		*con;
+	void			(*io_done)(void *priv);
+	void			*priv;
 } pscom_rendezvous_data_openib_t;
 
 
@@ -260,6 +263,19 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 }
 
 
+static
+void pscom_openib_rma_write_io_done(void *priv)
+{
+	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)priv;
+	pscom_rendezvous_data_openib_t *rd_data_openib = get_req_data(rd_data);
+
+	rd_data_openib->io_done(rd_data_openib->priv);
+
+	pscom_openib_rma_mem_deregister(rd_data_openib->con, rd_data);
+	free(rd_data);
+}
+
+
 /* Send from:
  *   rd_src = (pscom_rendezvous_data_t *)req->pub.user
  *   (rd_src->msg.data, rd_src->msg.data_len)
@@ -269,29 +285,39 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
  *   rd_des->msg.arch.openib.{mr_key, mr_addr}
  */
 static
-int pscom_openib_rma_write(pscom_req_t *req, pscom_rendezvous_msg_t *msg_des,
+int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
 			   void (*io_done)(void *priv), void *priv)
 {
-	int err, ret;
-	pscom_rendezvous_data_t *rd_src = (pscom_rendezvous_data_t *)req->pub.user;
-	pscom_rendezvous_data_openib_t *psopenib_rd_src = get_req_data(rd_src);
+	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)malloc(sizeof(*rd_data));
+	pscom_rendezvous_data_openib_t *rd_data_openib = get_req_data(rd_data);
+	psoib_con_info_t *mcon = con->arch.openib.mcon;
 
-	psoib_rma_req_t *dreq = &psopenib_rd_src->rma_req;
-	pscom_con_t *con = get_con(req->pub.connection);
-	psoib_con_info_t *ci = con->arch.openib.mcon;
+	psoib_rma_req_t *dreq = &rd_data_openib->rma_req;
+	int len, err;
 
+	rd_data->msg.id = (void*)42;
+	rd_data->msg.data = src;
+	rd_data->msg.data_len = des->data_len;
+
+	len = pscom_openib_rma_mem_register(con, rd_data);
+	assert(len); // ToDo: Catch error
+/*
+	dreq->mreg.mem_info.ptr = xxx;
+	dreq->mreg.size = xxx;
+	dreq->mreg.mem_ingo.mr->lkey = xxx;
+*/
 	perf_add("openib_rma_write");
-	/* ToDo: acquire_rma_mreg, if psopenib_rd_src->mr_key/mr_addr are not set
-	err = psoib_acquire_rma_mreg(&dreq->mreg, rendezvous_req->pub.data, rendezvous_req->pub.data_len, ci);
-	assert(!err); // ToDo: Catch error
-	*/
 
-	dreq->remote_addr = msg_des->arch.openib.mr_addr;
-	dreq->remote_key  = msg_des->arch.openib.mr_key;
-	dreq->data_len = msg_des->data_len;
-	dreq->ci = ci;
-	dreq->io_done = io_done;
-	dreq->priv = priv;
+	dreq->remote_addr = des->arch.openib.mr_addr;
+	dreq->remote_key  = des->arch.openib.mr_key;
+	dreq->data_len = des->data_len;
+	dreq->ci = mcon;
+	dreq->io_done = pscom_openib_rma_write_io_done;
+	dreq->priv = rd_data;
+
+	rd_data_openib->con = con;
+	rd_data_openib->io_done = io_done;
+	rd_data_openib->priv = priv;
 
 	err = psoib_post_rma_put(dreq);
 	assert(!err); // ToDo: Catch error
@@ -378,13 +404,13 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 #ifdef IB_USE_RNDV
 	con->rma_mem_register = pscom_openib_rma_mem_register;
 	con->rma_mem_deregister = pscom_openib_rma_mem_deregister;
-#ifndef IB_RNDV_RDMA_WRITE
+#ifdef IB_RNDV_RDMA_WRITE
 	con->rma_write = pscom_openib_rma_write;
 #else
 	con->rma_read = pscom_openib_rma_read;
 #endif
 
-	con->rendezvous_size = IB_RNDV_THRESHOLD;
+	con->rendezvous_size = pscom.env.rendezvous_size_openib;
 
 #ifdef IB_RNDV_DISABLE_FREE_TO_OS
 
