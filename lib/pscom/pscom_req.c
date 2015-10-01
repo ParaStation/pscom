@@ -144,7 +144,7 @@ pscom_req_t *pscom_req_create(unsigned int max_xheader_len, unsigned int user_si
 	req->pub.max_xheader_len= max_xhl; // at least sizeof(req->pub.xheader)
 
 	announce_new_req(req);
-
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	return req;
 }
@@ -152,8 +152,11 @@ pscom_req_t *pscom_req_create(unsigned int max_xheader_len, unsigned int user_si
 
 void pscom_req_free(pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
+
 	assert(req->magic == MAGIC_REQUEST);
 	assert(req->pub.state & PSCOM_REQ_STATE_DONE);
+
 	req->magic = 0;
 	announce_free_req(req);
 

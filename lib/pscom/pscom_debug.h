@@ -16,10 +16,11 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <sys/types.h>
+#include "pscom_priv.h"
 #include "perf.h"
 
 int pscom_dprintf(const char *fmt, ...)
-        __attribute__ ((__format__ (__printf__, 1, 2)));
+	__attribute__ ((__format__ (__printf__, 1, 2)));
 
 int pscom_dwrite(const char *_msg, size_t len);
 
@@ -42,6 +43,11 @@ void pscom_debug_set_filename(const char *filename, int expand);
 
 // Set prefix if output goes to stderr. Default to $hostname:$pid.
 void pscom_debug_set_prefix(const char *prefix);
+
+const char *pscom_msgtype_str(unsigned msg_type);
+
+// return an id string for the req and some state
+char *pscom_debug_req_str(pscom_req_t *req);
 
 #if 1
 #define D_TR(code) do { } while (0)

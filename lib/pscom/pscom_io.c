@@ -81,8 +81,9 @@ void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, psco
 		req->pub.state |= PSCOM_REQ_STATE_TRUNCATED;
 	}
 
-	D_TR(printf("%s(req:%p) hlen=%u dlen=%zu dlen_req=%u dlen_net=%u skip=%u\n",
-		    __func__, req, copy_header, req->cur_data.iov_len,
+	D_TR(printf("%s:%u:%s(%s) hlen=%u dlen=%zu dlen_req=%u dlen_net=%u skip=%u\n",
+		    __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req), copy_header, req->cur_data.iov_len,
 		    req->pub.data_len, nh->data_len, req->skip));
 
 	assert(connection);
@@ -194,7 +195,8 @@ void _pscom_update_in_recv_req(pscom_con_t *con)
 static inline
 void _pscom_req_bcast_done(pscom_req_t *req)
 {
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
 
 	req->pub.state |= PSCOM_REQ_STATE_DONE;
 	_pscom_step();
@@ -217,7 +219,8 @@ pscom_req_t *_pscom_generate_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 	req->pub.xheader_len = nh->xheader_len;
 	req->partner_req = NULL;
 
-	D_TR(printf("pscom_generate_recv_req(). xheaderlen=%d\n", req->pub.xheader_len));
+	D_TR(printf("%s:%u:%s(). %s xheaderlen=%d\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req), req->pub.xheader_len));
 
 	return req;
 }
@@ -246,6 +249,7 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 	pscom_con_t *con = get_con(genreq->pub.connection);
 
 //	printf("GHeader: " RED "%s" NORM "\n", pscom_dumpstr(&genreq->pub.header, genreq->pub.xheader_len + sizeof(genreq->pub.header)));
+	D_TR(printf("%s:%u:%s(gen: %s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(genreq)));
 
 	genreq_merge_header(newreq, genreq);
 
@@ -269,6 +273,7 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 	} else if (genreq->partner_req) {
 		/* genreq from rendezvous. Now request the data: */
 		// ToDo: check: will _pscom_rendezvous_read_data() be called, in case of con->in.req == genreq?
+
 		_pscom_rendezvous_read_data(newreq, genreq->partner_req);
 		genreq->partner_req = NULL;
 	} else {
@@ -329,6 +334,8 @@ pscom_req_t *_pscom_get_user_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 			_pscom_net_recvq_user_enq(con, req);
 		}
 	}
+
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 	return req;
 }
 
@@ -346,6 +353,8 @@ pscom_req_t *_pscom_get_ctrl_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 		assert(req);
 		_pscom_net_recvq_ctrl_enq(con, req);
 	}
+
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 	return req;
 }
 
@@ -365,8 +374,8 @@ pscom_req_t *pscom_get_rma_write_receiver(pscom_con_t *con, pscom_header_net_t *
 	req->pub.xheader_len = 0;
 	req->pub.ops.io_done = pscom_request_free;
 
-	D_TR(printf("pscom_get_rma_write_receiver(). dest=%p, len=%d\n",
-		    req->pub.data, req->pub.data_len));
+	D_TR(printf("%s:%u:%s() %s dest=%p, len=%d\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
 
 	return req;
 }
@@ -376,6 +385,8 @@ static
 void rma_write_io_done(void *priv)
 {
 	pscom_req_t *req_answer = (pscom_req_t *)priv;
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
+
 	_pscom_post_send_direct(get_con(req_answer->pub.connection), req_answer, PSCOM_MSGTYPE_RMA_READ_ANSWER);
 }
 
@@ -395,10 +406,14 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 		req_answer->pub.data_len = rd_msg->data_len;
 		req_answer->pub.data = rd_msg->data;
 
+		D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
+
 		rma_write_io_done(req_answer);
 	} else {
 		req_answer->pub.data_len = 0;
 		req_answer->pub.data = NULL;
+
+		D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
 
 		con->rma_write(con, rd_msg->data, rd_msg,
 			       rma_write_io_done, req_answer);
@@ -423,6 +438,7 @@ pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con, pscom_header_
 
 	_pscom_recvq_rma_deq(con, req);
 
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 	return req;
 }
 
@@ -435,6 +451,8 @@ void pscom_rendezvous_read_data_io_done(pscom_request_t *request)
 
 	pscom_rendezvous_data_t *rd =
 		(pscom_rendezvous_data_t *) req->pub.user;
+
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	pscom_recv_req_done(user_req);
 
@@ -464,6 +482,9 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 
 	unsigned int to_read = pscom_min(rd->msg.data_len, user_recv_req->pub.data_len);
 	pscom_con_t *con = get_con(rendezvous_req->pub.connection);
+
+	D_TR(printf("%s:%u:%s(user: %s", __FILE__, __LINE__, __func__, pscom_debug_req_str(user_recv_req)));
+	D_TR(printf(", rndv: %s)\n", pscom_debug_req_str(rendezvous_req)));
 
 	/* rewrite the rendezvous_req for read rma (read data) */
 	rendezvous_req->pub.data_len = to_read;
@@ -514,10 +535,13 @@ void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 		(pscom_rendezvous_data_t *) req->user;
 
 	perf_add("rndv_receiver_io_done");
+
 	/* rewrite the header */
 	req->header.msg_type = PSCOM_MSGTYPE_USER;
 	/* req->header.xheader_len already set */
 	req->header.data_len = rd->msg.data_len;
+
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(get_req(req))));
 
 	pscom_lock(); {
 		/* Use the rewritten header to search for a recv request: */
@@ -560,6 +584,7 @@ pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t 
 
 	rd->use_arch_read = nh->data_len > pscom_rendezvous_msg_size(0);
 
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 	return req;
 }
 
@@ -591,8 +616,8 @@ static
 pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 {
 	pscom_req_t *req;
-	D_TR(printf("%s(con:%p, nh->msg_type:%u)\n",
-		    __func__, con, nh->msg_type));
+	D_TR(printf("%s:%u:%s(con:%p, nh->msg_type:%s)\n", __FILE__, __LINE__, __func__,
+		    con, pscom_msgtype_str(nh->msg_type)));
 
 	if (nh->msg_type == PSCOM_MSGTYPE_USER) {
 		req = _pscom_get_user_receiver(con, nh);
@@ -627,6 +652,8 @@ pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 		if (req) pscom_req_prepare_recv(req, nh, &con->pub);
 	}
 
+	D_TR(printf("%s:%u:%s(con:%p) : %s\n", __FILE__, __LINE__, __func__,
+		    con, pscom_debug_req_str(req)));
 	return req;
 }
 
@@ -663,7 +690,7 @@ pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
 		*len = rlen;
 	}
 
-	D_TR(printf("pscom_read_get_buf(con, *buf=%p, *len=%zu)\n",
+	D_TR(printf("%s:%u:%s(con, *buf=%p, *len=%zu)\n", __FILE__, __LINE__, __func__,
 		    *buf, *len));
 }
 
@@ -701,7 +728,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 {
 	pscom_req_t *req = con->in.req;
 
-	D_TR(printf("pscom_read_done(con, buf=%p, len=%zu, %s)\n",
+	D_TR(printf("%s:%u:%s(con, buf=%p, len=%zu, %s)\n", __FILE__, __LINE__, __func__,
 		    buf, len, pscom_dumpstr(buf, pscom_min(len, 32))));
 
 	if (!len) goto err_eof;
@@ -856,7 +883,8 @@ void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, unsigned msg_ty
 	pscom_req_prepare_send(req, msg_type); // build header and iovec
 	req->pub.connection = &con->pub;
 
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
 
 	_pscom_sendq_enq(con, req);
 }
@@ -979,7 +1007,8 @@ void pscom_post_send_direct(pscom_req_t *req, unsigned msg_type)
 {
 	pscom_req_prepare_send(req, msg_type); // build header and iovec
 
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
 
 	pscom_lock(); {
 		_pscom_sendq_enq(get_con(req->pub.connection), req);
@@ -1001,6 +1030,10 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 	req->pub.xheader_len = user_req->pub.xheader_len;
 	req->pub.data_len = pscom_rendezvous_msg_size(0);
 	req->pub.data = req->pub.user;
+
+	D_TR(printf("%s:%u:%s(user:%s) ", __FILE__, __LINE__, __func__, pscom_debug_req_str(user_req)));
+	D_TR(printf("rndv:%s\n", pscom_debug_req_str(req)));
+
 
 	rd = (pscom_rendezvous_data_t *)req->pub.data;
 
@@ -1037,6 +1070,8 @@ void _pscom_post_rma_read(pscom_req_t *req)
 
 	req->pub.state = PSCOM_REQ_STATE_RMA_READ_REQUEST | PSCOM_REQ_STATE_POSTED;
 	_pscom_recvq_rma_enq(con, req);
+
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	rd->msg.id = req;
 
@@ -1140,7 +1175,7 @@ void pscom_post_recv(pscom_request_t *request)
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 	assert((request->connection != NULL) || (request->socket != NULL));
 
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	pscom_lock(); {
 		pscom_req_t *genreq;
@@ -1242,7 +1277,7 @@ int pscom_iprobe(pscom_request_t *request)
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	if (request->connection) {
 		/* probe on one connection */
@@ -1445,7 +1480,7 @@ void pscom_post_rma_read(pscom_request_t *request)
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 	assert(request->connection != NULL);
 
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	pscom_lock(); {
 		_pscom_post_rma_read(req);
@@ -1484,7 +1519,7 @@ int pscom_cancel_send(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
 	int res;
-	D_TR(printf("%s\n", __func__));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_SEND_REQUEST);
 	if (request->state & PSCOM_REQ_STATE_DONE) return 0;
@@ -1501,7 +1536,7 @@ int pscom_cancel_recv(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
 	int res;
-	D_TR(printf("%s\n", __func__));
+	D_TR(printf("%s:%u:%s()\n", __FILE__, __LINE__, __func__));
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_RECV_REQUEST);
 	if (request->state & PSCOM_REQ_STATE_DONE) return 0;

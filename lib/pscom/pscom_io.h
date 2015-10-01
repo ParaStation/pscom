@@ -24,7 +24,8 @@ void _pscom_step(void)
 static inline
 void pscom_req_done(pscom_req_t *req)
 {
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
 
 	req->pub.state |= PSCOM_REQ_STATE_IO_DONE | PSCOM_REQ_STATE_DONE;
 	_pscom_step(); // ToDo: Need lock!
@@ -38,7 +39,8 @@ void pscom_req_done(pscom_req_t *req)
 static inline
 void _pscom_req_done(pscom_req_t *req)
 {
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
 
 	if (req->pub.ops.io_done) {
 		req->pub.state |= PSCOM_REQ_STATE_IO_DONE;
@@ -77,7 +79,8 @@ void _pscom_send_req_done(pscom_req_t *req)
 static inline
 void _pscom_grecv_req_done(pscom_req_t *req)
 {
-	D_TR(printf("%s(req:%p,%s)\n", __func__, req, pscom_req_state_str(req->pub.state)));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
 	// assert(!genreq->rendezvous_req);
 	req->pub.state |= PSCOM_REQ_STATE_GRECV_MERGED;
 	_pscom_req_done(req);
