@@ -84,7 +84,7 @@ struct psoib_rma_req {
 	psoib_con_info_t *ci;
 	uint32_t        remote_key;
 	uint64_t        remote_addr;
-	void		(*io_done)(void *priv);
+	void		(*io_done)(void *priv, int err);
 	void		*priv;
 };
 

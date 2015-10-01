@@ -30,6 +30,8 @@
 #include "pscom_priv.h"
 #include "pscom_io.h"
 #include "pscom_openib.h"
+#include "pscom_req.h"
+#include "pscom_util.h"
 
 
 static
@@ -213,7 +215,7 @@ void pscom_openib_rma_mem_deregister(pscom_con_t *con, pscom_rendezvous_data_t *
 
 
 static
-void pscom_openib_rma_read_io_done(void *priv)
+void pscom_openib_rma_read_io_done(void *priv, int err)
 {
 	psoib_rma_req_t *dreq = (psoib_rma_req_t *)priv;
 	pscom_rendezvous_data_openib_t *psopenib_rd =
@@ -224,6 +226,9 @@ void pscom_openib_rma_read_io_done(void *priv)
 
 	psoib_release_rma_mreg(mreg);
 
+	if (unlikely(err)) {
+		rendezvous_req->pub.state |= PSCOM_REQ_STATE_ERROR;
+	}
 	_pscom_recv_req_done(rendezvous_req);
 }
 
@@ -264,15 +269,16 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 
 
 static
-void pscom_openib_rma_write_io_done(void *priv)
+void pscom_openib_rma_write_io_done(void *priv, int err)
 {
 	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)priv;
 	pscom_rendezvous_data_openib_t *rd_data_openib = get_req_data(rd_data);
 
+	// ToDo: Error propagation
 	rd_data_openib->io_done(rd_data_openib->priv);
 
 	pscom_openib_rma_mem_deregister(rd_data_openib->con, rd_data);
-	free(rd_data);
+	pscom_free(rd_data);
 }
 
 
@@ -284,11 +290,12 @@ void pscom_openib_rma_write_io_done(void *priv)
  *   (rd_des->msg.data, rd_des->msg.data_len)
  *   rd_des->msg.arch.openib.{mr_key, mr_addr}
  */
+
 static
 int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
 			   void (*io_done)(void *priv), void *priv)
 {
-	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)malloc(sizeof(*rd_data));
+	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)pscom_malloc(sizeof(*rd_data));
 	pscom_rendezvous_data_openib_t *rd_data_openib = get_req_data(rd_data);
 	psoib_con_info_t *mcon = con->arch.openib.mcon;
 
@@ -321,6 +328,8 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 
 	err = psoib_post_rma_put(dreq);
 	assert(!err); // ToDo: Catch error
+	rd_data = NULL; /* Do not use rd_data after psoib_post_rma_put()!
+			   io_done might already be called and freed rd_data. */
 
 	return 0;
 }

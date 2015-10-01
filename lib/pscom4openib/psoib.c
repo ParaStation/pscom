@@ -1184,17 +1184,31 @@ int psoib_check_cq(hca_info_t *hca_info)
 	    } else {
 		// request from a RDMA write (rendezvous and MPI_Put)
 		psoib_rma_req_t *dreq = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
-		if (wc.status == IBV_WC_SUCCESS) {
-//		    printf("RDMA write done...\n");
-		    dreq->io_done(dreq->priv);
-		    ;
-		} else {
+		int failed = wc.status != IBV_WC_SUCCESS;
+//		printf("RDMA write done...\n");
+		if (failed) {
 		    psoib_dprint(1, "Failed RDMA write request (status %d : %s). Connection broken!",
 				 wc.status, ibv_wc_status_str(wc.status));
 		    dreq->ci->con_broken = 1;
 		}
+		psoib_rma_reqs_deq(dreq);
+		dreq->io_done(dreq->priv, failed);
 #endif
 	    }
+#ifdef IB_USE_RNDV
+	} else if (wc.opcode == IBV_WC_RDMA_READ) {
+		psoib_rma_req_t *req = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
+		int failed = wc.status != IBV_WC_SUCCESS;
+		/* Dequeue and finish request: */
+		perf_add("openib_post_rma_get_done");
+		if (failed) {
+			psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
+				     wc.status, ibv_wc_status_str(wc.status));
+			req->ci->con_broken = 1;
+		}
+		psoib_rma_reqs_deq(req);
+		req->io_done(req, failed);
+#endif
 	} else if (wc.opcode == (IBV_WC_SEND  | IBV_WC_RECV) /* == VAPI_CQE_RQ_SEND_DATA*/) {
 	    /* receive something */
 	    psoib_con_info_t *con = (psoib_con_info_t *)(unsigned long)wc.wr_id;
@@ -1224,20 +1238,6 @@ int psoib_check_cq(hca_info_t *hca_info)
 			     wc.status, ibv_wc_status_str(wc.status));
 		con->con_broken = 1;
 	    }
-#ifdef IB_USE_RNDV
-	} else if (wc.opcode == IBV_WC_RDMA_READ) {
-		psoib_rma_req_t *req = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
-		if (wc.status == IBV_WC_SUCCESS) {
-			/* Dequeue and finish request: */
-			perf_add("openib_post_rma_get_done");
-			psoib_rma_reqs_deq(req);
-			req->io_done(req);
-		} else {
-			psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
-				     wc.status, ibv_wc_status_str(wc.status));
-			req->ci->con_broken = 1;
-		}
-#endif
 	} else {
 	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
 			 "ibv_poll_cq(): Infiniband returned the wrong Opcode %d", wc.opcode);
@@ -1418,13 +1418,17 @@ void psoib_rma_reqs_deq(psoib_rma_req_t *dreq)
 	psoib_rma_req_t *req = NULL;
 	hca_info_t *hca_info = dreq->ci->hca_info;
 
+#if 1
+	// ToDo: disable this assert for more preformance.
+	// Assert dreq is enqueued in hca_info->rma_reqs:
 	list_for_each(pos, &hca_info->rma_reqs) {
 		req = list_entry(pos, psoib_rma_req_t, next);
 		if(req == dreq) break;
 	}
-	assert(req != NULL);
+	assert(req == dreq);
+#endif
 
-	list_del(&req->next);
+	list_del(&dreq->next);
 
 	if (list_empty(&hca_info->rma_reqs)) {
 		// Stop polling for completer notifications
