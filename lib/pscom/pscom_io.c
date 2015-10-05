@@ -115,10 +115,6 @@ int is_recv_req_done(pscom_req_t *req)
 }
 
 
-static
-void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendezvous_req);
-
-
 inline
 void pscom_req_prepare_send_pending(pscom_req_t *req, unsigned msg_type, unsigned data_pending)
 {
@@ -250,6 +246,7 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 //	printf("GHeader: " RED "%s" NORM "\n", pscom_dumpstr(&genreq->pub.header, genreq->pub.xheader_len + sizeof(genreq->pub.header)));
 	D_TR(printf("%s:%u:%s(gen: %s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(genreq)));
+	assert(genreq->magic == MAGIC_REQUEST);
 
 	genreq_merge_header(newreq, genreq);
 
@@ -271,6 +268,8 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 		// Continue receive on this connection (Maybe duplicate start)
 		_pscom_recv_req_cnt_check_start(con);
 	} else if (genreq->partner_req) {
+		assert(genreq->partner_req->magic == MAGIC_REQUEST);
+
 		/* genreq from rendezvous. Now request the data: */
 		// ToDo: check: will _pscom_rendezvous_read_data() be called, in case of con->in.req == genreq?
 
@@ -382,12 +381,44 @@ pscom_req_t *pscom_get_rma_write_receiver(pscom_con_t *con, pscom_header_net_t *
 
 
 static
-void rma_write_io_done(void *priv)
+void _send_rma_read_answer(pscom_req_t *req_answer)
 {
-	pscom_req_t *req_answer = (pscom_req_t *)priv;
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
+	assert(req_answer->magic == MAGIC_REQUEST);
+	pscom_mverify(req_answer);
+
+	req_answer->pub.ops.io_done = pscom_request_free;
 
 	_pscom_post_send_direct(get_con(req_answer->pub.connection), req_answer, PSCOM_MSGTYPE_RMA_READ_ANSWER);
+}
+
+
+static
+void send_rma_read_answer(pscom_request_t *request_answer)
+{
+	pscom_req_t *req_answer = get_req(request_answer);
+
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
+	assert(req_answer->magic == MAGIC_REQUEST);
+	pscom_mverify(req_answer);
+
+	req_answer->pub.ops.io_done = pscom_request_free;
+
+	pscom_post_send_direct(req_answer, PSCOM_MSGTYPE_RMA_READ_ANSWER);
+}
+
+
+static
+void _rma_write_done(void *priv)
+{
+	pscom_req_t *req_answer = (pscom_req_t *)priv;
+	/* rma_write_done() could be called anytime by the lower level
+	 * protocol driver. The pscom.io_doneq queue is used to
+	 * postpone the pscom_post_send_direct(PSCOM_MSGTYPE_RMA_READ_ANSWER)
+	 * call until it is safe to call.
+	 */
+	req_answer->pub.ops.io_done = send_rma_read_answer;
+	_pscom_req_done(req_answer);
 }
 
 
@@ -398,8 +429,6 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 	pscom_req_t *req_answer = pscom_req_create(sizeof(pscom_xheader_rma_read_answer_t), 0);
 
 	req_answer->pub.xheader.rma_read_answer.id = rd_msg->id;
-
-	req_answer->pub.ops.io_done = pscom_request_free;
 	req_answer->pub.connection = &con->pub;
 
 	if (nh->xheader_len == pscom_rendezvous_msg_size(0)) {
@@ -408,15 +437,16 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 
 		D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
 
-		rma_write_io_done(req_answer);
+		_send_rma_read_answer(req_answer);
 	} else {
 		req_answer->pub.data_len = 0;
 		req_answer->pub.data = NULL;
 
 		D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
 
+		pscom_mverify(req_answer);
 		con->rma_write(con, rd_msg->data, rd_msg,
-			       rma_write_io_done, req_answer);
+			       _rma_write_done, req_answer);
 	}
 	return NULL;
 }
@@ -453,7 +483,8 @@ void pscom_rendezvous_read_data_io_done(pscom_request_t *request)
 		(pscom_rendezvous_data_t *) req->pub.user;
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
-
+	assert(req->magic == MAGIC_REQUEST);
+	assert(user_req->magic == MAGIC_REQUEST);
 	pscom_recv_req_done(user_req);
 
 	/* rewrite rendezvous_req for rendezvous fin message */
@@ -482,6 +513,8 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 
 	unsigned int to_read = pscom_min(rd->msg.data_len, user_recv_req->pub.data_len);
 	pscom_con_t *con = get_con(rendezvous_req->pub.connection);
+	assert(rendezvous_req->magic == MAGIC_REQUEST);
+	assert(user_recv_req->magic == MAGIC_REQUEST);
 
 	D_TR(printf("%s:%u:%s(user: %s", __FILE__, __LINE__, __func__, pscom_debug_req_str(user_recv_req)));
 	D_TR(printf(", rndv: %s)\n", pscom_debug_req_str(rendezvous_req)));
@@ -535,6 +568,7 @@ void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 		(pscom_rendezvous_data_t *) req->user;
 
 	perf_add("rndv_receiver_io_done");
+	assert(get_req(req)->magic == MAGIC_REQUEST);
 
 	/* rewrite the header */
 	req->header.msg_type = PSCOM_MSGTYPE_USER;
@@ -595,6 +629,9 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 	pscom_req_t *user_req = nh->xheader->ren_fin.id;
 	pscom_req_t *req = user_req->partner_req;
 	pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)req->pub.user;
+
+	assert (req->magic == MAGIC_REQUEST);
+	assert (user_req->magic == MAGIC_REQUEST);
 
 	if (con->rma_mem_deregister && (req->pub.data_len > pscom_rendezvous_msg_size(0))) {
 		con->rma_mem_deregister(con, rd);
