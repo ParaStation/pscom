@@ -19,6 +19,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/uio.h>
+#include "list.h"
 
 typedef struct psoib_con_info psoib_con_info_t;
 typedef struct hca_info hca_info_t;
@@ -31,6 +32,75 @@ typedef struct psoib_info_msg_s {
 	void		*remote_ptr; /* Info about receive buffers */
 	uint32_t	remote_rkey;
 } psoib_info_msg_t;
+
+
+typedef struct {
+    void *ptr;
+    struct ibv_mr *mr;
+} mem_info_t;
+
+#define IB_USE_RNDV
+#define IB_RNDV_RDMA_WRITE
+#define IB_RNDV_THRESHOLD 4096
+#define IB_RNDV_USE_MREG_CACHE
+#define IB_RNDV_MREG_CACHE_SIZE 256
+#define IB_RNDV_DISABLE_FREE_TO_OS
+#undef  IB_RNDV_USE_MALLOC_HOOKS
+/* Use IB_RNDV_USE_PADDING not together with IB_RNDV_RDMA_WRITE! */
+// #define IB_RNDV_USE_PADDING
+#define IB_RNDV_PADDING_SIZE 64
+/* IB_RNDV_PADDING_SIZE must not be bigger than 64 (or adjust pscom_priv.h respectively!) */
+
+#if defined(IB_USE_RNDV) && defined(IB_DONT_USE_ZERO_COPY)
+#undef IB_USE_RNDV
+#endif
+
+#if defined(IB_RNDV_USE_MREG_CACHE)
+/* if we use a registration cache, we _have_ to disable free() returning memory to the OS: */
+#define IB_RNDV_DISABLE_FREE_TO_OS
+#endif
+
+/*
+ * ++ RMA rendezvous
+ */
+#ifdef IB_USE_RNDV
+/* registered memory region. (Opaque object for users of psoib_get_rma_mreg() and psoib_put_rma_mreg()) */
+typedef struct psoib_rma_req psoib_rma_req_t;
+
+typedef struct psoib_rma_mreg {
+	mem_info_t      mem_info;
+	size_t          size;
+#ifdef IB_RNDV_USE_MREG_CACHE
+	struct psoib_mregion_cache* mreg_cache;
+#endif
+} psoib_rma_mreg_t;
+
+
+/* rendezvous data for the rma get request */
+struct psoib_rma_req {
+	struct list_head next;
+	size_t		 data_len;
+	psoib_rma_mreg_t  mreg;
+	psoib_con_info_t *ci;
+	uint32_t        remote_key;
+	uint64_t        remote_addr;
+	void		(*io_done)(void *priv, int err);
+	void		*priv;
+};
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
+int psoib_post_rma_get(psoib_rma_req_t *req);
+int psoib_post_rma_put(psoib_rma_req_t *req);
+#ifdef IB_RNDV_USE_MREG_CACHE
+void psoib_mregion_cache_cleanup(void);
+void psoib_mregion_cache_init(void);
+#endif
+
+#endif
+/*
+ *  -- RMA rendezvous end
+ */
 
 
 int psoib_init(void);

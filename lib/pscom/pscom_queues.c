@@ -20,7 +20,7 @@ int req_recv_user_accept(pscom_req_t *req, pscom_connection_t *connection, pscom
 			   pscom_connection_t *connection,
 			   pscom_header_net_t *header_net);
 
-	D_TR(printf("%s(req:%p)\n", __func__, req));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	recv_accept = req->pub.ops.recv_accept;
 
@@ -34,7 +34,7 @@ int req_recv_ctrl_accept(pscom_req_t *req, pscom_connection_t *connection, pscom
 	int (*recv_accept)(pscom_request_t *request,
 			   pscom_connection_t *connection,
 			   pscom_header_net_t *header_net);
-	D_TR(printf("%s(req:%p)\n", __func__, req));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	if (req->pub.header.msg_type != header->msg_type) {
 		return 0;
@@ -53,7 +53,7 @@ int req_recv_ctrl_accept(pscom_req_t *req, pscom_connection_t *connection, pscom
 
 void _pscom_sendq_enq(pscom_con_t *con, pscom_req_t *req)
 {
-	D_TR(printf("%s(req:%p)\n", __func__, req));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	req->pub.state = PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
 
@@ -119,7 +119,12 @@ void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock)
 {
 	struct list_head *pos;
 
-	if (!sock->recv_req_cnt_any++ && !pscom.env.unexpected_receives) {
+	if (!sock->recv_req_cnt_any++) {
+		// BUG(?): && !pscom.env.unexpected_receives) {
+		// --> It at least may prevent the 'read_start' calls on the connections
+		//     in the case on an RMA-related ANY_SOURCE dummy request if
+		//     PSP_UNEXPECTED_RECEIVES=1 is set.
+
 		/* Loop only the first time and if not unexpected_receives is enabled */
 
 		list_for_each(pos, &sock->connections) {
@@ -209,7 +214,7 @@ void _pscom_recvq_user_enq(pscom_req_t *req)
 {
 	pscom_sock_t *sock;
 
-	D_TR(printf("%s(req:%p)\n", __func__, req));
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	if (req->pub.connection) {
 		req->pub.socket = req->pub.connection->socket;
@@ -361,7 +366,7 @@ pscom_req_t *_pscom_net_recvq_user_find_from_con(pscom_con_t *con, pscom_req_t *
 {
 	struct list_head *pos;
 
-	D_TR(printf("%s(con:%p, req:%p)\n", __func__, con, req));
+	D_TR(printf("%s:%u:%s(con:%p, %s)\n", __FILE__, __LINE__, __func__, con, pscom_debug_req_str(req)));
 
 	list_for_each(pos, &con->net_recvq_user) {
 		pscom_req_t *genreq = list_entry(pos, pscom_req_t, next);
@@ -378,7 +383,7 @@ static inline
 pscom_req_t *_pscom_net_recvq_user_find_from_any(pscom_sock_t *sock, pscom_req_t *req)
 {
 	struct list_head *pos;
-	D_TR(printf("%s(sock:%p, req:%p)\n", __func__, sock, req));
+	D_TR(printf("%s:%u:%s(sock:%p, %s)\n", __FILE__, __LINE__, __func__, sock, pscom_debug_req_str(req)));
 
 	list_for_each(pos, &sock->genrecvq_any) {
 		pscom_req_t *genreq = list_entry(pos, pscom_req_t, next_alt);
@@ -445,7 +450,7 @@ pscom_req_t *_pscom_net_recvq_ctrl_find(pscom_req_t *req)
 
 	pscom_con_t *con = get_con(req->pub.connection);
 
-	D_TR(printf("%s(con:%p, req:%p)\n", __func__, con, req));
+	D_TR(printf("%s:%u:%s(con:%p, %s)\n", __FILE__, __LINE__, __func__, con, pscom_debug_req_str(req)));
 
 	list_for_each(pos, &con->net_recvq_ctrl) {
 		pscom_req_t *genreq = list_entry(pos, pscom_req_t, next);

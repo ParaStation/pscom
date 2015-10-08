@@ -156,8 +156,19 @@ typedef struct pscom_rendezvous_msg {
 		struct {
 			uint64_t /* RMA2_NLA */		rma2_nla; /* Network logical address of the sender */
 		} extoll;
+		struct {
+			uint32_t mr_key;
+			uint64_t mr_addr;
+			int  padding_size;
+			char padding_data[64]; // >= IB_RNDV_PADDING_SIZE (see psoib.h)
+		} openib;
 	}	arch;
 } pscom_rendezvous_msg_t;
+
+static inline
+unsigned pscom_rendezvous_msg_size(unsigned arch_size) {
+	return sizeof(pscom_rendezvous_msg_t) - sizeof(((pscom_rendezvous_msg_t*)0)->arch) + arch_size;
+}
 
 typedef struct pscom_rendezvous_data_shm {
 } pscom_rendezvous_data_shm_t;
@@ -173,6 +184,12 @@ typedef struct _pscom_rendezvous_data_extoll {
 } _pscom_rendezvous_data_extoll_t;
 
 
+typedef struct _pscom_rendezvous_data_openib {
+	/* placeholder for struct pscom_rendezvous_data_openib */
+	char /* struct psiob_rma_req */ _rma_req[128]; /* ??? */
+} _pscom_rendezvous_data_openib_t;
+
+
 typedef struct pscom_rendezvous_data {
 	pscom_rendezvous_msg_t	msg;
 	int	use_arch_read;
@@ -180,6 +197,7 @@ typedef struct pscom_rendezvous_data {
 		pscom_rendezvous_data_shm_t	shm;
 		_pscom_rendezvous_data_dapl_t	dapl;
 		_pscom_rendezvous_data_extoll_t	extoll;
+		_pscom_rendezvous_data_openib_t openib;
 	}		arch;
 } pscom_rendezvous_data_t;
 
@@ -207,6 +225,8 @@ struct PSCOM_con
 	/* return -1 on error.
 	   see _pscom_rendezvous_read_data()  */
 	int (*rma_read)(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd);
+	int (*rma_write)(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
+			 void (*io_done)(void *priv), void *priv);
 
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection

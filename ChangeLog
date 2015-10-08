@@ -1,3 +1,9 @@
+2015-10-08  Jens Hauke  <hauke@par-tec.com>
+
+	* Enhancement: Implement a rendezvous protocol in pscom4openib
+	using RDMA write for large messages. To disable the rendezvous,
+	set the message size to PSP_RENDEZVOUS_OPENIB=-1.
+
 2015-03-09  Jens Hauke  <hauke@par-tec.com>	-	5.0.45-1
 
 	* Feature: Add basic support for Mellanoxs Messaging Accelerator

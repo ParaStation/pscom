@@ -281,7 +281,7 @@ pscom_memusage_ofed_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 am_pscom_memusage_openib_OBJECTS =  \
 	pscom_memusage_openib-pscom_memusage.$(OBJEXT)
 pscom_memusage_openib_OBJECTS = $(am_pscom_memusage_openib_OBJECTS)
-pscom_memusage_openib_DEPENDENCIES =
+pscom_memusage_openib_DEPENDENCIES = $(libpscom)
 pscom_memusage_openib_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(pscom_memusage_openib_LDFLAGS) \
@@ -832,7 +832,7 @@ pscom_memusage_openib_CPPFLAGS = $(AM_CPPFLAGS) -DOPENIB=1	\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4openib
 
 pscom_memusage_openib_LDFLAGS = $(AM_LDFLAGS) $(OPENIB_LDFLAGS)
-pscom_memusage_openib_LDADD = -libverbs
+pscom_memusage_openib_LDADD = -libverbs $(libpscom)
 pscom_memusage_ofed_SOURCES = pscom_memusage.c
 pscom_memusage_ofed_CPPFLAGS = $(AM_CPPFLAGS) -DOFED=1		\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4ofed

@@ -47,12 +47,7 @@ unsigned int round_up8(unsigned int val)
 	return (val + 7) & ~7;
 }
 
-#if 1
-
-#define pscom_malloc malloc
-#define pscom_free free
-
-#else
+#if USE_PSCOM_MALLOC
 // Malloc cache for PSCOM_MALLOC_SIZE mallocs
 #define PSCOM_MALLOC_SIZE (sizeof(pscom_req_t) + 50)
 
@@ -61,6 +56,9 @@ typedef struct PSCOM_malloc {
 		struct list_head	next;
 		unsigned		magic;
 	}	u;
+#if PSCOM_MALLOC_SAFE_SIZE
+	char			safe_header[PSCOM_MALLOC_SAFE_SIZE]; // check for buf underruns
+#endif
 	char			data[0];
 } pscom_malloc_t;
 
@@ -71,7 +69,6 @@ static
 struct list_head mallocs = LIST_HEAD_INIT(mallocs);
 
 
-static
 void *pscom_malloc(unsigned int size)
 {
 	void *ptr;
@@ -91,15 +88,39 @@ void *pscom_malloc(unsigned int size)
 		m = malloc(sizeof(pscom_malloc_t) + size);
 		m->u.magic = PSCOM_MALLOC_MAGIC_MALLOC;
 	}
+#if PSCOM_MALLOC_SAFE_SIZE
+	memset(m->safe_header, 32, sizeof(m->safe_header));
+#endif
+
 	ptr = m->data;
 	return ptr;
 }
 
 
-static
+inline
+void pscom_mverify(void *ptr)
+{
+	pscom_malloc_t *m = list_entry(ptr, pscom_malloc_t, data);
+	unsigned i;
+
+#if PSCOM_MALLOC_SAFE_SIZE
+	assert(m->u.magic == PSCOM_MALLOC_MAGIC_POOL ||
+	       m->u.magic == PSCOM_MALLOC_MAGIC_MALLOC);
+	for (i = 0; i < sizeof(m->safe_header); i++ ) {
+		if (m->safe_header[i] != 32) {
+			printf("Failing assert in pscom_free(%p) at %u of %zu\n",
+			       ptr, i, sizeof(m->safe_header));
+			assert(m->safe_header[i] == 32);
+		}
+	}
+#endif
+}
+
+
 void pscom_free(void *ptr)
 {
 	pscom_malloc_t *m = list_entry(ptr, pscom_malloc_t, data);
+	pscom_mverify(ptr);
 	if (m->u.magic == PSCOM_MALLOC_MAGIC_POOL) {
 		// ToDo: listlock!
 		//printf("%s:%u add pool\n", __func__, __LINE__);
@@ -144,7 +165,7 @@ pscom_req_t *pscom_req_create(unsigned int max_xheader_len, unsigned int user_si
 	req->pub.max_xheader_len= max_xhl; // at least sizeof(req->pub.xheader)
 
 	announce_new_req(req);
-
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
 	return req;
 }
@@ -152,8 +173,11 @@ pscom_req_t *pscom_req_create(unsigned int max_xheader_len, unsigned int user_si
 
 void pscom_req_free(pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
+
 	assert(req->magic == MAGIC_REQUEST);
 	assert(req->pub.state & PSCOM_REQ_STATE_DONE);
+
 	req->magic = 0;
 	announce_free_req(req);
 

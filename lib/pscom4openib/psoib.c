@@ -27,7 +27,11 @@
 #include <infiniband/verbs.h>
 
 #include "list.h"
+#ifndef IB_DONT_USE_ZERO_COPY
+#include "pscom_priv.h"
+#endif
 #include "pscom_util.h"
+#include "perf.h"
 #include "psoib.h"
 
 /* Size of the send, receive and completion queue */
@@ -49,13 +53,6 @@
    if SEND_NOTIFICATION is disabled */
 #define ENABLE_SEND_NOTIFICATION 1
 
-
-typedef struct {
-    void *ptr;
-    struct ibv_mr *mr;
-} mem_info_t;
-
-
 typedef struct {
     mem_info_t	bufs;
     unsigned	pos; /* current position */
@@ -72,8 +69,18 @@ struct hca_info {
 
     /* misc */
     struct list_head list_con_info; /* list of all psoib_con_info.next_con_info */
+
+#ifdef IB_USE_RNDV
+    /* RMA */
+    struct list_head rma_reqs; /* list of active RMA requests : psiob_rma_req_t.next */
+    struct pscom_poll_reader rma_reqs_reader; /* calling psoib_progress(). Used if !list_empty(rma_reqs) */
+#endif
 };
 
+#ifdef IB_USE_RNDV
+static int psoib_rma_reqs_progress(pscom_poll_reader_t *reader);
+static void psoib_rma_reqs_deq(psoib_rma_req_t *dreq);
+#endif
 
 struct port_info {
     unsigned int port_num;
@@ -83,7 +90,9 @@ struct port_info {
 
 
 /* Openib specific information about one connection */
+#define MAGIC_PSOIB_CONNECTION 0x24e41a21
 struct psoib_con_info {
+    unsigned long magic;
     /* low level */
     struct ibv_qp *qp;
     struct ibv_context *ctx; // <- copy from hca_info_t
@@ -762,7 +771,14 @@ void psoib_cleanup_hca(hca_info_t *hca_info)
 	ibv_close_device(hca_info->ctx);
 	hca_info->ctx = NULL;
     }
+
+#ifdef IB_USE_RNDV
+#ifdef IB_RNDV_USE_MREG_CACHE
+    psoib_mregion_cache_cleanup();
+#endif
+#endif
 }
+
 
 static
 int psoib_init_hca(hca_info_t *hca_info)
@@ -805,6 +821,14 @@ int psoib_init_hca(hca_info_t *hca_info)
 	    goto err_alloc;
     }
     hca_info->send.pos = 0;
+
+#ifdef IB_USE_RNDV
+    INIT_LIST_HEAD(&hca_info->rma_reqs);
+    hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
+#ifdef IB_RNDV_USE_MREG_CACHE
+    psoib_mregion_cache_init();
+#endif
+#endif
 
     return 0;
     /* --- */
@@ -1140,18 +1164,51 @@ int psoib_check_cq(hca_info_t *hca_info)
 	if (wc.opcode == IBV_WC_RDMA_WRITE /* == VAPI_CQE_SQ_RDMA_WRITE ?*/) {
 	    /* RDMA write done */
 	    psoib_con_info_t *con = (psoib_con_info_t *)(unsigned long)wc.wr_id;
-	    con->outstanding_cq_entries--;
+
 	    psoib_outstanding_cq_entries--;
 
-	    if (wc.status == IBV_WC_SUCCESS) {
-//		printf("RDMA write done... recv: %d tosend: %d send: %d\n",
-//		       con->n_recv_toks, con->n_tosend_toks, con->n_send_toks);
-		;
+	    if (con->magic == MAGIC_PSOIB_CONNECTION) {
+		// request from a preallocated RDMA buffer
+		con->outstanding_cq_entries--;
+
+		if (wc.status == IBV_WC_SUCCESS) {
+//		    printf("RDMA write done... recv: %d tosend: %d send: %d\n",
+//			   con->n_recv_toks, con->n_tosend_toks, con->n_send_toks);
+		    ;
+		} else {
+		    psoib_dprint(1, "Failed RDMA write request (status %d : %s). Connection broken!",
+				 wc.status, ibv_wc_status_str(wc.status));
+		    con->con_broken = 1;
+		}
+#ifdef IB_USE_RNDV
 	    } else {
-		psoib_dprint(1, "Failed RDMA write request (status %d : %s). Connection broken!",
-			     wc.status, ibv_wc_status_str(wc.status));
-		con->con_broken = 1;
+		// request from a RDMA write (rendezvous and MPI_Put)
+		psoib_rma_req_t *dreq = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
+		int failed = wc.status != IBV_WC_SUCCESS;
+//		printf("RDMA write done...\n");
+		if (failed) {
+		    psoib_dprint(1, "Failed RDMA write request (status %d : %s). Connection broken!",
+				 wc.status, ibv_wc_status_str(wc.status));
+		    dreq->ci->con_broken = 1;
+		}
+		psoib_rma_reqs_deq(dreq);
+		dreq->io_done(dreq->priv, failed);
+#endif
 	    }
+#ifdef IB_USE_RNDV
+	} else if (wc.opcode == IBV_WC_RDMA_READ) {
+		psoib_rma_req_t *req = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
+		int failed = wc.status != IBV_WC_SUCCESS;
+		/* Dequeue and finish request: */
+		perf_add("openib_post_rma_get_done");
+		if (failed) {
+			psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
+				     wc.status, ibv_wc_status_str(wc.status));
+			req->ci->con_broken = 1;
+		}
+		psoib_rma_reqs_deq(req);
+		req->io_done(req, failed);
+#endif
 	} else if (wc.opcode == (IBV_WC_SEND  | IBV_WC_RECV) /* == VAPI_CQE_RQ_SEND_DATA*/) {
 	    /* receive something */
 	    psoib_con_info_t *con = (psoib_con_info_t *)(unsigned long)wc.wr_id;
@@ -1220,12 +1277,14 @@ void psoib_progress(void)
 psoib_con_info_t *psoib_con_create(void)
 {
 	psoib_con_info_t *con_info = malloc(sizeof(*con_info));
+	con_info->magic = MAGIC_PSOIB_CONNECTION;
 	return con_info;
 }
 
 
 void psoib_con_free(psoib_con_info_t *con_info)
 {
+	con_info->magic = 0;
 	free(con_info);
 }
 
@@ -1237,3 +1296,239 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 	info_msg->remote_ptr = con_info->recv.bufs.ptr;
 	info_msg->remote_rkey = con_info->recv.bufs.mr->rkey;
 }
+
+
+
+/*
+ * ++ RMA rendezvous begin
+ */
+#ifdef IB_USE_RNDV
+
+static
+int psoib_poll(hca_info_t *hca_info, int blocking);
+
+static
+int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	int hit;
+	static int first_call=1;
+	hca_info_t *hca_info = ci->hca_info;
+	mem_info_t *mem_info = &mreg->mem_info;
+
+	mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size,
+				  IBV_ACCESS_LOCAL_WRITE | IBV_ACCESS_REMOTE_READ | IBV_ACCESS_REMOTE_WRITE);
+	if(!mem_info->mr) goto err_reg_mr;
+
+	mem_info->ptr = buf;
+	mreg->size = size;
+
+	return 0; /* success */
+
+err_reg_mr:
+	mem_info->ptr = NULL;
+	psoib_err_errno("ibv_reg_mr() failed", errno);
+	if (errno == ENOMEM) print_mlock_help(size);
+	return -1;
+}
+
+static
+int psoib_rma_mreg_deregister(psoib_rma_mreg_t *mreg)
+{
+	int ret;
+	mem_info_t *mem_info = &mreg->mem_info;
+	ret = ibv_dereg_mr(mem_info->mr);
+	assert(ret == 0);
+
+	return 0; /* success */
+}
+
+#ifdef IB_RNDV_USE_MREG_CACHE
+
+#include "psoib_mregion_cache.c"
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	psoib_mregion_cache_t *mregc;
+
+	mregc = psoib_mregion_find(buf, size);
+	if (mregc) {
+		// cached mregion
+		psoib_mregion_use_inc(mregc);
+	} else {
+		psoib_mregion_gc(psoib_mregion_cache_max_size);
+
+		// create new mregion
+		mregc = psoib_mregion_create(buf, size, ci);
+		if (!mregc) goto err_register;
+
+		psoib_mregion_enq(mregc);
+		mregc->use_cnt = 1; /* shortcut for psoib_mregion_use_inc(mreg); */
+	}
+
+	mreg->mem_info.ptr = buf;
+	mreg->size = size;
+	mreg->mem_info.mr = mregc->mregion.mem_info.mr;
+	mreg->mreg_cache = mregc;
+
+	return 0;
+err_register:
+	psoib_dprint(3, "psoib_get_mregion() failed");
+	return -1;
+}
+
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	psoib_mregion_use_dec(mreg->mreg_cache);
+	mreg->mreg_cache = NULL;
+
+	return 0;
+}
+
+#else
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	return psoib_rma_mreg_register(mreg, buf, size, ci);
+}
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	return psoib_rma_mreg_deregister(mreg);
+}
+#endif
+
+static
+void psoib_rma_reqs_enq(psoib_rma_req_t *req)
+{
+	hca_info_t *hca_info = req->ci->hca_info;
+	int first = list_empty(&hca_info->rma_reqs);
+
+	list_add_tail(&req->next, &hca_info->rma_reqs);
+
+	if (first) {
+		// Start polling for completer notifications
+		list_add_tail(&hca_info->rma_reqs_reader.next, &pscom.poll_reader);
+	}
+}
+
+static
+void psoib_rma_reqs_deq(psoib_rma_req_t *dreq)
+{
+	struct list_head *pos;
+	psoib_rma_req_t *req = NULL;
+	hca_info_t *hca_info = dreq->ci->hca_info;
+
+#if 1
+	// ToDo: disable this assert for more preformance.
+	// Assert dreq is enqueued in hca_info->rma_reqs:
+	list_for_each(pos, &hca_info->rma_reqs) {
+		req = list_entry(pos, psoib_rma_req_t, next);
+		if(req == dreq) break;
+	}
+	assert(req == dreq);
+#endif
+
+	list_del(&dreq->next);
+
+	if (list_empty(&hca_info->rma_reqs)) {
+		// Stop polling for completer notifications
+		list_del(&hca_info->rma_reqs_reader.next);
+	}
+}
+
+
+int psoib_post_rma_get(psoib_rma_req_t *req)
+{
+	int error;
+
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) req->mreg.mem_info.ptr,
+		.length = req->mreg.size,
+		.lkey	= req->mreg.mem_info.mr->lkey,
+	};
+	struct ibv_send_wr wr = {
+		.next	= NULL,
+		.wr_id	= (uint64_t)req,
+		.sg_list	= &list,
+		.num_sge	= 1,
+		.opcode	= IBV_WR_RDMA_READ,
+		.send_flags	= IBV_SEND_SIGNALED,
+		.imm_data	= 42117,
+
+		.wr.rdma = {
+			.remote_addr = req->remote_addr,
+			.rkey = req->remote_key,
+		},
+	};
+
+	struct ibv_send_wr *bad_wr;
+
+	perf_add("openib_post_rma_get");
+
+	error = ibv_post_send(req->ci->qp, &wr, &bad_wr);
+	assert(!error);
+
+	// Enqueue this request and wait for notification via completion queue.
+	psoib_rma_reqs_enq(req);
+
+	psoib_poll(req->ci->hca_info, 0);
+
+	return 0;
+}
+
+
+int psoib_post_rma_put(psoib_rma_req_t *req)
+{
+	int error;
+
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) req->mreg.mem_info.ptr,
+		.length = req->mreg.size,
+		.lkey	= req->mreg.mem_info.mr->lkey,
+	};
+	struct ibv_send_wr wr = {
+		.next	= NULL,
+		.wr_id	= (uint64_t)req,
+		.sg_list	= &list,
+		.num_sge	= 1,
+		.opcode	= IBV_WR_RDMA_WRITE,
+		.send_flags	= IBV_SEND_SIGNALED,
+		.imm_data	= 42118,
+
+		.wr.rdma = {
+			.remote_addr = req->remote_addr,
+			.rkey = req->remote_key,
+		},
+	};
+
+	struct ibv_send_wr *bad_wr;
+
+	perf_add("openib_post_rma_put");
+
+	error = ibv_post_send(req->ci->qp, &wr, &bad_wr);
+	assert(!error);
+
+	// Enqueue this request and wait for notification via completion queue.
+	psoib_rma_reqs_enq(req);
+
+	psoib_poll(req->ci->hca_info, 0);
+	psoib_outstanding_cq_entries++;
+
+	return 0;
+}
+
+
+static
+int psoib_rma_reqs_progress(pscom_poll_reader_t *reader)
+{
+	hca_info_t *hca_info = list_entry(reader, hca_info_t, rma_reqs_reader);
+
+	psoib_poll(hca_info, 0);
+
+	return 0;
+}
+
+#endif
+/*
+ * -- RMA rendezvous end
+ */

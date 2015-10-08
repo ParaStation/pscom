@@ -37,6 +37,7 @@ int arg_poll_char = 0;
 int arg_verbose = 0;
 int arg_nokill = 0;
 int arg_pscom = 0;
+int arg_read = 0;
 int arg_recvoffset = 0;
 //int arg_histo = 0;
 const char *arg_servername = NULL;
@@ -75,6 +76,9 @@ void parse_opt(int argc, char **argv)
 
 		{ "pscom" , 's', POPT_ARGFLAG_OR | POPT_ARG_VAL,
 		  &arg_pscom, 1, "poll via pscom's psoib_sendv()", NULL },
+
+		{ "read" , 0, POPT_ARGFLAG_OR | POPT_ARG_VAL,
+		  &arg_read, 1, "One direction RDMA read (no pp!)", NULL},
 
 		{ "nokill" , 'k', POPT_ARGFLAG_OR | POPT_ARG_VAL,
 		  &arg_nokill, 1, "Dont kill the server afterwards", NULL },
@@ -121,6 +125,15 @@ void parse_opt(int argc, char **argv)
 
 
 /* !!!! C Source include !!! */
+#define perf_add(id) do {} while (0)
+void *pscom_malloc(unsigned size) {
+	return malloc(size);
+}
+
+void pscom_free(void *ptr) {
+	free(ptr);
+}
+
 #include "psoib.c"
 pscom_t pscom = {
 	/* parameter from environment */
@@ -155,7 +168,7 @@ static
 void psoib_rc_check(const char *msg, int rc)
 {
 	if (rc) {
-		fprintf(stderr, "%s : %s", msg, psoib_err_str ? psoib_err_str : "???");
+		fprintf(stderr, "%s : %s : %s\n", msg, psoib_err_str ? psoib_err_str : "???", strerror(rc));
 		exit(1);
 	}
 }
@@ -236,6 +249,66 @@ void x_send(unsigned msgsize)
 }
 
 
+static inline
+void x_send_read(unsigned msgsize)
+{
+	int rc;
+	mem_info_t *send_bufs = &mcon->send.bufs;
+	volatile uint32_t *mark = send_bufs->ptr;
+	*mark = 0x42424242;
+
+	struct ibv_sge list = {
+		.addr	= (uintptr_t) mark,
+		.length = msgsize,
+		.lkey	= send_bufs->mr->lkey,
+	};
+
+	struct ibv_send_wr wr = {
+		.next	= NULL,
+		.wr_id	= (uint64_t)mcon,
+		.sg_list	= &list,
+		.num_sge	= 1,
+		.opcode	= IBV_WR_RDMA_READ,
+		.send_flags	= IBV_SEND_SIGNALED,
+		// (
+		//	(ENABLE_SEND_NOTIFICATION ? IBV_SEND_SIGNALED : 0) | /* no cq entry, if unsignaled */
+		//	((list.length <= IB_MAX_INLINE) ? IBV_SEND_INLINE : 0)),
+		.imm_data	= 42117,
+
+		.wr.rdma = {
+			.remote_addr = (uint64_t)mcon->remote_ptr + arg_recvoffset,
+			.rkey = mcon->remote_rkey,
+		},
+	};
+
+	struct ibv_send_wr *bad_wr;
+	rc = ibv_post_send(mcon->qp, &wr, &bad_wr);
+	psoib_rc_check("ibv_post_send", rc);
+
+	{
+		/* poll on cq */
+		struct ibv_wc wc;
+		unsigned waitcnt = 1;
+
+		do {
+			rc = ibv_poll_cq(default_hca.cq, 1, &wc);
+			if (rc > 0) {
+				waitcnt--;
+				if (wc.status != IBV_WC_SUCCESS) {
+					fprintf(stderr, "Completion with error\n");
+					fprintf(stderr, "Failed status %d: wr_id %d\n",
+						wc.status, (int) wc.wr_id);
+					exit(1);
+				}
+			} else if (rc < 0) {
+				fprintf(stderr, "poll CQ failed %d\n", rc);
+				exit(1);
+			} // else: rc == 0
+		} while (waitcnt || rc);
+	}
+}
+
+
 static
 int x_recv_pscom(void)
 {
@@ -283,7 +356,11 @@ void x_send_pscom(unsigned msglen)
 static
 void run_pp_server(void)
 {
-	if (!arg_pscom) {
+	if (arg_read) {
+		while (1) {
+			x_recv(); // Only drain the receive queue
+		}
+	} else if (!arg_pscom) {
 		while (1) {
 			x_recv();
 			x_send(8); // ToDo:
@@ -302,7 +379,12 @@ static
 int run_pp_c(int msize, int loops)
 {
 	int cnt;
-	if (!arg_pscom) {
+	if (arg_read) {
+		for (cnt = 0; cnt < loops; cnt++) {
+			// Only RDMA Read and wait for completion.
+			x_send_read(msize);
+		}
+	} else if (!arg_pscom) {
 		for (cnt = 0; cnt < loops; cnt++) {
 			x_send(msize);
 			x_recv();
@@ -332,8 +414,8 @@ void do_pp_client(void)
 
 	memset(abuffer, 24, sizeof(*abuffer));
 
-	if (!arg_pscom) {
-		printf("Warning! This is not a ping pong with msize Messagesize!!!\n");
+	if (!arg_pscom || arg_read) {
+		printf("WARNING! This is not a ping pong with msize Messagesize!!!\n");
 	}
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
@@ -354,7 +436,12 @@ void do_pp_client(void)
 		res = run_pp_c(msgsize, iloops);
 		t2 = getusec();
 
-		time = (double)(t2 - t1) / (iloops * 2);
+		if (arg_read) {
+			time = (double)(t2 - t1) / (iloops);
+		} else {
+			// Half round trip time:
+			time = (double)(t2 - t1) / (iloops * 2);
+		}
 		throuput = msgsize / time;
 		if (res == 0) {
 			printf("%7d %8d %8.2f %8.2f\n", msgsize, iloops, time, throuput);
@@ -444,6 +531,20 @@ void pscom_openib_init(FILE *peer)
 	rc = psoib_con_init(mcon, NULL, NULL);
 	psoib_rc_check("psoib_con_init()", rc);
 
+	if (arg_read) {
+		// RDMA Read require different MR permissions. Hack: Overwrite buffer allocations:
+		psoib_vapi_free(&default_hca, &mcon->send.bufs);
+		psoib_vapi_free(&default_hca, &mcon->recv.bufs);
+
+		rc = psoib_vapi_alloc(&default_hca, IB_MTU * psoib_sendq_size,
+				      IBV_ACCESS_LOCAL_WRITE, &mcon->send.bufs);
+		psoib_rc_check("psoib_vapi_alloc(IBV_ACCESS_LOCAL_WRITE, &mcon->send.bufs)", rc);
+
+		rc = psoib_vapi_alloc(&default_hca, IB_MTU * psoib_recvq_size,
+				      IBV_ACCESS_REMOTE_READ, &mcon->recv.bufs);
+		psoib_rc_check("psoib_vapi_alloc(IBV_ACCESS_REMOTE_READ, &mcon->recv.bufs)", rc);
+	}
+
 	psoib_con_get_info_msg(mcon, &lmsg);
 
 	if (is_client) {
@@ -513,6 +614,12 @@ int main(int argc, char **argv)
 
 	parse_opt(argc, argv);
 	is_client = !!arg_servername;
+
+	if (arg_pscom || arg_read) {
+		// Increase defaults to get a larger RDMA buffer.
+		psoib_sendq_size = 256;
+		psoib_recvq_size = 256;
+	}
 
 	peer = get_peer(!is_client);
 	pscom_openib_init(peer);
