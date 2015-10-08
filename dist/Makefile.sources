@@ -110,6 +110,7 @@ lib/pscom/getid.c \
 lib/pscom/list.h \
 lib/pscom/perf.c \
 lib/pscom/perf.h \
+lib/pscom/perf.sh \
 lib/pscom/pscom.c \
 lib/pscom/pscom_con.c \
 lib/pscom/pscom_con.h \
@@ -193,6 +194,7 @@ lib/pscom4openib/pscom_openib.c \
 lib/pscom4openib/pscom_openib.h \
 lib/pscom4openib/psoib.c \
 lib/pscom4openib/psoib.h \
+lib/pscom4openib/psoib_mregion_cache.c \
 lib/pscom4psm/Makefile.am \
 lib/pscom4psm/Makefile.in \
 lib/pscom4psm/pscom_psm.c \
