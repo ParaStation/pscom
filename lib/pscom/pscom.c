@@ -215,11 +215,16 @@ int pscom_progress(int timeout)
 	list_for_each_safe(pos, next, &pscom.poll_reader) {
 		pscom_poll_reader_t *reader = list_entry(pos, pscom_poll_reader_t, next);
 		if (reader->do_read(reader)) {
+#if 0
+			/* Fixme: reader might be dequeued in reader->do_read()
+			 * with list_del() instead of list_del_init(). This could
+			 * result in race here. */
 			if(!list_empty(pos)) {
 				/* avoid starvation: move reader to the back! */
 				list_del(pos);
 				list_add_tail(pos, &pscom.poll_reader);
 			}
+#endif
 			return 1;
 		}
 		timeout = 0; // enable polling
