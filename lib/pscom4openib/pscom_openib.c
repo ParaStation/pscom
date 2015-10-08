@@ -426,12 +426,13 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 	/* We have to prevent free() from returning memory back to the OS: */
 
 #ifndef IB_RNDV_USE_MALLOC_HOOKS
+	if (con->rendezvous_size != ~0U) {
+		/* See 'man mallopt(3) / M_MMAP_MAX': Setting this parameter to 0 disables the use of mmap(2) for servicing large allocation requests. */
+		mallopt(M_MMAP_MAX, 0);
 
-	/* See 'man mallopt(3) / M_MMAP_MAX': Setting this parameter to 0 disables the use of mmap(2) for servicing large allocation requests. */
-	mallopt(M_MMAP_MAX, 0);
-
-	/* See 'man mallopt(3) / M_TRIM_THRESHOLD': Setting M_TRIM_THRESHOLD to -1 disables trimming completely. */
-	mallopt(M_TRIM_THRESHOLD, -1);
+		/* See 'man mallopt(3) / M_TRIM_THRESHOLD': Setting M_TRIM_THRESHOLD to -1 disables trimming completely. */
+		mallopt(M_TRIM_THRESHOLD, -1);
+	}
 #else
 	if(__morecore == __default_morecore) {
 		/* Switch to our own function pscom_openib_morecore() that does not trim: */
