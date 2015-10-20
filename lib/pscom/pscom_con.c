@@ -187,8 +187,8 @@ void _pscom_con_cleanup(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
-		D_TR(printf("pscom_con_close(con:%p) : state: %s\n", con,
-			    pscom_con_state_str(con->pub.state)));
+		D_TR(printf("%s:%u:%s(con:%p) : state: %s\n", __FILE__, __LINE__, __func__,
+			    con, pscom_con_state_str(con->pub.state)));
 	retry:
 		pscom_con_end_write(con);
 		pscom_con_end_read(con);
@@ -451,12 +451,12 @@ int pscom_is_valid_con(pscom_con_t *con)
 			pscom_con_t *con2 = list_entry(pos_con, pscom_con_t, next);
 
 			if (con2 == con) {
-				D_TR(printf("pscom_is_valid_con(%p) = 1\n", con));
+				D_TR(printf("%s:%u:%s(%p) = 1\n", __FILE__, __LINE__, __func__, con));
 				return 1;
 			}
 		}
 	}
-	D_TR(printf("pscom_is_valid_con(%p) = 0\n", con));
+	D_TR(printf("%s:%u:%s(%p) = 0\n", __FILE__, __LINE__, __func__, con));
 
 	return 0;
 }

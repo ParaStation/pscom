@@ -85,7 +85,6 @@ const char *mpid_msgtype_str(enum MPID_PSP_MSGTYPE msg_type)
 
 #include "perf.c"
 
-static
 const char *pscom_msgtype_str(unsigned msg_type)
 {
 	switch(msg_type) {
@@ -290,6 +289,22 @@ void pscom_sigquit(int sig)
 	fprintf(out, " +++++++++ SIGQUIT START ++++\n");
 	pscom_dump_info(out);
 	fprintf(out, " +++++++++ SIGQUIT END ++++++\n");
+}
+
+
+char *pscom_debug_req_str(pscom_req_t *req)
+{
+	static char buf[sizeof("reqUSER_: XXX(Pgpsdec)done_____")];
+	if (req) {
+		snprintf(buf, sizeof(buf), "req%s: %s%u(%s)",
+			 pscom_msgtype_str(req->pub.header.msg_type),
+			 req->magic == MAGIC_REQUEST ? "" : "!MAGIC",
+			 req->req_no,
+			 pscom_req_state_str(req->pub.state));
+	} else {
+		snprintf(buf, sizeof(buf), "req: NULL");
+	}
+	return buf;
 }
 
 

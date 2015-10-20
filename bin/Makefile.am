@@ -281,7 +281,7 @@ pscom_memusage_openib_SOURCES = pscom_memusage.c
 pscom_memusage_openib_CPPFLAGS = $(AM_CPPFLAGS) -DOPENIB=1	\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4openib
 pscom_memusage_openib_LDFLAGS = $(AM_LDFLAGS) $(OPENIB_LDFLAGS)
-pscom_memusage_openib_LDADD = -libverbs
+pscom_memusage_openib_LDADD = -libverbs $(libpscom)
 
 pscom_memusage_ofed_SOURCES = pscom_memusage.c
 pscom_memusage_ofed_CPPFLAGS = $(AM_CPPFLAGS) -DOFED=1		\

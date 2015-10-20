@@ -115,6 +115,15 @@ void parse_opt(int argc, char **argv)
 
 
 /* !!!! C Source include !!! */
+#define perf_add(id) do {} while (0)
+void *pscom_malloc(unsigned size) {
+	return malloc(size);
+}
+
+void pscom_free(void *ptr) {
+	free(ptr);
+}
+
 #include "psoib.c"
 pscom_t pscom = {
 	/* parameter from environment */
