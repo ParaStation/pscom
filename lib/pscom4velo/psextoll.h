@@ -213,6 +213,6 @@ extern unsigned psex_mregion_cache_max_size; /* max size of the cache */
  */
 extern unsigned psex_pending_global_sends; /* counter. Used only with psex_global_sendq == 1 */
 
-#define PSEX_VELO2_MTU	64 /* it is 64, but with newer hardware this might change */
+#define PSEX_VELO2_MTU	120 /* older extoll hardware only supprt 64 */
 
 #endif /* _PSEXTOLL_H_ */
