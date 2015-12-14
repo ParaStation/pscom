@@ -1,3 +1,9 @@
+2015-12-14  Jens Hauke  <hauke@par-tec.com>	-	5.0.47-1
+
+	* Fix for "_pscom_get_rma_read_answer_receiver: Assertion
+	`rma_answer->id == req' failed" from the openib rendezvous
+	protocol introduced with 5.0.46-1
+
 2015-10-08  Jens Hauke  <hauke@par-tec.com>	-	5.0.46-1
 
 	* Fix: Extoll pscom4velo: Transmit messages > 8MB in chunks of 8MB via
