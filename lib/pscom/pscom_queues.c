@@ -482,6 +482,19 @@ void _pscom_recvq_rma_deq(pscom_con_t *con, pscom_req_t *req)
 }
 
 
+int _pscom_recvq_rma_contains(pscom_con_t *con, pscom_req_t *req_needle)
+{
+	struct list_head *pos;
+	list_for_each(pos, &con->recvq_rma) {
+		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
+		if (req == req_needle) {
+			return 1;
+		}
+	}
+	return 0;
+}
+
+
 /*************
  * Recvq bcast
  */

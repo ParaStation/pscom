@@ -460,11 +460,9 @@ pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con, pscom_header_
 
 	assert(!list_empty(con->recvq_rma.next));
 
-	req = list_entry(con->recvq_rma.next, pscom_req_t, next);
+	req = nh->xheader->rma_read_answer.id;
 
-	rma_answer = &nh->xheader->rma_read_answer;
-
-	assert(rma_answer->id == req);
+	assert(_pscom_recvq_rma_contains(con, req));
 
 	_pscom_recvq_rma_deq(con, req);
 
