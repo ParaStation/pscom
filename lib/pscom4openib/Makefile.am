@@ -18,6 +18,7 @@ AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\" -I$(top_srcdir)/lib/pscom
 lib_LTLIBRARIES = libpscom4openib.la
 
 libpscom4openib_la_SOURCES = pscom_openib.c pscom_openib.h psoib.c psoib.h
+noinst_HEADERS = psoib_mregion_cache.c
 libpscom4openib_la_CPPFLAGS = $(AM_CPPFLAGS) $(OPENIB_CPPFLAGS)
 libpscom4openib_la_LDFLAGS = $(AM_LDFLAGS) $(OPENIB_LDFLAGS)
 libpscom4openib_la_LIBADD = -libverbs $(top_builddir)/lib/pscom/libpscom.la

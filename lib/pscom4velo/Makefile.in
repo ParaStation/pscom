@@ -26,6 +26,7 @@
 # Author:       Thomas Moschny <moschny@par-tec.com>
 #
 
+
 VPATH = @srcdir@
 am__is_gnu_make = test -n '$(MAKEFILE_LIST)' && test -n '$(MAKELEVEL)'
 am__make_running_with_option = \
@@ -92,7 +93,8 @@ build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
 DIST_COMMON = $(top_srcdir)/common.am $(srcdir)/Makefile.in \
-	$(srcdir)/Makefile.am $(top_srcdir)/scripts/depcomp
+	$(srcdir)/Makefile.am $(top_srcdir)/scripts/depcomp \
+	$(noinst_HEADERS)
 subdir = lib/pscom4velo
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -187,6 +189,7 @@ am__can_run_installinfo = \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+HEADERS = $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -385,6 +388,7 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 configdir = $(prefix)/config
 lib_LTLIBRARIES = libpscom4velo.la
 libpscom4velo_la_SOURCES = pscom_extoll.c pscom_extoll.h psextoll.c psextoll.h
+noinst_HEADERS = psextoll_mregion_cache.c
 libpscom4velo_la_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 libpscom4velo_la_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 libpscom4velo_la_LIBADD = -lrma2 -lvelo2 $(top_builddir)/lib/pscom/libpscom.la
@@ -599,7 +603,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES)
+all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
