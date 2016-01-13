@@ -251,6 +251,7 @@ extoll_one_message_LDADD = -lrma2 -lpopt
 # -- mxm -- 
 
 mxm_pp_SOURCES = mxm/mxm_pp.c
+noinst_HEADERS += mxm/mxm_util.c
 mxm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(MXM_CPPFLAGS)
 mxm_pp_LDFLAGS = $(AM_LDFLAGS) $(MXM_LDFLAGS)
 mxm_pp_LDADD = -lmxm -lpopt

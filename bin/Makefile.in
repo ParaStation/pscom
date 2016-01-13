@@ -893,7 +893,7 @@ configdir = $(prefix)/config
 
 # -- file lists
 SUBDIRS = simul_p4sock examples
-noinst_HEADERS = dump.c psport_util.h
+noinst_HEADERS = dump.c psport_util.h mxm/mxm_util.c
 EXTRA_DIST = gm/gm_sr.c gm/gm_test.c pscom_debug.sh
 bin_SCRIPTS = pscom_debug
 dist_config_DATA = pscom.gdb
