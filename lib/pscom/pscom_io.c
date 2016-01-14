@@ -1248,17 +1248,8 @@ int _pscom_iprobe(pscom_req_t *req)
 	if (!genreq) {
 		/* not found: */
 		res = 0;
-	} else if(!(genreq->pub.state & PSCOM_REQ_STATE_DONE)) {
-		/* found but not done: */
-		if(genreq->pub.state & PSCOM_REQ_STATE_RENDEZVOUS_REQUEST) {
-			/* rendezvous request: (can't be DONE without posted recv) */
-			res = 1;
-		} else {
-			res = 0;
-		}
 	} else {
 		res = 1;
-
 		genreq_merge_header(req, genreq);
 	}
 	req->pub.state |= PSCOM_REQ_STATE_DONE;
