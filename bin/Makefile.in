@@ -173,10 +173,10 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
-am_dapl_pp_OBJECTS = dapl/dapl_pp-dapl_pp.$(OBJEXT) \
-	../lib/pscom4dapl/dapl_pp-psdapl.$(OBJEXT)
+am_dapl_pp_OBJECTS = dapl/dapl_pp-dapl_pp.$(OBJEXT)
 dapl_pp_OBJECTS = $(am_dapl_pp_OBJECTS)
-dapl_pp_DEPENDENCIES = $(top_builddir)/lib/pscom/libperf.la
+dapl_pp_DEPENDENCIES = $(top_builddir)/lib/pscom/libperf.la \
+	$(top_builddir)/lib/pscom4dapl/libpsdapl.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -870,13 +870,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/include
 VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
-sed_verbose_0 = @echo "  SED   " $(@F);
+sed_verbose_0 = @echo "  SED     " $(@F);
 chmod_verbose = $(chmod_verbose_$(V))
 chmod_verbose_ = $(chmod_verbose_$(AM_DEFAULT_VERBOSITY))
-chmod_verbose_0 = @echo "  CHMOD " $(@F);
+chmod_verbose_0 = @echo "  CHMOD   " $(@F);
 txt2man_verbose = $(txt2man_verbose_$(V))
 txt2man_verbose_ = $(txt2man_verbose_$(AM_DEFAULT_VERBOSITY))
-txt2man_verbose_0 = @echo "TXT2MAN " $(@F);
+txt2man_verbose_0 = @echo "TXT2MAN   " $(@F);
 do_subst = sed \
 	-e 's,[@]pkgdatadir[@],$(pkgdatadir),g' \
         -e 's,[@]bindir[@],$(bindir),g' \
@@ -1022,10 +1022,11 @@ cppflags_dapl = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)			\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4dapl
 
 ldflags_dapl = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
-dapl_pp_SOURCES = dapl/dapl_pp.c ../lib/pscom4dapl/psdapl.c
+dapl_pp_SOURCES = dapl/dapl_pp.c
 dapl_pp_CPPFLAGS = $(cppflags_dapl)
 dapl_pp_LDFLAGS = $(ldflags_dapl)
 dapl_pp_LDADD = $(top_builddir)/lib/pscom/libperf.la		\
+	$(top_builddir)/lib/pscom4dapl/libpsdapl.la 		\
 	-ldat -lpopt
 
 dapl_pp_lowlevel_SOURCES = dapl/dapl_pp_lowlevel.c
@@ -1195,15 +1196,6 @@ dapl/$(DEPDIR)/$(am__dirstamp):
 	@: > dapl/$(DEPDIR)/$(am__dirstamp)
 dapl/dapl_pp-dapl_pp.$(OBJEXT): dapl/$(am__dirstamp) \
 	dapl/$(DEPDIR)/$(am__dirstamp)
-../lib/pscom4dapl/$(am__dirstamp):
-	@$(MKDIR_P) ../lib/pscom4dapl
-	@: > ../lib/pscom4dapl/$(am__dirstamp)
-../lib/pscom4dapl/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) ../lib/pscom4dapl/$(DEPDIR)
-	@: > ../lib/pscom4dapl/$(DEPDIR)/$(am__dirstamp)
-../lib/pscom4dapl/dapl_pp-psdapl.$(OBJEXT):  \
-	../lib/pscom4dapl/$(am__dirstamp) \
-	../lib/pscom4dapl/$(DEPDIR)/$(am__dirstamp)
 
 dapl_pp$(EXEEXT): $(dapl_pp_OBJECTS) $(dapl_pp_DEPENDENCIES) $(EXTRA_dapl_pp_DEPENDENCIES) 
 	@rm -f dapl_pp$(EXEEXT)
@@ -1462,7 +1454,6 @@ uninstall-binSCRIPTS:
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f ../lib/pscom4dapl/*.$(OBJEXT)
 	-rm -f dapl/*.$(OBJEXT)
 	-rm -f elan/*.$(OBJEXT)
 	-rm -f extoll/*.$(OBJEXT)
@@ -1475,7 +1466,6 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/list_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/p4logd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/p4stat.Po@am__quote@
@@ -1554,20 +1544,6 @@ dapl/dapl_pp-dapl_pp.obj: dapl/dapl_pp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='dapl/dapl_pp.c' object='dapl/dapl_pp-dapl_pp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(dapl_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o dapl/dapl_pp-dapl_pp.obj `if test -f 'dapl/dapl_pp.c'; then $(CYGPATH_W) 'dapl/dapl_pp.c'; else $(CYGPATH_W) '$(srcdir)/dapl/dapl_pp.c'; fi`
-
-../lib/pscom4dapl/dapl_pp-psdapl.o: ../lib/pscom4dapl/psdapl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(dapl_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ../lib/pscom4dapl/dapl_pp-psdapl.o -MD -MP -MF ../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Tpo -c -o ../lib/pscom4dapl/dapl_pp-psdapl.o `test -f '../lib/pscom4dapl/psdapl.c' || echo '$(srcdir)/'`../lib/pscom4dapl/psdapl.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Tpo ../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../lib/pscom4dapl/psdapl.c' object='../lib/pscom4dapl/dapl_pp-psdapl.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(dapl_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ../lib/pscom4dapl/dapl_pp-psdapl.o `test -f '../lib/pscom4dapl/psdapl.c' || echo '$(srcdir)/'`../lib/pscom4dapl/psdapl.c
-
-../lib/pscom4dapl/dapl_pp-psdapl.obj: ../lib/pscom4dapl/psdapl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(dapl_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ../lib/pscom4dapl/dapl_pp-psdapl.obj -MD -MP -MF ../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Tpo -c -o ../lib/pscom4dapl/dapl_pp-psdapl.obj `if test -f '../lib/pscom4dapl/psdapl.c'; then $(CYGPATH_W) '../lib/pscom4dapl/psdapl.c'; else $(CYGPATH_W) '$(srcdir)/../lib/pscom4dapl/psdapl.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Tpo ../lib/pscom4dapl/$(DEPDIR)/dapl_pp-psdapl.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='../lib/pscom4dapl/psdapl.c' object='../lib/pscom4dapl/dapl_pp-psdapl.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(dapl_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ../lib/pscom4dapl/dapl_pp-psdapl.obj `if test -f '../lib/pscom4dapl/psdapl.c'; then $(CYGPATH_W) '../lib/pscom4dapl/psdapl.c'; else $(CYGPATH_W) '$(srcdir)/../lib/pscom4dapl/psdapl.c'; fi`
 
 dapl/dapl_pp_lowlevel-dapl_pp_lowlevel.o: dapl/dapl_pp_lowlevel.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(dapl_pp_lowlevel_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT dapl/dapl_pp_lowlevel-dapl_pp_lowlevel.o -MD -MP -MF dapl/$(DEPDIR)/dapl_pp_lowlevel-dapl_pp_lowlevel.Tpo -c -o dapl/dapl_pp_lowlevel-dapl_pp_lowlevel.o `test -f 'dapl/dapl_pp_lowlevel.c' || echo '$(srcdir)/'`dapl/dapl_pp_lowlevel.c
@@ -2247,8 +2223,6 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f ../lib/pscom4dapl/$(DEPDIR)/$(am__dirstamp)
-	-rm -f ../lib/pscom4dapl/$(am__dirstamp)
 	-rm -f dapl/$(DEPDIR)/$(am__dirstamp)
 	-rm -f dapl/$(am__dirstamp)
 	-rm -f elan/$(DEPDIR)/$(am__dirstamp)
@@ -2275,7 +2249,7 @@ clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
 	clean-libtool clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ../lib/pscom4dapl/$(DEPDIR) ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -2321,7 +2295,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ../lib/pscom4dapl/$(DEPDIR) ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

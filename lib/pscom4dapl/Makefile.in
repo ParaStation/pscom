@@ -144,7 +144,7 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
-LTLIBRARIES = $(lib_LTLIBRARIES)
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
 libpscom4dapl_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
 am_libpscom4dapl_la_OBJECTS = libpscom4dapl_la-pscom_dapl.lo \
 	libpscom4dapl_la-psdapl.lo
@@ -157,6 +157,9 @@ libpscom4dapl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(libpscom4dapl_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
+libpsdapl_la_LIBADD =
+am_libpsdapl_la_OBJECTS = psdapl.lo
+libpsdapl_la_OBJECTS = $(am_libpsdapl_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -191,8 +194,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libpscom4dapl_la_SOURCES)
-DIST_SOURCES = $(libpscom4dapl_la_SOURCES)
+SOURCES = $(libpscom4dapl_la_SOURCES) $(libpsdapl_la_SOURCES)
+DIST_SOURCES = $(libpscom4dapl_la_SOURCES) $(libpsdapl_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -378,13 +381,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
-sed_verbose_0 = @echo "  SED   " $(@F);
+sed_verbose_0 = @echo "  SED     " $(@F);
 chmod_verbose = $(chmod_verbose_$(V))
 chmod_verbose_ = $(chmod_verbose_$(AM_DEFAULT_VERBOSITY))
-chmod_verbose_0 = @echo "  CHMOD " $(@F);
+chmod_verbose_0 = @echo "  CHMOD   " $(@F);
 txt2man_verbose = $(txt2man_verbose_$(V))
 txt2man_verbose_ = $(txt2man_verbose_$(AM_DEFAULT_VERBOSITY))
-txt2man_verbose_0 = @echo "TXT2MAN " $(@F);
+txt2man_verbose_0 = @echo "TXT2MAN   " $(@F);
 do_subst = sed \
 	-e 's,[@]pkgdatadir[@],$(pkgdatadir),g' \
         -e 's,[@]bindir[@],$(bindir),g' \
@@ -398,11 +401,15 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 # FIXME: non-standard
 configdir = $(prefix)/config
 lib_LTLIBRARIES = libpscom4dapl.la
+noinst_LTLIBRARIES = libpsdapl.la
 libpscom4dapl_la_SOURCES = pscom_dapl.c pscom_dapl.h psdapl.c psdapl.h
 noinst_HEADERS = psdapl_rdma.c
 libpscom4dapl_la_CPPFLAGS = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)
 libpscom4dapl_la_LDFLAGS = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
 libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
+
+# intermediate libs needed elsewhere, in bin
+libpsdapl_la_SOURCES = psdapl.c psdapl.h
 all: all-am
 
 .SUFFIXES:
@@ -473,8 +480,22 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
 libpscom4dapl.la: $(libpscom4dapl_la_OBJECTS) $(libpscom4dapl_la_DEPENDENCIES) $(EXTRA_libpscom4dapl_la_DEPENDENCIES) 
 	$(AM_V_CCLD)$(libpscom4dapl_la_LINK) -rpath $(libdir) $(libpscom4dapl_la_OBJECTS) $(libpscom4dapl_la_LIBADD) $(LIBS)
+
+libpsdapl.la: $(libpsdapl_la_OBJECTS) $(libpsdapl_la_DEPENDENCIES) $(EXTRA_libpsdapl_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(LINK)  $(libpsdapl_la_OBJECTS) $(libpsdapl_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -484,6 +505,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psdapl.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -651,7 +673,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -723,19 +745,19 @@ uninstall-am: uninstall-libLTLIBRARIES
 .MAKE: install-am install-exec-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool cscopelist-am ctags \
-	ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-dvi install-dvi-am install-exec \
-	install-exec-am install-exec-hook install-html install-html-am \
-	install-info install-info-am install-libLTLIBRARIES \
-	install-man install-pdf install-pdf-am install-ps \
-	install-ps-am install-strip installcheck installcheck-am \
-	installdirs maintainer-clean maintainer-clean-generic \
-	mostlyclean mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-libLTLIBRARIES
+	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
+	cscopelist-am ctags ctags-am distclean distclean-compile \
+	distclean-generic distclean-libtool distclean-tags distdir dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-dvi install-dvi-am \
+	install-exec install-exec-am install-exec-hook install-html \
+	install-html-am install-info install-info-am \
+	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
+	install-ps install-ps-am install-strip installcheck \
+	installcheck-am installdirs maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-compile \
+	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
+	tags tags-am uninstall uninstall-am uninstall-libLTLIBRARIES
 
 .PRECIOUS: Makefile
 

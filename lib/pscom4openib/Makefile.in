@@ -379,13 +379,13 @@ AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
 sed_verbose = $(sed_verbose_$(V))
 sed_verbose_ = $(sed_verbose_$(AM_DEFAULT_VERBOSITY))
-sed_verbose_0 = @echo "  SED   " $(@F);
+sed_verbose_0 = @echo "  SED     " $(@F);
 chmod_verbose = $(chmod_verbose_$(V))
 chmod_verbose_ = $(chmod_verbose_$(AM_DEFAULT_VERBOSITY))
-chmod_verbose_0 = @echo "  CHMOD " $(@F);
+chmod_verbose_0 = @echo "  CHMOD   " $(@F);
 txt2man_verbose = $(txt2man_verbose_$(V))
 txt2man_verbose_ = $(txt2man_verbose_$(AM_DEFAULT_VERBOSITY))
-txt2man_verbose_0 = @echo "TXT2MAN " $(@F);
+txt2man_verbose_0 = @echo "TXT2MAN   " $(@F);
 do_subst = sed \
 	-e 's,[@]pkgdatadir[@],$(pkgdatadir),g' \
         -e 's,[@]bindir[@],$(bindir),g' \
