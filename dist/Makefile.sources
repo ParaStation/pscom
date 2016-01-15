@@ -260,5 +260,6 @@ scripts/ps_p4sock.sh \
 scripts/rpm_noreq \
 scripts/tcpdump.awk \
 scripts/tcpdumpp4 \
+scripts/test-driver \
 scripts/txt2man \
 scripts/vcversion
