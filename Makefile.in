@@ -128,7 +128,7 @@ am__CONFIG_DISTCLEAN_FILES = config.status config.cache config.log \
  configure.lineno config.status.lineno
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
-CONFIG_CLEAN_VPATH_FILES =
+CONFIG_CLEAN_VPATH_FILES = dist/Makefile
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -215,7 +215,7 @@ CTAGS = ctags
 CSCOPE = cscope
 DIST_SUBDIRS = $(SUBDIRS)
 am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/common.am \
-	$(top_srcdir)/scripts/compile \
+	$(top_srcdir)/dist/Makefile $(top_srcdir)/scripts/compile \
 	$(top_srcdir)/scripts/config.guess \
 	$(top_srcdir)/scripts/config.sub \
 	$(top_srcdir)/scripts/install-sh \
@@ -434,7 +434,7 @@ dist_doc_DATA = LICENSE.QPL ChangeLog
 # ---- VERSION.pscom ----
 #
 nodist_doc_DATA = VERSION.pscom
-CLEANFILES = VERSION.pscom dist/Makefile
+CLEANFILES = VERSION.pscom
 all: all-recursive
 
 .SUFFIXES:
