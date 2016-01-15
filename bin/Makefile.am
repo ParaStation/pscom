@@ -212,10 +212,11 @@ cppflags_dapl = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)			\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4dapl
 ldflags_dapl = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
 
-dapl_pp_SOURCES = dapl/dapl_pp.c ../lib/pscom4dapl/psdapl.c
+dapl_pp_SOURCES = dapl/dapl_pp.c
 dapl_pp_CPPFLAGS = $(cppflags_dapl)
 dapl_pp_LDFLAGS = $(ldflags_dapl)
 dapl_pp_LDADD = $(top_builddir)/lib/pscom/libperf.la		\
+	$(top_builddir)/lib/pscom4dapl/libpsdapl.la 		\
 	-ldat -lpopt
 
 dapl_pp_lowlevel_SOURCES = dapl/dapl_pp_lowlevel.c
