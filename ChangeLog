@@ -1,4 +1,4 @@
-2016-01-14  Jens Hauke  <jens@localhost>
+2016-01-18  Jens Hauke  <hauke@par-tec.com>	-	5.0.48-1
 
 	* Fix pscom_iprobe() message header of rendezvous messages.
 
