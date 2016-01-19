@@ -102,7 +102,6 @@ pscom_req_t *_pscom_get_bcast_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh,
 			    pscom_connection_t *connection);
 
-inline
 void pscom_req_prepare_send_pending(pscom_req_t *req,
 				    unsigned msg_type, unsigned data_pending);
 

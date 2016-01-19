@@ -115,8 +115,8 @@ int is_recv_req_done(pscom_req_t *req)
 }
 
 
-inline
-void pscom_req_prepare_send_pending(pscom_req_t *req, unsigned msg_type, unsigned data_pending)
+static inline
+void pscom_req_prepare_send_pending_inline(pscom_req_t *req, unsigned msg_type, unsigned data_pending)
 {
 	req->pub.header.msg_type = msg_type;
 	req->pub.header.xheader_len = req->pub.xheader_len;
@@ -132,10 +132,16 @@ void pscom_req_prepare_send_pending(pscom_req_t *req, unsigned msg_type, unsigne
 }
 
 
+void pscom_req_prepare_send_pending(pscom_req_t *req, unsigned msg_type, unsigned data_pending)
+{
+	pscom_req_prepare_send_pending_inline(req, msg_type, data_pending);
+}
+
+
 static
 void pscom_req_prepare_send(pscom_req_t *req, unsigned msg_type)
 {
-	pscom_req_prepare_send_pending(req, msg_type, 0);
+	pscom_req_prepare_send_pending_inline(req, msg_type, 0);
 }
 
 
