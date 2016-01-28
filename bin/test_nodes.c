@@ -53,6 +53,7 @@ int master_node;
 int master_port;
 int finish=0;
 pscom_socket_t *pscom_socket = NULL;
+int changes = 1;
 
 static
 int get_unused_rank(void);
@@ -63,20 +64,26 @@ void time_handler_old(int signal)
 #define max_used_con_types 30
     int used_con_types[max_used_con_types];
     int ranks_n;
+    char *space;
+    if (!changes) {
+	fprintf(stdout, ".");
+	goto out;
+    }
 #ifndef __DECC
     fprintf(stdout,"\e[H");
     fprintf(stdout,"\e[2J");
 #endif
     ranks_n = arg_manual ? get_unused_rank() : arg_np;
+    space = ranks_n < 40 ? " " : "";
 
     /* 1st line */
     if (ranks_n > 100) {
 	fprintf(stdout,"                     ");
 	for (j = 0; j < ranks_n; j++) {
 	    if (j < 100) {
-		fprintf(stdout,"  ");
+		fprintf(stdout," %s", space);
 	    } else {
-		fprintf(stdout,"%1d ", (j / 100) % 10);
+		fprintf(stdout,"%1d%s", (j / 100) % 10, space);
 	    }
 	}
 	fprintf(stdout,"\n");
@@ -85,9 +92,9 @@ void time_handler_old(int signal)
     fprintf(stdout,"                     ");
     for (j = 0; j < ranks_n; j++) {
 	if (j < 10) {
-	    fprintf(stdout,"  ");
+	    fprintf(stdout," %s", space);
 	} else {
-	    fprintf(stdout,"%1d ", (j / 10) % 10);
+	    fprintf(stdout,"%1d%s", (j / 10) % 10, space);
 	}
     }
     fprintf(stdout,"\n");
@@ -96,7 +103,7 @@ void time_handler_old(int signal)
     /*              1234 1234 1234567890 */
     fprintf(stdout,"rank psid %10s ", "nodename");
     for (j = 0; j < ranks_n; j++)
-	fprintf(stdout,"%1d ", j % 10);
+	fprintf(stdout,"%1d%s", j % 10, space);
     fprintf(stdout,"\n");
 
     memset(used_con_types, 0, sizeof(used_con_types));
@@ -106,15 +113,15 @@ void time_handler_old(int signal)
 	for (k = 0;k < ranks_n; k++) {
 	    if (!arg_type) {
 		if (conrecv[j][k])
-		    fprintf(stdout,"%1d ", conrecv[j][k]);
+		    fprintf(stdout,"%1d%s", conrecv[j][k], space);
 		else
-		    fprintf(stdout,". ");
+		    fprintf(stdout,".%s", space);
 	    } else {
 		unsigned ctype = con_type[j][k];
 		if (ctype == PSCOM_CON_TYPE_NONE) {
-		    fprintf(stdout,"? ");
+		    fprintf(stdout,"?%s", space);
 		} else {
-		    fprintf(stdout, "%c ", pscom_con_type_str(ctype)[0]);
+		    fprintf(stdout, "%c%s", pscom_con_type_str(ctype)[0], space);
 		    if (ctype < max_used_con_types) used_con_types[ctype] = 1;
 		}
 	    }
@@ -131,8 +138,9 @@ void time_handler_old(int signal)
 	}
 	fprintf(stdout,"\n");
     }
-
+out:
     fflush(stdout);
+    changes = 0;
 }
 
 
@@ -258,6 +266,10 @@ void time_handler(int signal)
     memset(tmphost, 0, arg_np * sizeof(int));
     memset(tmp2, 0, arg_np * sizeof(int));
     memset(tmphost2, 0, arg_np * sizeof(int));
+    if (!changes) {
+	fprintf(stdout, ".");
+	goto out;
+    }
 //    fprintf(stdout,"\e[H");
 //    fprintf(stdout,"\e[2J");
     fprintf(stdout, "---------------------------------------\n");
@@ -332,12 +344,14 @@ void time_handler(int signal)
 //	}
 //	fprintf(stdout,"\n");
 //        }
+out:
     fflush(stdout);
     free(checked);
     free(tmp);
     free(tmphost);
     free(tmp2);
     free(tmphost2);
+    changes = 0;
 }
 
 
@@ -683,6 +697,7 @@ void run(int argc,char **argv,int np)
 	req->connection = NULL;
 	req->socket = pscom_socket;
 
+	changes = 1;
 	pscom_post_recv(req);
 	pscom_wait(req);
 
