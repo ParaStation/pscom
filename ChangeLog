@@ -1,8 +1,16 @@
+2016-01-18  Jens Hauke  <hauke@par-tec.com>	-	5.0.48-1
+
+	* Fix pscom_iprobe() message header of rendezvous messages.
+
+	* Update the buildsystem to automake 1.15
+
 2015-12-14  Jens Hauke  <hauke@par-tec.com>	-	5.0.47-1
 
 	* Fix for "_pscom_get_rma_read_answer_receiver: Assertion
 	`rma_answer->id == req' failed" from the openib rendezvous
 	protocol introduced with 5.0.46-1
+
+	* Enhancement: pscom4velo: Use a VELO2 MTU of 120 bytes.
 
 2015-10-08  Jens Hauke  <hauke@par-tec.com>	-	5.0.46-1
 

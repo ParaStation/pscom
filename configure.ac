@@ -196,14 +196,10 @@ AC_CONFIG_FILES(lib/pscom4psm/Makefile)
 AC_CONFIG_FILES(lib/psmalloc/Makefile)
 AC_CONFIG_FILES(lib/psport4/Makefile)
 AC_CONFIG_FILES(scripts/Makefile)
+AC_CONFIG_LINKS(dist/Makefile:dist/Makefile)
 
 
 AC_OUTPUT
-
-# copy hand written Makefiles
-if test ! ${srcdir}/dist/Makefile -ef dist/Makefile ; then
-   install -D -p ${srcdir}/dist/Makefile dist/Makefile
-fi
 
 AC_MSG_NOTICE([=====================])
 AM_COND_IF([PSMGMT_ENABLED],

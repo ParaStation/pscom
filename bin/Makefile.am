@@ -216,10 +216,11 @@ cppflags_dapl = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)			\
 	-I$(top_srcdir)/lib/pscom -I$(top_srcdir)/lib/pscom4dapl
 ldflags_dapl = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
 
-dapl_pp_SOURCES = dapl/dapl_pp.c ../lib/pscom4dapl/psdapl.c
+dapl_pp_SOURCES = dapl/dapl_pp.c
 dapl_pp_CPPFLAGS = $(cppflags_dapl)
 dapl_pp_LDFLAGS = $(ldflags_dapl)
 dapl_pp_LDADD = $(top_builddir)/lib/pscom/libperf.la		\
+	$(top_builddir)/lib/pscom4dapl/libpsdapl.la 		\
 	-ldat -lpopt
 
 dapl_pp_lowlevel_SOURCES = dapl/dapl_pp_lowlevel.c
@@ -255,6 +256,7 @@ extoll_one_message_LDADD = -lrma2 -lpopt
 # -- mxm -- 
 
 mxm_pp_SOURCES = mxm/mxm_pp.c
+noinst_HEADERS += mxm/mxm_util.c
 mxm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(MXM_CPPFLAGS)
 mxm_pp_LDFLAGS = $(AM_LDFLAGS) $(MXM_LDFLAGS)
 mxm_pp_LDADD = -lmxm -lpopt

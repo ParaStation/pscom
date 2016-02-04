@@ -18,6 +18,7 @@ AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\" -I$(top_srcdir)/lib/pscom
 lib_LTLIBRARIES = libpscom4velo.la
 
 libpscom4velo_la_SOURCES = pscom_extoll.c pscom_extoll.h psextoll.c psextoll.h
+noinst_HEADERS = psextoll_mregion_cache.c
 libpscom4velo_la_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 libpscom4velo_la_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 libpscom4velo_la_LIBADD = -lrma2 -lvelo2 $(top_builddir)/lib/pscom/libpscom.la
