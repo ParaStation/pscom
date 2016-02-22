@@ -52,6 +52,8 @@
 
 /* Debugoutput on signal SIGQUIT (i386:3) (key: ^\) */
 #define ENV_SIGQUIT "PSP_SIGQUIT"
+/* signal number to listen on for connection suspend */
+#define ENV_SIGSUSPEND "PSP_SIGSUSPEND"
 #define ENV_READAHEAD "PSP_READAHEAD"
 #define ENV_RETRY "PSP_RETRY"
 
@@ -158,6 +160,7 @@ struct PSCOM_env {
 	unsigned int	rendezvous_size_openib;
 	unsigned int	psm_uniq_id;
 	int		sigquit;
+	int		sigsuspend;
 	unsigned int	readahead;
 	unsigned int	retry;
 	unsigned int	guard;
@@ -192,6 +195,7 @@ struct PSCOM_env {
 	.rendezvous_size_openib = 40000, /* default rendezvous_size for openib */ \
 	.psm_uniq_id = 0,						\
 	.sigquit = 0,							\
+	.sigsuspend = 0,						\
 	.readahead = 100,						\
 	.skipblocksize = 8192,						\
 	.retry = 10,							\

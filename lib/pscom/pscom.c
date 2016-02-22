@@ -267,6 +267,27 @@ void pscom_cleanup(void)
 	DPRINT(1,"Byee.");
 }
 
+
+static
+void _pscom_suspend(int signum)
+{
+	struct list_head *pos_sock;
+	struct list_head *pos_con;
+
+	DPRINT(1, "SUSPEND signal received");
+	// ToDo: Use pscom_lock() and fix the race with this handler and the main thread.
+
+	list_for_each(pos_sock, &pscom.sockets) {
+		pscom_sock_t *sock = list_entry(pos_sock, pscom_sock_t, next);
+
+		list_for_each(pos_con, &sock->connections) {
+			pscom_con_t *con = list_entry(pos_con, pscom_con_t, next);
+
+			_pscom_con_suspend(con);
+		}
+	}
+}
+
 /*
 ******************************************************************************
 */
@@ -315,6 +336,10 @@ int pscom_init(int pscom_version)
 	pscom_pslib_init();
 	pscom_env_init();
 	pscom_debug_init();
+
+	if (pscom.env.sigsuspend) {
+		signal(pscom.env.sigsuspend, _pscom_suspend);
+	}
 
 	atexit(pscom_cleanup);
 	return PSCOM_SUCCESS;

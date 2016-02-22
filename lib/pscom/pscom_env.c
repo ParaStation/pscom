@@ -143,6 +143,7 @@ void pscom_env_init(void)
 	pscom_env_get_uint(&pscom.env.rendezvous_size_openib, ENV_RENDEZVOUS_OPENIB);
 
 	pscom_env_get_int(&pscom.env.sigquit, ENV_SIGQUIT);
+	pscom_env_get_int(&pscom.env.sigsuspend, ENV_SIGSUSPEND);
 	pscom_env_get_uint(&pscom.env.readahead, ENV_READAHEAD);
 	pscom_env_get_uint(&pscom.env.retry, ENV_RETRY);
 	pscom.env.readahead = pscom_max(pscom.env.readahead, sizeof(pscom_header_net_t));

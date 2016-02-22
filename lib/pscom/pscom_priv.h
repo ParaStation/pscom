@@ -324,6 +324,8 @@ struct PSCOM_sock
 
 	struct list_head	pendingioq;	// List of pscom_req_t.next, requests with pending io
 
+	struct list_head	sendq_suspending;// List of pscom_req_t.next, requests from suspending connections
+
 	uint64_t		con_type_mask;	/* allowed con_types.
 						   Or'd value from: (1 << (pscom_con_type_t) con_type)
 						   default = ~0 */
@@ -431,6 +433,7 @@ extern pscom_t pscom;
 #define PSCOM_MSGTYPE_BCAST	6
 #define PSCOM_MSGTYPE_BARRIER	7
 #define PSCOM_MSGTYPE_EOF	8
+#define PSCOM_MSGTYPE_SUSPEND	9
 
 extern int mt_locked;
 
@@ -526,6 +529,9 @@ void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req);
 
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error);
 void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info);
+
+void _pscom_con_suspend(pscom_con_t *con);
+void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, unsigned xheaderlen);
 
 /*
 void _pscom_send(pscom_con_t *con, unsigned msg_type,

@@ -263,6 +263,10 @@ pscom_con_state_str(pscom_con_state_t state)
 	case PSCOM_CON_STATE_CONNECTING:return "connecting";
 	case PSCOM_CON_STATE_ACCEPTING:	return "accepting";
 	case PSCOM_CON_STATE_CLOSING:	return "closing";
+	case PSCOM_CON_STATE_SUSPENDING:	return "suspending";
+	case PSCOM_CON_STATE_SUSPEND_SENT:	return "susp_sent";
+	case PSCOM_CON_STATE_SUSPEND_RECEIVED:	return "susp_recv";
+	case PSCOM_CON_STATE_SUSPENDED:		return "suspended";
 	}
 
 	{
@@ -294,6 +298,7 @@ pscom_con_type_str(pscom_con_type_t type)
 	case PSCOM_CON_TYPE_DAPL:	return "dapl";
 	case PSCOM_CON_TYPE_ONDEMAND:	return "demand";
 	case PSCOM_CON_TYPE_MXM:	return "mxm";
+	case PSCOM_CON_TYPE_SUSPENDED:	return "susp";
 	}
 
 	{
