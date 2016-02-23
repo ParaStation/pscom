@@ -213,8 +213,6 @@ void pscom_dapl_con_close(pscom_con_t *con)
 	psdapl_con_info_t *ci = con->arch.dapl.ci;
 	if (!ci) return;
 
-	psdapl_send_eof(ci);
-
 	pscom_dapl_con_cleanup(con);
 }
 

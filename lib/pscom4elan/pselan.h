@@ -44,27 +44,17 @@ void pselan_connect(pselan_con_info_t *ci, u_int destvp, void *remote_r_ptr);
 void pselan_con_destroy(pselan_con_info_t *ci);
 
 
-/* send size bytes from iov through ci.
+/* send size bytes from iov through ci. (size > 0)
  * return number of bytes send or:
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
- *
- * (sending with size = 0, will send a 0 message. But you will not
- * receive this message with pselan_recvlook! To send EOF, use
- * pselan_send_eof().) *
  */
 int pselan_sendv(pselan_con_info_t *ci, struct iovec *iov, int size);
-
-
-/* Send EOF and close sending side of connection. Further pselan_sendv()
- * are allowed, but will return -EPIPE. */
-void pselan_send_eof(pselan_con_info_t *ci);
 
 
 /* Start receiving.
  * return:
  * number of bytes received or
- * 0 for EOF (from pselan_send_eof()) or
  * -EAGAIN nothing received or
  * -EPIPE broken connction.
  * (call pselan_recvdone after usage of *buf!)

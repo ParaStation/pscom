@@ -312,9 +312,6 @@ void pscom_extoll_con_close(pscom_con_t *con)
 	psex_con_info_t *ci = con->arch.extoll.ci;
 	if (!ci) return;
 
-	//psex_send_eof(ci);
-	psex_velo2_send_eof(ci);
-
 	pscom_extoll_con_cleanup(con);
 }
 

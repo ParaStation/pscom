@@ -152,8 +152,6 @@ void pscom_ofed_con_close(pscom_con_t *con)
 	psofed_con_info_t *mcon = con->arch.ofed.mcon;
 	if (!mcon) return;
 
-	psofed_send_eof(mcon);
-
 	pscom_ofed_con_cleanup(con);
 }
 

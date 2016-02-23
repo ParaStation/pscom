@@ -112,7 +112,6 @@ static void pspsm_con_cleanup(pspsm_con_info_t *con_info);
 static void pspsm_con_get_info_msg(pspsm_con_info_t *con_info /* in */, pspsm_info_msg_t *info /* out */);
 static int pspsm_recvlook(pspsm_con_info_t *con_info);
 static int pspsm_sendv(pspsm_con_info_t *con_info);
-static void pspsm_send_eof(pspsm_con_info_t *con_info);
 
 static int pscom_psm_do_read(pscom_con_t *con);
 static void pscom_psm_do_write(pscom_con_t *con);

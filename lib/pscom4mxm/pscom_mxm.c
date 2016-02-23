@@ -160,8 +160,6 @@ void pscom_mxm_con_close(pscom_con_t *con)
 	psmxm_con_info_t *ci = con->arch.mxm.ci;
 	if (!ci) return;
 
-	// ToDo: implement psmxm_send_eof() and send EOF.
-
 	pscom_mxm_con_cleanup(con);
 }
 

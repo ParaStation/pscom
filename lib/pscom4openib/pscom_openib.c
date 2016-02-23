@@ -361,7 +361,6 @@ void pscom_openib_con_close(pscom_con_t *con)
 
 	if (!mcon) return;
 
-	psoib_send_eof(mcon);
 	pscom_openib_con_cleanup(con);
 }
 

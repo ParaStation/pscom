@@ -27,7 +27,6 @@
  */
 static const uint64_t mask = (UINTMAX_C(1) << 48) - 1;
 static const uint64_t PSPSM_MAGIC_IO = UINTMAX_C(1) << 48;
-static const uint64_t PSPSM_MAGIC_EOF = UINTMAX_C(2) << 48;
 
 int pspsm_debug = 2;
 FILE *pspsm_debug_stream = NULL;
@@ -258,8 +257,6 @@ void pscom_psm_con_close(pscom_con_t *con)
 {
 	pspsm_con_info_t *ci = con->arch.psm.ci;
 	if (!ci) return;
-
-	pspsm_send_eof(ci);
 
 	pscom_psm_con_cleanup(con);
 }
@@ -712,18 +709,6 @@ static
 int pspsm_sendv(pspsm_con_info_t *con_info)
 {
 	return _pspsm_sendv(con_info, PSPSM_MAGIC_IO);
-}
-
-
-static
-void pspsm_send_eof(pspsm_con_info_t *con_info)
-{
-	psm_mq_req_t req = PSM_MQ_REQINVALID;
-	char dummy;
-
-	_pspsm_send_buf(con_info, &dummy, 0, con_info->send_id | PSPSM_MAGIC_EOF, &req, 3);
-	psm_mq_wait(&req, NULL);
-	con_info->con_broken = 1; /* stop sending */
 }
 
 

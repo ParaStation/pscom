@@ -80,7 +80,6 @@ typedef struct {
 
 #define PSOFED_MAGIC_UNUSED	0
 #define PSOFED_MAGIC_IO		1
-#define PSOFED_MAGIC_EOF		2
 
 typedef struct {
 	psofed_msgheader_t header;
@@ -1263,13 +1262,6 @@ err_getsbuf:
 int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, int size)
 {
 	return _psofed_sendv(con_info, iov, size);//, PSOFED_MAGIC_IO);
-}
-
-
-void psofed_send_eof(psofed_con_info_t *con_info)
-{
-	_psofed_sendv(con_info, NULL, 0);//, PSOFED_MAGIC_EOF);
-	con_info->con_broken = 1; // Do not send more
 }
 
 

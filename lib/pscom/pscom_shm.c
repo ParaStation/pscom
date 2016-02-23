@@ -531,17 +531,6 @@ void shm_close(pscom_con_t *con)
 		int i;
 		shm_conn_t *shm = &con->arch.shm;
 
-		for (i = 0; i < 5; i++) {
-			// ToDo: Unreliable EOF
-			if (shm_cansend(shm)) {
-				shm_send(shm, NULL, 0);
-				break;
-			} else {
-				usleep(5*1000);
-				sched_yield();
-			}
-		}
-
 		shm_cleanup_shm_conn(shm);
 
 		assert(list_empty(&con->poll_next_send));

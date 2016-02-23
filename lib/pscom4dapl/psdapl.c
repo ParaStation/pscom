@@ -42,7 +42,6 @@
 
 #define PSDAPL_MAGIC_UNUSED	0
 #define PSDAPL_MAGIC_IO		1
-#define PSDAPL_MAGIC_EOF	2
 
 
 #define PSDAPL_LEN(len) ((len + 7) & ~7)
@@ -1166,13 +1165,6 @@ int psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size)
 }
 
 
-void psdapl_send_eof(psdapl_con_info_t *ci)
-{
-	_psdapl_sendv(ci, NULL, 0, PSDAPL_MAGIC_EOF);
-	ci->con_broken = 1; // Do not send more
-}
-
-
 static inline
 void _psdapl_send_tokens(psdapl_con_info_t *ci)
 {
@@ -1221,8 +1213,8 @@ int psdapl_recvlook(psdapl_con_info_t *ci, void **buf)
 		unsigned psdapllen = PSDAPL_LEN(len);
 
 		*buf = ci->recv_bufs.lmr_mem + PSDAPL_DATA_OFFSET(ci->recv_pos, psdapllen);
-		if (len || (magic == PSDAPL_MAGIC_EOF)) {
-			// receive data or EOF
+		if (len) {
+			// receive data
 			return len;
 		}
 

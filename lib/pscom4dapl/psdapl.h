@@ -75,27 +75,17 @@ void psdapl_con_destroy(psdapl_con_info_t *ci);
 void psex_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */);
 
 
-/* send size bytes from iov through ci.
+/* send size bytes from iov through ci. (size > 0)
  * return number of bytes send or:
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
- *
- * (sending with size = 0, will send a 0 message. But you will not
- * receive this message with psdapl_recvlook! To send EOF, use
- * psdapl_send_eof().) *
  */
 int psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size);
-
-
-/* Send EOF and close sending side of connection. Further psdapl_sendv()
- * are allowed, but will return -EPIPE. */
-void psdapl_send_eof(psdapl_con_info_t *ci);
 
 
 /* Start receiving.
  * return:
  * number of bytes received or
- * 0 for EOF (from psdapl_send_eof()) or
  * -EAGAIN nothing received or
  * -EPIPE broken connction.
  * (call psdapl_recvdone after usage of *buf!)

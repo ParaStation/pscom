@@ -1033,13 +1033,6 @@ int psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, int size)
 }
 
 
-void psoib_send_eof(psoib_con_info_t *con_info)
-{
-	_psoib_sendv(con_info, NULL, 0, PSOIB_MAGIC_EOF);
-	con_info->con_broken = 1; // Do not send more
-}
-
-
 static
 void _psoib_send_tokens(psoib_con_info_t *con_info)
 {

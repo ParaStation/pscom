@@ -127,7 +127,6 @@ void psoib_recvdone(psoib_con_info_t *con_info);
 /* It's important, that the sending side is aligned to IB_MTU_SPEC,
    else we loose a lot of performance!!! */
 int psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, int size);
-void psoib_send_eof(psoib_con_info_t *con_info);
 
 /* Handle outstanding cq events. */
 void psoib_progress(void);

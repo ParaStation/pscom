@@ -105,10 +105,6 @@ void psofed_recvdone(context_info_t *context);
    else we loose a lot of performance!!! */
 int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, int size);
 
-/* Send an "end of file" marker.
-   Remote will receive a len=0 message */
-void psofed_send_eof(psofed_con_info_t *con_info);
-
 /* Handle outstanding cq events on context.
  * Use default_context, if context is NULL.
  * return 0, if call made no progress */
