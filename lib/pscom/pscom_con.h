@@ -29,6 +29,8 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock);
 void pscom_con_terminate_recvq(pscom_con_t *con);
 void pscom_con_close(pscom_con_t *con);
 
+void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val);
+
 // {read,write}_{start,stop} default hook.
 void pscom_no_rw_start_stop(pscom_con_t *con);
 
