@@ -657,11 +657,33 @@ pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 
 
 static
+void _pscom_req_suspend_io_done(pscom_request_t *request)
+{
+	pscom_req_t *req = get_req(request);
+	pscom_con_t *con = get_con(req->pub.connection);
+	pscom_lock(); {
+		_pscom_con_suspend_received(con, req->pub.xheader.user, req->pub.xheader_len);
+	} pscom_unlock();
+
+	pscom_req_free(req);
+}
+
+
+static
 pscom_req_t *_pscom_get_suspend_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 {
-	_pscom_con_suspend_received(con, nh->xheader, nh->xheader_len);
+	pscom_req_t *req = pscom_req_create(nh->xheader_len, 0);
 
-	return NULL;
+	req->pub.state = PSCOM_REQ_STATE_RECV_REQUEST;
+	assert(nh->data_len == 0);
+
+	req->pub.data = NULL;
+	req->pub.data_len = 0;
+	req->pub.xheader_len = nh->xheader_len;
+
+	req->pub.ops.io_done = _pscom_req_suspend_io_done;
+
+	return req;
 }
 
 

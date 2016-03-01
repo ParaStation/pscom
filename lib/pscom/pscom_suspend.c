@@ -75,8 +75,16 @@ void _pscom_con_check_suspended(pscom_con_t *con)
 	// Already suspended? (Should not happen)
 	if (con->pub.type == PSCOM_CON_TYPE_SUSPENDED) return;
 
+	// Stop receiving on old architecture
+	if (con->read_stop) con->read_stop(con);
+	con->pub.state &= ~PSCOM_CON_STATE_R; // clear R
+
 	// Close old architecture
 	if (con->close) con->close(con);
+
+	// Verify success
+	assert(list_empty(&con->poll_next_send));
+	assert(list_empty(&con->poll_reader.next));
 
 	suspend_init_con(con);
 
@@ -117,7 +125,8 @@ void _pscom_con_suspend(pscom_con_t *con)
 	if ((con->pub.state & PSCOM_CON_STATE_SUSPENDING) != 0) return; // Already called
 	if ((con->pub.state & PSCOM_CON_STATE_W) == 0) return; // Can't write
 
-	pscom_listener_user_inc(&sock->listen);
+	pscom_listener_active_inc(&sock->listen);
+	//pscom_listener_user_inc(&sock->listen);
 	portno = pscom_get_portno(&sock->pub);
 
 	_pscom_con_send_suspend(con, portno);
