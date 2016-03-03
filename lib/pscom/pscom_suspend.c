@@ -20,6 +20,9 @@ void _pscom_con_resume(pscom_con_t *con)
 	int nodeid = con->pub.remote_con_info.node_id;
 	int portno = con->pub.remote_con_info.pid;
 	char name[8];
+
+	if (con->pub.type != PSCOM_CON_TYPE_SUSPENDED) return;
+
 	memcpy(name, con->pub.remote_con_info.name, sizeof(name));
 
 	// remove con from sock->connections...
@@ -168,6 +171,9 @@ void _pscom_con_suspend(pscom_con_t *con)
 	con->write_start = _write_start_suspending; // Queue further writes
 
 	con->pub.state = PSCOM_CON_STATE_SUSPENDING;
+
+	// Listen for PSCOM_MSGTYPE_SUSPEND in response (see _pscom_con_suspend_received() for dec(con))
+	_pscom_recv_req_cnt_inc(con);
 }
 
 
@@ -189,6 +195,9 @@ void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, unsigned xhead
 	}
 
 	con->pub.state |= PSCOM_CON_STATE_SUSPEND_RECEIVED;
+
+	// Stop listening for PSCOM_MSGTYPE_SUSPEND (see _pscom_con_suspend() for inc(con))
+	_pscom_recv_req_cnt_dec(con);
 
 	_pscom_con_check_suspended(con);
 }
