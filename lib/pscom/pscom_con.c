@@ -392,6 +392,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	/* State */
 	con->state.eof_received = 0;
 	con->state.close_called = 0;
+	con->state.suspend_active = 0;
 
 	return con;
 }

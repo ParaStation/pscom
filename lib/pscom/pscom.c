@@ -271,10 +271,15 @@ void pscom_cleanup(void)
 static
 void _pscom_suspend(int signum)
 {
+	static int suspend = 1;
 	struct list_head *pos_sock;
 	struct list_head *pos_con;
 
-	DPRINT(1, "SUSPEND signal received");
+	if (suspend) {
+		DPRINT(1, "SUSPEND signal received");
+	} else {
+		DPRINT(1, "RESUME signal received");
+	}
 	// ToDo: Use pscom_lock() and fix the race with this handler and the main thread.
 
 	list_for_each(pos_sock, &pscom.sockets) {
@@ -283,10 +288,17 @@ void _pscom_suspend(int signum)
 		list_for_each(pos_con, &sock->connections) {
 			pscom_con_t *con = list_entry(pos_con, pscom_con_t, next);
 
-			_pscom_con_suspend(con);
+			if (suspend) {
+				con->state.suspend_active = 1;
+				_pscom_con_suspend(con);
+			} else {
+				_pscom_con_resume(con);
+			}
 		}
 	}
+	suspend = !suspend;
 }
+
 
 /*
 ******************************************************************************

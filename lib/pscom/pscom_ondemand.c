@@ -150,9 +150,8 @@ pscom_con_t *pscom_ondemand_get_con(pscom_sock_t *sock, const char name[8])
 }
 
 
-static
-pscom_err_t pscom_con_connect_ondemand(pscom_con_t *con,
-				       int nodeid, int portno, const char name[8])
+pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con,
+					int nodeid, int portno, const char name[8])
 {
 	pscom_sock_t *sock = get_sock(con->pub.socket);
 	pscom_con_info_t con_info;
@@ -210,7 +209,7 @@ pscom_err_t pscom_connect_ondemand(pscom_connection_t *connection,
 	pscom_err_t rc;
 
 	pscom_lock(); {
-		rc = pscom_con_connect_ondemand(con, nodeid, portno, name);
+		rc = _pscom_con_connect_ondemand(con, nodeid, portno, name);
 	} pscom_unlock();
 
 	return rc;

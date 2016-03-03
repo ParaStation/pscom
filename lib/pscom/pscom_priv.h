@@ -293,6 +293,7 @@ struct PSCOM_con
 	struct {
 		int		eof_received : 1;
 		int		close_called : 1;
+		int		suspend_active : 1;
 	}			state;
 
 	pscom_connection_t	pub;
@@ -531,7 +532,10 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error);
 void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info);
 
 void _pscom_con_suspend(pscom_con_t *con);
+void _pscom_con_resume(pscom_con_t *con);
 void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, unsigned xheaderlen);
+pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con,
+					int nodeid, int portno, const char name[8]);
 
 /*
 void _pscom_send(pscom_con_t *con, unsigned msg_type,
