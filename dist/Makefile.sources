@@ -148,6 +148,7 @@ lib/pscom/pscom_sock.c \
 lib/pscom/pscom_sock.h \
 lib/pscom/pscom_str_util.c \
 lib/pscom/pscom_str_util.h \
+lib/pscom/pscom_suspend.c \
 lib/pscom/pscom_tcp.c \
 lib/pscom/pscom_tcp.h \
 lib/pscom/pscom_types.h \

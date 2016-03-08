@@ -164,7 +164,7 @@ am_libpscom_la_OBJECTS = libpscom_la-pscom.lo libpscom_la-pscom_con.lo \
 	libpscom_la-pscom_str_util.lo libpscom_la-pscom_tcp.lo \
 	libpscom_la-pscom_ufd.lo libpscom_la-pslib.lo \
 	libpscom_la-psshmalloc.lo libpscom_la-pscom_precon.lo \
-	libpscom_la-pscom_async.lo
+	libpscom_la-pscom_async.lo libpscom_la-pscom_suspend.lo
 libpscom_la_OBJECTS = $(am_libpscom_la_OBJECTS)
 libpscom_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libpscom_la_CFLAGS) \
@@ -430,7 +430,7 @@ libpscom_la_SOURCES = pscom.c pscom_con.c pscom_debug.c			\
 	pscom_io.c pscom_listener.c pscom_ondemand.c pscom_p4s.c	\
 	pscom_plugin.c pscom_queues.c pscom_req.c pscom_shm.c		\
 	pscom_sock.c pscom_str_util.c pscom_tcp.c pscom_ufd.c pslib.c	\
-	psshmalloc.c pscom_precon.c pscom_async.c
+	psshmalloc.c pscom_precon.c pscom_async.c pscom_suspend.c
 
 noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_gm.h pscom_group.h pscom_io.h pscom_p4s.h			\
@@ -568,6 +568,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pscom_shm.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pscom_sock.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pscom_str_util.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pscom_suspend.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pscom_tcp.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pscom_ufd.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom_la-pslib.Plo@am__quote@
@@ -761,6 +762,13 @@ libpscom_la-pscom_async.lo: pscom_async.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_async.c' object='libpscom_la-pscom_async.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_async.lo `test -f 'pscom_async.c' || echo '$(srcdir)/'`pscom_async.c
+
+libpscom_la-pscom_suspend.lo: pscom_suspend.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_suspend.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_suspend.Tpo -c -o libpscom_la-pscom_suspend.lo `test -f 'pscom_suspend.c' || echo '$(srcdir)/'`pscom_suspend.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_suspend.Tpo $(DEPDIR)/libpscom_la-pscom_suspend.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_suspend.c' object='libpscom_la-pscom_suspend.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_suspend.lo `test -f 'pscom_suspend.c' || echo '$(srcdir)/'`pscom_suspend.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
