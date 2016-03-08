@@ -32,6 +32,8 @@ void _pscom_con_resume(pscom_con_t *con)
 	err = _pscom_con_connect_ondemand(con, nodeid, portno, name);
 	assert(err == PSCOM_SUCCESS);
 
+	pscom_listener_active_dec(&sock->listen);
+
 	DPRINT(1, "RESUMED %s", pscom_con_str(&con->pub));
 
 	// Move all send requests from suspend queue to sendq
@@ -162,7 +164,9 @@ void _pscom_con_suspend(pscom_con_t *con)
 	err = _pscom_listen(sock, PSCOM_ANYPORT);
 	assert(err == PSCOM_SUCCESS || err == PSCOM_ERR_ALREADY);
 
-	//pscom_listener_active_inc(&sock->listen);
+	if (err == PSCOM_ERR_ALREADY) {
+		pscom_listener_active_inc(&sock->listen);
+	}
 	//pscom_listener_user_inc(&sock->listen);
 	portno = pscom_get_portno(&sock->pub);
 	assert(portno > 0);

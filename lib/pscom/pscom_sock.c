@@ -215,6 +215,10 @@ pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 	int listen_fd = -1;
 	int retry_cnt = 0;
 
+	if (pscom_listener_get_fd(&sock->listen) < 0) {
+		sock->pub.listen_portno = -1;
+	}
+
 	if (sock->pub.listen_portno != -1)
 		goto err_already_listening;
 
