@@ -531,6 +531,11 @@ void shm_close(pscom_con_t *con)
 		int i;
 		shm_conn_t *shm = &con->arch.shm;
 
+		// ToDo: This must not be a blocking while loop!
+		while (shm->shm_pending) {
+			shm_check_pending_io(shm);
+		}
+
 		shm_cleanup_shm_conn(shm);
 
 		assert(list_empty(&con->poll_next_send));
