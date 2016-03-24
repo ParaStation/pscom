@@ -269,7 +269,7 @@ void pscom_cleanup(void)
 
 
 static
-void _pscom_suspend(int signum)
+void _pscom_suspend_resume(void *dummy)
 {
 	static int suspend = 1;
 	struct list_head *pos_sock;
@@ -299,6 +299,13 @@ void _pscom_suspend(int signum)
 	suspend = !suspend;
 }
 
+
+static
+void _pscom_suspend_sighandler(int signum)
+{
+	// Call _pscom_suspend_resume in main thread:
+	pscom_backlog_push(_pscom_suspend_resume, NULL);
+}
 
 /*
 ******************************************************************************
@@ -350,7 +357,7 @@ int pscom_init(int pscom_version)
 	pscom_debug_init();
 
 	if (pscom.env.sigsuspend) {
-		signal(pscom.env.sigsuspend, _pscom_suspend);
+		signal(pscom.env.sigsuspend, _pscom_suspend_sighandler);
 	}
 
 	atexit(pscom_cleanup);
