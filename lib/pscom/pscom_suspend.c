@@ -9,6 +9,7 @@
  */
 
 #include "pscom_con.h"
+#include "pscom_io.h"
 #include "pscom_queues.h"
 #include "pscom_sock.h"
 
@@ -106,6 +107,8 @@ void _pscom_con_check_suspended(pscom_con_t *con)
 
 	// Already suspended? (Should not happen)
 	if (con->pub.type == PSCOM_CON_TYPE_SUSPENDED) return;
+
+	_pscom_genreq_abort_rendezvous_rma_reads(con);
 
 	// Stop receiving on old architecture
 	if (con->read_stop) con->read_stop(con);

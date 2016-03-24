@@ -24,6 +24,7 @@ static inline int          header_complete(void *buf, unsigned int size);
 static inline int          is_recv_req_done(pscom_req_t *req);
 static        void         _pscom_rendezvous_read_data(pscom_req_t *user_recv_req,
 						       pscom_req_t *rendezvous_req);
+static        void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvous_req);
 static        void         pscom_req_prepare_send(pscom_req_t *req, unsigned msg_type);
 static        void         pscom_req_prepare_rma_write(pscom_req_t *req);
 static        void         _check_readahead(pscom_con_t *con, size_t len);
@@ -287,6 +288,20 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 	_pscom_grecv_req_done(genreq);
 	pscom_greq_check_free(con, genreq);
+}
+
+
+void _pscom_genreq_abort_rendezvous_rma_reads(pscom_con_t *con)
+{
+	struct list_head *pos;
+
+	list_for_each(pos, &con->net_recvq_user) {
+		pscom_req_t *genreq = list_entry(pos, pscom_req_t, next);
+		if (genreq->partner_req) {
+			assert(genreq->partner_req->magic == MAGIC_REQUEST);
+			_pscom_rendezvous_read_data_abort_arch(genreq->partner_req);
+		}
+	}
 }
 
 
@@ -562,6 +577,19 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 
 
 static
+void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvous_req)
+{
+	pscom_rendezvous_data_t *rd =
+		(pscom_rendezvous_data_t *) rendezvous_req->pub.user;
+
+	assert(rendezvous_req->magic == MAGIC_REQUEST);
+
+	// Do not use any remote memory information for rma_read anymore:
+	rd->use_arch_read = 0;
+}
+
+
+static
 void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 {
 	pscom_rendezvous_data_t *rd =
@@ -616,6 +644,7 @@ pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t 
 
 	req->pub.ops.io_done = pscom_rendezvous_receiver_io_done;
 
+	// Received additional rendezvous data from network arch? Yes: use arch read.
 	rd->use_arch_read = nh->data_len > pscom_rendezvous_msg_size(0);
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
