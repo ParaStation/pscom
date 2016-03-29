@@ -161,6 +161,7 @@ void _pscom_con_suspend(pscom_con_t *con)
 	assert(con->magic == MAGIC_CONNECTION);
 
 	if (con->pub.type == PSCOM_CON_TYPE_ONDEMAND) return; // Nothing to do
+	if (con->pub.type == PSCOM_CON_TYPE_LOOP) return; // Nothing to do
 	if ((con->pub.state & PSCOM_CON_STATE_SUSPENDING) != 0) return; // Already called
 	if ((con->pub.state & PSCOM_CON_STATE_W) == 0) return; // Can't write
 
