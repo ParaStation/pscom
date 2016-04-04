@@ -96,6 +96,8 @@ const char *pscom_msgtype_str(unsigned msg_type)
 	case PSCOM_MSGTYPE_RENDEZVOUS_FIN:	return "REN_F";
 	case PSCOM_MSGTYPE_BCAST:		return "BCAST";
 	case PSCOM_MSGTYPE_BARRIER:		return "BARRI";
+	case PSCOM_MSGTYPE_EOF:			return "EOF__";
+	case PSCOM_MSGTYPE_SUSPEND:		return "SUSPE";
 	default:				return "UNKNW";
 	}
 }

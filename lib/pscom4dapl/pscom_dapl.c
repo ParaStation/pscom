@@ -300,7 +300,7 @@ void pscom_dapl_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 
 		// if (psdapl_con_init(ci, NULL, con)) goto error_con_init;
 
-		if (con->pub.state == PSCOM_CON_STATE_CONNECTING) {
+		if (con->pub.state & PSCOM_CON_STATE_CONNECTING) {
 			if (psdapl_listen(sock)) goto error_listen;
 
 			/* send my connection id's */
@@ -325,7 +325,7 @@ void pscom_dapl_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	}
 	case PSCOM_INFO_ARCH_OK: {
 		// ToDo: psdapl_accept_wait() is blocking, but handshake should not block!
-		if (con->pub.state == PSCOM_CON_STATE_CONNECTING) {
+		if (con->pub.state & PSCOM_CON_STATE_CONNECTING) {
 
 			// ToDo: FixMe: psdapl_accept_wait() is blocking!
 			if (psdapl_accept_wait(con->arch.dapl.ci)) goto error_accept;

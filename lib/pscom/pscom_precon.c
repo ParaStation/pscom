@@ -427,7 +427,8 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 			assert(!con->precon);
 			con->precon = pre;
 			con->pub.remote_con_info = msg->con_info;
-			con->pub.state = PSCOM_CON_STATE_ACCEPTING;
+			con->pub.state = PSCOM_CON_STATE_ACCEPTING_ONDEMAND;
+
 			pscom_precon_send_PSCOM_INFO_VERSION(pre);
 			pscom_precon_send_PSCOM_INFO_CON_INFO(pre, PSCOM_INFO_CON_INFO);
 		} else {
@@ -930,10 +931,19 @@ void pscom_precon_handshake(precon_t *pre)
 	/* Enable receive */
 	pscom_precon_recv_start(pre);
 
-	if (pre->con && pre->con->pub.state == PSCOM_CON_STATE_CONNECTING) {
-		int on_demand = (pre->con->pub.type == PSCOM_CON_TYPE_ONDEMAND);
-		int type = on_demand ? PSCOM_INFO_CON_INFO_DEMAND : PSCOM_INFO_CON_INFO;
+	// printf("%s:%u:%s CON_STATE:%s\n", __FILE__, __LINE__, __func__,
+	//        pre->con ? pscom_con_state_str(pre->con->pub.state): "no connection");
 
+	if (pre->con && (pre->con->pub.state & PSCOM_CON_STATE_CONNECTING)) {
+		int on_demand = (pre->con->pub.type == PSCOM_CON_TYPE_ONDEMAND);
+		int type;
+		if (on_demand) {
+			type = PSCOM_INFO_CON_INFO_DEMAND;
+			pre->con->pub.state = PSCOM_CON_STATE_CONNECTING_ONDEMAND;
+		} else {
+			type = PSCOM_INFO_CON_INFO;
+			pre->con->pub.state = PSCOM_CON_STATE_CONNECTING;
+		}
 		pscom_precon_send_PSCOM_INFO_VERSION(pre);
 		pscom_precon_send_PSCOM_INFO_CON_INFO(pre, type);
 		plugin_connect_next(pre->con);

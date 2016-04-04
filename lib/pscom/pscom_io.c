@@ -79,6 +79,7 @@ void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, psco
 		req->cur_data.iov_len = nh->data_len;
 		req->skip = 0;
 	} else {
+		assert(req->magic == MAGIC_REQUEST);
 		req->cur_data.iov_len = req->pub.data_len;
 		req->skip = nh->data_len - req->pub.data_len;
 		req->pub.state |= PSCOM_REQ_STATE_TRUNCATED;

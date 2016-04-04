@@ -545,11 +545,13 @@ void pscom_con_setup_ok(pscom_con_t *con)
 
 	con->pub.state = PSCOM_CON_STATE_RW;
 
-	if (con_state == PSCOM_CON_STATE_CONNECTING) {
+	switch (con_state) {
+	case PSCOM_CON_STATE_CONNECTING:
 		DPRINT(1, "CONNECT %s via %s",
 		       pscom_con_str(&con->pub),
 		       pscom_con_type_str(con->pub.type));
-	} else if (con_state == PSCOM_CON_STATE_ACCEPTING) {
+		break;
+	case PSCOM_CON_STATE_ACCEPTING:
 		DPRINT(1, "ACCEPT  %s via %s",
 		       pscom_con_str_reverse(&con->pub),
 		       pscom_con_type_str(con->pub.type));
@@ -560,7 +562,18 @@ void pscom_con_setup_ok(pscom_con_t *con)
 				sock->pub.ops.con_accept(&con->pub);
 			} pscom_lock();
 		}
-	} else {
+		break;
+	case PSCOM_CON_STATE_CONNECTING_ONDEMAND:
+		DPRINT(1, "CONNECT ONDEMAND %s via %s",
+		       pscom_con_str(&con->pub),
+		       pscom_con_type_str(con->pub.type));
+		break;
+	case PSCOM_CON_STATE_ACCEPTING_ONDEMAND:
+		DPRINT(1, "ACCEPT  ONDEMAND %s via %s",
+		       pscom_con_str_reverse(&con->pub),
+		       pscom_con_type_str(con->pub.type));
+		break;
+	default:
 		DPRINT(0, "pscom_con_setup_ok() : connection in wrong state : %s (%s)",
 		       pscom_con_state_str(con_state),
 		       pscom_con_type_str(con->pub.type));

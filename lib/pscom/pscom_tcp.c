@@ -72,6 +72,7 @@ void _tcp_do_write(pscom_con_t *con)
 	req = pscom_write_get_iov(con, iov);
 
 	if (req) {
+		assert(req->magic == MAGIC_REQUEST);
 		ssize_t len;
 		// len = writev(con->arch.tcp.con_fd,
 		//		con->out.iov, con->out.count);

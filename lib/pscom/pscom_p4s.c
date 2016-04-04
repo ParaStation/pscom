@@ -680,7 +680,7 @@ void pscom_p4s_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	case PSCOM_INFO_ARCH_REQ:
 		if (pscom_p4s_open(sock, con)) goto error_p4s_open;
 
-		if (con->pub.state == PSCOM_CON_STATE_CONNECTING) {
+		if (con->pub.state & PSCOM_CON_STATE_CONNECTING) {
 			// Send my address
 			p4s_info_msg_t msg;
 			pscom_p4s_get_info(sock, &msg);

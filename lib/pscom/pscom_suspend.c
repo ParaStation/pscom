@@ -19,7 +19,7 @@ void _pscom_con_resume(pscom_con_t *con)
 	struct list_head *pos, *next;
 	pscom_sock_t *sock = get_sock(con->pub.socket);
 	int nodeid = con->pub.remote_con_info.node_id;
-	int portno = con->pub.remote_con_info.pid;
+	int portno = con->suspend_on_demand_portno;
 	char name[8];
 
 	if (con->pub.type != PSCOM_CON_TYPE_SUSPENDED) return;
@@ -193,8 +193,7 @@ void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, unsigned xhead
 
 	DPRINT(2, "SUSPEND received on %s, port %d", pscom_con_str(&con->pub), portno);
 
-	// Fixme: Misuse remote_con_info pid for the portno
-	con->pub.remote_con_info.pid = portno;
+	con->suspend_on_demand_portno = portno;
 
 	if (!(con->pub.state & PSCOM_CON_STATE_SUSPENDING)) {
 		// i am a passive site. Drain sendq.

@@ -267,6 +267,8 @@ pscom_con_state_str(pscom_con_state_t state)
 	case PSCOM_CON_STATE_SUSPEND_SENT:	return "susp_sent";
 	case PSCOM_CON_STATE_SUSPEND_RECEIVED:	return "susp_recv";
 	case PSCOM_CON_STATE_SUSPENDED:		return "suspended";
+	case PSCOM_CON_STATE_CONNECTING_ONDEMAND:return "con_ondemand";
+	case PSCOM_CON_STATE_ACCEPTING_ONDEMAND:return "acc_ondemand";
 	}
 
 	{

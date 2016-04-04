@@ -244,6 +244,8 @@ struct PSCOM_con
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection
 
+	uint16_t		suspend_on_demand_portno; // remote listening portno on suspended connections
+
 	struct list_head	sendq;		// List of pscom_req_t.next
 
 	struct list_head	recvq_user;	// List of pscom_req_t.next

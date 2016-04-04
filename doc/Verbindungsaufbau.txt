@@ -62,9 +62,9 @@ plugin_t.con_init(con):
 	zurückgegeben werden. Im Erfolgsfall 0. Es geht weiter mit
 	con_handshake(con, PSCOM_INFO_ARCH_REQ).
 	Die aktive Seite ist im state:
-	 con->pub.state == PSCOM_CON_STATE_CONNECTING
+	 con->pub.state == PSCOM_CON_STATE_CONNECTING oder PSCOM_CON_STATE_CONNECTING_ONDEMAND
 	die passive Seite
-	 con->pub.state == PSCOM_CON_STATE_ACCEPTING
+	 con->pub.state == PSCOM_CON_STATE_ACCEPTING oder PSCOM_CON_STATE_ACCEPTING_ONDEMAND
 	pscom_precon_send(con->precon) darf noch nicht aufgerufen
 	werden.
 plugin_t.con_handshake(con, type, data):
