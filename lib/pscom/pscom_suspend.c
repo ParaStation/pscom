@@ -13,6 +13,10 @@
 #include "pscom_queues.h"
 #include "pscom_sock.h"
 
+static
+void _pscom_con_send_resume(pscom_con_t *con);
+
+
 void _pscom_con_resume(pscom_con_t *con)
 {
 	pscom_err_t err;
@@ -21,6 +25,8 @@ void _pscom_con_resume(pscom_con_t *con)
 	int nodeid = con->pub.remote_con_info.node_id;
 	int portno = con->suspend_on_demand_portno;
 	char name[8];
+	int suspend_active = con->state.suspend_active;
+	int sendq_empty = 1;
 
 	if (con->pub.type != PSCOM_CON_TYPE_SUSPENDED) return;
 
@@ -44,7 +50,13 @@ void _pscom_con_resume(pscom_con_t *con)
 		if (req->pub.connection == &con->pub) {
 			_pscom_sendq_suspending_deq(con, req);
 			_pscom_sendq_enq(con, req);
+			sendq_empty = 0;
 		}
+	}
+
+	if (sendq_empty && suspend_active) {
+		DPRINT(10, "send wakeup %s", pscom_con_str(&con->pub));
+		_pscom_con_send_resume(con);
 	}
 }
 
@@ -149,6 +161,16 @@ void _pscom_con_send_suspend(pscom_con_t *con, int portno)
 			    &portno, sizeof(portno),
 			    NULL, 0,
 			    io_done_send_suspend, con);
+}
+
+
+static
+void _pscom_con_send_resume(pscom_con_t *con)
+{
+	_pscom_send_inplace(con, PSCOM_MSGTYPE_SUSPEND,
+			    NULL, 0,
+			    NULL, 0,
+			    NULL, NULL);
 }
 
 

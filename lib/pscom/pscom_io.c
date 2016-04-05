@@ -702,7 +702,11 @@ void _pscom_req_suspend_io_done(pscom_request_t *request)
 static
 pscom_req_t *_pscom_get_suspend_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 {
-	pscom_req_t *req = pscom_req_create(nh->xheader_len, 0);
+	pscom_req_t *req;
+
+	if (!nh->xheader_len) return NULL; // Ignore message sent to resume the connection.
+
+	req = pscom_req_create(nh->xheader_len, 0);
 
 	req->pub.state = PSCOM_REQ_STATE_RECV_REQUEST;
 	assert(nh->data_len == 0);
