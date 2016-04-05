@@ -321,7 +321,6 @@ void pscom_precon_terminate(precon_t *pre)
 		pre->send_len = 0;
 		ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
 	}
-	pscom_precon_check_end(pre);
 }
 
 
@@ -393,7 +392,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 	case PSCOM_INFO_CON_INFO: {
 		pscom_info_con_info_t *msg = data;
 		if (size != sizeof(*msg)) { // old pscom version send CON_INFO before VERSION.
-			return;
+			break;
 		}
 		pscom_sock_t *sock = pre->sock;
 
@@ -449,7 +448,6 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 			errno = EPROTO;
 			if (con) pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
 			pscom_precon_terminate(pre);
-			return;
 		}
 		break;
 	}
@@ -527,6 +525,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 	default: /* ignore all unknown info messages */
 		;
 	}
+	pscom_precon_check_end(pre);
 }
 
 
@@ -739,7 +738,6 @@ void pscom_precon_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 			pre->recv = NULL;
 			pre->recv_len = 0;
 			pscom_precon_handle_receive(pre, ntype, msg + header_size, nsize);
-			pscom_precon_check_end(pre);
 			/* Dont use pre hereafter, as handle_receive may free it! */
 
 			pre = NULL;
