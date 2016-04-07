@@ -224,7 +224,8 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
 
 		if (con->pub.state == PSCOM_CON_STATE_CLOSING) {
-			DPRINT(1, "DISCONNECT %s via %s",
+			DPRINT(con->pub.type != PSCOM_CON_TYPE_ONDEMAND ? 2 : 5,
+			       "DISCONNECT %s via %s",
 			       pscom_con_str(&con->pub),
 			       pscom_con_type_str(con->pub.type));
 		} else {
