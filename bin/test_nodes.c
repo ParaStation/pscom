@@ -13,6 +13,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
@@ -24,59 +25,76 @@
 #include <sys/resource.h>
 
 #include "pscom.h"
+#ifdef PSMGMT_ENABLED
 #include "pse.h"
 extern short PSC_getMyID(void);
+#endif
 
-#define maxnp 2048
+#define maxnp (4*1024)
 
 static int arg_np=-1;
 static int arg_port=PSCOM_ANYPORT;
 static int arg_cnt=1;
 static int arg_map=0;
 static int arg_type=0;
+static int arg_manual=0;
 static int arg_rlimit_nofile=-1;
+static const char *arg_server = NULL;
 int conrecv[maxnp][maxnp];
 pscom_con_type_t con_type[maxnp][maxnp];
 int map_node[maxnp];
 int map_port[maxnp];
-pscom_connection_t *map_conn[maxnp];
+pscom_connection_t *map_conn[maxnp] = { NULL };
 int map_psid[maxnp];
 #define HOSTNAME_SIZE 16
 char map_nodename[maxnp][HOSTNAME_SIZE]; // = { [0 ... maxnp-1 ] = "???" };
-int myrank;
-
+int myrank = -1;
+int master_node;
+int master_port;
 int finish=0;
 pscom_socket_t *pscom_socket = NULL;
+int changes = 1;
 
+static
+int get_unused_rank(void);
 
 void time_handler_old(int signal)
 {
     int j,k;
 #define max_used_con_types 30
     int used_con_types[max_used_con_types];
+    int ranks_n;
+    char *space;
+    if (!changes) {
+	fprintf(stdout, ".");
+	goto out;
+    }
 #ifndef __DECC
     fprintf(stdout,"\e[H");
     fprintf(stdout,"\e[2J");
 #endif
+    ranks_n = arg_manual ? get_unused_rank() : arg_np;
+    space = ranks_n < 40 ? " " : "";
+
     /* 1st line */
-    if (arg_np > 100) {
+    if (ranks_n > 100) {
 	fprintf(stdout,"                     ");
-	for (j = 0; j < arg_np; j++) {
+	for (j = 0; j < ranks_n; j++) {
 	    if (j < 100) {
-		fprintf(stdout,"  ");
+		fprintf(stdout," %s", space);
 	    } else {
-		fprintf(stdout,"%1d ", (j / 100) % 10);
+		fprintf(stdout,"%1d%s", (j / 100) % 10, space);
 	    }
 	}
 	fprintf(stdout,"\n");
     }
     /* 2nd line */
     fprintf(stdout,"                     ");
-    for (j = 0; j < arg_np; j++) {
+    for (j = 0; j < ranks_n; j++) {
 	if (j < 10) {
-	    fprintf(stdout,"  ");
+	    fprintf(stdout," %s", space);
 	} else {
-	    fprintf(stdout,"%1d ", (j / 10) % 10);
+	    fprintf(stdout,"%1d%s", (j / 10) % 10, space);
 	}
     }
     fprintf(stdout,"\n");
@@ -84,26 +102,26 @@ void time_handler_old(int signal)
     /* 3rd line */
     /*              1234 1234 1234567890 */
     fprintf(stdout,"rank psid %10s ", "nodename");
-    for (j = 0; j < arg_np; j++)
-	fprintf(stdout,"%1d ", j % 10);
+    for (j = 0; j < ranks_n; j++)
+	fprintf(stdout,"%1d%s", j % 10, space);
     fprintf(stdout,"\n");
 
     memset(used_con_types, 0, sizeof(used_con_types));
     /* map */
-    for (j = 0; j < arg_np; j++) {
+    for (j = 0; j < ranks_n; j++) {
 	fprintf(stdout,"%4d %4d %10s ", j, map_psid[j], map_nodename[j]);
-	for (k = 0;k < arg_np; k++) {
+	for (k = 0;k < ranks_n; k++) {
 	    if (!arg_type) {
 		if (conrecv[j][k])
-		    fprintf(stdout,"%1d ", conrecv[j][k]);
+		    fprintf(stdout,"%1d%s", conrecv[j][k], space);
 		else
-		    fprintf(stdout,". ");
+		    fprintf(stdout,".%s", space);
 	    } else {
 		unsigned ctype = con_type[j][k];
 		if (ctype == PSCOM_CON_TYPE_NONE) {
-		    fprintf(stdout,"? ");
+		    fprintf(stdout,"?%s", space);
 		} else {
-		    fprintf(stdout, "%c ", pscom_con_type_str(ctype)[0]);
+		    fprintf(stdout, "%c%s", pscom_con_type_str(ctype)[0], space);
 		    if (ctype < max_used_con_types) used_con_types[ctype] = 1;
 		}
 	    }
@@ -120,9 +138,28 @@ void time_handler_old(int signal)
 	}
 	fprintf(stdout,"\n");
     }
-
+out:
     fflush(stdout);
+    changes = 0;
 }
+
+
+static
+void exit_on_error(pscom_err_t rc, char *fmt, ...)
+	__attribute__ ((__format__ (__printf__, 2, 3)));
+static
+void exit_on_error(pscom_err_t rc, char *fmt, ...)
+{
+	if (rc == PSCOM_SUCCESS) return;
+
+	va_list arg;
+	va_start(arg, fmt);
+	vfprintf(stderr, fmt, arg);
+	va_end(arg);
+	fprintf(stderr, " : %s\n", pscom_err_str(rc));
+	exit(1);
+}
+
 
 #include <stdlib.h>
 
@@ -229,6 +266,10 @@ void time_handler(int signal)
     memset(tmphost, 0, arg_np * sizeof(int));
     memset(tmp2, 0, arg_np * sizeof(int));
     memset(tmphost2, 0, arg_np * sizeof(int));
+    if (!changes) {
+	fprintf(stdout, ".");
+	goto out;
+    }
 //    fprintf(stdout,"\e[H");
 //    fprintf(stdout,"\e[2J");
     fprintf(stdout, "---------------------------------------\n");
@@ -303,12 +344,14 @@ void time_handler(int signal)
 //	}
 //	fprintf(stdout,"\n");
 //        }
+out:
     fflush(stdout);
     free(checked);
     free(tmp);
     free(tmphost);
     free(tmp2);
     free(tmphost2);
+    changes = 0;
 }
 
 
@@ -327,6 +370,21 @@ void init_conns(int np)
 	}
     }
 }
+
+
+static
+int get_unused_rank(void)
+{
+    int rank;
+    for (rank = 0; rank < maxnp; rank++) {
+	if (!map_conn[rank]) {
+	    return rank;
+	}
+    }
+    fprintf(stderr, "Too many connections. test_nodes compile time maxnp=%u\n", maxnp);
+    exit(1);
+}
+
 
 void connect_to_rank(int rank, int node, int port)
 {
@@ -348,10 +406,21 @@ void connect_to_rank(int rank, int node, int port)
 	       rank, myrank, pscom_err_str(rc));
 	pscom_close_connection(con);
 	con = NULL;
+	if (rank == 0) exit(1);
     }
     map_conn[rank] = con;
     map_node[rank] = node;
     map_port[rank] = port;
+}
+
+
+static
+void set_myrank(int rank)
+{
+    myrank = rank;
+    char name[10];
+    sprintf(name, "rank%04u", myrank);
+    pscom_socket_set_name(pscom_socket, name);
 }
 
 
@@ -377,24 +446,57 @@ typedef struct test_xheader_s {
 } test_xheader_t;
 
 
+void send_msg(pscom_connection_t *connection,
+	  void *xheader, unsigned int xheader_len,
+	  void *data, unsigned int data_len)
+{
+    int rc;
+    if (!connection) return;
+
+    pscom_send(connection, xheader, xheader_len,
+	       data, data_len);
+}
+
+
 void send_info_to_master()
 {
     test_xheader_t msg;
 
     /* Connect to master (rank 0) */
-    connect_to_rank(0, PSE_getMasterNode(), PSE_getMasterPort());
+    connect_to_rank(0, master_node, master_port);
 
     /* Send info to master */
     msg.type = MSG_INFO_TO_MASTER;
     msg.rank = myrank;
     msg.node = pscom_get_nodeid();
     msg.port = pscom_get_portno(pscom_socket);
-    msg.psid = PSC_getMyID();
+#ifdef PSMGMT_ENABLED
+    msg.psid = arg_manual ? 0 : PSC_getMyID();
+#else
+    msg.psid = 0;
+#endif
 
     gethostname(msg.hostname, HOSTNAME_SIZE);
     msg.hostname[HOSTNAME_SIZE - 1] = 0;
 
-    pscom_send(map_conn[0], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[0], &msg, sizeof(msg), NULL, 0);
+}
+
+
+static
+void recv_info_from_master()
+{
+    if (myrank == -1) {
+	pscom_err_t err;
+	int rank;
+
+	err = pscom_recv_from(map_conn[0],
+			      NULL, 0,
+			      &rank, sizeof(myrank));
+	exit_on_error(err, "recv_info_from_master");
+
+	set_myrank(rank);
+    }
 }
 
 void send_info_to_slave(int about, int to)
@@ -407,7 +509,7 @@ void send_info_to_slave(int about, int to)
     msg.node = map_node[about];
     msg.port = map_port[about];
 
-    pscom_send(map_conn[to], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[to], &msg, sizeof(msg), NULL, 0);
 }
 
 void send_info_slave_to_slave(int to)
@@ -417,7 +519,7 @@ void send_info_slave_to_slave(int to)
     msg.type = MSG_INFO_SLAVE_TO_SLAVE;
     msg.rank = myrank;
 
-    pscom_send(map_conn[to], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[to], &msg, sizeof(msg), NULL, 0);
 }
 
 void send_test_request(int to, int from)
@@ -428,7 +530,7 @@ void send_test_request(int to, int from)
     msg.from = from;
     msg.to = to;
 
-    pscom_send(map_conn[from], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[from], &msg, sizeof(msg), NULL, 0);
 }
 
 void send_test(int to)
@@ -439,7 +541,7 @@ void send_test(int to)
     msg.from = myrank;
     msg.to = to;
 
-    pscom_send(map_conn[to], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[to], &msg, sizeof(msg), NULL, 0);
 }
 
 void send_test_response(int from, int to)
@@ -451,7 +553,7 @@ void send_test_response(int from, int to)
     msg.to = to;
     msg.con_type = map_conn[from] ? map_conn[from]->type : PSCOM_CON_TYPE_NONE;
 
-    pscom_send(map_conn[0], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[0], &msg, sizeof(msg), NULL, 0);
 }
 
 void send_exit(int to)
@@ -460,17 +562,15 @@ void send_exit(int to)
 
     msg.type = MSG_EXIT;
 
-    pscom_send(map_conn[to], &msg, sizeof(msg), NULL, 0);
+    send_msg(map_conn[to], &msg, sizeof(msg), NULL, 0);
 }
 
 
-void run(int argc,char **argv,int np)
+static
+void spawn_master(int argc, char **argv, int np)
 {
-//    PSP_PortH_t rawporth;
-    int i,j,k,end;
-    FILE *out;
-    struct itimerval timer;
-
+    if (arg_manual) return;
+#ifdef PSMGMT_ENABLED
     PSE_initialize();
 
     myrank = PSE_getRank();
@@ -494,6 +594,60 @@ void run(int argc,char **argv,int np)
     }
 
     /* PSE_registerToParent(); */
+#else
+    arg_manual = 1;
+#endif
+}
+
+
+static
+void spawn_pse(int argc, char **argv, int np)
+{
+#ifdef PSMGMT_ENABLED
+    if (myrank == 0) {
+	/* Master node: Set parameter from rank 0 */
+	PSE_spawnTasks(np-1, pscom_get_nodeid(), pscom_get_portno(pscom_socket), argc, argv);
+    }
+    master_node = PSE_getMasterNode();
+    master_port = PSE_getMasterPort();
+#endif
+}
+
+
+static
+void spawn_manual(int argc, char **argv, int np)
+{
+    if (arg_server) {
+	int rc = pscom_parse_socket_str(arg_server, &master_node, &master_port);
+	exit_on_error(rc, "Server: '%s'\n", arg_server);
+    } else {
+	master_node = pscom_get_nodeid();
+	master_port = pscom_get_portno(pscom_socket);
+	set_myrank(0);
+	printf("Call:\n%s %s\n", argv[0], pscom_socket_str(master_node, master_port));
+    }
+}
+
+
+static
+void spawn(int argc, char **argv, int np)
+{
+    if (arg_manual) {
+	spawn_manual(argc, argv, np);
+    } else {
+	spawn_pse(argc, argv, np);
+    }
+}
+
+void run(int argc,char **argv,int np)
+{
+//    PSP_PortH_t rawporth;
+    int i,j,k,end;
+    FILE *out;
+    struct itimerval timer;
+    struct itimerval timer_old;
+
+    spawn_master(argc, argv, np);
 
     /* Initialize Myrinet */
     if (pscom_init(PSCOM_VERSION)) {
@@ -503,10 +657,6 @@ void run(int argc,char **argv,int np)
 
     pscom_socket = pscom_open_socket(0, 0);
 
-    char name[10];
-    sprintf(name, "rank%04u", myrank);
-    pscom_socket_set_name(pscom_socket, name);
-
     if (pscom_listen(pscom_socket, arg_port)) {
 	perror("Cant bind port!");
 	exit(-1);
@@ -514,27 +664,27 @@ void run(int argc,char **argv,int np)
 
     init_conns(np);
 
-    if (myrank == 0) {
-	/* Master node: Set parameter from rank 0 */
-	PSE_spawnTasks(np-1, pscom_get_nodeid(), pscom_get_portno(pscom_socket), argc, argv);
-    }
+    spawn(argc, argv, np);
 
     /* Init output */
     out = stdout;
     if (myrank ==  0) {
-	timer.it_interval.tv_sec=0;
-	timer.it_interval.tv_usec=1500*1000;
-	timer.it_value.tv_sec=0;
-	timer.it_value.tv_usec=1500*1000;
+	int rc;
+	timer.it_interval.tv_sec=1;
+	timer.it_interval.tv_usec=500*1000;
+	timer.it_value.tv_sec=1;
+	timer.it_value.tv_usec=500*1000;
 	if (arg_map){
 	    signal(SIGALRM,time_handler_old);
 	}else{
 	    signal(SIGALRM,time_handler);
 	}
-	setitimer(ITIMER_REAL,&timer,0);
+	rc = setitimer(ITIMER_REAL,&timer,&timer_old);
+	//rc = setitimer(ITIMER_VIRTUAL,&timer,&timer_old);
     }
 
     send_info_to_master();
+    recv_info_from_master();
 
     end = np * np * arg_cnt;
 //    for (i=0;(i<end)||(rank>0);i++){
@@ -547,6 +697,7 @@ void run(int argc,char **argv,int np)
 	req->connection = NULL;
 	req->socket = pscom_socket;
 
+	changes = 1;
 	pscom_post_recv(req);
 	pscom_wait(req);
 
@@ -560,6 +711,10 @@ void run(int argc,char **argv,int np)
 	switch (head->type){
 	case MSG_INFO_TO_MASTER: { /* Only the master receive this type */
 	    int r = head->rank;
+	    if (r == -1) {
+		r = get_unused_rank();
+		send_msg(req->connection, NULL, 0, &r, sizeof(r));
+	    }
 	    map_node[r] = head->node;
 	    map_port[r] = head->port;
 	    map_conn[r] = req->connection;
@@ -617,7 +772,9 @@ void run(int argc,char **argv,int np)
 	    break;
 	}
 	case MSG_EXIT:{ /* Recv EXIT from master */
-	    PSE_finalize();
+#ifdef PSMGMT_ENABLED
+	    if (!arg_manual) PSE_finalize();
+#endif
 	    exit(0);
 	}
 	default:{
@@ -645,7 +802,9 @@ void run(int argc,char **argv,int np)
     fprintf(out,"All connections ok\n");
     fclose(out);
 
-    PSE_finalize();
+#ifdef PSMGMT_ENABLED
+    if (!arg_manual) PSE_finalize();
+#endif
 }
 
 
@@ -663,6 +822,10 @@ int main(int argc, char *argv[])
 	  &arg_map, 0, "print map", NULL},
 	{ "type", 't', POPT_ARG_NONE | POPT_ARGFLAG_ONEDASH,
 	  &arg_type, 0, "print connection type", NULL},
+	{ "manual", 'm', POPT_ARG_NONE | POPT_ARGFLAG_ONEDASH,
+	  &arg_manual, 0, "manual processes start", NULL},
+	{ "listen" , 'l', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARGFLAG_ONEDASH | POPT_ARG_INT,
+	  &arg_port, 0, "listen on", "port" },
 	{ "rlnofile", '\0', POPT_ARG_INT | POPT_ARGFLAG_ONEDASH,
 	  &arg_rlimit_nofile, 0, "set RLIMIT_NOFILE (soft and hard)", "num"},
 	POPT_AUTOHELP
@@ -683,9 +846,21 @@ int main(int argc, char *argv[])
 	return 1;
     }
 
+    {
+	const char *server = poptGetArg(optCon);
+	if (server) {
+	    arg_server = server;
+	    arg_manual = 1;
+	}
+    }
+
     if (arg_np <= 0) {
-	fprintf(stderr, "missing arg -np\n");
-	exit(1);
+	if (arg_manual) {
+	    arg_np = maxnp;
+	} else {
+	    fprintf(stderr, "missing arg -np\n");
+	    exit(1);
+	}
     }
 
     if (arg_np > maxnp) {

@@ -117,12 +117,12 @@ check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
 bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
 	p4tcp$(EXEEXT) psport4_pp$(EXEEXT) psock_pp$(EXEEXT) \
-	$(am__EXEEXT_1)
+	test_nodes$(EXEEXT) $(am__EXEEXT_1)
 @MELLANOX_ENABLED_TRUE@am__append_1 = ps4_ib ps4_ib_pp ps4_ib_pp_rdma psport4mvapi_pp
 @GM_ENABLED_TRUE@am__append_2 = gm_pp
 @OPENIB_ENABLED_TRUE@am__append_3 = openib_pp openib_ud_pp
 @PSM_ENABLED_TRUE@am__append_4 = psm_pp
-@PSMGMT_ENABLED_TRUE@am__append_5 = test_nodes pscp
+@PSMGMT_ENABLED_TRUE@am__append_5 = pscp
 @DAPL_ENABLED_TRUE@am__append_6 = dapl_pp dapl_pp_lowlevel
 
 # noinst_PROGRAMS += elan_pp
@@ -149,7 +149,7 @@ DIST_COMMON = $(srcdir)/Makefile.am $(dist_config_DATA) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@PSMGMT_ENABLED_TRUE@am__EXEEXT_1 = test_nodes$(EXEEXT) pscp$(EXEEXT)
+@PSMGMT_ENABLED_TRUE@am__EXEEXT_1 = pscp$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(configdir)"
 @MELLANOX_ENABLED_TRUE@am__EXEEXT_2 = ps4_ib$(EXEEXT) \
@@ -380,7 +380,8 @@ psport4mvapi_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	-o $@
 am_test_nodes_OBJECTS = test_nodes-test_nodes.$(OBJEXT)
 test_nodes_OBJECTS = $(am_test_nodes_OBJECTS)
-test_nodes_DEPENDENCIES = $(libpscom)
+@PSMGMT_ENABLED_FALSE@test_nodes_DEPENDENCIES = $(libpscom)
+@PSMGMT_ENABLED_TRUE@test_nodes_DEPENDENCIES = $(libpscom)
 test_nodes_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(test_nodes_LDFLAGS) $(LDFLAGS) -o $@
@@ -1014,9 +1015,11 @@ psm_pp_LDADD = -lpsm_infinipath -lpopt
 
 # -- psmgmt --
 test_nodes_SOURCES = test_nodes.c
-test_nodes_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS)
-test_nodes_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)
-test_nodes_LDADD = $(libpscom) -lpse -lpsi  -lpopt
+@PSMGMT_ENABLED_FALSE@test_nodes_CPPFLAGS = $(AM_CPPFLAGS)
+@PSMGMT_ENABLED_TRUE@test_nodes_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS) -DPSMGMT_ENABLED
+@PSMGMT_ENABLED_TRUE@test_nodes_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)
+@PSMGMT_ENABLED_FALSE@test_nodes_LDADD = $(libpscom) -lpopt
+@PSMGMT_ENABLED_TRUE@test_nodes_LDADD = $(libpscom) -lpse -lpsi  -lpopt
 pscp_SOURCES = pscp.c  psport_util.c
 pscp_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS)
 pscp_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)

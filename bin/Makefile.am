@@ -52,8 +52,10 @@ if PSM_ENABLED
   noinst_PROGRAMS += psm_pp
 endif
 
+bin_PROGRAMS += test_nodes
+
 if PSMGMT_ENABLED
-  bin_PROGRAMS += test_nodes pscp
+  bin_PROGRAMS += pscp
 endif
 
 if DAPL_ENABLED
@@ -201,9 +203,14 @@ psm_pp_LDADD = -lpsm_infinipath -lpopt
 # -- psmgmt --
 
 test_nodes_SOURCES = test_nodes.c
-test_nodes_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS)
+if PSMGMT_ENABLED
+test_nodes_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS) -DPSMGMT_ENABLED
 test_nodes_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)
 test_nodes_LDADD = $(libpscom) -lpse -lpsi  -lpopt
+else
+test_nodes_CPPFLAGS = $(AM_CPPFLAGS)
+test_nodes_LDADD = $(libpscom) -lpopt
+endif
 
 pscp_SOURCES = pscp.c  psport_util.c
 pscp_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS)
