@@ -22,6 +22,7 @@
 #include <unistd.h>
 #include <assert.h>
 #include <sys/resource.h> // getrlimit
+#include <syslog.h>
 
 /* #include <sysfs/libsysfs.h> */
 #include <infiniband/verbs.h>
@@ -1235,6 +1236,8 @@ int psoib_check_cq(hca_info_t *hca_info)
 	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
 			 "ibv_poll_cq(): Infiniband returned the wrong Opcode %d", wc.opcode);
 	    if (!psoib_ignore_wrong_opcodes) {
+		openlog(NULL, LOG_PID, LOG_USER);
+		syslog(LOG_ERR, "pscom4openib: ibv_poll_cq(): Infiniband returned the wrong Opcode %d", wc.opcode);
 		psoib_all_con_broken(hca_info);
 	    }
 	}
