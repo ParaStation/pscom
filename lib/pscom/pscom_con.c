@@ -699,9 +699,10 @@ void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info) {
 	pscom_con_t *con = (pscom_con_t *)ufd_info->priv;
 	char msg = 0;
 	int error = 0;
+	int rc;
 
-	read(ufd_info->fd, &msg, 1); // Good bye or error?
-	error = msg != GUARD_BYE;
+	rc = read(ufd_info->fd, &msg, 1); // Good bye or error?
+	error = (rc <= 0) || (msg != GUARD_BYE);
 
 	/* Callback called in the async thread!! */
 	DPRINT(error ? 1 : 2, "pscom guard con:%p %s", con, error ? "terminated" : "closed");
@@ -737,7 +738,7 @@ void pscom_con_guard_stop(pscom_con_t *con)
 	int fd = con->con_guard.fd;
 	if (fd != -1) {
 		char msg = GUARD_BYE;
-		write(con->con_guard.fd, &msg, 1); // Good bye
+		(void)(write(con->con_guard.fd, &msg, 1) || 0); // Send "Good bye", ignore result
 
 		con->con_guard.fd = -1;
 		pscom_async_off_readable(fd, pscom_guard_readable, con);

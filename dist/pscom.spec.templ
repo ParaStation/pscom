@@ -38,6 +38,7 @@ ParaStation Cluster Communication drivers and libraries.
 %build
 export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,')"
 %configure
+echo "CFLAGS:$CFLAGS"
 make %{?_smp_mflags}
 
 %install

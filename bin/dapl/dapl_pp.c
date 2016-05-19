@@ -305,7 +305,7 @@ void run_pp_client(psdapl_con_info_t *ci)
 			if (loops < 1) loops = 1;
 		}
 	}
-	psdapl_send_eof(ci);
+	// psdapl_send_eof(ci);
 }
 
 
