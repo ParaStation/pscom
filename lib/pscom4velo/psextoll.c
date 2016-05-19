@@ -121,7 +121,6 @@ typedef struct {
 
 #define PSEX_MAGIC_UNUSED	0
 #define PSEX_MAGIC_IO		1
-#define PSEX_MAGIC_EOF		2
 
 
 typedef struct {
@@ -904,13 +903,6 @@ int psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size)
 }
 
 
-void psex_send_eof(psex_con_info_t *con_info)
-{
-	_psex_sendv(con_info, NULL, 0, PSEX_MAGIC_EOF);
-	con_info->con_broken = 1; // Do not send more
-}
-
-
 static
 void _psex_send_tokens(psex_con_info_t *con_info)
 {
@@ -976,8 +968,8 @@ int psex_recvlook(psex_con_info_t *con_info, void **buf)
 		unsigned int len = msg->tail.payload;
 
 		*buf = PSEX_DATA((char*)msg, PSEX_LEN(len));
-		if (len || (magic == PSEX_MAGIC_EOF)) {
-			// receive data or EOF
+		if (len) {
+			// receive data
 			return len;
 		}
 
@@ -1008,7 +1000,7 @@ int psex_recvlook(psex_con_info_t *con_info, void **buf)
 		int len = msg->tail.payload;
 
 		*buf = PSEX_DATA(msg, PSEX_LEN(len));
-		if (len || (magic == PSEX_MAGIC_EOF)) {
+		if (len) {
 			// ToDo: This could be the wrong magic!!!
 			return len;
 		}
@@ -1063,23 +1055,6 @@ err_velo2_send:
 	/* --- */
 err_broken:
 	return -EPIPE;
-}
-
-
-void psex_velo2_send_eof(psex_con_info_t *con_info)
-{
-	struct iovec iov[2];
-	static int warned = 0;
-	iov[0].iov_base = NULL;
-	iov[0].iov_len = 0;
-	iov[1].iov_base = NULL;
-	iov[1].iov_len = 0;
-	if (!warned) {
-		psex_dprint(1, "psex_velo2_send_eof() : Warning: disabled EOF!");
-		warned = 1;
-	}
-	// psex_velo2_sendv(con_info, iov, 0);
-	con_info->con_broken = 1; // Do not send more
 }
 
 

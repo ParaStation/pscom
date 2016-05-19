@@ -206,8 +206,6 @@ void pscom_elan_close(pscom_con_t *con)
 
 	if (!ci) return;
 
-	pselan_send_eof(ci);
-
 	pselan_con_destroy(ci);
 
 	con->arch.elan.ci = NULL;

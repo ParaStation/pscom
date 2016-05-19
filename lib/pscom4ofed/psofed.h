@@ -70,7 +70,7 @@ void	psofed_con_free(psofed_con_info_t *con_info);
  * Use default_context, if context is NULL
  * Assign a "src" id for the connection
  */
-int	psofed_con_init(psofed_con_info_t *con_info, context_info_t *context);
+int	psofed_con_init(psofed_con_info_t *con_info, context_info_t *context, void *priv);
 
 /* Connect to peer described by info_msg */
 int	psofed_con_connect(psofed_con_info_t *con_info, psofed_info_msg_t *info_msg);
@@ -81,10 +81,6 @@ void	psofed_con_cleanup(psofed_con_info_t *con_info);
 
 /* Get a info_msg usable for psofed_con_connect() at the other side. */
 void	psofed_con_get_info_msg(psofed_con_info_t *con_info /* in */, psofed_info_msg_t *info /* out */);
-
-/* Set the connections priv field (see psofed_recv_t).
- * psoib never use or modify this field. */
-void psofed_con_set_priv(psofed_con_info_t *con_info, void *priv);
 
 
 /*
@@ -108,10 +104,6 @@ void psofed_recvdone(context_info_t *context);
 /* It's important, that the sending side is aligned to IB_MTU_SPEC,
    else we loose a lot of performance!!! */
 int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, int size);
-
-/* Send an "end of file" marker.
-   Remote will receive a len=0 message */
-void psofed_send_eof(psofed_con_info_t *con_info);
 
 /* Handle outstanding cq events on context.
  * Use default_context, if context is NULL.

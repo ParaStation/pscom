@@ -28,6 +28,8 @@
 #include <infiniband/verbs.h>
 
 #include "pscom_priv.h"
+#include "pscom_con.h"
+#include "pscom_precon.h"
 #include "pscom_io.h"
 #include "pscom_openib.h"
 #include "pscom_req.h"
@@ -340,18 +342,26 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 
 
 static
-void pscom_openib_close(pscom_con_t *con)
+void pscom_openib_con_cleanup(pscom_con_t *con)
+{
+	psoib_con_info_t *mcon = con->arch.openib.mcon;
+
+	if (mcon) {
+		psoib_con_cleanup(mcon, NULL);
+		psoib_con_free(mcon);
+	}
+	con->arch.openib.mcon = NULL;
+}
+
+
+static
+void pscom_openib_con_close(pscom_con_t *con)
 {
 	psoib_con_info_t *mcon = con->arch.openib.mcon;
 
 	if (!mcon) return;
 
-	psoib_send_eof(mcon);
-
-	psoib_con_cleanup(mcon, NULL);
-	psoib_con_free(mcon);
-
-	con->arch.openib.mcon = NULL;
+	pscom_openib_con_cleanup(con);
 }
 
 #ifdef IB_USE_RNDV
@@ -390,15 +400,9 @@ static void pscom_openib_free_hook(void *ptr, const void *caller)
 
 
 static
-void pscom_openib_con_init(pscom_con_t *con, int con_fd,
-			   psoib_con_info_t *mcon)
+void pscom_openib_init_con(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
 	con->pub.type = PSCOM_CON_TYPE_OPENIB;
-
-	close(con_fd);
-
-	con->arch.openib.mcon = mcon;
 
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
@@ -408,7 +412,7 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 
 	con->poll_reader.do_read = pscom_openib_do_read;
 	con->do_write = pscom_openib_do_write;
-	con->close = pscom_openib_close;
+	con->close = pscom_openib_con_close;
 
 #ifdef IB_USE_RNDV
 	con->rma_mem_register = pscom_openib_rma_mem_register;
@@ -444,6 +448,8 @@ void pscom_openib_con_init(pscom_con_t *con, int con_fd,
 
 #endif
 #endif
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/
@@ -486,119 +492,63 @@ void pscom_openib_init(void)
 }
 
 
+#define PSCOM_INFO_OIB_ID PSCOM_INFO_ARCH_STEP1
+
+
 static
-int pscom_openib_connect(pscom_con_t *con, int con_fd)
+int pscom_openib_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_OPENIB;
-	psoib_con_info_t *mcon = psoib_con_create();
-	psoib_info_msg_t msg;
-	int call_cleanup_con = 0;
-	int err;
-
-	if (psoib_init() || !mcon)
-		goto dont_use;  /* Dont use openib */
-
-	/* We want talk openib */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_OPENIB))
-		goto err_remote;
-
-	/* step 2 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)))
-		goto err_remote;
-
-	err = psoib_con_init(mcon, NULL, NULL);
-	if (!err) {
-		call_cleanup_con = 1;
-		err = psoib_con_connect(mcon, &msg);
-	}
-
-	/* step 3 : send connection id's (or error) */
-	if (!err) {
-		psoib_con_get_info_msg(mcon, &msg);
-	} else {
-		msg.lid = 0xffff; // send error
-	}
-
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	if (err) goto err_connect;
-
-	/* step 4: openib initialized. Recv final ACK. */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)) ||
-	    (msg.lid == 0xffff)) goto err_ack;
-
-	pscom_openib_con_init(con, con_fd, mcon);
-
-	return 1;
-	/* --- */
-err_ack:
-err_connect:
-	if (call_cleanup_con) psoib_con_cleanup(mcon, NULL);
-err_remote:
-dont_use:
-	if (mcon) psoib_con_free(mcon);
-	return 0;
+	return psoib_init();
 }
 
 
 static
-int pscom_openib_accept(pscom_con_t *con, int con_fd)
+void pscom_openib_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_OPENIB;
-	psoib_con_info_t *mcon = NULL;
-	psoib_info_msg_t msg;
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		psoib_con_info_t *mcon = psoib_con_create();
+		con->arch.openib.mcon = mcon;
+		if (!mcon) goto error_con_create;
 
-	if (psoib_init())
-		goto out_noopenib;
+		if (psoib_con_init(mcon, NULL, NULL)) goto error_con_init;
 
-	mcon = psoib_con_create();
-	if (!mcon)
-		goto out_noopenib;
+		psoib_info_msg_t msg;
+		psoib_con_get_info_msg(mcon, &msg);
 
-	if (psoib_con_init(mcon, NULL, NULL))
-		goto err_con_init;
+		pscom_precon_send(con->precon, PSCOM_INFO_OIB_ID, &msg, sizeof(msg));
 
-	/* step 1:  Yes, we talk openib. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
+		break; /* Next is OIB_ID or ARCH_NEXT */
+	}
+	case PSCOM_INFO_OIB_ID: {
+		psoib_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
 
-	/* step 2: Send Connection id's */
-	psoib_con_get_info_msg(mcon, &msg);
+		if (psoib_con_connect(con->arch.openib.mcon, msg)) goto error_con_connect;
 
-	pscom_writeall(con_fd, &msg, sizeof(msg));
+		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break; /* Next is EOF or ARCH_NEXT */
+	}
+	case PSCOM_INFO_ARCH_OK:
+		pscom_con_guard_start(con);
+		break;
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Cleanup con */
+		pscom_openib_con_cleanup(con);
+		break; /* Done (this one failed) */
+	case PSCOM_INFO_EOF:
+		pscom_openib_init_con(con);
+		break; /* Done (use this one) */
+	}
 
-	/* step 3 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)) ||
-	    (msg.lid == 0xffff))
-		goto err_remote;
 
-	if (psoib_con_connect(mcon, &msg))
-		goto err_connect_con;
-
-	/* step 4: OPENIB mem initialized. Send final ACK. */
-	msg.lid = 0;
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	pscom_openib_con_init(con, con_fd, mcon);
-
-	return 1;
+	return;
 	/* --- */
-err_connect_con:
-	/* Send NACK */
-	msg.lid = 0xffff;
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-err_remote:
-	psoib_con_cleanup(mcon, NULL);
-err_con_init:
-out_noopenib:
-	if (mcon) psoib_con_free(mcon);
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-	return 0; /* Dont use openib */
-	/* --- */
+error_con_create:
+error_con_init:
+error_con_connect:
+	pscom_openib_con_cleanup(con);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -612,6 +562,6 @@ pscom_plugin_t pscom_plugin = {
 	.destroy	= NULL,
 	.sock_init	= NULL,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_openib_connect,
-	.con_accept	= pscom_openib_accept,
+	.con_init	= pscom_openib_con_init,
+	.con_handshake	= pscom_openib_handshake,
 };

@@ -25,12 +25,9 @@
 
 #include "pscom_priv.h"
 #include "pscom_io.h"
+#include "pscom_con.h"
+#include "pscom_precon.h"
 #include "pscom_dapl.h"
-
-typedef struct psdapl_info_msg {
-	DAT_SOCK_ADDR sock_addr;
-	DAT_CONN_QUAL conn_qual;
-} psdapl_info_msg_t;
 
 
 static
@@ -199,13 +196,10 @@ int pscom_dapl_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd
 /* RMA end */
 
 static
-void pscom_dapl_close(pscom_con_t *con)
+void pscom_dapl_con_cleanup(pscom_con_t *con)
 {
 	psdapl_con_info_t *ci = con->arch.dapl.ci;
-
 	if (!ci) return;
-
-	psdapl_send_eof(ci);
 
 	psdapl_con_destroy(ci);
 
@@ -214,15 +208,19 @@ void pscom_dapl_close(pscom_con_t *con)
 
 
 static
-void pscom_dapl_con_init(pscom_con_t *con, int con_fd,
-			 psdapl_con_info_t *ci)
+void pscom_dapl_con_close(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
+	psdapl_con_info_t *ci = con->arch.dapl.ci;
+	if (!ci) return;
+
+	pscom_dapl_con_cleanup(con);
+}
+
+
+static
+void pscom_dapl_init_con(pscom_con_t *con)
+{
 	con->pub.type = PSCOM_CON_TYPE_DAPL;
-
-	close(con_fd);
-
-	con->arch.dapl.ci = ci;
 
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
@@ -232,13 +230,15 @@ void pscom_dapl_con_init(pscom_con_t *con, int con_fd,
 
 	con->poll_reader.do_read = pscom_dapl_do_read;
 	con->do_write = pscom_dapl_do_write;
-	con->close = pscom_dapl_close;
+	con->close = pscom_dapl_con_close;
 
 	con->rma_mem_register = pscom_dapl_rma_mem_register;
 	con->rma_mem_deregister = pscom_dapl_rma_mem_deregister;
 	con->rma_read = pscom_dapl_rma_read;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_dapl;
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/
@@ -276,84 +276,80 @@ psdapl_socket_t *pscom_dapl_get_sock(void)
 }
 
 
+#define PSCOM_INFO_DAPL_ID PSCOM_INFO_ARCH_STEP1
+
+
 static
-int pscom_dapl_connect(pscom_con_t *con, int con_fd)
+int pscom_dapl_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_DAPL;
-	psdapl_con_info_t *ci = psdapl_con_create(pscom_dapl_get_sock());
-	psdapl_info_msg_t msg;
-	int err;
-
-	if (!ci) goto dont_use;  /* Dont use dapl */
-
-	/* We want talk dapl */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_DAPL))
-		goto err_remote;
-
-	/* step 2 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)))
-		goto err_remote;
-
-	err = psdapl_connect(ci, &msg.sock_addr, msg.conn_qual);
-	if (err) goto err_connect;
-
-	pscom_dapl_con_init(con, con_fd, ci);
-
-	return 1;
-	/* --- */
-err_connect:
-err_remote:
-dont_use:
-	if (ci) {
-		psdapl_con_destroy(ci);
-	}
-	return 0;
+	return 0;// psdapl_init();
 }
 
 
 static
-int pscom_dapl_accept(pscom_con_t *con, int con_fd)
+void pscom_dapl_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_DAPL;
-	psdapl_socket_t *sock = pscom_dapl_get_sock();
-	psdapl_con_info_t *ci = psdapl_con_create(sock);
-	psdapl_info_msg_t msg;
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		psdapl_info_msg_t msg;
+		psdapl_socket_t *sock = pscom_dapl_get_sock();
+		psdapl_con_info_t *ci = psdapl_con_create(sock);
 
-	if (!ci) goto out_nodapl;
+		con->arch.dapl.ci = ci;
+		// con->arch.dapl.reading = 0;
 
-	if (psdapl_listen(sock))
-		goto err_listen;
+		// if (psdapl_con_init(ci, NULL, con)) goto error_con_init;
 
-	/* step 1:  Yes, we talk dapl. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
+		if (con->pub.state & PSCOM_CON_STATE_CONNECTING) {
+			if (psdapl_listen(sock)) goto error_listen;
 
-	/* step 2: Send Connection id's */
-	memcpy(&msg.sock_addr, psdapl_socket_get_addr(sock), sizeof(msg.sock_addr));
-	msg.conn_qual = psdapl_socket_get_conn_qual(sock);
+			/* send my connection id's */
+			psdapl_con_get_info_msg(ci, &msg);
 
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	if (psdapl_accept_wait(ci))
-		goto err_accept;
-
-	pscom_dapl_con_init(con, con_fd, ci);
-
-	return 1;
-	/* --- */
-err_accept:
-err_listen:
-	if (ci) {
-		psdapl_con_destroy(ci);
+			pscom_precon_send(con->precon, PSCOM_INFO_DAPL_ID, &msg, sizeof(msg));
+			 /* Next is PSCOM_INFO_DAPL_ACCEPT or PSCOM_INFO_ARCH_NEXT */
+		} else {
+			// ToDo: FixMe: "ok" should be send after a non blocking psdapl_connect().
+			pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		}
+		break;
 	}
-out_nodapl:
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-	return 0; /* Dont use dapl */
+	case PSCOM_INFO_DAPL_ID: {
+		psdapl_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
+
+		// ToDo: FixMe: psdapl_connect() is blocking!
+		if (psdapl_connect(con->arch.dapl.ci, msg)) goto error_connect;
+
+		break; /* Next is EOF or ARCH_NEXT */
+	}
+	case PSCOM_INFO_ARCH_OK: {
+		// ToDo: psdapl_accept_wait() is blocking, but handshake should not block!
+		if (con->pub.state & PSCOM_CON_STATE_CONNECTING) {
+
+			// ToDo: FixMe: psdapl_accept_wait() is blocking!
+			if (psdapl_accept_wait(con->arch.dapl.ci)) goto error_accept;
+
+			pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		}
+		break; /* Next is PSCOM_INFO_EOF */
+	}
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Something failed. Cleanup. */
+		pscom_dapl_con_cleanup(con);
+		break; /* Done. Dapl failed */
+	case PSCOM_INFO_EOF:
+		pscom_dapl_init_con(con);
+		break; /* Done. Use Dapl */
+	}
+	return;
 	/* --- */
+error_listen:
+error_connect:
+error_accept:
+// error_con_init:
+	pscom_dapl_con_cleanup(con);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -367,6 +363,6 @@ pscom_plugin_t pscom_plugin = {
 	.destroy	= pscom_dapl_destroy,
 	.sock_init	= NULL,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_dapl_connect,
-	.con_accept	= pscom_dapl_accept,
+	.con_init	= pscom_dapl_con_init,
+	.con_handshake	= pscom_dapl_handshake,
 };

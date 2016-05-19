@@ -108,11 +108,11 @@ noinst_PROGRAMS = p4logd$(EXEEXT) porttest$(EXEEXT) \
 	psock_test$(EXEEXT) pscom_test$(EXEEXT) \
 	pscom_ondemand$(EXEEXT) pscom_bcast_test$(EXEEXT) \
 	pscom_request_create$(EXEEXT) pscom_bcast_pp$(EXEEXT) \
-	port_pp$(EXEEXT) pscom_maxcon$(EXEEXT) $(am__EXEEXT_2) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
-	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8) \
-	$(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11) \
-	$(am__EXEEXT_12)
+	port_pp$(EXEEXT) pscom_maxcon$(EXEEXT) \
+	pscom_test_fault$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6) \
+	$(am__EXEEXT_7) $(am__EXEEXT_8) $(am__EXEEXT_9) \
+	$(am__EXEEXT_10) $(am__EXEEXT_11) $(am__EXEEXT_12)
 check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
 bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
@@ -343,6 +343,9 @@ pscom_request_create_DEPENDENCIES = $(libpscom)
 am_pscom_test_OBJECTS = pscom_test.$(OBJEXT)
 pscom_test_OBJECTS = $(am_pscom_test_OBJECTS)
 pscom_test_DEPENDENCIES = $(libpscom)
+am_pscom_test_fault_OBJECTS = pscom_test_fault.$(OBJEXT)
+pscom_test_fault_OBJECTS = $(am_pscom_test_fault_OBJECTS)
+pscom_test_fault_DEPENDENCIES = $(libpscom)
 am_pscp_OBJECTS = pscp-pscp.$(OBJEXT) pscp-psport_util.$(OBJEXT)
 pscp_OBJECTS = $(am_pscp_OBJECTS)
 pscp_DEPENDENCIES = $(libpsport4)
@@ -458,10 +461,10 @@ SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(pscom_memusage_openib_SOURCES) \
 	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
-	$(pscom_test_SOURCES) $(pscp_SOURCES) $(psm_pp_SOURCES) \
-	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
-	$(psport4_pp_SOURCES) $(psport4mvapi_pp_SOURCES) \
-	$(test_nodes_SOURCES)
+	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
+	$(pscp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
+	$(psock_test_SOURCES) $(pspipe_SOURCES) $(psport4_pp_SOURCES) \
+	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES)
 DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(elan_pp_lowlevel_SOURCES) $(extoll_one_message_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
@@ -476,10 +479,10 @@ DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(pscom_memusage_openib_SOURCES) \
 	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
-	$(pscom_test_SOURCES) $(pscp_SOURCES) $(psm_pp_SOURCES) \
-	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
-	$(psport4_pp_SOURCES) $(psport4mvapi_pp_SOURCES) \
-	$(test_nodes_SOURCES)
+	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
+	$(pscp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
+	$(psock_test_SOURCES) $(pspipe_SOURCES) $(psport4_pp_SOURCES) \
+	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -951,6 +954,8 @@ pscom_bcast_pp_SOURCES = pscom_bcast_pp.c
 pscom_bcast_pp_LDADD = $(libpscom) -lpopt
 pscom_maxcon_SOURCES = pscom_maxcon.c
 pscom_maxcon_LDADD = $(libpscom)
+pscom_test_fault_SOURCES = pscom_test_fault.c
+pscom_test_fault_LDADD = $(libpscom) -lpopt
 
 # -- mellanox --
 libpsport4mvapi = $(top_builddir)/lib/psport4/libpsport4mvapi.la
@@ -1380,6 +1385,10 @@ pscom_test$(EXEEXT): $(pscom_test_OBJECTS) $(pscom_test_DEPENDENCIES) $(EXTRA_ps
 	@rm -f pscom_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pscom_test_OBJECTS) $(pscom_test_LDADD) $(LIBS)
 
+pscom_test_fault$(EXEEXT): $(pscom_test_fault_OBJECTS) $(pscom_test_fault_DEPENDENCIES) $(EXTRA_pscom_test_fault_DEPENDENCIES) 
+	@rm -f pscom_test_fault$(EXEEXT)
+	$(AM_V_CCLD)$(LINK) $(pscom_test_fault_OBJECTS) $(pscom_test_fault_LDADD) $(LIBS)
+
 pscp$(EXEEXT): $(pscp_OBJECTS) $(pscp_DEPENDENCIES) $(EXTRA_pscp_DEPENDENCIES) 
 	@rm -f pscp$(EXEEXT)
 	$(AM_V_CCLD)$(pscp_LINK) $(pscp_OBJECTS) $(pscp_LDADD) $(LIBS)
@@ -1486,6 +1495,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_request_create.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_test.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_test_fault.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscp-pscp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscp-psport_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psock_pp.Po@am__quote@

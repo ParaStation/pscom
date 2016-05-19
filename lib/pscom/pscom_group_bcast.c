@@ -10,6 +10,7 @@
  * Author:	Jens Hauke <hauke@par-tec.com>
  */
 
+#include <stdlib.h>
 #include "pscom_group.h"
 
 //#define USE_ASYNCHRONOUS_BCAST 1

@@ -24,6 +24,11 @@
 typedef struct psdapl_con_info psdapl_con_info_t;
 typedef struct psdapl_socket psdapl_socket_t;
 
+typedef struct psdapl_info_msg {
+	DAT_SOCK_ADDR sock_addr;
+	DAT_CONN_QUAL conn_qual;
+} psdapl_info_msg_t;
+
 /* Create a socket.
  * return NULL on error.
  * Will be automaticaly freed by last psdapl_con_destroy()
@@ -59,36 +64,28 @@ int psdapl_listen(psdapl_socket_t *socket);
 int psdapl_accept_wait(psdapl_con_info_t *ci);
 
 
-/* Connect a remote PSP at addr : conn_qual
+/* Connect a remote PSP at msg {addr : conn_qual}
  * return -1 on error */
-int psdapl_connect(psdapl_con_info_t *ci, DAT_SOCK_ADDR *addr, DAT_CONN_QUAL conn_qual);
+int psdapl_connect(psdapl_con_info_t *ci, psdapl_info_msg_t *msg);
 
 
 /* Close connection ci and free resources */
 void psdapl_con_destroy(psdapl_con_info_t *ci);
 
+void psex_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */);
 
-/* send size bytes from iov through ci.
+
+/* send size bytes from iov through ci. (size > 0)
  * return number of bytes send or:
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
- *
- * (sending with size = 0, will send a 0 message. But you will not
- * receive this message with psdapl_recvlook! To send EOF, use
- * psdapl_send_eof().) *
  */
 int psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size);
-
-
-/* Send EOF and close sending side of connection. Further psdapl_sendv()
- * are allowed, but will return -EPIPE. */
-void psdapl_send_eof(psdapl_con_info_t *ci);
 
 
 /* Start receiving.
  * return:
  * number of bytes received or
- * 0 for EOF (from psdapl_send_eof()) or
  * -EAGAIN nothing received or
  * -EPIPE broken connction.
  * (call psdapl_recvdone after usage of *buf!)
@@ -101,14 +98,11 @@ void psdapl_recvdone(psdapl_con_info_t *ci);
 extern int psdapl_debug;
 extern FILE *psdapl_debug_stream;
 
+void psdapl_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */);
 
-const char *psdapl_addr2str(DAT_SOCK_ADDR *addr, DAT_CONN_QUAL conn_qual);
+const char *psdapl_addr2str(const psdapl_info_msg_t *msg /* in */);
 /* return -1 on parse error */
-int psdapl_str2addr(DAT_SOCK_ADDR *addr, DAT_CONN_QUAL *conn_qual, const char *str);
-
-
-DAT_SOCK_ADDR *psdapl_socket_get_addr(psdapl_socket_t *socket);
-DAT_CONN_QUAL psdapl_socket_get_conn_qual(psdapl_socket_t *socket);
+int psdapl_str2addr(psdapl_info_msg_t *msg /* out */, const char *str /* in */);
 
 
 /*

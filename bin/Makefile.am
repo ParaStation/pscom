@@ -17,7 +17,8 @@ SUBDIRS = simul_p4sock examples
 
 noinst_PROGRAMS = p4logd porttest psock_test pscom_test		\
 	   pscom_ondemand pscom_bcast_test pscom_request_create	\
-	   pscom_bcast_pp port_pp pscom_maxcon
+	   pscom_bcast_pp port_pp pscom_maxcon \
+	   pscom_test_fault
 
 check_PROGRAMS = list_test
 
@@ -132,6 +133,9 @@ pscom_bcast_pp_LDADD = $(libpscom) -lpopt
 
 pscom_maxcon_SOURCES = pscom_maxcon.c
 pscom_maxcon_LDADD = $(libpscom)
+
+pscom_test_fault_SOURCES = pscom_test_fault.c
+pscom_test_fault_LDADD = $(libpscom) -lpopt
 
 # -- mellanox --
 

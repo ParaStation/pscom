@@ -105,6 +105,7 @@ void pscom_req_prepare_send_pending(pscom_req_t *req,
 
 pscom_req_t *_pscom_generate_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
 
+void _pscom_genreq_abort_rendezvous_rma_reads(pscom_con_t *con);
 
 /* post the receive request req.
    Receiving up to req->xheader_len bytes to req->xheader and

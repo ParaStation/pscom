@@ -24,6 +24,7 @@ static inline int          header_complete(void *buf, unsigned int size);
 static inline int          is_recv_req_done(pscom_req_t *req);
 static        void         _pscom_rendezvous_read_data(pscom_req_t *user_recv_req,
 						       pscom_req_t *rendezvous_req);
+static        void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvous_req);
 static        void         pscom_req_prepare_send(pscom_req_t *req, unsigned msg_type);
 static        void         pscom_req_prepare_rma_write(pscom_req_t *req);
 static        void         _check_readahead(pscom_con_t *con, size_t len);
@@ -36,6 +37,8 @@ static inline pscom_req_t *_pscom_get_user_receiver(pscom_con_t *con, pscom_head
 static        pscom_req_t *pscom_get_rma_write_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con, pscom_header_net_t *nh);
+static        pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh);
+static        pscom_req_t *_pscom_get_suspend_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        void         pscom_rendezvous_read_data_io_done(pscom_request_t *request);
 static        void         pscom_rendezvous_receiver_io_done(pscom_request_t *req);
 static        pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t *nh);
@@ -75,6 +78,7 @@ void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, psco
 		req->cur_data.iov_len = nh->data_len;
 		req->skip = 0;
 	} else {
+		assert(req->magic == MAGIC_REQUEST);
 		req->cur_data.iov_len = req->pub.data_len;
 		req->skip = nh->data_len - req->pub.data_len;
 		req->pub.state |= PSCOM_REQ_STATE_TRUNCATED;
@@ -290,6 +294,20 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 	_pscom_grecv_req_done(genreq);
 	pscom_greq_check_free(con, genreq);
+}
+
+
+void _pscom_genreq_abort_rendezvous_rma_reads(pscom_con_t *con)
+{
+	struct list_head *pos;
+
+	list_for_each(pos, &con->net_recvq_user) {
+		pscom_req_t *genreq = list_entry(pos, pscom_req_t, next);
+		if (genreq->partner_req) {
+			assert(genreq->partner_req->magic == MAGIC_REQUEST);
+			_pscom_rendezvous_read_data_abort_arch(genreq->partner_req);
+		}
+	}
 }
 
 
@@ -564,6 +582,19 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 
 
 static
+void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvous_req)
+{
+	pscom_rendezvous_data_t *rd =
+		(pscom_rendezvous_data_t *) rendezvous_req->pub.user;
+
+	assert(rendezvous_req->magic == MAGIC_REQUEST);
+
+	// Do not use any remote memory information for rma_read anymore:
+	rd->use_arch_read = 0;
+}
+
+
+static
 void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 {
 	pscom_rendezvous_data_t *rd =
@@ -618,6 +649,7 @@ pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t 
 
 	req->pub.ops.io_done = pscom_rendezvous_receiver_io_done;
 
+	// Received additional rendezvous data from network arch? Yes: use arch read.
 	rd->use_arch_read = nh->data_len > pscom_rendezvous_msg_size(0);
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
@@ -646,6 +678,50 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 	_pscom_send_req_done(user_req); // done
 
 	return NULL;
+}
+
+
+static
+pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh)
+{
+	con->state.eof_received = 1;
+	pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_EOF);
+	return NULL;
+}
+
+
+static
+void _pscom_req_suspend_io_done(pscom_request_t *request)
+{
+	pscom_req_t *req = get_req(request);
+	pscom_con_t *con = get_con(req->pub.connection);
+	pscom_lock(); {
+		_pscom_con_suspend_received(con, req->pub.xheader.user, req->pub.xheader_len);
+	} pscom_unlock();
+
+	pscom_req_free(req);
+}
+
+
+static
+pscom_req_t *_pscom_get_suspend_receiver(pscom_con_t *con, pscom_header_net_t *nh)
+{
+	pscom_req_t *req;
+
+	if (!nh->xheader_len) return NULL; // Ignore message sent to resume the connection.
+
+	req = pscom_req_create(nh->xheader_len, 0);
+
+	req->pub.state = PSCOM_REQ_STATE_RECV_REQUEST;
+	assert(nh->data_len == 0);
+
+	req->pub.data = NULL;
+	req->pub.data_len = 0;
+	req->pub.xheader_len = nh->xheader_len;
+
+	req->pub.ops.io_done = _pscom_req_suspend_io_done;
+
+	return req;
 }
 
 
@@ -683,6 +759,12 @@ pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 			break;
 		case PSCOM_MSGTYPE_BARRIER:
 			req = _pscom_get_ctrl_receiver(con, nh);
+			break;
+		case PSCOM_MSGTYPE_EOF:
+			req = _pscom_get_eof_receiver(con, nh);
+			break;
+		case PSCOM_MSGTYPE_SUSPEND:
+			req = _pscom_get_suspend_receiver(con, nh);
 			break;
 		default:
 			DPRINT(0, "Receive unknown msg_type %u", nh->msg_type);
@@ -856,7 +938,11 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 	return;
 	/* --- */
 err_eof:
-	pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_EOF);
+	if (!con->state.eof_received && !con->state.close_called) {
+		/* Received an transport layer eof, without
+		   a previous received PSCOM_MSGTYPE_EOF or call to close. -> Throw an IOERROR: */
+		pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_IOERROR);
+	}
 	return;
 }
 
@@ -903,6 +989,7 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 	req->pending_io++;
 	if (!req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
 		_pscom_sendq_deq(con, req);
+		_pscom_pendingio_enq(con, req);
 	}
 }
 
@@ -911,6 +998,7 @@ void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 {
 	req->pending_io--;
 	if (!req->pending_io && !req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+		_pscom_pendingio_deq(con, req);
 		_pscom_send_req_done(req); // done
 	}
 }

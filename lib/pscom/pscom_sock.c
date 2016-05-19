@@ -14,8 +14,12 @@
 #include "pscom_con.h"
 #include "pscom_io.h"
 #include "pslib.h"
+#include "pscom_precon.h"
 #include <stdlib.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <errno.h>
+#include <string.h>
 
 static
 void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
@@ -132,6 +136,8 @@ pscom_sock_t *pscom_sock_create(unsigned int userdata_size)
 	INIT_LIST_HEAD(&sock->recvq_any);
 	INIT_LIST_HEAD(&sock->groups);
 	INIT_LIST_HEAD(&sock->group_req_unknown);
+	INIT_LIST_HEAD(&sock->pendingioq);
+	INIT_LIST_HEAD(&sock->sendq_suspending);
 
 	sock->recv_req_cnt_any = 0;
 
@@ -201,84 +207,105 @@ void pscom_socket_set_name(pscom_socket_t *socket, const char *name)
 }
 
 
-pscom_err_t pscom_listen(pscom_socket_t *_socket, int portno)
+pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 {
-	pscom_sock_t *sock = get_sock(_socket);
 	pscom_err_t ret = PSCOM_SUCCESS;
+	struct sockaddr_in sa;
+	unsigned int size;
+	int listen_fd = -1;
+	int retry_cnt = 0;
+
+	if (pscom_listener_get_fd(&sock->listen) < 0) {
+		sock->pub.listen_portno = -1;
+	}
+
+	if (sock->pub.listen_portno != -1)
+		goto err_already_listening;
+
+retry_listen:
+	listen_fd = socket(PF_INET, SOCK_STREAM, 0);
+	if (listen_fd < 0) goto err_socket;
+
+	{
+		int val = 1;
+		setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
+			   (void*) &val, sizeof(val));
+	}
+
+	sa.sin_family = AF_INET;
+	sa.sin_port = (portno == PSCOM_ANYPORT) ? 0 : htons(portno);
+	sa.sin_addr.s_addr = INADDR_ANY;
+
+	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
+		goto err_bind;
+
+	size = sizeof(sa);
+	if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0)
+		goto err_getsockname;
+
+	if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
+		if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
+			// Yes, this happens on 64 core machines. bind() rarely assign the same portno twice.
+			retry_cnt++; // Print warning every 10th retry, or with PSP_DEBUG >= 1
+			DPRINT((retry_cnt % 10 == 0) ? 0 : 1,
+			       "listen(port %d): Address already in use", (int)ntohs(sa.sin_port));
+			close(listen_fd);
+			sleep(1);
+			goto retry_listen;
+		}
+		goto err_listen;
+	}
+
+	DPRINT(PRECON_LL, "precon: listen(%d, %d) on port %u", listen_fd,
+	       pscom.env.tcp_backlog, ntohs(sa.sin_port));
+
+	if (fcntl(listen_fd, F_SETFL, O_NONBLOCK) < 0)
+		goto err_nonblock;
+
+	sock->pub.listen_portno = ntohs(sa.sin_port);
+	pscom_listener_set_fd(&sock->listen, listen_fd);
+
+	pscom_listener_active_inc(&sock->listen);
+
+	return ret;
+
+	/* error codes */
+err_nonblock:
+	DPRINT(1, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
+	goto err_stderror;
+err_getsockname:
+	DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	goto err_stderror;
+err_listen:
+	DPRINT(1, "listen(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	goto err_stderror;
+err_bind:
+	DPRINT(1, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	goto err_stderror;
+err_socket:
+	DPRINT(1, "socket(PF_INET, SOCK_STREAM, 0): %s", strerror(errno));
+	goto err_stderror;
+err_stderror:
+	ret = PSCOM_ERR_STDERROR;
+	goto err_out;
+err_already_listening:
+	ret = PSCOM_ERR_ALREADY;
+	goto err_out;
+err_out:
+	if (listen_fd >= 0) close(listen_fd);
+	return ret;
+}
+
+
+pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
+{
+	pscom_sock_t *sock = get_sock(socket);
+	pscom_err_t ret;
 
 	assert(sock->magic == MAGIC_SOCKET);
 
 	pscom_lock(); {
-		struct sockaddr_in sa;
-		unsigned int size;
-		int listen_fd;
-		int retry_cnt = 0;
-
-		if (sock->pub.listen_portno != -1)
-			goto err_already_listening;
-
-	retry_listen:
-		listen_fd = socket(PF_INET, SOCK_STREAM, 0);
-		if (listen_fd < 0) goto err_socket;
-
-		{
-			int val = 1;
-			setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
-				   (void*) &val, sizeof(val));
-		}
-
-		sa.sin_family = AF_INET;
-		sa.sin_port = (portno == PSCOM_ANYPORT) ? 0 : htons(portno);
-		sa.sin_addr.s_addr = INADDR_ANY;
-
-		if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
-			goto err_bind;
-
-		size = sizeof(sa);
-		if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0)
-			goto err_getsockname;
-
-		if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
-			if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
-				// Yes, this happens on 64 core machines. bind() rarely assign the same portno twice.
-				retry_cnt++; // Print warning every 10th retry, or with PSP_DEBUG >= 1
-				DPRINT((retry_cnt % 10 == 0) ? 0 : 1,
-				       "listen(port %d): Address already in use", (int)ntohs(sa.sin_port));
-				close(listen_fd);
-				sleep(1);
-				goto retry_listen;
-			}
-			goto err_listen;
-		}
-
-		sock->pub.listen_portno = ntohs(sa.sin_port);
-		pscom_listener_set_fd(&sock->listen, listen_fd);
-
-		pscom_listener_active_inc(&sock->listen);
-
-		/* error code */
-		if (0) {
-			switch (0) {
-			case -1:;
-			err_getsockname:
-				DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
-				break;
-			err_listen:
-				DPRINT(1, "listen(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
-				break;
-			err_bind:
-				DPRINT(1, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
-				break;
-			}
-
-			close(listen_fd);
-		err_socket:
-			ret = PSCOM_ERR_STDERROR;
-		}
-		if (0) {
-		err_already_listening:
-			ret = PSCOM_ERR_ALREADY;
-		}
+		ret = _pscom_listen(sock, portno);
 	} pscom_unlock();
 
 	return ret;

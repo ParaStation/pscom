@@ -28,6 +28,8 @@ static char info_p4sock[] __attribute__(( unused )) =
 #include <assert.h>
 
 #include "pscom_priv.h"
+#include "pscom_precon.h"
+#include "pscom_con.h"
 #include "pscom_p4s.h"
 
 
@@ -522,7 +524,7 @@ void p4s_write_stop(pscom_con_t *con)
 static
 void p4s_read_start(pscom_con_t *con)
 {
-	D_TR(printf("read start p4s\n"));
+	D_TR(printf("read start p4s (p4s.reading:%d)\n", con->arch.p4s.reading));
 	if (!con->arch.p4s.reading) {
 		p4s_sock_t *sock = &get_sock(con->pub.socket)->p4s;
 
@@ -583,16 +585,9 @@ typedef struct p4s_info_msg_s {
 
 
 static
-void p4s_init_con(p4s_sock_t *sock, pscom_con_t *con, int con_fd, int p4s_con)
+void p4s_init_con(pscom_con_t *con)
 {
-	p4s_register_conidx(sock, con, p4s_con);
-
-	con->pub.state = PSCOM_CON_STATE_RW;
 	con->pub.type = PSCOM_CON_TYPE_P4S;
-
-	close(con_fd);
-
-	con->arch.p4s.p4s_con = p4s_con;
 
 	INIT_LIST_HEAD(&con->arch.p4s.con_sendq_next);
 
@@ -603,6 +598,8 @@ void p4s_init_con(p4s_sock_t *sock, pscom_con_t *con, int con_fd, int p4s_con)
 	con->close = p4s_close;
 
 	con->arch.p4s.reading = 0;
+
+	pscom_con_setup_ok(con);
 }
 
 
@@ -627,6 +624,37 @@ void p4s_init(p4s_sock_t *sock)
 
 /****************************************************************/
 static
+int pscom_p4s_open(p4s_sock_t *sock, pscom_con_t *con)
+{
+	con->arch.p4s.p4s_con = -1;
+
+	if (!p4s_available()) return -1;
+	if (p4s_inc_usecnt(sock) < 0) {
+		DPRINT(2, "p4s_open_socket() : %s", strerror(errno));
+		return -1;
+	}
+
+	return 0;
+}
+
+
+static
+void pscom_p4s_cleanup(pscom_con_t *con)
+{
+	if (con->arch.p4s.p4s_con >= 0) {
+		p4s_close(con);
+	}
+}
+
+
+static
+void pscom_p4s_get_info(p4s_sock_t *sock, p4s_info_msg_t *msg)
+{
+	memcpy(&msg->p4s_sockaddr, &sock->p4s_sockaddr, sizeof(msg->p4s_sockaddr));
+}
+
+
+static
 void pscom_p4s_sock_init(pscom_sock_t *socket)
 {
 	p4s_init(&socket->p4s);
@@ -634,113 +662,80 @@ void pscom_p4s_sock_init(pscom_sock_t *socket)
 
 
 static
-int pscom_p4s_connect(pscom_con_t *con, int con_fd)
+int pscom_p4s_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_P4S;
-	p4s_info_msg_t msg;
-	int p4s_con;
-	p4s_sock_t *sock;
-
-	if (!p4s_available())
-		return 0; /* Dont use p4sock */
-
-	/* We want talk p4s */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_P4S))
-		goto err_remote;
-
-	/* step 2 : recv my address */
-	if (pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg))
-		goto err_remote;
-
-	sock = &get_sock(con->pub.socket)->p4s;
-
-	// open socket
-	if (p4s_inc_usecnt(sock) < 0) {
-		DPRINT(2, "p4s_open_socket() : %s", strerror(errno));
-		goto err_local;
-	}
-
-	// connect
-	p4s_con = connect(sock->ufd_info.fd, (struct sockaddr *)&msg.p4s_sockaddr,
-			  sizeof(msg.p4s_sockaddr));
-	if (p4s_con < 0) {
-		DPRINT(2, "connect() failed : %s", strerror(errno));
-		goto err_local_connect;
-	}
-
-	/* step 3: p4s initialized. Send final ACK. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* Send ACK over p4sock */
-	p4s_send_ack(sock, p4s_con);
-
-	D_TR(printf("Send ACK for p4s %d\n", p4s_con));
-	p4s_init_con(sock, con, con_fd, p4s_con);
-
-	return 1;
-	/* --- */
-err_local_connect:
-	p4s_dec_usecnt(sock);
-err_local:
-	/* Send error */
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-err_remote:
-	return 0;
+	return p4s_available() ? 0 : -1;
 }
 
 
-static
-int pscom_p4s_accept(pscom_con_t *con, int con_fd)
-{
-	int arch = PSCOM_ARCH_P4S;
-	p4s_info_msg_t msg;
-	int p4s_con;
-	p4s_sock_t *sock = &get_sock(con->pub.socket)->p4s;
-	int rc = 0;
+#define PSCOM_INFO_P4S_ADDR PSCOM_INFO_ARCH_STEP1
 
-	if (!p4s_available() ||
-	    ((rc = p4s_inc_usecnt(sock)) < 0)) {
-		if (rc < 0) {
-			DPRINT(2, "p4s_open_socket() : %s", strerror(errno));
+
+static
+void pscom_p4s_handshake(pscom_con_t *con, int type, void *data, unsigned size)
+{
+	p4s_sock_t *sock = &get_sock(con->pub.socket)->p4s;
+
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ:
+		if (pscom_p4s_open(sock, con)) goto error_p4s_open;
+
+		if (con->pub.state & PSCOM_CON_STATE_CONNECTING) {
+			// Send my address
+			p4s_info_msg_t msg;
+			pscom_p4s_get_info(sock, &msg);
+			pscom_precon_send(con->precon, PSCOM_INFO_P4S_ADDR, &msg, sizeof(msg));
+		}
+		break;
+	case PSCOM_INFO_P4S_ADDR: {
+		p4s_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
+
+		// connect
+		int p4s_con = connect(sock->ufd_info.fd, (struct sockaddr *)&msg->p4s_sockaddr,
+				      sizeof(msg->p4s_sockaddr));
+		if (p4s_con < 0) {
+			DPRINT(2, "connect() failed : %s", strerror(errno));
+			goto error_connect;
 		}
 
-		arch = PSCOM_ARCH_ERROR;
-		pscom_writeall(con_fd, &arch, sizeof(arch));
-		return 0; /* Dont use p4sock */
+		con->arch.p4s.p4s_con = p4s_con;
+		p4s_register_conidx(sock, con, p4s_con);
+
+		/* Send ACK over p4sock */
+		p4s_send_ack(sock, p4s_con);
+
+		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		pscom_precon_close(con->precon);
+		break; /* Next is INFO_EOF */
+	}
+	case PSCOM_INFO_ARCH_OK: {
+		int p4s_con = p4s_recv_ack(sock);
+
+		con->arch.p4s.p4s_con = p4s_con;
+		p4s_register_conidx(sock, con, p4s_con);
+
+		if (p4s_con < 0) {
+			/* ToDo: Cleanup? */
+			DPRINT(0, "__func__(): %s", strerror(errno));
+		}
+
+		break; /* Next is INFO_EOF */
+	}
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Cleanup con */
+		pscom_p4s_cleanup(con);
+		break; /* Done (this one failed) */
+	case PSCOM_INFO_EOF:
+		p4s_init_con(con);
+		break; /* Done (use this one) */
 	}
 
-	/* step 1:  Yes, we talk p4sock. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 2: Send my address. */
-	memcpy(&msg.p4s_sockaddr, &sock->p4s_sockaddr, sizeof(msg.p4s_sockaddr));
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	/* step 3: recv final ACK. */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_P4S)) goto err_remote;
-
-	p4s_con = p4s_recv_ack(sock);
-
-	D_TR(printf("Recv ACK from p4s %d\n", p4s_con));
-	if (p4s_con >= 0) {
-		p4s_init_con(sock, con, con_fd, p4s_con);
-	} else {
-		/* ToDo: Cleanup? */
-		DPRINT(0, "__func__(): %s", strerror(errno));
-		return 0;
-	}
-
-	return 1;
+	return;
 	/* --- */
-err_remote:
-	p4s_dec_usecnt(sock);
-	return 0; /* p4s failed */
+error_p4s_open:
+error_connect:
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -753,6 +748,6 @@ pscom_plugin_t pscom_plugin_p4s = {
 	.destroy	= NULL,
 	.sock_init	= pscom_p4s_sock_init,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_p4s_connect,
-	.con_accept	= pscom_p4s_accept,
+	.con_init	= pscom_p4s_con_init,
+	.con_handshake	= pscom_p4s_handshake,
 };

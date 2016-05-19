@@ -43,6 +43,7 @@ typedef enum PSCOM_err {
 	PSCOM_ERR_EOF = -5,		/* End of file */
 	PSCOM_ERR_IOERROR = -6,		/* IO Error */
 	PSCOM_ERR_UNSUPPORTED_VERSION = -7, /* Unsupported version */
+	PSCOM_ERR_CONNECTION_REFUSED = -8, /* Connection refused */
 } pscom_err_t;
 
 
@@ -52,6 +53,15 @@ typedef enum PSCOM_con_state {
 	PSCOM_CON_STATE_W	= 0x2,
 	PSCOM_CON_STATE_RW	= 0x3,
 	PSCOM_CON_STATE_CLOSED  = 0x4,
+	PSCOM_CON_STATE_CONNECTING = 0x8,
+	PSCOM_CON_STATE_ACCEPTING = 0x10,
+	PSCOM_CON_STATE_CLOSING = 0x20,
+	PSCOM_CON_STATE_SUSPENDING		= 0x40,
+	PSCOM_CON_STATE_SUSPEND_SENT		= PSCOM_CON_STATE_SUSPENDING | 0x080,
+	PSCOM_CON_STATE_SUSPEND_RECEIVED	= PSCOM_CON_STATE_SUSPENDING | 0x100,
+	PSCOM_CON_STATE_SUSPENDED		= PSCOM_CON_STATE_SUSPENDING | PSCOM_CON_STATE_SUSPEND_SENT | PSCOM_CON_STATE_SUSPEND_RECEIVED,
+	PSCOM_CON_STATE_CONNECTING_ONDEMAND	= 0x200 | PSCOM_CON_STATE_CONNECTING,
+	PSCOM_CON_STATE_ACCEPTING_ONDEMAND	= 0x200 | PSCOM_CON_STATE_ACCEPTING,
 } pscom_con_state_t;
 
 
@@ -72,13 +82,16 @@ typedef enum PSCOM_con_type {
 	PSCOM_CON_TYPE_PSM      = 0x0d,
 	PSCOM_CON_TYPE_VELO	= 0x0e,
 	PSCOM_CON_TYPE_CBC      = 0x0f,
-	PSCOM_CON_TYPE_MXM      = 0x10
+	PSCOM_CON_TYPE_MXM      = 0x10,
+	PSCOM_CON_TYPE_SUSPENDED= 0x11
 } pscom_con_type_t;
 
 
 typedef enum PSCOM_op {
 	PSCOM_OP_READ = 1,
 	PSCOM_OP_WRITE = 2,
+	PSCOM_OP_CONNECT = 3,
+	PSCOM_OP_RW = 4,
 } pscom_op_t;
 
 #define PSCOM_REQ_STATE_SEND_REQUEST		0x00000001
@@ -633,6 +646,7 @@ const char *pscom_dumpstr(const void *buf, int size);
 #define pscom_min(a,b)      (((a)<(b))?(a):(b))
 #define pscom_max(a,b)      (((a)>(b))?(a):(b))
 
+void pscom_dump_connection(FILE *out, pscom_connection_t *connection);
 void pscom_dump_reqstat(FILE *out);
 void pscom_dump_info(FILE *out);
 

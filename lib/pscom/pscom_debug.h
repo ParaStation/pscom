@@ -28,7 +28,7 @@ int pscom_dwrite(const char *_msg, size_t len);
     if ((level)<=pscom.env.debug){		\
 	pscom_dprintf(fmt "\n",##arg);		\
     }						\
-}while(0);
+}while(0)
 
 // Use this stream for debug output. (automic create pre/postfix on each line)
 FILE *pscom_debug_stream(void);

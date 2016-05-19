@@ -25,6 +25,8 @@
 
 #include "pscom_priv.h"
 #include "pscom_io.h"
+#include "pscom_con.h"
+#include "pscom_precon.h"
 #include "pscom_extoll.h"
 
 static struct {
@@ -292,14 +294,10 @@ void pscom_extoll_rma_do_write(pscom_con_t *con)
 #endif // #if 0
 
 static
-void pscom_extoll_close(pscom_con_t *con)
+void pscom_extoll_con_cleanup(pscom_con_t *con)
 {
 	psex_con_info_t *ci = con->arch.extoll.ci;
-
 	if (!ci) return;
-
-	//psex_send_eof(ci);
-	psex_velo2_send_eof(ci);
 
 	psex_con_cleanup(ci);
 	psex_con_free(ci);
@@ -309,16 +307,19 @@ void pscom_extoll_close(pscom_con_t *con)
 
 
 static
-void pscom_extoll_con_init(pscom_con_t *con, int con_fd,
-			   psex_con_info_t *ci)
+void pscom_extoll_con_close(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
+	psex_con_info_t *ci = con->arch.extoll.ci;
+	if (!ci) return;
+
+	pscom_extoll_con_cleanup(con);
+}
+
+
+static
+void pscom_extoll_init_con(pscom_con_t *con)
+{
 	con->pub.type = PSCOM_CON_TYPE_VELO;
-
-	close(con_fd);
-
-	con->arch.extoll.ci = ci;
-	con->arch.extoll.reading = 0;
 
 	/*
 	// Only Polling:
@@ -339,13 +340,15 @@ void pscom_extoll_con_init(pscom_con_t *con, int con_fd,
 	con->read_start = pscom_extoll_velo2_read_start;
 	con->read_stop = pscom_extoll_velo2_read_stop;
 
-	con->close = pscom_extoll_close;
+	con->close = pscom_extoll_con_close;
 
 	con->rma_mem_register = pscom_extoll_rma_mem_register;
 	con->rma_mem_deregister = pscom_extoll_rma_mem_deregister;
 	con->rma_read = pscom_extoll_rma_read;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_velo;
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/
@@ -397,105 +400,58 @@ void pscom_extoll_destroy(void)
 }
 
 
+#define PSCOM_INFO_EXTOLL_ID PSCOM_INFO_ARCH_STEP1
+
+
 static
-int pscom_extoll_connect(pscom_con_t *con, int con_fd)
+int pscom_extoll_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_VELO;
-	psex_con_info_t *ci = psex_con_create();
-	psex_info_msg_t msg;
-	psex_info_msg_t my_msg;
-
-	if (!ci) goto err_no_ci;
-	if (psex_init()) goto dont_use;  /* Dont use extoll */
-
-	if (psex_con_init(ci, NULL, con)) goto dont_use; /* Initialize connection */
-
-	/* We want talk extoll */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_VELO))
-		goto err_remote;
-
-	/* step 2 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)))
-		goto err_remote;
-
-	/* step 3: send my connection id's */
-	psex_con_get_info_msg(ci, &my_msg);
-	pscom_writeall(con_fd, &my_msg, sizeof(my_msg));
-
-
-	/* Connect */
-	if (psex_con_connect(ci, &msg)) {
-		/* ToDo: bad! How to inform the peer about the error? */
-		DPRINT(0, "Extoll psex_con_connect() failed!");
-		goto err_local;
-	}
-
-	pscom_extoll_con_init(con, con_fd, ci);
-
-	return 1;
-	/* --- */
-err_local:
-err_remote:
-	psex_con_cleanup(ci);
-dont_use:
-	psex_con_free(ci);
-err_no_ci:
-	return 0;
+	return psex_init();
 }
 
 
 static
-int pscom_extoll_accept(pscom_con_t *con, int con_fd)
+void pscom_extoll_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_VELO;
-	psex_con_info_t *ci = psex_con_create();
-	psex_info_msg_t msg;
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		psex_info_msg_t msg;
+		psex_con_info_t *ci = psex_con_create();
 
-	if (!ci) goto err_no_ci;
-	if (psex_init()) goto out_noextoll;
+		con->arch.extoll.ci = ci;
+		con->arch.extoll.reading = 0;
 
-	if (psex_con_init(ci, NULL, con)) goto dont_use; /* Initialize connection */
+		if (psex_con_init(ci, NULL, con)) goto error_con_init;
 
-	/* step 1:  Yes, we talk extoll. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
+		/* send my connection id's */
+		psex_con_get_info_msg(ci, &msg);
 
-	/* step 2: Send Connection id's */
-	psex_con_get_info_msg(ci, &msg);
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	/* step 3 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)))
-		goto err_remote;
-
-	/* Connect */
-	if (psex_con_connect(ci, &msg)) {
-		/* ToDo: bad! How to inform the peer about the error? */
-		DPRINT(0, "Extoll psex_con_connect() failed!");
-		goto err_local;
+		pscom_precon_send(con->precon, PSCOM_INFO_EXTOLL_ID, &msg, sizeof(msg));
+		break; /* Next is PSCOM_INFO_EXTOLL_ID or PSCOM_INFO_ARCH_NEXT */
 	}
+	case PSCOM_INFO_EXTOLL_ID: {
+		psex_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
 
-	pscom_extoll_con_init(con, con_fd, ci);
+		if (psex_con_connect(con->arch.extoll.ci, msg)) goto error_con_connect;
 
-	return 1;
+		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break; /* Next is EOF or ARCH_NEXT */
+	}
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Something failed. Cleanup. */
+		pscom_extoll_con_cleanup(con);
+		break; /* Done. Extoll failed */
+	case PSCOM_INFO_EOF:
+		pscom_extoll_init_con(con);
+		break; /* Done. Use Extoll */
+	}
+	return;
 	/* --- */
-err_local:
-err_remote:
-	if (ci) psex_con_cleanup(ci);
-	if (ci) psex_con_free(ci);
-	return 0;
-	/* --- */
-dont_use:
-out_noextoll:
-	psex_con_free(ci);
-err_no_ci:
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-	return 0; /* Dont use extoll */
-	/* --- */
+error_con_connect:
+error_con_init:
+	pscom_extoll_con_cleanup(con);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -509,6 +465,6 @@ pscom_plugin_t pscom_plugin = {
 	.destroy	= pscom_extoll_destroy,
 	.sock_init	= NULL,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_extoll_connect,
-	.con_accept	= pscom_extoll_accept,
+	.con_init	= pscom_extoll_con_init,
+	.con_handshake	= pscom_extoll_handshake,
 };

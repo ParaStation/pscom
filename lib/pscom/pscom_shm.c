@@ -24,6 +24,8 @@
 #include <errno.h>
 #include "pscom_priv.h"
 #include "pscom_util.h"
+#include "pscom_precon.h"
+#include "pscom_con.h"
 #include "psshmalloc.h"
 
 #if defined(__x86_64__) && !(defined(__KNC__) || defined(__MIC__))
@@ -46,58 +48,16 @@ struct {
 	struct list_head	shm_conn_head; // shm_conn_t.pending_io_next_conn.
 } shm_pending_io;
 
+typedef struct shm_info_msg_s {
+	int shm_id;
+	int direct_shm_id;	/* shm direct shared mem id */
+	void *direct_base;	/* base pointer of the shared mem segment */
+} shm_info_msg_t;
 
 struct shm_direct_header {
 	void	*base;
 	size_t	len;
 };
-
-static
-int shm_initrecv(shm_conn_t *shm)
-{
-	int shmid;
-	void *buf;
-
-	shmid = shmget(/*key*/0, sizeof(shm_com_t), IPC_CREAT | 0777);
-	if (shmid == -1) goto err;
-
-	buf = shmat(shmid, 0, 0 /*SHM_RDONLY*/);
-	if (((long)buf == -1) || !buf) goto err_shmat;
-
-	shmctl(shmid, IPC_RMID, NULL); /* remove shmid after usage */
-
-	memset(buf, 0, sizeof(shm_com_t)); /* init */
-
-	shm->local_id = shmid;
-	shm->local_com = (shm_com_t *)buf;
-	shm->recv_cur = 0;
-	return 0;
-err_shmat:
-	DPRINT(1, "shmat(%d, 0, 0) : %s", shmid, strerror(errno));
-	shmctl(shmid, IPC_RMID, NULL);
-	return -1;
-err:
-	DPRINT(1, "shmget(0, sizeof(shm_com_t), IPC_CREAT | 0777) : %s", strerror(errno));
-	return -1;
-}
-
-
-static
-int shm_initsend(shm_conn_t *shm, int rem_shmid)
-{
-	void *buf;
-	buf = shmat(rem_shmid, 0, 0);
-	if (((long)buf == -1) || !buf) goto err_shmat;
-
-	shm->remote_id = rem_shmid;
-	shm->remote_com = buf;
-	shm->send_cur = 0;
-	return 0;
-err_shmat:
-	DPRINT(1, "shmat(%d, 0, 0) : %s", rem_shmid, strerror(errno));
-	return -1;
-}
-
 
 static
 void shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
@@ -112,6 +72,54 @@ void shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
 
 	shm->direct_base = buf;
 	shm->direct_offset = (char *)buf - (char *)remote_base;
+}
+
+static
+int shm_initrecv(shm_conn_t *shm)
+{
+	int shmid;
+	void *buf;
+
+	shmid = shmget(/*key*/0, sizeof(shm_com_t), IPC_CREAT | 0777);
+	if (shmid == -1) goto err;
+
+	buf = shmat(shmid, 0, 0 /*SHM_RDONLY*/);
+	shmctl(shmid, IPC_RMID, NULL); /* remove shmid after usage */
+
+	if (((long)buf == -1) || !buf) goto err_shmat;
+
+	memset(buf, 0, sizeof(shm_com_t)); /* init */
+
+	shm->local_id = shmid;
+	shm->local_com = (shm_com_t *)buf;
+	shm->recv_cur = 0;
+	return 0;
+err_shmat:
+	DPRINT(1, "shmat(%d, 0, 0) : %s", shmid, strerror(errno));
+	return -1;
+err:
+	DPRINT(1, "shmget(0, sizeof(shm_com_t), IPC_CREAT | 0777) : %s", strerror(errno));
+	return -1;
+}
+
+
+static
+int shm_initsend(shm_conn_t *shm, shm_info_msg_t *msg)
+{
+	void *buf;
+	int rem_shmid = msg->shm_id;
+	buf = shmat(rem_shmid, 0, 0);
+	if (((long)buf == -1) || !buf) goto err_shmat;
+
+	shm_init_direct(shm, msg->direct_shm_id, msg->direct_base);
+
+	shm->remote_id = rem_shmid;
+	shm->remote_com = buf;
+	shm->send_cur = 0;
+	return 0;
+err_shmat:
+	DPRINT(1, "shmat(%d, 0, 0) : %s", rem_shmid, strerror(errno));
+	return -1;
 }
 
 
@@ -347,7 +355,10 @@ static
 void shm_check_pending_io(shm_conn_t *shm)
 {
 	struct shm_pending *sp;
-	while (((sp = shm->shm_pending)) && sp->msg->msg_type == SHM_MSGTYPE_DIRECT_DONE) {
+	while (((sp = shm->shm_pending)) && (
+		       (sp->msg->msg_type == SHM_MSGTYPE_DIRECT_DONE) ||
+		       (sp->req && (sp->req->pub.state & PSCOM_REQ_STATE_ERROR))
+	       )) {
 		// finish request
 		if (sp->req) pscom_write_pending_done(sp->con, sp->req); // direct send done
 		if (sp->data) free(sp->data); // indirect send done
@@ -494,6 +505,8 @@ void shm_init_shm_conn(shm_conn_t *shm)
 	shm->local_com = NULL;
 	shm->remote_com = NULL;
 	shm->direct_base = NULL;
+	shm->local_id = -1;
+	shm->remote_id = -1;
 }
 
 
@@ -518,15 +531,9 @@ void shm_close(pscom_con_t *con)
 		int i;
 		shm_conn_t *shm = &con->arch.shm;
 
-		for (i = 0; i < 5; i++) {
-			// ToDo: Unreliable EOF
-			if (shm_cansend(shm)) {
-				shm_send(shm, NULL, 0);
-				break;
-			} else {
-				usleep(5*1000);
-				sched_yield();
-			}
+		// ToDo: This must not be a blocking while loop!
+		while (shm->shm_pending) {
+			shm_check_pending_io(shm);
 		}
 
 		shm_cleanup_shm_conn(shm);
@@ -538,15 +545,9 @@ void shm_close(pscom_con_t *con)
 
 
 static
-void shm_init_con(pscom_con_t *con,
-		  int con_fd, shm_conn_t *shm)
+void shm_init_con(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
 	con->pub.type = PSCOM_CON_TYPE_SHM;
-
-	close(con_fd);
-
-	memcpy(&con->arch.shm, shm, sizeof(*shm));
 
 	con->write_start = pscom_poll_write_start;
 	con->write_stop = pscom_poll_write_stop;
@@ -558,6 +559,8 @@ void shm_init_con(pscom_con_t *con,
 	con->close = shm_close;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_shm;
+
+	pscom_con_setup_ok(con);
 }
 
 
@@ -566,13 +569,6 @@ int shm_is_local(pscom_con_t *con)
 {
 	return con->pub.remote_con_info.node_id == pscom_get_nodeid();
 }
-
-
-typedef struct shm_info_msg_s {
-	int shm_id;
-	int direct_shm_id;	/* shm direct shared mem id */
-	void *direct_base;	/* base pointer of the shared mem segment */
-} shm_info_msg_t;
 
 /****************************************************************/
 static
@@ -599,107 +595,57 @@ void pscom_shm_info_msg(shm_conn_t *shm, shm_info_msg_t *msg)
 	msg->direct_base = psshm_info.base;
 }
 
-
 static
-int pscom_shm_connect(pscom_con_t *con, int con_fd)
+int pscom_shm_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_SHM;
-	shm_conn_t shm;
-	shm_info_msg_t msg;
-	int err;
-	int ack;
-
-	if (!shm_is_local(con))
-		return 0; /* Dont use sharedmem */
-
-	/* talk shm? */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_SHM))
-		goto err_remote;
-
-	/* step 2 : recv shm_id */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)))
-		goto err_remote;
-
-	shm_init_shm_conn(&shm);
-	err = shm_initrecv(&shm) || shm_initsend(&shm, msg.shm_id);
-
-	shm_init_direct(&shm, msg.direct_shm_id, msg.direct_base);
-
-	/* step 3 : send shm_id or error */
-	pscom_shm_info_msg(&shm, &msg);
-	if (err) msg.shm_id = -1;
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-	if (err) goto err_local;
-
-	/* step 4: Shared mem initialized. Recv final ACK. */
-	if ((pscom_readall(con_fd, &ack, sizeof(ack)) != sizeof(ack)) ||
-	    (ack == -1)) goto err_ack;
-
-
-	shm_init_con(con, con_fd, &shm);
-
-	return 1;
-	/* --- */
-err_ack:
-err_local:
-	if (shm.local_com) shmdt(shm.local_com);
-	if (shm.remote_com) shmdt(shm.remote_com);
-err_remote:
-	return 0;
+	return shm_is_local(con) ? 0 : -1;
 }
 
+#define PSCOM_INFO_SHM_SHMID PSCOM_INFO_ARCH_STEP1
 
 static
-int pscom_shm_accept(pscom_con_t *con, int con_fd)
+void pscom_shm_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_SHM;
-	shm_conn_t shm;
-	shm_info_msg_t msg;
-	int ack;
+	precon_t *pre = con->precon;
+	shm_conn_t *shm = &con->arch.shm;
 
-	shm_init_shm_conn(&shm);
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		shm_init_shm_conn(shm);
+		if (shm_initrecv(shm)) goto error_initsend;
 
-	if ((!shm_is_local(con)) || shm_initrecv(&shm)) {
-		arch = PSCOM_ARCH_ERROR;
-		pscom_writeall(con_fd, &arch, sizeof(arch));
-		goto dont_use; /* Dont use sharedmem */
+		shm_info_msg_t msg;
+		pscom_shm_info_msg(shm, &msg);
+		pscom_precon_send(pre, PSCOM_INFO_SHM_SHMID, &msg, sizeof(msg));
+		break;
+	}
+	case PSCOM_INFO_SHM_SHMID: {
+		shm_info_msg_t *msg = data;
+		assert(size == sizeof(*msg));
+		if (shm_initsend(shm, msg)) goto error_initrecv;
+		pscom_precon_send(pre, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break;
+
+	}
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Cleanup shm */
+		shm_cleanup_shm_conn(shm);
+		break;
+
+	case PSCOM_INFO_ARCH_OK:
+		pscom_con_guard_start(con);
+		break;
+	case PSCOM_INFO_EOF:
+		shm_init_con(con);
+		break;
 	}
 
-	/* step 1:  Yes, we talk shm. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 2: Send shm_id. */
-	pscom_shm_info_msg(&shm, &msg);
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-
-	/* step 3: Recv shm_id. */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)) ||
-	    msg.shm_id == -1) goto err_remote;
-
-	if (shm_initsend(&shm, msg.shm_id)) goto err_local;
-
-	shm_init_direct(&shm, msg.direct_shm_id, msg.direct_base);
-
-	/* step 4: Shared mem initialized. Send final ACK. */
-	ack = 0;
-	pscom_writeall(con_fd, &ack, sizeof(ack));
-
-	shm_init_con(con, con_fd, &shm);
-
-	return 1;
+	return;
 	/* --- */
-err_local:
-	ack = -1; /* send error */
-	pscom_writeall(con_fd, &ack, sizeof(ack));
-err_remote:
-dont_use:
-	shm_cleanup_shm_conn(&shm);
-	return 0; /* shm failed */
+error_initrecv:
+error_initsend:
+	shm_cleanup_shm_conn(shm);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pre);
 }
 
 
@@ -713,6 +659,6 @@ pscom_plugin_t pscom_plugin_shm = {
 	.destroy	= NULL,
 	.sock_init	= pscom_shm_sock_init,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_shm_connect,
-	.con_accept	= pscom_shm_accept,
+	.con_init	= pscom_shm_con_init,
+	.con_handshake	= pscom_shm_handshake,
 };

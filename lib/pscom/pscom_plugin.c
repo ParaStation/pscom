@@ -331,3 +331,20 @@ void pscom_plugins_sock_destroy(pscom_sock_t *sock)
 		if (p->sock_destroy) p->sock_destroy(sock);
 	}
 }
+
+
+pscom_plugin_t *pscom_plugin_next(pscom_plugin_t *cur)
+{
+	if (!cur) return pscom_plugin_first();
+	if (&pscom_plugins == cur->next.next) return NULL;
+
+	return list_entry(cur->next.next, pscom_plugin_t, next);
+}
+
+
+pscom_plugin_t *pscom_plugin_first(void)
+{
+	if (list_empty(&pscom_plugins)) return NULL;
+
+	return list_entry(pscom_plugins.next, pscom_plugin_t, next);
+}

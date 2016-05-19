@@ -37,7 +37,6 @@
 
 #define PSELAN_MAGIC_UNUSED	0
 #define PSELAN_MAGIC_IO		1
-#define PSELAN_MAGIC_EOF	2
 
 
 #define PSELAN_LEN(len) ((len + 7) & ~7)
@@ -84,7 +83,7 @@ struct pselan_con_info {
 
 
 #define pselan_dprint(level,fmt,arg... ) do {			\
-        if ((level) <= pselan_debug) {				\
+	if ((level) <= pselan_debug) {				\
 		fprintf(stderr, "<pselan:"fmt">\n",##arg);	\
 		fflush(stderr);					\
 	}							\
@@ -280,13 +279,6 @@ int pselan_sendv(pselan_con_info_t *ci, struct iovec *iov, int size)
 }
 
 
-void pselan_send_eof(pselan_con_info_t *ci)
-{
-	_pselan_sendv(ci, NULL, 0, PSELAN_MAGIC_EOF);
-	ci->con_broken = 1; // Do not send more
-}
-
-
 void pselan_recvdone(pselan_con_info_t *ci)
 {
 	ci->n_tosend_toks++;
@@ -324,8 +316,8 @@ int pselan_recvlook(pselan_con_info_t *ci, void **buf)
 		unsigned pselanlen = PSELAN_LEN(len);
 
 		*buf = ci->recv_bufs[ci->recv_pos].data - pselanlen;
-		if (len || (magic == PSELAN_MAGIC_EOF)) {
-			// receive data or EOF
+		if (len) {
+			// receive data
 			return len;
 		}
 

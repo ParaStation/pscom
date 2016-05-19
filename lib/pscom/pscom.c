@@ -13,6 +13,7 @@
 
 #include "pscom.h"
 #include "pscom_priv.h"
+#include "pscom_util.h"
 
 #include <string.h>
 #include <stdlib.h>
@@ -42,6 +43,7 @@
 #include "pscom_con.h"
 #include "pscom_env.h"
 #include "pslib.h"
+#include "pscom_async.h"
 
 pscom_t pscom = {
 	.threaded = 0, /* default is unthreaded */
@@ -230,14 +232,23 @@ int pscom_progress(int timeout)
 		timeout = 0; // enable polling
 	}
 
-	if (ufd_poll(&pscom.ufd, timeout)) {
-		return 1;
-	} else {
-		if (pscom.env.sched_yield) {
-			sched_yield();
-		}
-		return 0;
+	if (unlikely(!pscom_backlog_empty())) {
+		pscom_backlog_execute();
 	}
+
+	if (likely(!pscom.threaded)) {
+		if (ufd_poll(&pscom.ufd, timeout)) {
+			return 1;
+		}
+	} else {
+		if (ufd_poll_threaded(&pscom.ufd, timeout)) {
+			return 1;
+		}
+	}
+	if (pscom.env.sched_yield) {
+		sched_yield();
+	}
+	return 0;
 }
 
 
@@ -254,6 +265,46 @@ void pscom_cleanup(void)
 	if (pscom.env.debug_stats) pscom_dump_reqstat(pscom_debug_stream());
 	perf_print();
 	DPRINT(1,"Byee.");
+}
+
+
+static
+void _pscom_suspend_resume(void *dummy)
+{
+	static int suspend = 1;
+	struct list_head *pos_sock;
+	struct list_head *pos_con;
+
+	if (suspend) {
+		DPRINT(1, "SUSPEND signal received");
+	} else {
+		DPRINT(1, "RESUME signal received");
+	}
+	// ToDo: Use pscom_lock() and fix the race with this handler and the main thread.
+
+	list_for_each(pos_sock, &pscom.sockets) {
+		pscom_sock_t *sock = list_entry(pos_sock, pscom_sock_t, next);
+
+		list_for_each(pos_con, &sock->connections) {
+			pscom_con_t *con = list_entry(pos_con, pscom_con_t, next);
+
+			if (suspend) {
+				con->state.suspend_active = 1;
+				_pscom_con_suspend(con);
+			} else {
+				_pscom_con_resume(con);
+			}
+		}
+	}
+	suspend = !suspend;
+}
+
+
+static
+void _pscom_suspend_sighandler(int signum)
+{
+	// Call _pscom_suspend_resume in main thread:
+	pscom_backlog_push(_pscom_suspend_resume, NULL);
 }
 
 /*
@@ -288,6 +339,8 @@ int pscom_init(int pscom_version)
 		assert(res_mutex_init == 0);
 		res_mutex_init = pthread_mutex_init(&pscom.lock_requests, NULL);
 		assert(res_mutex_init == 0);
+		res_mutex_init = pthread_mutex_init(&pscom.backlog_lock, NULL);
+		assert(res_mutex_init == 0);
 	}
 
 	ufd_init(&pscom.ufd);
@@ -297,10 +350,15 @@ int pscom_init(int pscom_version)
 
 	INIT_LIST_HEAD(&pscom.poll_reader);
 	INIT_LIST_HEAD(&pscom.poll_sender);
+	INIT_LIST_HEAD(&pscom.backlog);
 
 	pscom_pslib_init();
 	pscom_env_init();
 	pscom_debug_init();
+
+	if (pscom.env.sigsuspend) {
+		signal(pscom.env.sigsuspend, _pscom_suspend_sighandler);
+	}
 
 	atexit(pscom_cleanup);
 	return PSCOM_SUCCESS;

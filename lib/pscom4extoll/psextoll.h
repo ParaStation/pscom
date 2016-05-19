@@ -58,7 +58,6 @@ int psex_init(void);
  * read(peer, info), peer called psex_con_get_info_msg() a transmit the result to us.
  * psex_con_connect(ci, info); // both sides have to call connect
  * (psex_sendv()/psex_recvlook and done)*
- * psextoll_send_eof(ci);
  * psex_con_cleanup(ci);
  * psex_con_free(ci);
  */
@@ -80,7 +79,6 @@ void	psex_con_get_info_msg(psex_con_info_t *con_info /* in */, psex_info_msg_t *
  * Start receiving.
  * return:
  * number of bytes received or
- * 0 for EOF (from psextoll_send_eof()) or
  * -EAGAIN nothing received or
  * -EPIPE broken connction.
  * (call psex_recvdone after usage of *buf!)
@@ -90,17 +88,12 @@ void psex_recvdone(psex_con_info_t *con_info);
 
 
 /* returnvalue like write(), except on error errno is negative return
- * send size bytes from iov through ci.
+ * send size bytes from iov through ci. (size > 0)
  * return number of bytes send or:
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
- *
- * (sending with size = 0, will send a 0 message. But you will not
- * receive this message with psex_recvlook! To send EOF, use
- * psextoll_send_eof().) *
  */
 int psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size);
-void psex_send_eof(psex_con_info_t *con_info);
 
 
 /* Flush the notification queue and make progress in the rma2 engine. */

@@ -15,6 +15,9 @@
 #include "pscom_io.h"
 #include "pscom_queues.h"
 #include "pscom_req.h"
+#include "pscom_precon.h"
+#include "pscom_plugin.h"
+#include "pscom_async.h"
 #include "pslib.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -23,32 +26,8 @@
 #include <errno.h>
 
 static
-int mtry_connect(int sockfd, const struct sockaddr *serv_addr,
-		 socklen_t addrlen)
-{
-/* In the case the backlog (listen) is smaller than the number of
-   processes, the connect could fail with ECONNREFUSED even though
-   there is a linstening socket. mtry_connect() retry four times
-   the connect after one second delay.
-*/
-	unsigned int i;
-	int ret = 0;
-	struct sockaddr_in *sa = (struct sockaddr_in*)serv_addr;
-	for (i = 0; i < pscom.env.retry; i++) {
-		ret = connect(sockfd, serv_addr, addrlen);
-		if (ret >= 0) break;
-		if (errno != ECONNREFUSED) break;
-		sleep(1);
-		DPRINT(2, "Retry %d CONNECT to %s:%d",
-		       i + 1,
-		       pscom_inetstr(ntohl(sa->sin_addr.s_addr)),
-		       ntohs(sa->sin_port));
-	}
-	return ret;
-}
+void _pscom_con_destroy(pscom_con_t *con);
 
-
-static
 void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
 {
 	char buf[80];
@@ -64,38 +43,14 @@ void pscom_no_rw_start_stop(pscom_con_t *con)
 }
 
 
-static
-void tcp_configure(int fd)
-{
-	int ret;
-	int val;
-
-	if (pscom.env.so_sndbuf) {
-		errno = 0;
-		val = pscom.env.so_sndbuf;
-		ret = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &val, sizeof(val));
-		DPRINT(2, "setsockopt(%d, SOL_SOCKET, SO_SNDBUF, [%d], %ld) = %d : %s",
-		       fd, val, (long)sizeof(val), ret, strerror(errno));
-	}
-	if (pscom.env.so_rcvbuf) {
-		errno = 0;
-		val = pscom.env.so_rcvbuf;
-		ret = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &val, sizeof(val));
-		DPRINT(2, "setsockopt(%d, SOL_SOCKET, SO_RCVBUF, [%d], %ld) = %d : %s",
-		       fd, val, (long)sizeof(val), ret, strerror(errno));
-	}
-	errno = 0;
-	val = pscom.env.tcp_nodelay;
-	ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
-	DPRINT(2, "setsockopt(%d, IPPROTO_TCP, TCP_NODELAY, [%d], %ld) = %d : %s",
-	       fd, val, (long) sizeof(val), ret, strerror(errno));
-}
-
-
 // clear sendq. finish all send requests with error
 static
 void _pscom_con_terminate_sendq(pscom_con_t *con)
 {
+	pscom_sock_t *sock = get_sock(con->pub.socket);
+	struct list_head *pos, *next;
+
+	// Sendq
 	while (!list_empty(&con->sendq)) {
 		pscom_req_t *req = list_entry(con->sendq.next, pscom_req_t, next);
 
@@ -103,6 +58,27 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 
 		req->pub.state |= PSCOM_REQ_STATE_ERROR;
 		_pscom_send_req_done(req); // done
+	}
+
+	// PendingIO queue
+	list_for_each_safe(pos, next, &sock->pendingioq) {
+		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
+
+		if (req->pub.connection == &con->pub) {
+			req->pub.state |= PSCOM_REQ_STATE_ERROR;
+		}
+	}
+
+	// Connection suspending? Terminate send requests from sock->sendq_suspending.
+	list_for_each_safe(pos, next, &sock->sendq_suspending) {
+		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
+
+		if (req->pub.connection == &con->pub) {
+			list_del(&req->next); // dequeue
+
+			req->pub.state |= PSCOM_REQ_STATE_ERROR;
+			_pscom_send_req_done(req); // done
+		}
 	}
 }
 
@@ -217,7 +193,8 @@ void pscom_con_error_write_failed(pscom_con_t *con, pscom_err_t error)
 }
 
 
-void pscom_con_close(pscom_con_t *con)
+static
+void _pscom_con_cleanup(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
@@ -229,7 +206,7 @@ void pscom_con_close(pscom_con_t *con)
 
 		_pscom_con_terminate_net_queues(con);
 
-		assert(con->pub.state == PSCOM_CON_STATE_NO_RW);
+		assert(con->pub.state == PSCOM_CON_STATE_CLOSING);
 		assert(list_empty(&con->sendq));
 		assert(list_empty(&con->recvq_user));
 		assert(list_empty(&con->net_recvq_user));
@@ -246,16 +223,83 @@ void pscom_con_close(pscom_con_t *con)
 		    // !list_empty(&con->net_recvq_bcast) ||
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
 
+		if (con->pub.state == PSCOM_CON_STATE_CLOSING) {
+			DPRINT(con->pub.type != PSCOM_CON_TYPE_ONDEMAND ? 2 : 5,
+			       "DISCONNECT %s via %s",
+			       pscom_con_str(&con->pub),
+			       pscom_con_type_str(con->pub.type));
+		} else {
+			DPRINT(5, "cleanup %s via %s : %s",
+			       pscom_con_str(&con->pub),
+			       pscom_con_type_str(con->pub.type),
+			       pscom_con_state_str(con->pub.state));
+		}
+
 		if (con->close) con->close(con);
 
-		list_del(&con->next);
+		list_del_init(&con->next);
 		con->pub.state = PSCOM_CON_STATE_CLOSED;
 		pscom_con_info_set(con, "state", pscom_con_state_str(con->pub.state));
 		_pscom_step();
+	} else {
+		list_del_init(&con->next); // May dequeue multiple times.
+	}
+
+	if (con->pub.state == PSCOM_CON_STATE_CLOSED && con->state.close_called) {
+		_pscom_con_destroy(con);
 	}
 }
 
 
+static
+void _write_start_closing(pscom_con_t *con)
+{
+	DPRINT(1, "Writing to the closed connection %s (%s)",
+	       pscom_con_str(&con->pub), pscom_con_type_str(con->pub.type));
+}
+
+
+static
+void io_done_send_eof(pscom_req_state_t state, void *priv_con)
+{
+	pscom_con_t *con = priv_con;
+	pscom_lock(); {
+		_pscom_con_cleanup(con);
+	} pscom_unlock();
+
+}
+
+
+static
+void pscom_con_send_eof(pscom_con_t *con)
+{
+	_pscom_send_inplace(con, PSCOM_MSGTYPE_EOF,
+			    NULL, 0,
+			    NULL, 0,
+			    io_done_send_eof, con);
+}
+
+
+void pscom_con_close(pscom_con_t *con)
+{
+	int send_eof;
+	assert(con->magic == MAGIC_CONNECTION);
+
+	send_eof = ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W) && (con->pub.type != PSCOM_CON_TYPE_ONDEMAND);
+
+	// ToDo: What to do, if (con->pub.state & PSCOM_CON_STATE_SUSPENDING) ?
+
+	if (send_eof) {
+		pscom_con_send_eof(con);
+		con->write_start = _write_start_closing; // No further writes
+	}
+
+	con->pub.state = PSCOM_CON_STATE_CLOSING;
+
+	if (!send_eof) {
+		_pscom_con_cleanup(con);
+	}
+}
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 {
 	assert(con->magic == MAGIC_CONNECTION);
@@ -277,6 +321,11 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 	case PSCOM_OP_WRITE:
 		pscom_con_error_write_failed(con, error);
 		break;
+	case PSCOM_OP_CONNECT:
+	case PSCOM_OP_RW:
+		pscom_con_error_write_failed(con, error);
+		pscom_con_error_read_failed(con, error);
+		break;
 	}
 
 	if (con->pub.socket->ops.con_error) {
@@ -292,13 +341,13 @@ void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info)
 }
 
 
-static
 pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 {
 	pscom_con_t *con;
 	con = malloc(sizeof(*con) + sock->pub.connection_userdata_size);
 	if (!con) return NULL;
 
+	memset(con, 0, sizeof(*con));
 	con->magic = MAGIC_CONNECTION;
 	con->pub.socket = &sock->pub;
 	con->pub.userdata_size = sock->pub.connection_userdata_size;
@@ -306,6 +355,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->pub.type = PSCOM_CON_TYPE_NONE;
 
 	con->recv_req_cnt = 0;
+	INIT_LIST_HEAD(&con->next);
 	INIT_LIST_HEAD(&con->sendq);
 	INIT_LIST_HEAD(&con->recvq_user);
 	INIT_LIST_HEAD(&con->recvq_ctrl);
@@ -316,6 +366,8 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	INIT_LIST_HEAD(&con->poll_reader.next);
 	INIT_LIST_HEAD(&con->poll_next_send);
 
+	con->con_guard.fd = -1;
+	con->precon = NULL;
 	con->in.req	= 0;
 	con->in.req_locked = 0;
 	con->in.skip	= 0;
@@ -338,20 +390,33 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 
 	con->rendezvous_size = pscom.env.rendezvous_size;
 
+	/* State */
+	con->state.eof_received = 0;
+	con->state.close_called = 0;
+	con->state.suspend_active = 0;
+
 	return con;
 }
 
 
 static
-void pscom_con_destroy(pscom_con_t *con)
+void _pscom_con_destroy(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
+	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
+		DPRINT(0, "pscom_con_destroy(con) : con state %s",
+		       pscom_con_state_str(con->pub.state));
+	}
 	assert(con->pub.state == PSCOM_CON_STATE_CLOSED);
 	assert(list_empty(&con->poll_next_send));
 	assert(list_empty(&con->poll_reader.next));
 
 	if(con->in.readahead.iov_base) {
 		free(con->in.readahead.iov_base);
+	}
+
+	if (con->con_guard.fd != -1) {
+		pscom_con_guard_stop(con);
 	}
 
 	con->magic = 0;
@@ -383,6 +448,7 @@ void pscom_con_setup(pscom_con_t *con)
 	if (!list_empty(&con->sendq)) {
 		con->write_start(con);
 	}
+	_pscom_step();
 }
 
 
@@ -409,401 +475,144 @@ int pscom_is_valid_con(pscom_con_t *con)
 }
 
 
-#define PSCOM_INFO_EOF		0x100000	/* Last info message */
-#define PSCOM_INFO_ANSWER	0x100001	/* request remote side, to send answers */
-#define PSCOM_INFO_CON_INFO	0x100002	/* pscom_con_info_t */
-#define PSCOM_INFO_VERSION	0x100003	/* pscom_info_version_t */
-#define PSCOM_INFO_BACK_CONNECT	0x100004	/* pscom_con_info_t Request a back connect */
-
-
-typedef struct {
-	/* supported version range from sender,
-	   overlap must be non empty. */
-	uint32_t	ver_from;
-	uint32_t	ver_to;
-} pscom_info_version_t;
-
-#define VER_FROM 0x0101
-#define VER_TO   0x0101
-
-
-static
-int pscom_info_send(int fd, unsigned type, unsigned size, void *data)
-{
-	uint32_t ntype = htonl(type);
-	uint32_t nsize = htonl(size);
-	int err = 0;
-
-	err = err || pscom_writeall(fd, &ntype, sizeof(ntype)) != sizeof(ntype);
-	err = err || pscom_writeall(fd, &nsize, sizeof(nsize)) != sizeof(nsize);
-	err = err || pscom_writeall(fd, data, size) != (int)size;
-
-	return err;
-}
-
-
-/* will receive into *type, *size and *data = realloc(*data, *size) */
-static
-int pscom_info_recv(int fd, unsigned *type, unsigned *size, void **data)
-{
-	int err = 0;
-	uint32_t ntype = 0;
-	uint32_t nsize = 0;
-
-	err = err || pscom_readall(fd, &ntype, sizeof(ntype)) != sizeof(ntype);
-	err = err || pscom_readall(fd, &nsize, sizeof(nsize)) != sizeof(nsize);
-
-	*size = ntohl(nsize);
-	*type = ntohl(ntype);
-
-	if (!err) {
-		*data = realloc(*data, *size);
-		err = err || pscom_readall(fd, *data, *size) != (int)*size;
-	}
-
-	if (err) {
-		*type = PSCOM_INFO_EOF;
-		*size = 0;
-		free(*data);
-		*data = NULL;
-	}
-	return err;
-}
-
-
 void pscom_ondemand_indirect_connect(pscom_con_t *con)
 {
 	int nodeid = con->arch.ondemand.node_id;
 	int portno = con->arch.ondemand.portno;
-	int fd;
+	int rc;
 
-	fd = pscom_tcp_connect(nodeid, portno);
-	if (fd >= 0) {
-		pscom_con_info_t con_info;
-		pscom_con_info(con, &con_info);
+	precon_t *pre = pscom_precon_create(con);
 
-		DPRINT(3, "RCONNECT%s", pscom_con_str_reverse(&con->pub));
+	rc = pscom_precon_tcp_connect(pre, nodeid, portno);
+	if (rc >= 0) {
+		/* Request a back connect. There are three reasons for
+		   a failing tcp_connect: 1.) Problems to connect,
+		   caused by network congestion or busy peer (e.g. tcp
+		   backlog to small). In this case the connection con
+		   should be terminated with an error. 2.) Peer is
+		   connecting to us at the same time and the listening
+		   tcp port is already closed. This is not an error
+		   and we must not terminate the connection con.  As
+		   we can not distinct between 1 and 2, we ignore
+		   tcp_connect errors in the hope it was 2. In the
+		   worst case this deadlock parallel applications!
+		   3.) Peer has no receive request on this con and is
+		   not watching for POLLIN on the listening fd. This
+		   is currently unhandled! */
 
-		pscom_info_send(fd, PSCOM_INFO_BACK_CONNECT, sizeof(con_info), &con_info);
-		close(fd);
+		/* Send a rconnect request */
+		DPRINT(PRECON_LL, "precon(%p): send backcon %.8s to %.8s", pre,
+		       con->pub.socket->local_con_info.name, con->pub.remote_con_info.name);
+		pscom_precon_send_PSCOM_INFO_CON_INFO(pre, PSCOM_INFO_BACK_CONNECT);
+		pre->con = NULL; /* Forget the con to avoid a race
+				  *  with a simultanous PSCOM_INFO_CON_INFO_DEMAND
+				  */
+		pscom_precon_recv_start(pre); // Wait for the PSCOM_INFO_BACK_ACK
+	} else {
+		pscom_precon_destroy(pre);
 	}
 }
 
 
-static
-int pscom_info_exchange_send(int fd, pscom_con_t *con, unsigned end_with)
+void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 {
-	pscom_con_info_t con_info;
-	pscom_info_version_t ver;
-	int err = 0;
+	precon_t *pre = con->precon;
 
-	/* exchange connection information */
-	pscom_con_info(con, &con_info);
-
-	err = err || pscom_info_send(fd, PSCOM_INFO_CON_INFO, sizeof(con_info), &con_info);
-
-	/* Send supported versions */
-	ver.ver_from = VER_FROM;
-	ver.ver_to   = VER_TO;
-	err = err || pscom_info_send(fd, PSCOM_INFO_VERSION, sizeof(ver), &ver);
-
-	/* eof of exchange */
-	err = err || pscom_info_send(fd, end_with, 0, NULL);
-
-	return err;
-}
-
-
-static
-int pscom_info_exchange_recv(int fd, pscom_con_t **con, unsigned end_with, int passive)
-{
-	uint32_t type;
-	uint32_t size;
-	void *data = NULL;
-	int err = 0;
-
-	while (1) {
-		err = err || pscom_info_recv(fd, &type, &size, &data);
-		if (err) {
-			errno = EBADE;
-			break;
-		}
-
-		switch (type) {
-		case PSCOM_INFO_EOF: /* fall through */
-		case PSCOM_INFO_ANSWER:
-			if (type != end_with) {
-				errno = EBADE;
-				err = -1;
-			}
-			goto out;
-		case PSCOM_INFO_CON_INFO: {
-			pscom_con_info_t *con_info = data;
-			assert(size == sizeof(*con_info));
-			if (passive) {
-				// Search for an existing matching connection
-				pscom_sock_t *sock = get_sock((*con)->pub.socket);
-				pscom_con_t *con_exist = pscom_ondemand_get_con(sock, con_info->name);
-				if (con_exist) {
-					/* replace con by the existing one */
-					pscom_con_destroy(*con);
-					*con = con_exist;
-				} else if (sock->pub.listen_portno == -1) {
-					/* No con found AND not listening.
-					   Reject this connection! */
-					DPRINT(1, "Reject %s : unknown connection and not listening", pscom_con_info_str(con_info));
-					errno = EINVAL;
-					err = -1;
-					goto out;
-				}
-			}
-			(*con)->pub.remote_con_info = *con_info;
-			break;
-		}
-		case PSCOM_INFO_VERSION: {
-			pscom_info_version_t *ver = data;
-			assert(size >= sizeof(*ver)); /* with space for the future */
-			if ((VER_TO < ver->ver_from) || (ver->ver_to < VER_FROM)) {
-				DPRINT(0, "CONNECT %s : Protocol version overlap empty [%04x..%04x] to [%04x..%04x]",
-				       pscom_con_str(&(*con)->pub),
-				       VER_FROM, VER_TO, ver->ver_from, ver->ver_to);
-				errno = EPROTO;
-				err = -1;
-				goto out;
-			}
-			break;
-		}
-		case PSCOM_INFO_BACK_CONNECT: {
-			pscom_con_info_t *con_info = data;
-			assert(size == sizeof(*con_info));
-			pscom_sock_t *sock = get_sock((*con)->pub.socket);
-			// Search for an existing matching connection
-			pscom_con_t *con_exist = pscom_ondemand_find_con(sock, con_info->name);
-
-			if (passive && con_exist) {
-				/* Trigger the back connect */
-				DPRINT(3, "RACCEPT %s", pscom_con_str(&con_exist->pub));
-				con_exist->write_start(con_exist);
-			} else {
-				DPRINT(3, "RACCEPT from %s skipped", pscom_con_info_str(con_info));
-			}
-			errno = 0; // No error
-			err = -1; // but close this connection.
-			goto out;
-			break;
-		}
-		default: /* ignore all unknown info messages */
-			;
-		}
-	} while (!err);
-out:
-	free(data);
-
-	return err;
-}
-
-
-static
-int pscom_info_exchange_active(int fd, pscom_con_t *con)
-{
-	int err = 0;
-	pscom_con_t *con_bak = con;
-
-	err = err || pscom_info_exchange_send(fd, con, PSCOM_INFO_ANSWER);
-	err = err || pscom_info_exchange_recv(fd, &con, PSCOM_INFO_EOF, 0);
-	assert(con == con_bak);
-
-	return err;
-}
-
-
-static
-int pscom_info_exchange_passive(int fd, pscom_con_t **con)
-{
-	int err = 0;
-
-	err = err || pscom_info_exchange_recv(fd, con, PSCOM_INFO_ANSWER, 1);
-	err = err || pscom_info_exchange_send(fd, *con, PSCOM_INFO_EOF);
-
-	return err;
-}
-
-
-void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
-{
-	pscom_sock_t *sock = ufd_info->priv;
-
-	pscom_con_t *con, *con_bak;
-	int con_fd;
-	int is_ondemand;
-
-	/* Open connection */
-	con = pscom_con_create(sock);
-	if (!con) goto err_connection_create;
-
-	/* Open the socket */
-	int listen_fd = pscom_listener_get_fd(&sock->listen);
-	con_fd = accept(listen_fd, NULL, NULL);
-	if (con_fd < 0) goto err_accept;
-
-	tcp_configure(con_fd);
-
-	/* pscom_info_exchange_passive() can change con to an existing one! */
-	con_bak = con;
-	if (pscom_info_exchange_passive(con_fd, &con))
-		goto err_info_exchange;
-	is_ondemand = con_bak != con;
-
-	while (1) {
-		int arch;
-
-		if (pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch))
-			goto err_init_failed;
-
-		pscom_plugin_t *p = NULL;
-
-		if (_pscom_con_type_mask_is_set(sock, PSCOM_ARCH2CON_TYPE(arch))) {
-			p = pscom_plugin_by_archid(arch);
-		}
-		if (p) {
-			if (p->con_accept(con, con_fd)) goto out;
-		} else {
-			// Unknown or disabled arch
-			arch = PSCOM_ARCH_ERROR;
-			pscom_writeall(con_fd, &arch, sizeof(arch));
-		}
+	if (pre) {
+		pscom_precon_close(pre);
+		/* pre destroys itself in pscom_precon_check_end()
+		   after the send buffer is drained.*/
+		// pscom_precon_destroy(pre); con->precon = NULL;
 	}
-	/* --- */
-out:
-	if (1 <= pscom.env.debug) {
-		DPRINT(1, "ACCEPT  %s via %s%s",
+
+	con->pub.state = PSCOM_CON_STATE_CLOSED;
+	pscom_con_error(con, PSCOM_OP_CONNECT, err);
+}
+
+
+void pscom_con_setup_ok(pscom_con_t *con)
+{
+	precon_t *pre = con->precon;
+	pscom_sock_t *sock = get_sock(con->pub.socket);
+	pscom_con_state_t con_state = con->pub.state;
+
+	if (pre) {
+		pscom_precon_destroy(pre);
+		con->precon = NULL;
+	}
+	if (list_empty(&con->next)) {
+		list_add_tail(&con->next, &sock->connections);
+	}
+
+	con->pub.state = PSCOM_CON_STATE_RW;
+
+	switch (con_state) {
+	case PSCOM_CON_STATE_CONNECTING:
+		DPRINT(1, "CONNECT %s via %s",
+		       pscom_con_str(&con->pub),
+		       pscom_con_type_str(con->pub.type));
+		break;
+	case PSCOM_CON_STATE_ACCEPTING:
+		DPRINT(1, "ACCEPT  %s via %s",
 		       pscom_con_str_reverse(&con->pub),
-		       pscom_con_type_str(con->pub.type),
-		       is_ondemand ? "(demand)" : "");
+		       pscom_con_type_str(con->pub.type));
+
+		if (sock->pub.ops.con_accept) {
+			// ToDo: Is it save to unlock here?
+			pscom_unlock(); {
+				sock->pub.ops.con_accept(&con->pub);
+			} pscom_lock();
+		}
+		break;
+	case PSCOM_CON_STATE_CONNECTING_ONDEMAND:
+		DPRINT(1, "CONNECT ONDEMAND %s via %s",
+		       pscom_con_str(&con->pub),
+		       pscom_con_type_str(con->pub.type));
+		break;
+	case PSCOM_CON_STATE_ACCEPTING_ONDEMAND:
+		DPRINT(1, "ACCEPT  ONDEMAND %s via %s",
+		       pscom_con_str_reverse(&con->pub),
+		       pscom_con_type_str(con->pub.type));
+		break;
+	default:
+		DPRINT(0, "pscom_con_setup_ok() : connection in wrong state : %s (%s)",
+		       pscom_con_state_str(con_state),
+		       pscom_con_type_str(con->pub.type));
 	}
-
-	list_add_tail(&con->next, &sock->connections);
-
-	if (sock->pub.ops.con_accept && (!is_ondemand)) {
-		// call con_accept only if this is NOT an on demand connection
-		pscom_unlock(); {
-			sock->pub.ops.con_accept(&con->pub);
-		} pscom_lock();
-	}
-
-	// warning: sock->pub.ops.connection_accept() can call free(con)!
-	if (pscom_is_valid_con(con)) {
-		pscom_con_setup(con);
-	}
-
-	_pscom_step();
-
-	return;
-	/* --- */
-err_init_failed:
-	errno = EPIPE;
-err_info_exchange:
-	close(con_fd);
-err_accept:
-	pscom_con_destroy(con);
-	if (errno) DPRINT(1, "ACCEPT failed : %s", strerror(errno));
-	return;
-	/* --- */
-err_connection_create:
-	DPRINT(1, "ACCEPT failed (create connection failed) : %s",
-	       strerror(errno));
-	return;
-}
-
-
-static
-void pscom_sockaddr_init(struct sockaddr_in *si, int nodeid, int portno)
-{
-	/* Setup si for TCP */
-	si->sin_family = PF_INET;
-	si->sin_port = htons(portno);
-	si->sin_addr.s_addr = htonl(nodeid);
-}
-
-
-int pscom_tcp_connect(int nodeid, int portno)
-{
-	struct sockaddr_in si;
-	int fd;
-
-	/* Open the socket */
-	fd = socket(PF_INET , SOCK_STREAM, 0);
-	if (fd < 0) goto err_socket;
-
-	pscom_sockaddr_init(&si, nodeid, portno);
-
-	/* Connect */
-	if (mtry_connect(fd, (struct sockaddr*)&si, sizeof(si)) < 0) goto err_connect;
-
-	tcp_configure(fd);
-
-	return fd;
-err_connect:
-	close(fd);
-err_socket:
-	return -1;
+	pscom_con_setup(con);
 }
 
 
 pscom_err_t pscom_con_connect_via_tcp(pscom_con_t *con, int nodeid, int portno)
 {
-	int con_fd;
-	int initialized = 0;
-	pscom_con_info_t con_info;
 	pscom_sock_t *sock = get_sock(con->pub.socket);
+	precon_t *pre;
 
-	pscom_con_info(con, &con_info);
+	/* ToDo: Set connection state to "connecting". Suspend send and recieve queues! */
+	pre = pscom_precon_create(con);
+	con->precon = pre;
+	con->pub.remote_con_info.node_id = nodeid;
+	if (!con->pub.remote_con_info.name[0]) {
+		snprintf(con->pub.remote_con_info.name, sizeof(con->pub.remote_con_info.name),
+			 ":%u", portno);
+	}
+	pre->plugin = NULL;
 
-	con_fd = pscom_tcp_connect(nodeid, portno);
-	if (con_fd < 0) goto err_connect;
-
-	if (pscom_info_exchange_active(con_fd, con))
-		goto err_info_exchange;
-
-	struct list_head *pos;
-
-	/* Search for "best" connections */
-	list_for_each(pos, &pscom_plugins) {
-		pscom_plugin_t *p = list_entry(pos, pscom_plugin_t, next);
-
-		if (!_pscom_con_type_mask_is_set(sock, PSCOM_ARCH2CON_TYPE(p->arch_id))) {
-			continue;
-		}
-
-		initialized = p->con_connect(con, con_fd);
-		if (initialized) break;
+	if (list_empty(&con->next)) {
+		list_add_tail(&con->next, &sock->connections);
 	}
 
-	if (!initialized)
-		goto err_init_failed;
+	if (pscom_precon_tcp_connect(pre, nodeid, portno) < 0)
+		goto err_connect;
 
-	DPRINT(1, "CONNECT %s via %s",
-	       pscom_con_str(&con->pub),
-	       pscom_con_type_str(con->pub.type));
-
-	list_add_tail(&con->next, &sock->connections);
-
-	pscom_con_setup(con);
+	con->pub.state = PSCOM_CON_STATE_CONNECTING;
+	pscom_precon_handshake(pre);
 
 	return PSCOM_SUCCESS;
-
-	/* error code */
-err_init_failed:
-	errno = EUNATCH;
-err_info_exchange:
-	close(con_fd);
+	/* --- */
+//err_init_failed:
 err_connect:
-	DPRINT(1, "CONNECT %s to tcp:%s:%u FAILED : %s",
-	       pscom_con_info_str(&con_info),
-	       pscom_inetstr(nodeid),
-	       portno,
-	       strerror(errno));
-
+	pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
 	return PSCOM_ERR_STDERROR;
 }
 
@@ -856,6 +665,7 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 	       pscom_con_str(&con->pub),
 	       pscom_con_type_str(con->pub.type));
 
+	assert(list_empty(&con->next));
 	list_add_tail(&con->next, &sock->connections);
 
 	con->arch.loop.sending = 0;
@@ -872,6 +682,68 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 	}
 
 	return PSCOM_SUCCESS;
+}
+
+
+static
+void pscom_con_guard_error(void *_con) {
+	pscom_con_t *con = (pscom_con_t *)_con;
+
+	pscom_con_error(con, PSCOM_OP_RW, PSCOM_ERR_IOERROR);
+}
+
+#define GUARD_BYE 0x25
+
+static
+void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info) {
+	pscom_con_t *con = (pscom_con_t *)ufd_info->priv;
+	char msg = 0;
+	int error = 0;
+
+	read(ufd_info->fd, &msg, 1); // Good bye or error?
+	error = msg != GUARD_BYE;
+
+	/* Callback called in the async thread!! */
+	DPRINT(error ? 1 : 2, "pscom guard con:%p %s", con, error ? "terminated" : "closed");
+
+	// Stop listening
+	ufd_event_clr(ufd, ufd_info, POLLIN);
+
+	if (error) {
+		// Call pscom_con_guard_error in the main thread
+		pscom_backlog_push(pscom_con_guard_error, con);
+	}
+}
+
+
+void pscom_con_guard_start(pscom_con_t *con)
+{
+	precon_t *pre = con->precon;
+	int fd;
+	assert(pre);
+	assert(pre->magic == MAGIC_PRECON);
+	if (!pscom.env.guard) return;
+
+	fd = pre->ufd_info.fd;
+	pre->closefd_on_cleanup = 0;
+	con->con_guard.fd = fd;
+	DPRINT(5, "precon(%p): Start guard on fd %d", pre, fd);
+	pscom_async_on_readable(fd, pscom_guard_readable, con);
+}
+
+
+void pscom_con_guard_stop(pscom_con_t *con)
+{
+	int fd = con->con_guard.fd;
+	if (fd != -1) {
+		char msg = GUARD_BYE;
+		write(con->con_guard.fd, &msg, 1); // Good bye
+
+		con->con_guard.fd = -1;
+		pscom_async_off_readable(fd, pscom_guard_readable, con);
+		close(fd);
+	}
+	DPRINT(5, "Stop guard on fd %d", fd);
 }
 
 
@@ -914,6 +786,14 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid, int portno
 		}
 	} pscom_unlock();
 
+
+	/* Block until we are connected.*/
+	if (!rc) {
+		while (con->pub.type == PSCOM_CON_TYPE_NONE && con->pub.state == PSCOM_CON_STATE_CONNECTING) {
+			pscom_wait_any();
+		}
+	}
+
 	return rc;
 }
 
@@ -922,8 +802,8 @@ void pscom_close_connection(pscom_connection_t *connection)
 {
 	pscom_lock(); {
 		pscom_con_t *con = get_con(connection);
+		con->state.close_called = 1;
 		pscom_con_close(con);
-		pscom_con_destroy(con);
 	} pscom_unlock();
 }
 

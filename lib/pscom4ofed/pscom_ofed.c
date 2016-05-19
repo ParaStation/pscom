@@ -25,6 +25,8 @@
 #include <assert.h>
 
 #include "pscom_priv.h"
+#include "pscom_con.h"
+#include "pscom_precon.h"
 #include "pscom_ofed.h"
 
 static struct {
@@ -132,13 +134,10 @@ void pscom_ofed_do_write(pscom_con_t *con)
 
 
 static
-void pscom_ofed_close(pscom_con_t *con)
+void pscom_ofed_con_cleanup(pscom_con_t *con)
 {
 	psofed_con_info_t *mcon = con->arch.ofed.mcon;
-
 	if (!mcon) return;
-
-	psofed_send_eof(mcon);
 
 	psofed_con_cleanup(mcon);
 	psofed_con_free(mcon);
@@ -148,17 +147,19 @@ void pscom_ofed_close(pscom_con_t *con)
 
 
 static
-void pscom_ofed_con_init(pscom_con_t *con, int con_fd,
-			   psofed_con_info_t *mcon)
+void pscom_ofed_con_close(pscom_con_t *con)
 {
-	con->pub.state = PSCOM_CON_STATE_RW;
+	psofed_con_info_t *mcon = con->arch.ofed.mcon;
+	if (!mcon) return;
+
+	pscom_ofed_con_cleanup(con);
+}
+
+
+static
+void pscom_ofed_init_con(pscom_con_t *con)
+{
 	con->pub.type = PSCOM_CON_TYPE_OFED;
-
-	close(con_fd);
-
-	con->arch.ofed.mcon = mcon;
-	con->arch.ofed.reading = 0;
-	psofed_con_set_priv(mcon, con);
 
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
@@ -167,7 +168,9 @@ void pscom_ofed_con_init(pscom_con_t *con, int con_fd,
 	con->read_stop = pscom_ofed_read_stop;
 
 	con->do_write = pscom_ofed_do_write;
-	con->close = pscom_ofed_close;
+	con->close = pscom_ofed_con_close;
+
+	pscom_con_setup_ok(con);
 }
 
 /*********************************************************************/
@@ -205,120 +208,58 @@ void pscom_ofed_init(void)
 	pscom_ofed.reader_user = 0;
 }
 
+#define PSCOM_INFO_OFED_ID PSCOM_INFO_ARCH_STEP1
+
 
 static
-int pscom_ofed_connect(pscom_con_t *con, int con_fd)
+int pscom_ofed_con_init(pscom_con_t *con)
 {
-	int arch = PSCOM_ARCH_OFED;
-	psofed_con_info_t *mcon = psofed_con_create();
-	psofed_info_msg_t msg;
-	int call_cleanup_con = 0;
-	int err;
-
-	if (psofed_init() || !mcon)
-		goto dont_use;  /* Dont use ofed */
-
-	/* We want talk ofed */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-
-	/* step 1 */
-	if ((pscom_readall(con_fd, &arch, sizeof(arch)) != sizeof(arch)) ||
-	    (arch != PSCOM_ARCH_OFED))
-		goto err_remote;
-
-	/* step 2 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)))
-		goto err_remote;
-
-	err = psofed_con_init(mcon, NULL);
-	if (!err) {
-		call_cleanup_con = 1;
-		err = psofed_con_connect(mcon, &msg);
-	}
-
-	/* step 3 : send connection id's (or error) */
-	if (!err) {
-		psofed_con_get_info_msg(mcon, &msg);
-	} else {
-		msg.lid = 0xffff; // send error
-	}
-
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	if (err) goto err_connect;
-
-	/* step 4: ofed initialized. Recv final ACK. */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)) ||
-	    (msg.lid == 0xffff)) goto err_ack;
-
-	pscom_ofed_con_init(con, con_fd, mcon);
-
-	return 1;
-	/* --- */
-err_ack:
-err_connect:
-	if (call_cleanup_con) psofed_con_cleanup(mcon);
-err_remote:
-dont_use:
-	if (mcon) psofed_con_free(mcon);
-	return 0;
+	return psofed_init();
 }
 
 
 static
-int pscom_ofed_accept(pscom_con_t *con, int con_fd)
+void pscom_ofed_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
-	int arch = PSCOM_ARCH_OFED;
-	psofed_con_info_t *mcon = NULL;
-	psofed_info_msg_t msg;
+	switch (type) {
+	case PSCOM_INFO_ARCH_REQ: {
+		psofed_info_msg_t msg;
+		psofed_con_info_t *mcon = psofed_con_create();
 
-	if (psofed_init())
-		goto out_noofed;
+		con->arch.ofed.mcon = mcon;
+		con->arch.ofed.reading = 0;
 
-	mcon = psofed_con_create();
-	if (!mcon)
-		goto out_noofed;
+		if (psofed_con_init(mcon, NULL, con)) goto error_con_init;
 
-	if (psofed_con_init(mcon, NULL))
-		goto err_con_init;
+		/* send my connection id's */
+		psofed_con_get_info_msg(mcon, &msg);
 
-	/* step 1:  Yes, we talk ofed. */
-	pscom_writeall(con_fd, &arch, sizeof(arch));
+		pscom_precon_send(con->precon, PSCOM_INFO_OFED_ID, &msg, sizeof(msg));
+		break; /* Next is PSCOM_INFO_OFED_ID or PSCOM_INFO_ARCH_NEXT */
+	}
+	case PSCOM_INFO_OFED_ID: {
+		psofed_info_msg_t *msg = data;
+		assert(sizeof(*msg) == size);
 
-	/* step 2: Send Connection id's */
-	psofed_con_get_info_msg(mcon, &msg);
+		if (psofed_con_connect(con->arch.ofed.mcon, msg)) goto error_con_connect;
 
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	/* step 3 : recv connection id's */
-	if ((pscom_readall(con_fd, &msg, sizeof(msg)) != sizeof(msg)) ||
-	    (msg.lid == 0xffff))
-		goto err_remote;
-
-	if (psofed_con_connect(mcon, &msg))
-		goto err_connect_con;
-
-	/* step 4: OFED mem initialized. Send final ACK. */
-	msg.lid = 0;
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-
-	pscom_ofed_con_init(con, con_fd, mcon);
-
-	return 1;
+		pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break; /* Next is EOF or ARCH_NEXT */
+	}
+	case PSCOM_INFO_ARCH_NEXT:
+		/* Something failed. Cleanup. */
+		pscom_ofed_con_cleanup(con);
+		break; /* Done. Ofed failed */
+	case PSCOM_INFO_EOF:
+		pscom_ofed_init_con(con);
+		break; /* Done. Use Ofed */
+	}
+	return;
 	/* --- */
-err_connect_con:
-	/* Send NACK */
-	msg.lid = 0xffff;
-	pscom_writeall(con_fd, &msg, sizeof(msg));
-err_remote:
-	psofed_con_cleanup(mcon);
-err_con_init:
-out_noofed:
-	if (mcon) psofed_con_free(mcon);
-	arch = PSCOM_ARCH_ERROR;
-	pscom_writeall(con_fd, &arch, sizeof(arch));
-	return 0; /* Dont use ofed */
-	/* --- */
+error_con_connect:
+error_con_init:
+	pscom_ofed_con_cleanup(con);
+	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
 
@@ -332,6 +273,6 @@ pscom_plugin_t pscom_plugin = {
 	.destroy	= NULL,
 	.sock_init	= NULL,
 	.sock_destroy	= NULL,
-	.con_connect	= pscom_ofed_connect,
-	.con_accept	= pscom_ofed_accept,
+	.con_init	= pscom_ofed_con_init,
+	.con_handshake	= pscom_ofed_handshake,
 };

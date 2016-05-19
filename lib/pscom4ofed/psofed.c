@@ -80,7 +80,6 @@ typedef struct {
 
 #define PSOFED_MAGIC_UNUSED	0
 #define PSOFED_MAGIC_IO		1
-#define PSOFED_MAGIC_EOF		2
 
 typedef struct {
 	psofed_msgheader_t header;
@@ -829,7 +828,7 @@ void psofed_con_cleanup(psofed_con_info_t *con_info)
 }
 
 
-int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context)
+int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context, void *priv)
 {
 	int rc;
 
@@ -838,7 +837,7 @@ int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context)
 	con_info->context = context;
 	con_info->ah = NULL;
 	con_info->qp_num = 0;
-	con_info->priv = NULL;
+	con_info->priv = priv;
 	con_info->con_broken = 0;
 
 	con_info->sending_count = 0;
@@ -891,12 +890,6 @@ err_version:
 	psofed_dprint(1, "psofed_con_connect() : version handshake failed (%03x expect %03x)",
 		      info_msg->version, PSOFED_INFO_VERSION);
 	return -1;
-}
-
-
-void psofed_con_set_priv(psofed_con_info_t *con_info, void *priv)
-{
-	con_info->priv = priv;
 }
 
 
@@ -1269,13 +1262,6 @@ err_getsbuf:
 int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, int size)
 {
 	return _psofed_sendv(con_info, iov, size);//, PSOFED_MAGIC_IO);
-}
-
-
-void psofed_send_eof(psofed_con_info_t *con_info)
-{
-	_psofed_sendv(con_info, NULL, 0);//, PSOFED_MAGIC_EOF);
-	con_info->con_broken = 1; // Do not send more
 }
 
 

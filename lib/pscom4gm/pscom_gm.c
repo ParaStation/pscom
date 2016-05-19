@@ -131,22 +131,6 @@ void pscom_gm_close(pscom_con_t *con)
 
 	if (!gmcon) return;
 
-	int i;
-	for (i = 0; i < 5; i++) {
-		// ToDo: Unreliable EOF
-		int rlen = psgm_sendv(gmcon, NULL, 0);
-		if (rlen >= 0)
-			break; // OK
-		if (rlen != -EAGAIN)
-			break; // error
-
-		// Make some progress:
-		_pscom_gm_do_read(&get_sock(con->pub.socket)->gm);
-
-		usleep(5*1000);
-		sched_yield();
-	}
-
 	psgm_con_cleanup(gmcon);
 	psgm_con_free(gmcon);
 

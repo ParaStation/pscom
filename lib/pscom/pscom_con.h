@@ -19,11 +19,17 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con);
 void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info);
 // start send and receive queue
 void pscom_con_setup(pscom_con_t *con);
+void pscom_con_setup_ok(pscom_con_t *con);
+void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err);
+
+pscom_con_t *pscom_con_create(pscom_sock_t *sock);
 
 // clear all recvq's of this connection. finish all recv requests
 // of this connection with error. (keep recv any!)
 void pscom_con_terminate_recvq(pscom_con_t *con);
 void pscom_con_close(pscom_con_t *con);
+
+void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val);
 
 // {read,write}_{start,stop} default hook.
 void pscom_no_rw_start_stop(pscom_con_t *con);
@@ -34,5 +40,13 @@ int pscom_is_local(pscom_socket_t *socket, int nodeid, int portno);
 pscom_con_t *pscom_ondemand_find_con(pscom_sock_t *sock, const char name[8]);
 pscom_con_t *pscom_ondemand_get_con(pscom_sock_t *sock, const char name[8]);
 void pscom_ondemand_indirect_connect(pscom_con_t *con);
+
+/* Start the connection guard on con.
+   - con must have an active con->precon
+   - precon->closefd_on_cleanup will be set to false
+   - precon's fd will be monitored for EOF
+*/
+void pscom_con_guard_start(pscom_con_t *con);
+void pscom_con_guard_stop(pscom_con_t *con);
 
 #endif /* _PSCOM_CON_H_ */
