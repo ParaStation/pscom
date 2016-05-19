@@ -1,3 +1,14 @@
+2016-05-19  Jens Hauke  <hauke@par-tec.com>	-	5.1.0-0_rc1
+
+	* Enhancement: Rewritten connection handshake. Asynchronous
+	handshake using TCP.
+
+	* Enhancement: Optional signal triggered suspend/resume of
+	connections. (enable ^Z suspend with PSP_SIGSUSPEND=20)
+
+	* Enhancement: Using the handshake TCP connection to monitor the
+	peer. ("Connection guard". disable with: PSP_GUARD=0)
+
 2016-01-18  Jens Hauke  <hauke@par-tec.com>	-	5.0.48-1
 
 	* Fix pscom_iprobe() message header of rendezvous messages.
