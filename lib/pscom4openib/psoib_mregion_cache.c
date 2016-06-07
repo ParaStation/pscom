@@ -153,10 +153,14 @@ void psoib_mregion_gc(unsigned max_size)
 	}
 }
 
+static int psoib_mregion_cache_initialized = 0;
+
 void psoib_mregion_cache_cleanup(void)
 {
-	psoib_mregion_gc(0);
-	assert(psoib_mregion_cache_size == 0);
+	if(psoib_mregion_cache_initialized) {
+		psoib_mregion_gc(0);
+		assert(psoib_mregion_cache_size == 0);
+	}
 }
 
 void psoib_mregion_cache_init(void)
@@ -164,4 +168,5 @@ void psoib_mregion_cache_init(void)
 	psoib_page_size = getpagesize();
 	assert(psoib_page_size != 0);
 	assert((psoib_page_size & (psoib_page_size - 1)) == 0); /* power of 2 */
+	psoib_mregion_cache_initialized = 1;
 }
