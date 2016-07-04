@@ -7,8 +7,8 @@
  *
  * Author:	Jens Hauke <hauke@par-tec.com>
  */
-#ifndef _PSCOM4UCP_H_
-#define _PSCOM4UCP_H_
+#ifndef _PSCOM_UCP_H_
+#define _PSCOM_UCP_H_
 
 
-#endif /* _PSCOM4UCP_H_ */
+#endif /* _PSCOM_UCP_H_ */

@@ -300,6 +300,7 @@ pscom_con_type_str(pscom_con_type_t type)
 	case PSCOM_CON_TYPE_DAPL:	return "dapl";
 	case PSCOM_CON_TYPE_ONDEMAND:	return "demand";
 	case PSCOM_CON_TYPE_MXM:	return "mxm";
+	case PSCOM_CON_TYPE_UCP:	return "ucp";
 	case PSCOM_CON_TYPE_SUSPENDED:	return "susp";
 	}
 
