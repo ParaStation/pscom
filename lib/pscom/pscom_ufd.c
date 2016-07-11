@@ -121,6 +121,7 @@ void _ufd_put_pollfd_idx(ufd_t *ufd, ufd_info_t *ufd_info)
 	ufd->ufd_pollfd_info[idx] = ufd->ufd_pollfd_info[idx_last];  // reverse pointer
 	ufd->ufd_pollfd_info[idx]->pollfd_idx = idx; // forward pointer
 
+	ufd->ufd_pollfd_info[idx_last] = NULL; // invalidate old pointer
 	ufd_info->pollfd_idx = -1; // invalidate old pointer
 }
 
@@ -313,8 +314,8 @@ int ufd_poll(ufd_t *ufd, int timeout)
 			   replaced by the last pollfd (associated with
 			   a different ufd_info. As the loop start at
 			   the end, this (pollfd->revents & POLLOUT) is
-			   already 0. */
-			if (pollfd->revents & POLLOUT) {
+			   already 0 or (i > ufd->n_ufd_pollfd). */
+			if ((i <= ufd->n_ufd_pollfd) && (pollfd->revents & POLLOUT)) {
 				pollfd->revents &= ~POLLOUT;
 				ufd_info->can_write(ufd, ufd_info);
 			}
