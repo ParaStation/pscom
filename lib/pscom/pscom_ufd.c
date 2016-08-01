@@ -314,8 +314,8 @@ int ufd_poll(ufd_t *ufd, int timeout)
 			   replaced by the last pollfd (associated with
 			   a different ufd_info. As the loop start at
 			   the end, this (pollfd->revents & POLLOUT) is
-			   already 0 or (i > ufd->n_ufd_pollfd). */
-			if ((i <= ufd->n_ufd_pollfd) && (pollfd->revents & POLLOUT)) {
+			   already 0 or (i >= ufd->n_ufd_pollfd). */
+			if ((i < ufd->n_ufd_pollfd) && (pollfd->revents & POLLOUT)) {
 				pollfd->revents &= ~POLLOUT;
 				ufd_info->can_write(ufd, ufd_info);
 			}
