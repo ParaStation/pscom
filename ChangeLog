@@ -1,3 +1,8 @@
+2016-09-06  Jens Hauke  <hauke@par-tec.com>	-	5.1.0-1
+
+	* Feature: Add support for UCP (pscom4ucp). Use export
+	  PSP_UCP=1 to enable this transport.
+
 2016-05-19  Jens Hauke  <hauke@par-tec.com>	-	5.1.0-0_rc1
 
 	* Enhancement: Rewritten connection handshake. Asynchronous
