@@ -110,6 +110,18 @@ AS_IF([test "x$have_openib" = xno -a "x$enable_ofed" = xyes],
 AM_CONDITIONAL([OFED_ENABLED],
 	       [test "x$enable_ofed" != xno -a "x$have_openib" = xyes])
 
+# -- UCP --
+
+AC_ARG_ENABLE([ucp],[AS_HELP_STRING([--disable-ucp],
+	      [disable Open UCX support for UCP])])
+AS_IF([test "x$enable_ucp" != xno],
+      [AX_CHECK_LIBRARY([UCP], [ucp/api/ucp.h], [ucp],
+      [have_ucp=yes], [have_ucp=no])])
+AS_IF([test "x$have_ucp" = xno -a "x$enable_ucp" = xyes],
+      [AC_MSG_ERROR([ucp support requested but ucp not found])])
+AM_CONDITIONAL([UCP_ENABLED],
+	       [test "x$enable_ucp" != xno -a "x$have_ucp" = xyes])
+
 # -- DAPL --
 
 AC_ARG_ENABLE([dapl],[AS_HELP_STRING([--disable-dapl],
@@ -191,6 +203,7 @@ AC_CONFIG_FILES(lib/pscom4velo/Makefile)
 AC_CONFIG_FILES(lib/pscom4mxm/Makefile)
 AC_CONFIG_FILES(lib/pscom4gm/Makefile)
 AC_CONFIG_FILES(lib/pscom4ofed/Makefile)
+AC_CONFIG_FILES(lib/pscom4ucp/Makefile)
 AC_CONFIG_FILES(lib/pscom4openib/Makefile)
 AC_CONFIG_FILES(lib/pscom4psm/Makefile)
 AC_CONFIG_FILES(lib/psmalloc/Makefile)
@@ -220,6 +233,9 @@ AM_COND_IF([OPENIB_ENABLED],
 AM_COND_IF([OFED_ENABLED],
   [AC_MSG_NOTICE([OFED_ENABLED:     yes])],
   [AC_MSG_NOTICE([OFED_ENABLED:     no])])
+AM_COND_IF([UCP_ENABLED],
+  [AC_MSG_NOTICE([UCP_ENABLED:      yes])],
+  [AC_MSG_NOTICE([UCP_ENABLED:      no])])
 AM_COND_IF([DAPL_ENABLED],
   [AC_MSG_NOTICE([DAPL_ENABLED:     yes])],
   [AC_MSG_NOTICE([DAPL_ENABLED:     no])])
@@ -235,5 +251,5 @@ AM_COND_IF([MXM_ENABLED],
 AC_MSG_NOTICE([=====================])
 
 # Local Variables:
-#  compile-command: "autoreconf -vif"
+#  compile-command: "module load automake-1.15 && autoreconf -vif"
 # End:

@@ -44,6 +44,11 @@ if MXM_ENABLED
     SUBDIRS += pscom4mxm
 endif
 
+# -- ucp --
+if UCP_ENABLED
+    SUBDIRS += pscom4ucp
+endif
+
 # -- ofed --
 if OFED_ENABLED
     SUBDIRS += pscom4ofed

@@ -45,6 +45,7 @@
 #define ENV_RENDEZVOUS_EXTOLL "PSP_RENDEZVOUS_EXTOLL"
 #define ENV_RENDEZVOUS_VELO "PSP_RENDEZVOUS_VELO"
 #define ENV_RENDEZVOUS_OPENIB "PSP_RENDEZVOUS_OPENIB"
+#define ENV_RENDEZVOUS_UCP "PSP_RENDEZVOUS_UCP"
 
 /* Used in constructing the UUID for QLogic */
 #define ENV_PSM_UNIQ_ID "PSP_PSM_UNIQ_ID"
@@ -158,6 +159,7 @@ struct PSCOM_env {
 	unsigned int	rendezvous_size_extoll;
 	unsigned int	rendezvous_size_velo;
 	unsigned int	rendezvous_size_openib;
+	unsigned int	rendezvous_size_ucp;
 	unsigned int	psm_uniq_id;
 	int		sigquit;
 	int		sigsuspend;
@@ -193,6 +195,7 @@ struct PSCOM_env {
 	.rendezvous_size_extoll = ~0, /* default rendezvous_size for extoll */ \
 	.rendezvous_size_velo = 1024, /* default rendezvous_size for velo */ \
 	.rendezvous_size_openib = 40000, /* default rendezvous_size for openib */ \
+	.rendezvous_size_ucp = ~0, /* default rendezvous_size for ucp */ \
 	.psm_uniq_id = 0,						\
 	.sigquit = 0,							\
 	.sigsuspend = 0,						\

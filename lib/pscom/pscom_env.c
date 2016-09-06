@@ -142,6 +142,10 @@ void pscom_env_init(void)
 		pscom.env.rendezvous_size_openib = pscom.env.rendezvous_size;
 	pscom_env_get_uint(&pscom.env.rendezvous_size_openib, ENV_RENDEZVOUS_OPENIB);
 
+	if (pscom.env.rendezvous_size != (unsigned)~0)
+		pscom.env.rendezvous_size_ucp = pscom.env.rendezvous_size;
+	pscom_env_get_uint(&pscom.env.rendezvous_size_ucp, ENV_RENDEZVOUS_UCP);
+
 	pscom_env_get_int(&pscom.env.sigquit, ENV_SIGQUIT);
 	pscom_env_get_int(&pscom.env.sigsuspend, ENV_SIGSUSPEND);
 	pscom_env_get_uint(&pscom.env.readahead, ENV_READAHEAD);

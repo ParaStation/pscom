@@ -48,6 +48,10 @@ if OPENIB_ENABLED
   noinst_PROGRAMS += openib_pp openib_ud_pp
 endif
 
+if UCP_ENABLED
+  noinst_PROGRAMS += ucp_pp
+endif
+
 if PSM_ENABLED
   noinst_PROGRAMS += psm_pp
 endif
@@ -192,6 +196,19 @@ openib_ud_pp_SOURCES = openib/openib_ud_pp.c
 openib_ud_pp_CPPFLAGS = $(cppflags_openib)
 openib_ud_pp_LDFLAGS = $(ldflags_openib) 
 openib_ud_pp_LDADD = $(ldadd_openib)
+
+# -- ucp --
+
+cppflags_ucp = $(AM_CPPFLAGS) $(UCP_CPPFLAGS)			\
+	-I$(top_srcdir)/lib/pscom 				\
+	-I$(top_srcdir)/lib/pscom4ucp
+ldflags_ucp = $(AM_LDFLAGS) $(UCP_LDFLAGS)
+ldadd_ucp = -lpopt -lucp
+
+ucp_pp_SOURCES = ucp/ucp_pp.c
+ucp_pp_CPPFLAGS = $(cppflags_ucp)
+ucp_pp_LDFLAGS = $(ldflags_ucp)
+ucp_pp_LDADD = $(ldadd_ucp)
 
 # -- psm --
 
