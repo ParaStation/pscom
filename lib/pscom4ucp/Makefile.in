@@ -26,7 +26,6 @@
 # Author:       Thomas Moschny <moschny@par-tec.com>
 #
 
-
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -102,7 +101,7 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-subdir = lib/pscom4dapl
+subdir = lib/pscom4ucp
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
 	$(top_srcdir)/m4/ax_check_library.m4 \
@@ -111,8 +110,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
 	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(noinst_HEADERS) \
-	$(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
@@ -144,22 +142,19 @@ am__uninstall_files_from_dir = { \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
-LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
-libpscom4dapl_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
-am_libpscom4dapl_la_OBJECTS = libpscom4dapl_la-pscom_dapl.lo \
-	libpscom4dapl_la-psdapl.lo
-libpscom4dapl_la_OBJECTS = $(am_libpscom4dapl_la_OBJECTS)
+LTLIBRARIES = $(lib_LTLIBRARIES)
+libpscom4ucp_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
+am_libpscom4ucp_la_OBJECTS = libpscom4ucp_la-pscom_ucp.lo \
+	libpscom4ucp_la-psucp.lo
+libpscom4ucp_la_OBJECTS = $(am_libpscom4ucp_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
-libpscom4dapl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
+libpscom4ucp_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libpscom4dapl_la_LDFLAGS) $(LDFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS) $(libpscom4ucp_la_LDFLAGS) $(LDFLAGS) \
 	-o $@
-libpsdapl_la_LIBADD =
-am_libpsdapl_la_OBJECTS = psdapl.lo
-libpsdapl_la_OBJECTS = $(am_libpsdapl_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -194,14 +189,13 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libpscom4dapl_la_SOURCES) $(libpsdapl_la_SOURCES)
-DIST_SOURCES = $(libpscom4dapl_la_SOURCES) $(libpsdapl_la_SOURCES)
+SOURCES = $(libpscom4ucp_la_SOURCES)
+DIST_SOURCES = $(libpscom4ucp_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-HEADERS = $(noinst_HEADERS)
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -403,16 +397,12 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 
 # FIXME: non-standard
 configdir = $(prefix)/config
-lib_LTLIBRARIES = libpscom4dapl.la
-noinst_LTLIBRARIES = libpsdapl.la
-libpscom4dapl_la_SOURCES = pscom_dapl.c pscom_dapl.h psdapl.c psdapl.h
-noinst_HEADERS = psdapl_rdma.c
-libpscom4dapl_la_CPPFLAGS = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)
-libpscom4dapl_la_LDFLAGS = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
-libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
-
-# intermediate libs needed elsewhere, in bin
-libpsdapl_la_SOURCES = psdapl.c psdapl.h
+lib_LTLIBRARIES = libpscom4ucp.la
+libpscom4ucp_la_SOURCES = pscom_ucp.c pscom_ucp.h psucp.c psucp.h
+# noinst_HEADERS = psucp_mregion_cache.c
+libpscom4ucp_la_CPPFLAGS = $(AM_CPPFLAGS) $(UCP_CPPFLAGS)
+libpscom4ucp_la_LDFLAGS = $(AM_LDFLAGS) $(UCP_LDFLAGS)
+libpscom4ucp_la_LIBADD = -lucp $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:
@@ -426,9 +416,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign lib/pscom4dapl/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign lib/pscom4ucp/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign lib/pscom4dapl/Makefile
+	  $(AUTOMAKE) --foreign lib/pscom4ucp/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -483,22 +473,8 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-clean-noinstLTLIBRARIES:
-	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
-	@list='$(noinst_LTLIBRARIES)'; \
-	locs=`for p in $$list; do echo $$p; done | \
-	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
-	      sort -u`; \
-	test -z "$$locs" || { \
-	  echo rm -f $${locs}; \
-	  rm -f $${locs}; \
-	}
-
-libpscom4dapl.la: $(libpscom4dapl_la_OBJECTS) $(libpscom4dapl_la_DEPENDENCIES) $(EXTRA_libpscom4dapl_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(libpscom4dapl_la_LINK) -rpath $(libdir) $(libpscom4dapl_la_OBJECTS) $(libpscom4dapl_la_LIBADD) $(LIBS)
-
-libpsdapl.la: $(libpsdapl_la_OBJECTS) $(libpsdapl_la_DEPENDENCIES) $(EXTRA_libpsdapl_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libpsdapl_la_OBJECTS) $(libpsdapl_la_LIBADD) $(LIBS)
+libpscom4ucp.la: $(libpscom4ucp_la_OBJECTS) $(libpscom4ucp_la_DEPENDENCIES) $(EXTRA_libpscom4ucp_la_DEPENDENCIES) 
+	$(AM_V_CCLD)$(libpscom4ucp_la_LINK) -rpath $(libdir) $(libpscom4ucp_la_OBJECTS) $(libpscom4ucp_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -506,9 +482,8 @@ mostlyclean-compile:
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psdapl.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4ucp_la-pscom_ucp.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4ucp_la-psucp.Plo@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -534,19 +509,19 @@ distclean-compile:
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
-libpscom4dapl_la-pscom_dapl.lo: pscom_dapl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4dapl_la-pscom_dapl.lo -MD -MP -MF $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Tpo -c -o libpscom4dapl_la-pscom_dapl.lo `test -f 'pscom_dapl.c' || echo '$(srcdir)/'`pscom_dapl.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Tpo $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_dapl.c' object='libpscom4dapl_la-pscom_dapl.lo' libtool=yes @AMDEPBACKSLASH@
+libpscom4ucp_la-pscom_ucp.lo: pscom_ucp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4ucp_la-pscom_ucp.lo -MD -MP -MF $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Tpo -c -o libpscom4ucp_la-pscom_ucp.lo `test -f 'pscom_ucp.c' || echo '$(srcdir)/'`pscom_ucp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Tpo $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_ucp.c' object='libpscom4ucp_la-pscom_ucp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-pscom_dapl.lo `test -f 'pscom_dapl.c' || echo '$(srcdir)/'`pscom_dapl.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4ucp_la-pscom_ucp.lo `test -f 'pscom_ucp.c' || echo '$(srcdir)/'`pscom_ucp.c
 
-libpscom4dapl_la-psdapl.lo: psdapl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4dapl_la-psdapl.lo -MD -MP -MF $(DEPDIR)/libpscom4dapl_la-psdapl.Tpo -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4dapl_la-psdapl.Tpo $(DEPDIR)/libpscom4dapl_la-psdapl.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psdapl.c' object='libpscom4dapl_la-psdapl.lo' libtool=yes @AMDEPBACKSLASH@
+libpscom4ucp_la-psucp.lo: psucp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4ucp_la-psucp.lo -MD -MP -MF $(DEPDIR)/libpscom4ucp_la-psucp.Tpo -c -o libpscom4ucp_la-psucp.lo `test -f 'psucp.c' || echo '$(srcdir)/'`psucp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4ucp_la-psucp.Tpo $(DEPDIR)/libpscom4ucp_la-psucp.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psucp.c' object='libpscom4ucp_la-psucp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4ucp_la-psucp.lo `test -f 'psucp.c' || echo '$(srcdir)/'`psucp.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -638,7 +613,7 @@ distdir: $(DISTFILES)
 	done
 check-am: all-am
 check: check-am
-all-am: Makefile $(LTLIBRARIES) $(HEADERS)
+all-am: Makefile $(LTLIBRARIES)
 installdirs:
 	for dir in "$(DESTDIR)$(libdir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
@@ -676,7 +651,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	clean-noinstLTLIBRARIES mostlyclean-am
+	mostlyclean-am
 
 distclean: distclean-am
 	-rm -rf ./$(DEPDIR)
@@ -748,19 +723,19 @@ uninstall-am: uninstall-libLTLIBRARIES
 .MAKE: install-am install-exec-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am check check-am clean clean-generic \
-	clean-libLTLIBRARIES clean-libtool clean-noinstLTLIBRARIES \
-	cscopelist-am ctags ctags-am distclean distclean-compile \
-	distclean-generic distclean-libtool distclean-tags distdir dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-dvi install-dvi-am \
-	install-exec install-exec-am install-exec-hook install-html \
-	install-html-am install-info install-info-am \
-	install-libLTLIBRARIES install-man install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-libtool pdf pdf-am ps ps-am \
-	tags tags-am uninstall uninstall-am uninstall-libLTLIBRARIES
+	clean-libLTLIBRARIES clean-libtool cscopelist-am ctags \
+	ctags-am distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-dvi install-dvi-am install-exec \
+	install-exec-am install-exec-hook install-html install-html-am \
+	install-info install-info-am install-libLTLIBRARIES \
+	install-man install-pdf install-pdf-am install-ps \
+	install-ps-am install-strip installcheck installcheck-am \
+	installdirs maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic \
+	mostlyclean-libtool pdf pdf-am ps ps-am tags tags-am uninstall \
+	uninstall-am uninstall-libLTLIBRARIES
 
 .PRECIOUS: Makefile
 

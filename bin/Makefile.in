@@ -112,7 +112,8 @@ noinst_PROGRAMS = p4logd$(EXEEXT) porttest$(EXEEXT) \
 	pscom_test_fault$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
 	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6) \
 	$(am__EXEEXT_7) $(am__EXEEXT_8) $(am__EXEEXT_9) \
-	$(am__EXEEXT_10) $(am__EXEEXT_11) $(am__EXEEXT_12)
+	$(am__EXEEXT_10) $(am__EXEEXT_11) $(am__EXEEXT_12) \
+	$(am__EXEEXT_13)
 check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
 bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
@@ -121,19 +122,20 @@ bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
 @MELLANOX_ENABLED_TRUE@am__append_1 = ps4_ib ps4_ib_pp ps4_ib_pp_rdma psport4mvapi_pp
 @GM_ENABLED_TRUE@am__append_2 = gm_pp
 @OPENIB_ENABLED_TRUE@am__append_3 = openib_pp openib_ud_pp
-@PSM_ENABLED_TRUE@am__append_4 = psm_pp
-@PSMGMT_ENABLED_TRUE@am__append_5 = pscp
-@DAPL_ENABLED_TRUE@am__append_6 = dapl_pp dapl_pp_lowlevel
+@UCP_ENABLED_TRUE@am__append_4 = ucp_pp
+@PSM_ENABLED_TRUE@am__append_5 = psm_pp
+@PSMGMT_ENABLED_TRUE@am__append_6 = pscp
+@DAPL_ENABLED_TRUE@am__append_7 = dapl_pp dapl_pp_lowlevel
 
 # noinst_PROGRAMS += elan_pp
-@ELAN_ENABLED_TRUE@am__append_7 = elan_pp_lowlevel
-@EXTOLL_ENABLED_TRUE@am__append_8 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
-@MXM_ENABLED_TRUE@am__append_9 = mxm_pp
+@ELAN_ENABLED_TRUE@am__append_8 = elan_pp_lowlevel
+@EXTOLL_ENABLED_TRUE@am__append_9 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
+@MXM_ENABLED_TRUE@am__append_10 = mxm_pp
 
 # -- mem usage diagnostics --
-@OPENIB_ENABLED_TRUE@am__append_10 = pscom_memusage_openib
-@OFED_ENABLED_TRUE@am__append_11 = pscom_memusage_ofed
-@EXTOLL_ENABLED_TRUE@am__append_12 = pscom_memusage_extoll \
+@OPENIB_ENABLED_TRUE@am__append_11 = pscom_memusage_openib
+@OFED_ENABLED_TRUE@am__append_12 = pscom_memusage_ofed
+@EXTOLL_ENABLED_TRUE@am__append_13 = pscom_memusage_extoll \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo
 subdir = bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -159,17 +161,18 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 @GM_ENABLED_TRUE@am__EXEEXT_3 = gm_pp$(EXEEXT)
 @OPENIB_ENABLED_TRUE@am__EXEEXT_4 = openib_pp$(EXEEXT) \
 @OPENIB_ENABLED_TRUE@	openib_ud_pp$(EXEEXT)
-@PSM_ENABLED_TRUE@am__EXEEXT_5 = psm_pp$(EXEEXT)
-@DAPL_ENABLED_TRUE@am__EXEEXT_6 = dapl_pp$(EXEEXT) \
+@UCP_ENABLED_TRUE@am__EXEEXT_5 = ucp_pp$(EXEEXT)
+@PSM_ENABLED_TRUE@am__EXEEXT_6 = psm_pp$(EXEEXT)
+@DAPL_ENABLED_TRUE@am__EXEEXT_7 = dapl_pp$(EXEEXT) \
 @DAPL_ENABLED_TRUE@	dapl_pp_lowlevel$(EXEEXT)
-@ELAN_ENABLED_TRUE@am__EXEEXT_7 = elan_pp_lowlevel$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_8 = extoll_pp_lowlevel$(EXEEXT) \
+@ELAN_ENABLED_TRUE@am__EXEEXT_8 = elan_pp_lowlevel$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_9 = extoll_pp_lowlevel$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_pp_velo$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_one_message$(EXEEXT)
-@MXM_ENABLED_TRUE@am__EXEEXT_9 = mxm_pp$(EXEEXT)
-@OPENIB_ENABLED_TRUE@am__EXEEXT_10 = pscom_memusage_openib$(EXEEXT)
-@OFED_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_ofed$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_extoll$(EXEEXT) \
+@MXM_ENABLED_TRUE@am__EXEEXT_10 = mxm_pp$(EXEEXT)
+@OPENIB_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_openib$(EXEEXT)
+@OFED_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_ofed$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_13 = pscom_memusage_extoll$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -385,6 +388,12 @@ test_nodes_OBJECTS = $(am_test_nodes_OBJECTS)
 test_nodes_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(test_nodes_LDFLAGS) $(LDFLAGS) -o $@
+am_ucp_pp_OBJECTS = ucp/ucp_pp-ucp_pp.$(OBJEXT)
+ucp_pp_OBJECTS = $(am_ucp_pp_OBJECTS)
+ucp_pp_DEPENDENCIES = $(am__DEPENDENCIES_2)
+ucp_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(ucp_pp_LDFLAGS) $(LDFLAGS) -o $@
 am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
 am__vpath_adj = case $$p in \
     $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
@@ -464,7 +473,8 @@ SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
 	$(pscp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
 	$(psock_test_SOURCES) $(pspipe_SOURCES) $(psport4_pp_SOURCES) \
-	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES)
+	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES) \
+	$(ucp_pp_SOURCES)
 DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(elan_pp_lowlevel_SOURCES) $(extoll_one_message_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
@@ -482,7 +492,8 @@ DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
 	$(pscp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
 	$(psock_test_SOURCES) $(pspipe_SOURCES) $(psport4_pp_SOURCES) \
-	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES)
+	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES) \
+	$(ucp_pp_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -814,6 +825,8 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+UCP_CPPFLAGS = @UCP_CPPFLAGS@
+UCP_LDFLAGS = @UCP_LDFLAGS@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -1007,6 +1020,18 @@ openib_ud_pp_SOURCES = openib/openib_ud_pp.c
 openib_ud_pp_CPPFLAGS = $(cppflags_openib)
 openib_ud_pp_LDFLAGS = $(ldflags_openib) 
 openib_ud_pp_LDADD = $(ldadd_openib)
+
+# -- ucp --
+cppflags_ucp = $(AM_CPPFLAGS) $(UCP_CPPFLAGS)			\
+	-I$(top_srcdir)/lib/pscom 				\
+	-I$(top_srcdir)/lib/pscom4ucp
+
+ldflags_ucp = $(AM_LDFLAGS) $(UCP_LDFLAGS)
+ldadd_ucp = -lpopt -lucp
+ucp_pp_SOURCES = ucp/ucp_pp.c
+ucp_pp_CPPFLAGS = $(cppflags_ucp)
+ucp_pp_LDFLAGS = $(ldflags_ucp)
+ucp_pp_LDADD = $(ldadd_ucp)
 
 # -- psm --
 psm_pp_SOURCES = psm/psm_pp.c
@@ -1429,6 +1454,18 @@ psport4mvapi_pp$(EXEEXT): $(psport4mvapi_pp_OBJECTS) $(psport4mvapi_pp_DEPENDENC
 test_nodes$(EXEEXT): $(test_nodes_OBJECTS) $(test_nodes_DEPENDENCIES) $(EXTRA_test_nodes_DEPENDENCIES) 
 	@rm -f test_nodes$(EXEEXT)
 	$(AM_V_CCLD)$(test_nodes_LINK) $(test_nodes_OBJECTS) $(test_nodes_LDADD) $(LIBS)
+ucp/$(am__dirstamp):
+	@$(MKDIR_P) ucp
+	@: > ucp/$(am__dirstamp)
+ucp/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) ucp/$(DEPDIR)
+	@: > ucp/$(DEPDIR)/$(am__dirstamp)
+ucp/ucp_pp-ucp_pp.$(OBJEXT): ucp/$(am__dirstamp) \
+	ucp/$(DEPDIR)/$(am__dirstamp)
+
+ucp_pp$(EXEEXT): $(ucp_pp_OBJECTS) $(ucp_pp_DEPENDENCIES) $(EXTRA_ucp_pp_DEPENDENCIES) 
+	@rm -f ucp_pp$(EXEEXT)
+	$(AM_V_CCLD)$(ucp_pp_LINK) $(ucp_pp_OBJECTS) $(ucp_pp_LDADD) $(LIBS)
 install-binSCRIPTS: $(bin_SCRIPTS)
 	@$(NORMAL_INSTALL)
 	@list='$(bin_SCRIPTS)'; test -n "$(bindir)" || list=; \
@@ -1475,6 +1512,7 @@ mostlyclean-compile:
 	-rm -f mxm/*.$(OBJEXT)
 	-rm -f openib/*.$(OBJEXT)
 	-rm -f psm/*.$(OBJEXT)
+	-rm -f ucp/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
@@ -1520,6 +1558,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@openib/$(DEPDIR)/openib_pp-openib_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@openib/$(DEPDIR)/openib_ud_pp-openib_ud_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@psm/$(DEPDIR)/psm_pp-psm_pp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@ucp/$(DEPDIR)/ucp_pp-ucp_pp.Po@am__quote@
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1852,6 +1891,20 @@ test_nodes-test_nodes.obj: test_nodes.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test_nodes.c' object='test_nodes-test_nodes.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_nodes_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o test_nodes-test_nodes.obj `if test -f 'test_nodes.c'; then $(CYGPATH_W) 'test_nodes.c'; else $(CYGPATH_W) '$(srcdir)/test_nodes.c'; fi`
+
+ucp/ucp_pp-ucp_pp.o: ucp/ucp_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ucp_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ucp/ucp_pp-ucp_pp.o -MD -MP -MF ucp/$(DEPDIR)/ucp_pp-ucp_pp.Tpo -c -o ucp/ucp_pp-ucp_pp.o `test -f 'ucp/ucp_pp.c' || echo '$(srcdir)/'`ucp/ucp_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ucp/$(DEPDIR)/ucp_pp-ucp_pp.Tpo ucp/$(DEPDIR)/ucp_pp-ucp_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ucp/ucp_pp.c' object='ucp/ucp_pp-ucp_pp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ucp_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ucp/ucp_pp-ucp_pp.o `test -f 'ucp/ucp_pp.c' || echo '$(srcdir)/'`ucp/ucp_pp.c
+
+ucp/ucp_pp-ucp_pp.obj: ucp/ucp_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ucp_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT ucp/ucp_pp-ucp_pp.obj -MD -MP -MF ucp/$(DEPDIR)/ucp_pp-ucp_pp.Tpo -c -o ucp/ucp_pp-ucp_pp.obj `if test -f 'ucp/ucp_pp.c'; then $(CYGPATH_W) 'ucp/ucp_pp.c'; else $(CYGPATH_W) '$(srcdir)/ucp/ucp_pp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) ucp/$(DEPDIR)/ucp_pp-ucp_pp.Tpo ucp/$(DEPDIR)/ucp_pp-ucp_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ucp/ucp_pp.c' object='ucp/ucp_pp-ucp_pp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ucp_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o ucp/ucp_pp-ucp_pp.obj `if test -f 'ucp/ucp_pp.c'; then $(CYGPATH_W) 'ucp/ucp_pp.c'; else $(CYGPATH_W) '$(srcdir)/ucp/ucp_pp.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -2253,6 +2306,8 @@ distclean-generic:
 	-rm -f openib/$(am__dirstamp)
 	-rm -f psm/$(DEPDIR)/$(am__dirstamp)
 	-rm -f psm/$(am__dirstamp)
+	-rm -f ucp/$(DEPDIR)/$(am__dirstamp)
+	-rm -f ucp/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -2263,7 +2318,7 @@ clean-am: clean-binPROGRAMS clean-checkPROGRAMS clean-generic \
 	clean-libtool clean-noinstPROGRAMS mostlyclean-am
 
 distclean: distclean-recursive
-	-rm -rf ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR) ucp/$(DEPDIR)
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -2309,7 +2364,7 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-recursive
-	-rm -rf ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR)
+	-rm -rf ./$(DEPDIR) dapl/$(DEPDIR) elan/$(DEPDIR) extoll/$(DEPDIR) gm/$(DEPDIR) mellanox/$(DEPDIR) mxm/$(DEPDIR) openib/$(DEPDIR) psm/$(DEPDIR) ucp/$(DEPDIR)
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

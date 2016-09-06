@@ -128,14 +128,17 @@ target_triplet = @target@
 # -- mxm --
 @MXM_ENABLED_TRUE@am__append_5 = pscom4mxm
 
+# -- ucp --
+@UCP_ENABLED_TRUE@am__append_6 = pscom4ucp
+
 # -- ofed --
-@OFED_ENABLED_TRUE@am__append_6 = pscom4ofed
+@OFED_ENABLED_TRUE@am__append_7 = pscom4ofed
 
 # -- openib --
-@OPENIB_ENABLED_TRUE@am__append_7 = pscom4openib
+@OPENIB_ENABLED_TRUE@am__append_8 = pscom4openib
 
 # -- psm --
-@PSM_ENABLED_TRUE@am__append_8 = pscom4psm
+@PSM_ENABLED_TRUE@am__append_9 = pscom4psm
 subdir = lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -204,8 +207,8 @@ am__define_uniq_tagged_files = \
 ETAGS = etags
 CTAGS = ctags
 DIST_SUBDIRS = pscom psmalloc pscom4dapl pscom4elan pscom4extoll \
-	pscom4velo pscom4gm pscom4mxm pscom4ofed pscom4openib \
-	pscom4psm psport4 p4tcp
+	pscom4velo pscom4gm pscom4mxm pscom4ucp pscom4ofed \
+	pscom4openib pscom4psm psport4 p4tcp
 am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/common.am
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 am__relativize = \
@@ -316,6 +319,8 @@ SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
 STRIP = @STRIP@
+UCP_CPPFLAGS = @UCP_CPPFLAGS@
+UCP_LDFLAGS = @UCP_LDFLAGS@
 VERSION = @VERSION@
 abs_builddir = @abs_builddir@
 abs_srcdir = @abs_srcdir@
@@ -399,7 +404,8 @@ configdir = $(prefix)/config
 ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = pscom psmalloc $(am__append_1) $(am__append_2) \
 	$(am__append_3) $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7) $(am__append_8) psport4 p4tcp
+	$(am__append_6) $(am__append_7) $(am__append_8) \
+	$(am__append_9) psport4 p4tcp
 all: all-recursive
 
 .SUFFIXES:

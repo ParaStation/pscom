@@ -72,6 +72,7 @@ bin/simul_p4sock/list.h \
 bin/simul_p4sock/simul.c \
 bin/simul_p4sock/simul.gnu.sh \
 bin/test_nodes.c \
+bin/ucp/ucp_pp.c \
 common.am \
 configure \
 configure.ac \
@@ -206,6 +207,12 @@ lib/pscom4psm/Makefile.am \
 lib/pscom4psm/Makefile.in \
 lib/pscom4psm/pscom_psm.c \
 lib/pscom4psm/pscom_psm.h \
+lib/pscom4ucp/Makefile.am \
+lib/pscom4ucp/Makefile.in \
+lib/pscom4ucp/pscom_ucp.c \
+lib/pscom4ucp/pscom_ucp.h \
+lib/pscom4ucp/psucp.c \
+lib/pscom4ucp/psucp.h \
 lib/pscom4velo/Makefile.am \
 lib/pscom4velo/Makefile.in \
 lib/pscom4velo/pscom_extoll.c \

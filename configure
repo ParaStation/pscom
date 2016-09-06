@@ -655,6 +655,10 @@ DAPL_ENABLED_FALSE
 DAPL_ENABLED_TRUE
 DAPL_LDFLAGS
 DAPL_CPPFLAGS
+UCP_ENABLED_FALSE
+UCP_ENABLED_TRUE
+UCP_LDFLAGS
+UCP_CPPFLAGS
 OFED_ENABLED_FALSE
 OFED_ENABLED_TRUE
 OPENIB_ENABLED_FALSE
@@ -817,6 +821,7 @@ enable_gm
 enable_mellanox
 enable_openib
 enable_ofed
+enable_ucp
 enable_dapl
 enable_elan
 enable_extoll
@@ -842,6 +847,8 @@ MELLANOX_CPPFLAGS
 MELLANOX_LDFLAGS
 OPENIB_CPPFLAGS
 OPENIB_LDFLAGS
+UCP_CPPFLAGS
+UCP_LDFLAGS
 DAPL_CPPFLAGS
 DAPL_LDFLAGS
 ELAN_CPPFLAGS
@@ -1489,6 +1496,7 @@ Optional Features:
   --disable-mellanox      disable Mellanox support
   --disable-openib        disable Infiniband OFED with RC support
   --disable-ofed          disable Infiniband OFED with UD support
+  --disable-ucp           disable Open UCX support for UCP
   --disable-dapl          disable DAPL support
   --disable-elan          disable ELAN support
   --disable-extoll        disable EXTOLL support
@@ -1534,6 +1542,9 @@ Some influential environment variables:
               C preprocessor flags for OPENIB headers
   OPENIB_LDFLAGS
               linker flags for OPENIB libraries
+  UCP_CPPFLAGS
+              C preprocessor flags for UCP headers
+  UCP_LDFLAGS linker flags for UCP libraries
   DAPL_CPPFLAGS
               C preprocessor flags for DAPL headers
   DAPL_LDFLAGS
@@ -12677,6 +12688,105 @@ else
 fi
 
 
+# -- UCP --
+
+# Check whether --enable-ucp was given.
+if test "${enable_ucp+set}" = set; then :
+  enableval=$enable_ucp;
+fi
+
+if test "x$enable_ucp" != xno; then :
+
+
+
+
+  if ${ax_cv_have_UCP+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CPPFLAGS="$CPPFLAGS"
+     save_LDFLAGS="$LDFLAGS"
+     save_LIBS="$LIBS"
+
+     if test "x$UCP_CPPFLAGS" != "x"; then :
+  CPPFLAGS="$CPPFLAGS $UCP_CPPFLAGS"
+fi
+
+     if test "x$UCP_LDFLAGS" != "x"; then :
+  LDFLAGS="$LDFLAGS $UCP_LDFLAGS"
+fi
+
+     ac_fn_c_check_header_mongrel "$LINENO" "ucp/api/ucp.h" "ac_cv_header_ucp_api_ucp_h" "$ac_includes_default"
+if test "x$ac_cv_header_ucp_api_ucp_h" = xyes; then :
+
+       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lucp" >&5
+$as_echo_n "checking for main in -lucp... " >&6; }
+if ${ac_cv_lib_ucp_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lucp  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_ucp_main=yes
+else
+  ac_cv_lib_ucp_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_ucp_main" >&5
+$as_echo "$ac_cv_lib_ucp_main" >&6; }
+if test "x$ac_cv_lib_ucp_main" = xyes; then :
+  ax_cv_have_UCP=yes
+else
+  ax_cv_have_UCP=no
+fi
+
+
+else
+  ax_cv_have_UCP=no
+fi
+
+
+
+     CPPFLAGS="$save_CPPFLAGS"
+     LDFLAGS="$save_LDFLAGS"
+     LIBS="$save_LIBS"
+
+fi
+
+
+  if test "$ax_cv_have_UCP" = "yes"; then :
+  have_ucp=yes
+else
+  have_ucp=no
+fi
+
+fi
+if test "x$have_ucp" = xno -a "x$enable_ucp" = xyes; then :
+  as_fn_error $? "ucp support requested but ucp not found" "$LINENO" 5
+fi
+ if test "x$enable_ucp" != xno -a "x$have_ucp" = xyes; then
+  UCP_ENABLED_TRUE=
+  UCP_ENABLED_FALSE='#'
+else
+  UCP_ENABLED_TRUE='#'
+  UCP_ENABLED_FALSE=
+fi
+
+
 # -- DAPL --
 
 # Check whether --enable-dapl was given.
@@ -13188,6 +13298,8 @@ ac_config_files="$ac_config_files lib/pscom4gm/Makefile"
 
 ac_config_files="$ac_config_files lib/pscom4ofed/Makefile"
 
+ac_config_files="$ac_config_files lib/pscom4ucp/Makefile"
+
 ac_config_files="$ac_config_files lib/pscom4openib/Makefile"
 
 ac_config_files="$ac_config_files lib/pscom4psm/Makefile"
@@ -13397,6 +13509,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${OFED_ENABLED_TRUE}" && test -z "${OFED_ENABLED_FALSE}"; then
   as_fn_error $? "conditional \"OFED_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${UCP_ENABLED_TRUE}" && test -z "${UCP_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"UCP_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${DAPL_ENABLED_TRUE}" && test -z "${DAPL_ENABLED_FALSE}"; then
@@ -14293,6 +14409,7 @@ do
     "lib/pscom4mxm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4mxm/Makefile" ;;
     "lib/pscom4gm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4gm/Makefile" ;;
     "lib/pscom4ofed/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4ofed/Makefile" ;;
+    "lib/pscom4ucp/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4ucp/Makefile" ;;
     "lib/pscom4openib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4openib/Makefile" ;;
     "lib/pscom4psm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4psm/Makefile" ;;
     "lib/psmalloc/Makefile") CONFIG_FILES="$CONFIG_FILES lib/psmalloc/Makefile" ;;
@@ -15479,6 +15596,13 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: OFED_ENABLED:     no" >&5
 $as_echo "$as_me: OFED_ENABLED:     no" >&6;}
 fi
+if test -z "$UCP_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: UCP_ENABLED:      yes" >&5
+$as_echo "$as_me: UCP_ENABLED:      yes" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: UCP_ENABLED:      no" >&5
+$as_echo "$as_me: UCP_ENABLED:      no" >&6;}
+fi
 if test -z "$DAPL_ENABLED_TRUE"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: DAPL_ENABLED:     yes" >&5
 $as_echo "$as_me: DAPL_ENABLED:     yes" >&6;}
@@ -15511,5 +15635,5 @@ fi
 $as_echo "$as_me: =====================" >&6;}
 
 # Local Variables:
-#  compile-command: "autoreconf -vif"
+#  compile-command: "module load automake-1.15 && autoreconf -vif"
 # End:
