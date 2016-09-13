@@ -38,9 +38,20 @@
 #define shm_mb()    asm volatile ("" :::"memory")
 #endif
 
+#define SHM_DIRECT	400
+
+#if !(defined(__KNC__) || defined(__MIC__))
+#define SHM_INDIRECT	(SHM_DIRECT)
+#else
+/* On KNC fall back to buffered send, when direct send fails. */
+#define SHM_INDIRECT	~0
+#endif
+
 
 static
-unsigned shm_direct = 400;
+unsigned shm_direct = SHM_DIRECT;
+static
+unsigned shm_indirect = SHM_INDIRECT;
 
 static
 struct {
@@ -466,7 +477,10 @@ void shm_do_write(pscom_con_t *con)
 			void *data;
 			shm_msg_t *msg;
 
-			if (!is_psshm_enabled()) goto do_buffered_send; // Direct shm is disabled.
+			if (!is_psshm_enabled() ||		// Direct shm is disabled.
+			    iov[1].iov_len <= shm_indirect) {	// or (disabled or len to small) for indirect shm
+				goto do_buffered_send;
+			}
 
 			data = malloc(iov[1].iov_len); // try to get a buffer inside the shared mem region
 
@@ -577,9 +591,16 @@ void pscom_shm_sock_init(pscom_sock_t *sock)
 	if (psshm_info.size) {
 		DPRINT(2, "PSP_MALLOC = 1 : size = %lu\n", psshm_info.size);
 		pscom_env_get_uint(&shm_direct, ENV_SHM_DIRECT);
+		pscom_env_get_uint(&shm_indirect, ENV_SHM_INDIRECT);
+		if (shm_indirect > 0 && shm_indirect != ~0) {
+			// compare with len > shm_indirect instead of len >= shm_indirect.
+			// With this shm_indirect=~0 can disable indirect sends.
+			shm_indirect--;
+		}
 	} else {
 		DPRINT(2, "PSP_MALLOC disabled : %s\n", psshm_info.msg);
 		shm_direct = (unsigned)~0;
+		shm_indirect = (unsigned)~0;
 	}
 
 	shm_pending_io.poll_reader.do_read = shm_poll_pending_io;
