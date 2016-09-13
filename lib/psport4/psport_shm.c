@@ -25,6 +25,8 @@
 #if defined(__x86_64__) && !(defined(__KNC__) || defined(__MIC__))
 /* We need memory barriers only for x86_64 (?) */
 #define shm_mb()    asm volatile("mfence":::"memory")
+#elif defined(__aarch64__)
+#define shm_mb()    asm volatile("dsb sy" ::: "memory")
 #elif defined(__ia64__)
 #define shm_mb()    asm volatile ("mf" ::: "memory")
 #else
