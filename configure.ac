@@ -193,12 +193,30 @@ AS_IF([test "x$have_mxm" = xno -a "x$enable_mxm" = xyes],
 AM_CONDITIONAL([MXM_ENABLED],
 	       [test "x$enable_mxm" != xno -a "x$have_mxm" = xyes])
 
+# -- CUDA --
+
+# fixme: brute force current standard search path
+CUDA_CPPFLAGS="${CUDA_CPPFLAGS-"-I/usr/local/cuda/include"}"
+CUDA_LDFLAGS="${CUDA_LDFLAGS-"-L/usr/local/cuda/lib"}"
+CUDA_LDFLAGS="${CUDA_LDFLAGS-"-L/usr/local/cuda/lib64"}"
+
+AC_ARG_ENABLE([cuda],[AS_HELP_STRING([--disable-cuda],
+	      [disable CUDA support])])
+AS_IF([test "x$enable_cuda" != xno],
+      [AX_CHECK_LIBRARY([CUDA], [cuda.h], [cuda],
+      [have_cuda=yes], [have_cuda=no])])
+AS_IF([test "x$have_cuda" = xno -a "x$enable_cuda" = xyes],
+      [AC_MSG_ERROR([cuda support requested but not found])])
+AM_CONDITIONAL([CUDA_ENABLED],
+	       [test "x$enable_cuda" != xno -a "x$have_cuda" = xyes])
+
 AX_CHECK_COMPILE_FLAG([-O3],
   [AM_CFLAGS="$AM_CFLAGS -O3"])
 # -Wsign-conversion 
 AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter],
   [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"])
 
+AC_SUBST([AM_CPPFLAGS])
 AC_SUBST([AM_CFLAGS])
 AC_SUBST([AM_LDFLAGS])
 
@@ -265,6 +283,9 @@ AM_COND_IF([EXTOLL_ENABLED],
 AM_COND_IF([MXM_ENABLED],
   [AC_MSG_NOTICE([MXM_ENABLED:      yes])],
   [AC_MSG_NOTICE([MXM_ENABLED:      no])])
+AM_COND_IF([CUDA_ENABLED],
+  [AC_MSG_NOTICE([CUDA_ENABLED:     yes])],
+  [AC_MSG_NOTICE([CUDA_ENABLED:     no])])
 AC_MSG_NOTICE([=====================])
 
 # Local Variables:

@@ -14,6 +14,7 @@
 #define _PSCOM_UTIL_H_
 
 #include <sys/uio.h>
+#include "pscom_cuda.h"
 
 #ifndef pscom_min
 #define pscom_min(a,b)      (((a)<(b))?(a):(b))
@@ -56,7 +57,7 @@ void pscom_read_from_iov(char *data, struct iovec *iov, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			memcpy(data, iov->iov_base, copy);
+			pscom_memcpy(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
 			iov->iov_base += copy;
@@ -73,7 +74,7 @@ void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			memcpy(iov->iov_base, data, copy);
+			pscom_memcpy(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
 			iov->iov_base += copy;
@@ -105,7 +106,7 @@ void pscom_memcpy_to_iov(const struct iovec *iov, char *data, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			memcpy(iov->iov_base, data, copy);
+			pscom_memcpy(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
 		}
@@ -120,7 +121,7 @@ void pscom_memcpy_from_iov(char *data, const struct iovec *iov, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			memcpy(data, iov->iov_base, copy);
+			pscom_memcpy(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
 		}

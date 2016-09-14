@@ -217,6 +217,13 @@ struct PSCOM_env {
 	int		debug_contype;
 	int		debug_suspend;
 	int		debug_precon;
+#ifdef PSCOM_CUDA_AWARENESS
+	int             cuda;
+#define PSCOM_ENV_CUDA .cuda = 0
+#define ENV_CUDA "PSP_CUDA"
+#else
+#define PSCOM_ENV_CUDA
+#endif
 };
 
 
@@ -260,6 +267,7 @@ struct PSCOM_env {
 	.debug_contype = 0,						\
 	.debug_suspend = 0,						\
 	.debug_precon = 0,						\
+	 PSCOM_ENV_CUDA                                                 \
 }
 
 

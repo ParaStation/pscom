@@ -14,6 +14,13 @@ include $(top_srcdir)/common.am
 AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\"
 AM_CPPFLAGS += -I$(top_builddir)/include
 
+if CUDA_ENABLED
+AM_CFLAGS += -DPSCOM_CUDA_AWARENESS
+AM_CPPFLAGS += -I/usr/local/cuda/include
+AM_LDFLAGS += -L/usr/local/cuda/lib
+AM_LDFLAGS += -L/usr/local/cuda/lib64
+endif
+
 lib_LTLIBRARIES = libpscom.la
 
 noinst_LTLIBRARIES = libpslib.la libpscom_env.la libpscom_dprint.la	\
@@ -36,12 +43,21 @@ libpscom_la_LDFLAGS = -version-info 2:0:0
 libpscom_la_LIBADD = -ldl
 libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
 
+if CUDA_ENABLED
+libpscom_la_LIBADD += -lcuda -lcudart
+endif
+
 # intermediate libs needed elsewhere, in bin
 libpslib_la_SOURCES = pslib.c pslib.h
 libpslib_la_LIBADD = -ldl
 libpscom_env_la_SOURCES = pscom_env.c pscom_env.h
 libpscom_dprint_la_SOURCES = pscom_dprint.c
 libperf_la_SOURCES = perf.c perf.h
+
+if CUDA_ENABLED
+libpslib_la_LIBADD += -lcuda -lcudart
+endif
+
 
 install-exec-hook:
 	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)

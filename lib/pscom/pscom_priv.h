@@ -32,7 +32,6 @@
 
 #include "pscom_debug.h"
 
-
 #define MAGIC_REQUEST		0x72657175
 struct PSCOM_req
 {

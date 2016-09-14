@@ -18,6 +18,7 @@
 #include "pscom_precon.h"
 #include "pscom_plugin.h"
 #include "pscom_async.h"
+#include "pscom_cuda.h"
 #include "pslib.h"
 #include <unistd.h>
 #include <fcntl.h>
@@ -537,6 +538,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->pub.userdata_size = sock->pub.connection_userdata_size;
 	con->pub.state = PSCOM_CON_STATE_CLOSED;
 	con->pub.type = PSCOM_CON_TYPE_NONE;
+	con->pub.is_gpu_aware = 0;
 
 	con->recv_req_cnt = 0;
 	INIT_LIST_HEAD(&con->next);

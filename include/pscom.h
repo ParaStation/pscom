@@ -86,6 +86,9 @@ typedef enum PSCOM_con_type {
 	PSCOM_CON_TYPE_SUSPENDED= 0x11,
 	PSCOM_CON_TYPE_UCP      = 0x12,
 	PSCOM_CON_TYPE_GW	= 0x13,
+#ifdef PSCOM_CUDA_AWARENESS
+	PSCOM_CON_TYPE_CUDA     = 0x80
+#endif
 } pscom_con_type_t;
 
 
@@ -269,12 +272,20 @@ struct PSCOM_connection
 	pscom_con_info_t remote_con_info;
 
 	size_t		userdata_size;
+	int is_gpu_aware;
+
 #ifdef PSCOM_CONNECTION_USERDATA_TYPE
 	PSCOM_CONNECTION_USERDATA_TYPE userdata;
 #else
 	char		userdata[0];
 #endif
 };
+
+static inline
+int pscom_con_is_gpu_aware(struct PSCOM_connection* con)
+{
+	return con->is_gpu_aware;
+}
 
 
 /**

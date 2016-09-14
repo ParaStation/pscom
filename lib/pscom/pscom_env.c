@@ -142,6 +142,10 @@ void pscom_env_init(void)
 	pscom_env_get_int(&pscom.env.unexpected_receives, ENV_UNEXPECTED_RECEIVES);
 	pscom_env_get_uint(&pscom.env.rendezvous_size, ENV_RENDEZVOUS);
 
+#ifdef PSCOM_CUDA_AWARENESS
+	pscom_env_get_int(&pscom.env.cuda, ENV_CUDA);
+#endif
+
 	if (pscom.env.rendezvous_size != (unsigned)~0)
 		pscom.env.rendezvous_size_shm = pscom.env.rendezvous_size;
 	pscom_env_get_uint(&pscom.env.rendezvous_size_shm, ENV_RENDEZVOUS_SHM);

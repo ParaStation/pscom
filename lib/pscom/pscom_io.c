@@ -18,6 +18,7 @@
 #include <stdio.h>
 #include "pscom_str_util.h"
 #include "pscom_util.h"
+#include "pscom_cuda.h"
 
 static inline size_t       header_length(pscom_header_net_t *header);
 static inline int          header_complete(void *buf, size_t size);
@@ -900,7 +901,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 		_check_readahead(con, con->in.readahead.iov_len + len);
 		dest = ((char *)con->in.readahead.iov_base) + con->in.readahead.iov_len;
 		if (buf != dest) {
-			memcpy(dest, buf, len);
+			pscom_memcpy(dest, buf, len);
 		}
 
 		con->in.readahead.iov_len += len;
@@ -1092,7 +1093,7 @@ void _pscom_send(pscom_con_t *con, pscom_msgtype_t msg_type,
 	req->pub.data = req->pub.user;
 
 	memcpy(&req->pub.xheader, xheader, xheader_len);
-	memcpy(req->pub.data, data, data_len);
+	pscom_memcpy(req->pub.data, data, data_len);
 
 	req->pub.ops.io_done = pscom_request_free;
 
@@ -1600,9 +1601,12 @@ void pscom_probe(pscom_request_t *request)
 void pscom_post_send(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
+	pscom_con_t *con = get_con(req->pub.connection);
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 	assert(request->connection != NULL);
+
+//	printf("pscom_post_send: %d at %p via %s\n", req->pub.data_len, req->pub.data, pscom_con_type_str(con->pub.type));
 
 	if (req->pub.data_len < get_con(request->connection)->rendezvous_size) {
 		perf_add("reset_send_direct");

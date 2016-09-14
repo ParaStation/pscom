@@ -282,6 +282,10 @@ pscom_con_state_str(pscom_con_state_t state)
 const char *
 pscom_con_type_str(pscom_con_type_t type)
 {
+#ifdef PSCOM_CUDA_AWARENESS
+	if(type >= PSCOM_CON_TYPE_CUDA) type -= PSCOM_CON_TYPE_CUDA;
+#endif
+
 	switch (type) {
 	case PSCOM_CON_TYPE_NONE:	return "none";
 	case PSCOM_CON_TYPE_LOOP:	return "loop";
