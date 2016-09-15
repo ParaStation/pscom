@@ -592,7 +592,7 @@ void pscom_shm_sock_init(pscom_sock_t *sock)
 		DPRINT(2, "PSP_MALLOC = 1 : size = %lu\n", psshm_info.size);
 		pscom_env_get_uint(&shm_direct, ENV_SHM_DIRECT);
 		pscom_env_get_uint(&shm_indirect, ENV_SHM_INDIRECT);
-		if (shm_indirect > 0 && shm_indirect != ~0) {
+		if ((shm_indirect > 0) && (shm_indirect != ~0U)) {
 			// compare with len > shm_indirect instead of len >= shm_indirect.
 			// With this shm_indirect=~0 can disable indirect sends.
 			shm_indirect--;
