@@ -329,10 +329,6 @@ void run_server()
     exit(1);
 }
 
-#include "ps_perf.h"
-//#include <asm/msr.h>
-
-
 
 static
 void run_client()

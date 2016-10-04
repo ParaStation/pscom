@@ -398,11 +398,6 @@ void run_recv()
 }
 
 
-#include "ps_perf.h"
-//#include <asm/msr.h>
-
-
-
 static
 void run_send()
 {

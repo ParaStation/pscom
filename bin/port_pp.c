@@ -310,12 +310,6 @@ void run_server()
 #define CLIENT_BUFSIZE 10
 
 
-
-#include "ps_perf.h"
-//#include <asm/msr.h>
-
-
-
 static
 void run_client()
 {
