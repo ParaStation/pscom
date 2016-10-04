@@ -17,6 +17,14 @@
 #ifndef _PS_PERF_H_
 #define _PS_PERF_H_
 
+#include <sys/time.h>
+
+static inline unsigned long long ps_getusec(void) {
+    struct timeval tv;
+    gettimeofday(&tv,NULL);
+    return (tv.tv_usec+tv.tv_sec*1000000LL);
+}
+
 
 #if defined( __i386 )
 /*#include <asm/msr.h>*/
@@ -104,9 +112,17 @@ static inline unsigned long ps_get_cycles (void) {
 #define GET_CPU_CYCLES(/*unsigned long*/ cycl) cycl = ps_get_cycles()
 #define GET_CPU_CYCLES_LL(/*unsigned long long*/ cycl) cycl = ps_get_cycles_long()
 
+#elif defined( __aarch64__ )
+
+#define GET_CPU_CYCLES_LL(/*u long long*/ cycl) cycl = ps_getusec()
+#define GET_CPU_CYCLES(/*unsigned long*/ cycl) GET_CPU_CYCLES_LL(cycl)
+
 #else
 
-#error Unknown architecture
+#warning Unknown architecture
+
+#define GET_CPU_CYCLES_LL(/*u long long*/ cycl) cycl = ps_getusec()
+#define GET_CPU_CYCLES(/*unsigned long*/ cycl) GET_CPU_CYCLES_LL(cycl)
 
 #endif
 
