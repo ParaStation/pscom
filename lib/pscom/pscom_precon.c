@@ -371,7 +371,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 	pscom_con_t *con = pre->con;
 	assert(pre->magic == MAGIC_PRECON);
 	assert(!con || con->magic == MAGIC_CONNECTION);
-	assert(!con || con->precon == pre || !con->precon);
+	assert(!con || con->precon == pre || pre->back_connect);
 
 	pscom_precon_info_dump(pre, "recv", type, data, size);
 
@@ -383,7 +383,10 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		break;
 	case PSCOM_INFO_FD_ERROR:
 		if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
-		if (con) {
+		if (con && (
+			    !pre->back_connect ||			/* not a back connect */
+			    (con->pub.type == PSCOM_CON_TYPE_ONDEMAND))	/* or a back connect still of type on demand. */
+		) {
 			int err = data ? *(int*)data : 0;
 			pscom_con_setup_failed(con, err == ECONNREFUSED ? PSCOM_ERR_CONNECTION_REFUSED : PSCOM_ERR_IOERROR);
 		}
@@ -610,11 +613,13 @@ void pscom_precon_check_end(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
 	if ((pre->send_len == 0) && pre->recv_done) {
-		pscom_plugin_t *p = pre->plugin;
+		if (!pre->back_connect) {
+			pscom_plugin_t *p = pre->plugin;
 
-		if (pre->con) pre->con->precon = NULL; // disallow precon usage in handshake
+			if (pre->con) pre->con->precon = NULL; // disallow precon usage in handshake
 
-		if (p) p->con_handshake(pre->con, PSCOM_INFO_EOF, NULL, 0);
+			if (p) p->con_handshake(pre->con, PSCOM_INFO_EOF, NULL, 0);
+		}
 
 		pscom_precon_print_stat(pre);
 
@@ -655,6 +660,7 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 			/* Try again later */
 			break;
 		case ECONNREFUSED:
+		case ECONNRESET:
 			/* Nonblocking connect() failed */
 			pscom_precon_reconnect(pre);
 			break;
@@ -903,6 +909,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 
 	pre->recv_done = 1;	// No recv
 	pre->closefd_on_cleanup = 1; // Default: Close fd on cleanup. Only PSCOM_CON_TYPE_TCP will overwrite this.
+	pre->back_connect = 0;	// Not a back connect
 
 	pre->ufd_info.fd = -1;
 

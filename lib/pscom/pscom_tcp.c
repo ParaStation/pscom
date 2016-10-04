@@ -202,8 +202,12 @@ void pscom_tcp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	switch (type) {
 	case PSCOM_INFO_ARCH_REQ:
 		pre->closefd_on_cleanup = 0; // Keep fd after usage
-		tcp_set_fd(con, pre->ufd_info.fd);
 		pscom_precon_send(pre, PSCOM_INFO_ARCH_OK, NULL, 0);
+		break;
+	case PSCOM_INFO_ARCH_OK:
+		if (pre) {
+			tcp_set_fd(con, pre->ufd_info.fd);
+		}
 		break;
 	case PSCOM_INFO_EOF:
 		tcp_init_con(con);

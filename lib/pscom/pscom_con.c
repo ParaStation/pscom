@@ -492,21 +492,18 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
 		   should be terminated with an error. 2.) Peer is
 		   connecting to us at the same time and the listening
 		   tcp port is already closed. This is not an error
-		   and we must not terminate the connection con.  As
-		   we can not distinct between 1 and 2, we ignore
-		   tcp_connect errors in the hope it was 2. In the
-		   worst case this deadlock parallel applications!
+		   and we must not terminate the connection con.
 		   3.) Peer has no receive request on this con and is
 		   not watching for POLLIN on the listening fd. This
-		   is currently unhandled! */
+		   is currently unhandled and cause a connection error! */
 
 		/* Send a rconnect request */
 		DPRINT(PRECON_LL, "precon(%p): send backcon %.8s to %.8s", pre,
 		       con->pub.socket->local_con_info.name, con->pub.remote_con_info.name);
 		pscom_precon_send_PSCOM_INFO_CON_INFO(pre, PSCOM_INFO_BACK_CONNECT);
-		pre->con = NULL; /* Forget the con to avoid a race
-				  *  with a simultanous PSCOM_INFO_CON_INFO_DEMAND
-				  */
+
+		pre->back_connect = 1; /* This is a back connect. */
+
 		pscom_precon_recv_start(pre); // Wait for the PSCOM_INFO_BACK_ACK
 	} else {
 		pscom_precon_destroy(pre);

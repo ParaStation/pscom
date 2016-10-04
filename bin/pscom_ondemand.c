@@ -198,8 +198,8 @@ int main(int argc, char **argv)
 	pscom_stop_listen(sock);
 
 	if (arg_send) {
-		printf("Send in 5 sec\n");
-		sleep(5);
+		printf("Send in 2 sec\n");
+		sleep(2);
 		char buf[1] = "x";
 
 		pscom_send(con, NULL, 0, buf, 1);
