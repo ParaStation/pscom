@@ -1,3 +1,9 @@
+2016-10-04  Jens Hauke  <hauke@par-tec.com>
+
+	* Feature: ARM support (aarch64).
+
+	* Fix: on demand / ECONNRESET.
+
 2016-09-06  Jens Hauke  <hauke@par-tec.com>	-	5.1.0-1
 
 	* Feature: Add support for UCP (pscom4ucp). Use export
