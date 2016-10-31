@@ -53,7 +53,7 @@ if UCP_ENABLED
 endif
 
 if PSM_ENABLED
-  noinst_PROGRAMS += psm_pp
+  noinst_PROGRAMS += psm_pp pscom4psm_pp
 endif
 
 bin_PROGRAMS += test_nodes
@@ -216,6 +216,13 @@ psm_pp_SOURCES = psm/psm_pp.c
 psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
 psm_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
 psm_pp_LDADD = -lpsm_infinipath -lpopt
+
+pscom4psm_pp_SOURCES = psm/pscom4psm_pp.c
+pscom4psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS) \
+	-I$(top_srcdir)/lib/pscom4psm \
+	-I$(top_srcdir)/lib/pscom
+pscom4psm_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
+pscom4psm_pp_LDADD = -lpsm_infinipath -lpopt
 
 # -- psmgmt --
 

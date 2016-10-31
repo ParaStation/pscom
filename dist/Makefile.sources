@@ -207,6 +207,8 @@ lib/pscom4psm/Makefile.am \
 lib/pscom4psm/Makefile.in \
 lib/pscom4psm/pscom_psm.c \
 lib/pscom4psm/pscom_psm.h \
+lib/pscom4psm/pspsm.c \
+lib/pscom4psm/pspsm.h \
 lib/pscom4ucp/Makefile.am \
 lib/pscom4ucp/Makefile.in \
 lib/pscom4ucp/pscom_ucp.c \
