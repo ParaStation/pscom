@@ -119,7 +119,8 @@ int pspsm_open_endpoint(void)
 				  &pspsm_ep, &pspsm_epid);
 		if (ret != PSM_OK) goto err;
 
-		sendbuf = malloc(pscom.env.readahead);
+		//sendbuf = malloc(pscom.env.readahead);
+		sendbuf = valloc(pscom.env.readahead);
 
 		pspsm_dprint(2, "pspsm_open_endpoint: OK");
 	}
@@ -528,8 +529,9 @@ int pspsm_progress()
 			goto err;
 		read_progress += pspsm_process(&status);
 	}
-	while (1);
+	while (!read_progress);
 
+	return read_progress;
  err:
 	pspsm_err(psm_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_peek: %s", pspsm_err_str);
