@@ -16,12 +16,16 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#include "psm.h"
-#include "psm_mq.h"
+#ifndef PSM1
+#include "psm2.h"
+#include "psm2_mq.h"
+#else
+#include "psm1_compat.h"
+#endif
 
 struct pspsm_con_info {
 	/* general info */
-	psm_epaddr_t epaddr;    /**< destination address of peer */
+	psm2_epaddr_t epaddr;    /**< destination address of peer */
 	uint64_t send_id;       /**< tag used when sending to peer */
 	uint64_t recv_id;       /**< tag used when receiving from peer*/
 	int con_broken;         /**< set to 1 if connection broken */
@@ -29,11 +33,11 @@ struct pspsm_con_info {
 	/* sending */
 	struct PSCOM_req *sreq;       /**< pscom open send request */
 	size_t sreq_len;	/**< size of open send request */
-	psm_mq_req_t sreqs[2];  /**< MQ send requests */
+	psm2_mq_req_t sreqs[2];  /**< MQ send requests */
 
 	/* receiving */
 	char* rbuf;             /**< buffer used for current receive */
-	psm_mq_req_t rreq;      /**< MQ recv request */
+	psm2_mq_req_t rreq;      /**< MQ recv request */
 
 	/* pointing back */
 	struct PSCOM_con *con;
@@ -47,7 +51,7 @@ struct pspsm_con_info {
  * UUID Helper
  */
 typedef union {
-	psm_uuid_t as_uuid;
+	psm2_uuid_t as_uuid;
 	unsigned int as_uint;
 } pspsm_uuid_t;
 
@@ -70,9 +74,9 @@ FILE *pspsm_debug_stream = NULL;
 static char *pspsm_err_str = NULL; /* last error string */
 static char* sendbuf = NULL;
 static pspsm_uuid_t pspsm_uuid;
-static psm_epid_t pspsm_epid;
-static psm_ep_t pspsm_ep;
-static psm_mq_t pspsm_mq;
+static psm2_epid_t pspsm_epid;
+static psm2_ep_t pspsm_ep;
+static psm2_mq_t pspsm_mq;
 
 
 static
@@ -107,17 +111,17 @@ int pspsm_check_dev_ipath(void)
 static
 int pspsm_open_endpoint(void)
 {
-	psm_error_t ret;
+	psm2_error_t ret;
 
 	if (!pspsm_ep){
-		struct psm_ep_open_opts opts;
+		struct psm2_ep_open_opts opts;
 
-		ret = psm_ep_open_opts_get_defaults(&opts);
-		if (ret != PSM_OK) goto err;
+		ret = psm2_ep_open_opts_get_defaults(&opts);
+		if (ret != PSM2_OK) goto err;
 
-		ret = psm_ep_open(pspsm_uuid.as_uuid, &opts,
+		ret = psm2_ep_open(pspsm_uuid.as_uuid, &opts,
 				  &pspsm_ep, &pspsm_epid);
-		if (ret != PSM_OK) goto err;
+		if (ret != PSM2_OK) goto err;
 
 		//sendbuf = malloc(pscom.env.readahead);
 		sendbuf = valloc(pscom.env.readahead);
@@ -127,7 +131,7 @@ int pspsm_open_endpoint(void)
 	return 0;
 
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_open_endpoint: %s", pspsm_err_str);
 	return -1;
 }
@@ -136,19 +140,19 @@ int pspsm_open_endpoint(void)
 static
 int pspsm_init_mq(void)
 {
-	psm_error_t ret;
+	psm2_error_t ret;
 
 	if (!pspsm_mq){
-		ret = psm_mq_init(pspsm_ep, PSM_MQ_ORDERMASK_ALL, NULL, 0,
-				  &pspsm_mq);
+		ret = psm2_mq_init(pspsm_ep, PSM2_MQ_ORDERMASK_ALL, NULL, 0,
+				   &pspsm_mq);
 
-		if (ret != PSM_OK) goto err;
+		if (ret != PSM2_OK) goto err;
 		pspsm_dprint(2, "pspsm_init_mq: OK");
 	}
 	return 0;
 
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_init_mq: %s", pspsm_err_str);
 	return -1;
 }
@@ -186,17 +190,17 @@ int pspsm_close_endpoint(void)
 
 int pspsm_finalize_mq(void)
 {
-	psm_error_t ret;
+	psm2_error_t ret;
 
 	if (pspsm_mq){
-		ret = psm_mq_finalize(pspsm_mq);
-		if (ret != PSM_OK) goto err;
+		ret = psm2_mq_finalize(pspsm_mq);
+		if (ret != PSM2_OK) goto err;
 		pspsm_dprint(2, "pspsm_finalize_mq: OK");
 	}
 	return 0;
 
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_finalize_mq: %s", pspsm_err_str);
 	return -1;
 }
@@ -212,9 +216,9 @@ int pspsm_con_init(pspsm_con_info_t *con_info, struct PSCOM_con *con)
 	con_info->rbuf = NULL;
 	con_info->sreq = NULL;
 
-	con_info->rreq = PSM_MQ_REQINVALID;
-	con_info->sreqs[0] = PSM_MQ_REQINVALID;
-	con_info->sreqs[1] = PSM_MQ_REQINVALID;
+	con_info->rreq = PSM2_MQ_REQINVALID;
+	con_info->sreqs[0] = PSM2_MQ_REQINVALID;
+	con_info->sreqs[1] = PSM2_MQ_REQINVALID;
 
 	con_info->con = con;
 
@@ -229,25 +233,25 @@ int pspsm_con_init(pspsm_con_info_t *con_info, struct PSCOM_con *con)
 static
 int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 {
-	psm_error_t ret, ret1;
+	psm2_error_t ret, ret1;
 
 	if (memcmp(info_msg->protocol_version, PSPSM_PROTOCOL_VERSION,
 		   sizeof(info_msg->protocol_version))) {
 		goto err_protocol;
 	}
 
-	ret = psm_ep_connect(pspsm_ep, 1, &info_msg->epid, NULL, &ret1,
-			     &con_info->epaddr, 0);
+	ret = psm2_ep_connect(pspsm_ep, 1, &info_msg->epid, NULL, &ret1,
+			      &con_info->epaddr, 0);
 	con_info->send_id = info_msg->id;
 
-	if (ret != PSM_OK) goto err_connect;
+	if (ret != PSM2_OK) goto err_connect;
 	pspsm_dprint(2, "pspsm_con_connect: OK");
 	pspsm_dprint(2, "sending with %"PRIx64", receiving %"PRIx64,
 		     con_info->send_id, con_info->recv_id);
 	return 0;
 
  err_connect:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_con_connect: %s", pspsm_err_str);
 	return -1;
  err_protocol:
@@ -266,9 +270,9 @@ static
 int pspsm_init(void)
 {
 	static pspsm_init_state_t init_state = PSPSM_INIT_START;
-	int verno_minor = PSM_VERNO_MINOR;
-	int verno_major = PSM_VERNO_MAJOR;
-	psm_error_t ret;
+	int verno_minor = PSM2_VERNO_MINOR;
+	int verno_major = PSM2_VERNO_MAJOR;
+	psm2_error_t ret;
 
 	if (init_state == PSPSM_INIT_START) {
 		/* Check for an available /dev/ipath */
@@ -277,8 +281,8 @@ int pspsm_init(void)
 			goto err_dev_ipath;
 		}
 
-		ret = psm_init(&verno_major, &verno_minor);
-		if (ret != PSM_OK) {
+		ret = psm2_init(&verno_major, &verno_minor);
+		if (ret != PSM2_OK) {
 			goto err_init;
 		}
 
@@ -327,7 +331,7 @@ err_dev_ipath:
 	pspsm_dprint(2, "pspsm_init: No \"/dev/ipath\" found. Arch psm is disabled.");
 	goto err_exit;
 err_init:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_init: %s", pspsm_err_str);
 	// Fall through
  err_ep:
@@ -355,7 +359,7 @@ void pspsm_iov_print(const struct iovec *iov, size_t len)
 
 /* Process a mq_status. return 1, if a read made progress. 0 else */
 static
-int pspsm_process(psm_mq_status_t *status)
+int pspsm_process(psm2_mq_status_t *status)
 {
 	uintptr_t c = (uintptr_t)status->context & 7;
 	pspsm_con_info_t *ci = (pspsm_con_info_t *)((uintptr_t)status->context & ~(uintptr_t)7);
@@ -366,24 +370,24 @@ int pspsm_process(psm_mq_status_t *status)
 	switch (c) {
 	case 0:
 		/* first send request */
-		assert(ci->sreqs[0] != PSM_MQ_REQINVALID);
+		assert(ci->sreqs[0] != PSM2_MQ_REQINVALID);
 		poll_user_dec();
-		ci->sreqs[0] = PSM_MQ_REQINVALID;
+		ci->sreqs[0] = PSM2_MQ_REQINVALID;
 		/* pspsm_dprint(0, "Send0 done %p len %d con %s\n", ci->iov[0].iov_base,
 		   (int)ci->iov[0].iov_len, ci->con->pub.remote_con_info.name); */
-		if (ci->sreqs[1] == PSM_MQ_REQINVALID){
+		if (ci->sreqs[1] == PSM2_MQ_REQINVALID) {
 			pscom_write_done(con, ci->sreq, ci->sreq_len);
 			ci->sreq = NULL;
 		}
 		break;
 	case 1:
 		/* second send request */
-		assert(ci->sreqs[1] != PSM_MQ_REQINVALID);
+		assert(ci->sreqs[1] != PSM2_MQ_REQINVALID);
 		poll_user_dec();
-		ci->sreqs[1] = PSM_MQ_REQINVALID;
+		ci->sreqs[1] = PSM2_MQ_REQINVALID;
 		/* pspsm_dprint(0, "Send1 done %p len %d con %s\n", ci->iov[1].iov_base,
 		   (int)ci->iov[1].iov_len, ci->con->pub.remote_con_info.name); */
-		if (ci->sreqs[0] == PSM_MQ_REQINVALID){
+		if (ci->sreqs[0] == PSM2_MQ_REQINVALID) {
 			pscom_write_done(con, ci->sreq, ci->sreq_len);
 			ci->sreq = NULL;
 		}
@@ -392,7 +396,7 @@ int pspsm_process(psm_mq_status_t *status)
 		/* receive request */
 		assert(ci->rbuf);
 		assert(status->msg_length == status->nbytes);
-		ci->rreq = PSM_MQ_REQINVALID;
+		ci->rreq = PSM2_MQ_REQINVALID;
 		/* pspsm_dprint(0, "read done %p len %d con %s\n", ci->rbuf,
 		   (int)status->msg_length, ci->con->pub.remote_con_info.name); */
 		pscom_read_done_unlock(con, ci->rbuf, status->msg_length);
@@ -411,19 +415,19 @@ int pspsm_process(psm_mq_status_t *status)
 
 static inline
 int _pspsm_send_buf(pspsm_con_info_t *con_info, char *buf, size_t len,
-		    uint64_t tag, psm_mq_req_t *req, unsigned long nr)
+		    uint64_t tag, psm2_mq_req_t *req, unsigned long nr)
 {
 	void *context = (void *)((uintptr_t)con_info | nr);
-	psm_error_t ret;
-	assert(*req == PSM_MQ_REQINVALID);
-	ret = psm_mq_isend(pspsm_mq, con_info->epaddr,
-			   /* flags */ 0, tag, buf, len,
-			   context, req);
-	if (ret != PSM_OK) goto err;
+	psm2_error_t ret;
+	assert(*req == PSM2_MQ_REQINVALID);
+	ret = psm2_mq_isend(pspsm_mq, con_info->epaddr,
+			    /* flags */ 0, tag, buf, len,
+			    context, req);
+	if (ret != PSM2_OK) goto err;
 	return 0;
 
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "_pspsm_send_buf: %s", pspsm_err_str);
 	return -EPIPE;
 }
@@ -441,16 +445,16 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 {
 	uint64_t tag = con_info->send_id | PSPSM_MAGIC_IO;
 	unsigned int i=0;
-	psm_error_t ret;
+	psm2_error_t ret;
 	size_t len = iov[0].iov_len + iov[1].iov_len;
 
 	if (len <= pscom.env.readahead){
 		pscom_memcpy_from_iov(sendbuf, iov, len);
 		/* we hope that doesn't block - it shouldn't, as the
 		 * message is sufficiently small */
-		ret = psm_mq_send(pspsm_mq, con_info->epaddr,
-				  /* flags*/ 0, tag, sendbuf, len);
-		if (ret != PSM_OK) goto err;
+		ret = psm2_mq_send(pspsm_mq, con_info->epaddr,
+				   /* flags*/ 0, tag, sendbuf, len);
+		if (ret != PSM2_OK) goto err;
 		return 0;
 	}
 
@@ -475,7 +479,7 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 	return -EAGAIN;
 
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "_pspsm_send_buf: %s", pspsm_err_str);
 	return -EPIPE;
 }
@@ -485,21 +489,21 @@ static
 int pspsm_recv_start(pspsm_con_info_t *con_info, char *rbuf, size_t rbuflen)
 {
 	/* ToDo: rename me to something like "post a receive". */
-	psm_error_t ret;
+	psm2_error_t ret;
 	uint64_t rtag = con_info->recv_id;
 	void *context = (void *)((uintptr_t)con_info | 2);
 
-	assert(con_info->rreq == PSM_MQ_REQINVALID);
-	ret = psm_mq_irecv(pspsm_mq, rtag, mask, 0 /*flags*/,
-			   rbuf, rbuflen,
-			   context, &con_info->rreq);
+	assert(con_info->rreq == PSM2_MQ_REQINVALID);
+	ret = psm2_mq_irecv(pspsm_mq, rtag, mask, 0 /*flags*/,
+			    rbuf, rbuflen,
+			    context, &con_info->rreq);
 	con_info->rbuf = rbuf;
-	if (ret != PSM_OK) goto out_err;
+	if (ret != PSM2_OK) goto out_err;
 
 	return 0;
 
  out_err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_recvlook: %s", pspsm_err_str);
 	return -EPIPE;
 }
@@ -515,17 +519,17 @@ static
 int pspsm_progress()
 {
 	unsigned read_progress = 0;
-	psm_mq_req_t req;
-	psm_mq_status_t status;
-	psm_error_t ret;
+	psm2_mq_req_t req;
+	psm2_mq_status_t status;
+	psm2_error_t ret;
 	do {
-		ret = psm_mq_ipeek(pspsm_mq, &req, /* status */ NULL);
-		if (ret == PSM_MQ_INCOMPLETE)
+		ret = psm2_mq_ipeek(pspsm_mq, &req, /* status */ NULL);
+		if (ret == PSM2_MQ_INCOMPLETE)
 			return read_progress;
-		if (ret != PSM_OK)
+		if (ret != PSM2_OK)
 			goto err;
-		ret = psm_mq_test(&req, &status);
-		if (ret != PSM_OK)
+		ret = psm2_mq_test(&req, &status);
+		if (ret != PSM2_OK)
 			goto err;
 		read_progress += pspsm_process(&status);
 	}
@@ -533,7 +537,7 @@ int pspsm_progress()
 
 	return read_progress;
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_peek: %s", pspsm_err_str);
 	return read_progress;
 

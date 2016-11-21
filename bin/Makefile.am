@@ -52,8 +52,12 @@ if UCP_ENABLED
   noinst_PROGRAMS += ucp_pp
 endif
 
-if PSM_ENABLED
-  noinst_PROGRAMS += psm_pp pscom4psm_pp
+if PSM1_ENABLED
+  noinst_PROGRAMS += psm_pp
+endif
+
+if PSM2_ENABLED
+  noinst_PROGRAMS += psm2_pp pscom4psm_pp
 endif
 
 bin_PROGRAMS += test_nodes
@@ -211,18 +215,28 @@ ucp_pp_LDFLAGS = $(ldflags_ucp)
 ucp_pp_LDADD = $(ldadd_ucp)
 
 # -- psm --
+if PSM1_ENABLED
+PSM_CPPFLAGS_EXTRA=-DPSM1
+else
+PSM_CPPFLAGS_EXTRA=
+endif
 
 psm_pp_SOURCES = psm/psm_pp.c
 psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
 psm_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
 psm_pp_LDADD = -lpsm_infinipath -lpopt
 
+psm2_pp_SOURCES = psm/psm2_pp.c
+psm2_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
+psm2_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
+psm2_pp_LDADD = -lpsm2 -lpopt
+
 pscom4psm_pp_SOURCES = psm/pscom4psm_pp.c
-pscom4psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS) \
+pscom4psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS) $(PSM_CPPFLAGS_EXTRA) \
 	-I$(top_srcdir)/lib/pscom4psm \
 	-I$(top_srcdir)/lib/pscom
 pscom4psm_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
-pscom4psm_pp_LDADD = -lpsm_infinipath -lpopt
+pscom4psm_pp_LDADD = -lpsm2 -lpopt
 
 # -- psmgmt --
 
