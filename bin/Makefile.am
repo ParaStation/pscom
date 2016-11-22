@@ -215,10 +215,12 @@ ucp_pp_LDFLAGS = $(ldflags_ucp)
 ucp_pp_LDADD = $(ldadd_ucp)
 
 # -- psm --
+if PSM2_ENABLED
+PSM_CPPFLAGS_EXTRA=
+else
 if PSM1_ENABLED
 PSM_CPPFLAGS_EXTRA=-DPSM1
-else
-PSM_CPPFLAGS_EXTRA=
+endif
 endif
 
 psm_pp_SOURCES = psm/psm_pp.c
