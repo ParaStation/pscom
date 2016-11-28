@@ -143,7 +143,10 @@ am__uninstall_files_from_dir = { \
   }
 am__installdirs = "$(DESTDIR)$(libdir)"
 LTLIBRARIES = $(lib_LTLIBRARIES)
-libpscom4psm_la_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom.la
+@PSM2_ENABLED_FALSE@libpscom4psm_la_DEPENDENCIES =  \
+@PSM2_ENABLED_FALSE@	$(top_builddir)/lib/pscom/libpscom.la
+@PSM2_ENABLED_TRUE@libpscom4psm_la_DEPENDENCIES =  \
+@PSM2_ENABLED_TRUE@	$(top_builddir)/lib/pscom/libpscom.la
 am_libpscom4psm_la_OBJECTS = libpscom4psm_la-pscom_psm.lo
 libpscom4psm_la_OBJECTS = $(am_libpscom4psm_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
@@ -304,6 +307,8 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PSM2_CPPFLAGS = @PSM2_CPPFLAGS@
+PSM2_LDFLAGS = @PSM2_LDFLAGS@
 PSMGMT_CPPFLAGS = @PSMGMT_CPPFLAGS@
 PSMGMT_LDFLAGS = @PSMGMT_LDFLAGS@
 PSM_CPPFLAGS = @PSM_CPPFLAGS@
@@ -396,11 +401,14 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 
 # FIXME: non-standard
 configdir = $(prefix)/config
+@PSM2_ENABLED_FALSE@PSM_CPPFLAGS_EXTRA = -DPSM1
+@PSM2_ENABLED_TRUE@PSM_CPPFLAGS_EXTRA = 
 lib_LTLIBRARIES = libpscom4psm.la
-libpscom4psm_la_SOURCES = pscom_psm.c pscom_psm.h
-libpscom4psm_la_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
+libpscom4psm_la_SOURCES = pscom_psm.c pscom_psm.h pspsm.h
+libpscom4psm_la_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS) $(PSM_CPPFLAGS_EXTRA)
 libpscom4psm_la_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
-libpscom4psm_la_LIBADD = -lpsm_infinipath $(top_builddir)/lib/pscom/libpscom.la
+@PSM2_ENABLED_FALSE@libpscom4psm_la_LIBADD = -lpsm_infinipath $(top_builddir)/lib/pscom/libpscom.la
+@PSM2_ENABLED_TRUE@libpscom4psm_la_LIBADD = -lpsm2 $(top_builddir)/lib/pscom/libpscom.la
 all: all-am
 
 .SUFFIXES:
