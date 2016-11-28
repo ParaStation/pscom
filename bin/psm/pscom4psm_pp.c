@@ -466,7 +466,7 @@ int main(int argc, char **argv)
 	parse_opt(argc, argv);
 
 	pspsm_debug_stream = stderr;
-	pspsm_debug = 2;
+	pspsm_debug = arg_verbose + 2;
 
 	peer = get_peer();
 	init(peer);
@@ -484,6 +484,9 @@ int main(int argc, char **argv)
 		sleep(2);
 		do_pp_client();
 	}
+
+	if (arg_verbose) pspsm_print_stats();
+
 
 	return 0;
 }

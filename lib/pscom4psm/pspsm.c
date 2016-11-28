@@ -109,6 +109,42 @@ int pspsm_check_dev_ipath(void)
 
 
 static
+void pspsm_print_stats()
+{
+	psm2_mq_stats_t stats;
+	memset(&stats, 0, sizeof(stats));
+
+	psm2_mq_get_stats(pspsm_mq, &stats);
+
+	/* Bytes received into a matched user buffer */
+	pspsm_dprint(0, "rx_user_bytes:   %8lu", (unsigned long)stats.rx_user_bytes);
+	/* Messages received into a matched user buffer */
+	pspsm_dprint(0, "rx_user_num:     %8lu", (unsigned long)stats.rx_user_num);
+	/* Bytes received into an unmatched system buffer */
+	pspsm_dprint(0, "rx_sys_bytes:    %8lu", (unsigned long)stats.rx_sys_bytes);
+	/* Messages received into an unmatched system buffer */
+	pspsm_dprint(0, "rx_sys_num:      %8lu", (unsigned long)stats.rx_sys_num);
+	/* Total Messages transmitted (shm and hfi) */
+	pspsm_dprint(0, "tx_num:          %8lu", (unsigned long)stats.tx_num);
+	/* Messages transmitted eagerly */
+	pspsm_dprint(0, "tx_eager_num:    %8lu", (unsigned long)stats.tx_eager_num);
+	/* Bytes transmitted eagerly */
+	pspsm_dprint(0, "tx_eager_bytes:  %8lu", (unsigned long)stats.tx_eager_bytes);
+	/* Messages transmitted using expected TID mechanism */
+	pspsm_dprint(0, "tx_rndv_num:     %8lu", (unsigned long)stats.tx_rndv_num);
+	/* Bytes transmitted using expected TID mechanism */
+	pspsm_dprint(0, "tx_rndv_bytes:   %8lu", (unsigned long)stats.tx_rndv_bytes);
+	/* Messages transmitted (shm only) */
+	pspsm_dprint(0, "tx_shm_num:      %8lu", (unsigned long)stats.tx_shm_num);
+	/* Messages received through shm */
+	pspsm_dprint(0, "rx_shm_num:      %8lu", (unsigned long)stats.rx_shm_num);
+	/* Number of system buffers allocated  */
+	pspsm_dprint(0, "rx_sysbuf_num:   %8lu", (unsigned long)stats.rx_sysbuf_num);
+	/* Bytes allcoated for system buffers */
+	pspsm_dprint(0, "rx_sysbuf_bytes: %8lu", (unsigned long)stats.rx_sysbuf_bytes);
+}
+
+static
 int pspsm_open_endpoint(void)
 {
 	psm2_error_t ret;
@@ -165,6 +201,7 @@ int pspsm_close_endpoint(void)
 	/* psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
 	   the cleanup always helps.
 	   (Seen with infinipath-libs-3.2-32129.1162_rhel6_qlc.x86_64) */
+	if (pspsm_debug >= 3) pspsm_print_stats();
 	return 0;
 #else
 	psm_error_t ret;
