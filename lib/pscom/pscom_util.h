@@ -54,7 +54,7 @@ void pscom_read_from_iov(char *data, struct iovec *iov, size_t len)
 {
 	while (len > 0) {
 		if (iov->iov_len) {
-			int copy = pscom_min(len, iov->iov_len);
+			size_t copy = pscom_min(len, iov->iov_len);
 			memcpy(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
@@ -71,7 +71,7 @@ void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
 {
 	while (len > 0) {
 		if (iov->iov_len) {
-			int copy = pscom_min(len, iov->iov_len);
+			size_t copy = pscom_min(len, iov->iov_len);
 			memcpy(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
@@ -88,7 +88,7 @@ void pscom_forward_iov(struct iovec *iov, size_t len)
 {
 	while (len > 0) {
 		if (iov->iov_len) {
-			int copy = pscom_min(len, iov->iov_len);
+			size_t copy = pscom_min(len, iov->iov_len);
 			len -= copy;
 			iov->iov_base += copy;
 			iov->iov_len -= copy;
@@ -103,7 +103,7 @@ void pscom_memcpy_to_iov(const struct iovec *iov, char *data, size_t len)
 {
 	while (len > 0) {
 		if (iov->iov_len) {
-			int copy = pscom_min(len, iov->iov_len);
+			size_t copy = pscom_min(len, iov->iov_len);
 			memcpy(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
@@ -118,7 +118,7 @@ void pscom_memcpy_from_iov(char *data, const struct iovec *iov, size_t len)
 {
 	while (len > 0) {
 		if (iov->iov_len) {
-			int copy = pscom_min(len, iov->iov_len);
+			size_t copy = pscom_min(len, iov->iov_len);
 			memcpy(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;

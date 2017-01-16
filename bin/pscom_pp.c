@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <popt.h>
 #include <ctype.h>
+#include <limits.h>
 
 #include "pscom.h"
 
@@ -31,12 +32,12 @@ const char *arg_server = "localhost:7100";
 int arg_client = 0;
 int arg_lport = 7100;
 
-int arg_loops = 1024;
-int arg_maxtime = 3000;
+unsigned arg_loops = 1024;
+unsigned arg_maxtime = 3000;
 #define MAX_XHEADER 100
-int arg_xheader = 12;
-int arg_maxmsize = 4 * 1024 * 1024;
-int arg_minmsize = 0;
+unsigned arg_xheader = 12;
+unsigned long arg_maxmsize = 4 * 1024 * 1024;
+unsigned long arg_minmsize = 0;
 int arg_run_once = 0;
 int arg_verbose = 0;
 int arg_histo = 0;
@@ -62,9 +63,9 @@ void parse_opt(int argc, char **argv)
 		  &arg_loops , 0, "pp loops", "count" },
 		{ "time"  , 't', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_maxtime, 0, "max time", "ms" },
-		{ "minsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
+		{ "minsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_LONG,
 		  &arg_minmsize , 0, "minimal messagesize", "size" },
-		{ "maxsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
+		{ "maxsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_LONG,
 		  &arg_maxmsize , 0, "maximal messagesize", "size" },
 		{ "xheader"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_xheader , 0, "xheader size", "size" },
@@ -121,6 +122,14 @@ void parse_opt(int argc, char **argv)
 		exit(1);
 	}
 
+	if (arg_maxmsize > UINT_MAX) {
+		fprintf(stderr, "--maxsize=%ld: number too large or to small (min 0, max %u)\n", (long)arg_maxmsize, UINT_MAX);
+		exit(1);
+	}
+	if (arg_minmsize > UINT_MAX) {
+		fprintf(stderr, "--minsize=%ld: number too large or to small (min 0, max %u)\n", (long)arg_minmsize, UINT_MAX);
+		exit(1);
+	}
 	poptFreeContext(optCon);
 }
 
@@ -144,7 +153,7 @@ void run_pp_server(pscom_connection_t *con)
 {
 	void *buf = arg_valloc ? valloc(arg_maxmsize) : malloc(arg_maxmsize);
 	pscom_request_t *req;
-	int i;
+	unsigned i;
 
 	req = pscom_request_create(MAX_XHEADER, 0);
 
@@ -164,13 +173,13 @@ void run_pp_server(pscom_connection_t *con)
 
 		if (!pscom_req_successful(req)) break;
 		if (arg_verbose) {
-			printf("Receive %d xheader :%s\n",
+			printf("Receive %u xheader :%s\n",
 			       req->header.xheader_len,
 			       pscom_dumpstr(&req->xheader, req->header.xheader_len));
 
-			printf("        %d data :%s\n",
+			printf("        %u data :%s\n",
 			       req->header.data_len,
-			       pscom_dumpstr(req->data, req->header.data_len));
+			       pscom_dumpstr(req->data, MIN(req->header.data_len, 64)));
 		}
 
 		req->xheader_len = req->header.xheader_len;
@@ -265,10 +274,10 @@ int pp_loop_histo(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 
 
 static
-int run_pp_c(pscom_connection_t *con, int msize, int xsize, unsigned loops,
+int run_pp_c(pscom_connection_t *con, unsigned msize, unsigned xsize, unsigned loops,
 	     int (*pp_loop)(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops))
 {
-	int cnt;
+	unsigned cnt;
 	void *sbuf = arg_valloc ? valloc(msize) : malloc(msize);
 	void *rbuf = arg_valloc ? valloc(msize) : malloc(msize);
 	int ret;
@@ -282,7 +291,7 @@ int run_pp_c(pscom_connection_t *con, int msize, int xsize, unsigned loops,
 	rreq = pscom_request_create(xsize, 0);
 
 	if (arg_verbose) {
-		printf("Buffers: sbuf:%p rbuf:%p\n", sbuf, rbuf);
+		printf("Buffers: sbuf:%p[%u] rbuf:%p[%u]\n", sbuf, msize, rbuf, msize);
 		for (cnt = 0; cnt < xsize; cnt++) {
 			sreq->xheader.user[cnt] = cnt + 1;
 		}
@@ -319,7 +328,7 @@ void do_pp_client(pscom_connection_t *con)
 	printf("Xheader : %d bytes\n", arg_xheader);
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
-	for (ms = arg_minmsize; (int)(ms + 0.5) <= arg_maxmsize; ms = ms < 2.0 ? ms + 1 : ms * 1.4142135623730950488) {
+	for (ms = arg_minmsize; (unsigned long)(ms + 0.5) <= (unsigned long)arg_maxmsize; ms = ms < 2.0 ? ms + 1 : ms * 1.4142135623730950488) {
 		unsigned int iloops = loops;
 		msgsize = ms + 0.5;
 
@@ -341,11 +350,11 @@ void do_pp_client(pscom_connection_t *con)
 		time = (double)(t2 - t1) / (iloops * 2);
 		throuput = msgsize / time;
 		if (res == 0) {
-			printf("%7d %8d %8.2f %8.2f%s\n", msgsize, iloops, time, throuput,
+			printf("%7u %8u %8.2f %8.2f%s\n", msgsize, iloops, time, throuput,
 			       pp_loop_func == pp_loop_verify ? " ok" : "");
 			fflush(stdout);
 		} else {
-			printf("%7d Error in communication...\n", msgsize);
+			printf("%7u Error in communication...\n", msgsize);
 		}
 
 		{
