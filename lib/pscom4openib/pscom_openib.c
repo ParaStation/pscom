@@ -70,7 +70,7 @@ static
 int _pscom_openib_do_read(pscom_con_t *con, psoib_con_info_t *mcon)
 {
 	void *buf;
-	int size;
+	ssize_t size;
 
 	size = psoib_recvlook(mcon, &buf);
 
@@ -105,7 +105,7 @@ int pscom_openib_do_read(pscom_poll_reader_t *reader)
 static
 void pscom_openib_do_write(pscom_con_t *con)
 {
-	unsigned int len;
+	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
 
@@ -116,7 +116,7 @@ void pscom_openib_do_write(pscom_con_t *con)
 		len = iov[0].iov_len + iov[1].iov_len;
 
 		perf_add("openib_sendv");
-		int rlen = psoib_sendv(mcon, iov, len);
+		ssize_t rlen = psoib_sendv(mcon, iov, len);
 
 		if (rlen >= 0) {
 			pscom_write_done(con, req, rlen);
@@ -164,6 +164,8 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 	psoib_con_info_t *ci = con->arch.openib.mcon;
 	psoib_rma_mreg_t *mreg = &openib_rd->rma_req.mreg;
 
+	if (rd->msg.data_len > IB_MAX_RDMA_MSG_SIZE) goto err_size;
+
 #ifdef IB_RNDV_USE_PADDING
 #ifdef   IB_RNDV_RDMA_WRITE
 #error   IB_RNDV_USE_PADDING and IB_RNDV_RDMA_WRITE are mutually exclusive!
@@ -200,6 +202,7 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 #endif
 
 err_get_region:
+err_size:
 	// ToDo: Handle Errors!
 	return 0;
 }
@@ -302,7 +305,8 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 	psoib_con_info_t *mcon = con->arch.openib.mcon;
 
 	psoib_rma_req_t *dreq = &rd_data_openib->rma_req;
-	int len, err;
+	size_t len;
+	int err;
 
 	rd_data->msg.id = (void*)42;
 	rd_data->msg.data = src;
