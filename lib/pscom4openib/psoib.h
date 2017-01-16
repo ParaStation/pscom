@@ -51,6 +51,8 @@ typedef struct {
 #define IB_RNDV_PADDING_SIZE 64
 /* IB_RNDV_PADDING_SIZE must not be bigger than 64 (or adjust pscom_priv.h respectively!) */
 
+#define IB_MAX_RDMA_MSG_SIZE 2147483647 /* RDMA supports up to 2GiB */
+
 #if defined(IB_USE_RNDV) && defined(IB_DONT_USE_ZERO_COPY)
 #undef IB_USE_RNDV
 #endif
@@ -126,7 +128,7 @@ void psoib_recvdone(psoib_con_info_t *con_info);
 /* returnvalue like write(), except on error errno is negative return */
 /* It's important, that the sending side is aligned to IB_MTU_SPEC,
    else we loose a lot of performance!!! */
-int psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, int size);
+ssize_t psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size);
 
 /* Handle outstanding cq events. */
 void psoib_progress(void);
