@@ -11,7 +11,7 @@
 #
 include $(top_srcdir)/common.am
 
-AM_LDFLAGS += -avoid-version
+AM_LDFLAGS += -version-info 2:0:0
 AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\"
 AM_CPPFLAGS += -I$(top_builddir)/include
 

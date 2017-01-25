@@ -169,23 +169,26 @@ void shm_send(shm_conn_t *shm, char *buf, int len)
 
 /* send iov.
    Call only if shm_cansend() == true (no check inside)!
-   len must be smaller or equal SHM_BUFLEN!
 */
 static
-void shm_iovsend(shm_conn_t *shm, struct iovec *iov, int len)
+size_t shm_iovsend(shm_conn_t *shm, struct iovec *iov, size_t len)
 {
 	int cur = shm->send_cur;
 	shm_buf_t *shmbuf = &shm->remote_com->buf[cur];
 
+	len = pscom_min(len, SHM_BUFLEN);
+
 	/* copy to sharedmem */
 	pscom_memcpy_from_iov(SHM_DATA(shmbuf, len), iov, len);
-	shmbuf->header.len = len;
+	shmbuf->header.len = (uint32_t)len; // cast ok, cause (len <= SHM_BUFLEN).
 
 	shm_mb();
 
 	/* Notification about the new message */
 	shmbuf->header.msg_type = SHM_MSGTYPE_STD;
 	shm->send_cur = (shm->send_cur + 1) % SHM_BUFS;
+
+	return len;
 }
 
 
@@ -199,7 +202,7 @@ shm_msg_t *shm_iovsend_direct(shm_conn_t *shm, struct iovec *iov)
 {
 	int cur = shm->send_cur;
 	shm_buf_t *shmbuf = &shm->remote_com->buf[cur];
-	size_t len0 = iov[0].iov_len;
+	uint16_t len0 = (uint16_t)iov[0].iov_len;
 	char *data = SHM_DATA(shmbuf, len0);
 
 	/* reference to iov[1] before header */
@@ -440,7 +443,7 @@ void shm_pending_io_enq(pscom_con_t *con, shm_msg_t *msg, pscom_req_t *req, void
 static
 void shm_do_write(pscom_con_t *con)
 {
-	unsigned int len;
+	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
 
@@ -454,9 +457,8 @@ void shm_do_write(pscom_con_t *con)
 			/* Buffered send : Send through the send & receive buffers. */
 
 			len = iov[0].iov_len + iov[1].iov_len;
-			len = pscom_min(len, SHM_BUFLEN);
 
-			shm_iovsend(&con->arch.shm, iov, len);
+			len = shm_iovsend(&con->arch.shm, iov, len);
 
 			pscom_write_done(con, req, len);
 		} else if (is_psshm_ptr(iov[1].iov_base)) {

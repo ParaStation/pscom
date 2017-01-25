@@ -172,7 +172,7 @@ int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info
 	}
 
 	mreg->mreg_cache = mregc;
-	mreg->rma2_nla = mregc->rma2_nla + (char *)buf - (char*)mregc->buf;
+	mreg->rma2_nla = mregc->rma2_nla + (size_t)((char *)buf - (char*)mregc->buf);
 
 	return 0;
 err_register:
@@ -200,7 +200,7 @@ void psex_mregion_cache_cleanup(void)
 static
 void psex_mregion_cache_init(void)
 {
-	psex_page_size = getpagesize();
+	psex_page_size = (unsigned)getpagesize();
 	assert(psex_page_size != 0);
 	assert((psex_page_size & (psex_page_size - 1)) == 0); /* power of 2 */
 }

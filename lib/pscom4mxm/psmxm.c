@@ -442,7 +442,7 @@ int psmxm_send_done(psmxm_con_info_t *con_info) {
 }
 
 
-int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, int size)
+int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, size_t size)
 {
 	unsigned data_len, length;
 	mxm_error_t error;
@@ -451,9 +451,9 @@ int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, int size)
 
 	if (con_info->con_broken) goto err_broken;
 
-	length = (size <= (int)PSMXM_MTU) ? size : (int)PSMXM_MTU;
+	length = (size <= PSMXM_MTU) ? (unsigned)size : PSMXM_MTU;
 	con_info->sending = length;
-	data_len = length - iov[0].iov_len;
+	data_len = length - (unsigned)iov[0].iov_len;
 
 	assert(data_len <= iov[1].iov_len);
 	assert(iov[0].iov_len <= PSMXM_MTU);

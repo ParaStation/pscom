@@ -175,7 +175,7 @@ void run_pp_server_verbose(PSP_PortH_t porth)
     } header;
 
     for (i = 0; i < MAX_XHEADER; i++) {
-	header.xhead[i] = i + 0xe1;
+	header.xhead[i] = (char)(i + 0xe1);
     }
     req = PSP_IReceive(porth, buf, arg_maxmsize,
 		       &header.head_psp, MAX_XHEADER, NULL, 0);
@@ -221,7 +221,7 @@ int run_pp_c(PSP_PortH_t porth, int conid, int msize, int xsize, int loops)
     memset(rbuf, 42, msize);
     if (arg_verbose)
 	for (cnt = 0; cnt < xsize; cnt++)
-	    sheader.xhead[cnt] = cnt + 1;
+	    sheader.xhead[cnt] = (char)(cnt + 1);
 
     for (cnt = 0; cnt < loops; cnt++) {
 	PSP_ISend(porth, sbuf, msize,
@@ -256,7 +256,7 @@ do_pp_client(PSP_PortH_t porth, int conid)
     printf("%5s %8s %6s %6s\n", "msize", "loops", "time", "throughput");
     for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
 //	for (ms = 1.4142135; ms < IB_MTU_PAYLOAD - 1; ms = ms +1) {
-	msgsize = ms + 0.5;
+	msgsize = (unsigned int)(ms + 0.5);
 
 	/* warmup, for sync */
 	run_pp_c(porth, conid, 2, 2, 2);

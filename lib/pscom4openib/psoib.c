@@ -23,6 +23,7 @@
 #include <assert.h>
 #include <sys/resource.h> // getrlimit
 #include <syslog.h>
+#include <limits.h>
 
 /* #include <sysfs/libsysfs.h> */
 #include <infiniband/verbs.h>
@@ -84,8 +85,8 @@ static void psoib_rma_reqs_deq(psoib_rma_req_t *dreq);
 #endif
 
 struct port_info {
-    unsigned int port_num;
-    uint16_t	 lid;
+    uint8_t	port_num;
+    uint16_t	lid;
     hca_info_t *hca_info;
 };
 
@@ -208,7 +209,7 @@ static
 void psoib_err_errno(char *str, int err_no)
 {
     const char *vapi_err = strerror(err_no);
-    int len = strlen(str) + strlen(vapi_err) + 20;
+    size_t len = strlen(str) + strlen(vapi_err) + 20;
     char *msg = malloc(len);
 
     assert(msg);
@@ -278,8 +279,8 @@ void psoib_scan_hca_ports(struct ibv_device *ib_dev)
     struct ibv_context *ctx;
     struct ibv_device_attr device_attr;
     int rc;
-    unsigned port_cnt;
-    unsigned port;
+    uint8_t port_cnt;
+    uint8_t port;
     const char *dev_name;
 
     dev_name =ibv_get_device_name(ib_dev);
@@ -477,7 +478,7 @@ void psoib_vapi_free(hca_info_t *hca_info, mem_info_t *mem_info)
 
 
 static
-void print_mlock_help(unsigned size)
+void print_mlock_help(size_t size)
 {
     static int called = 0;
     struct rlimit rlim;
@@ -486,7 +487,7 @@ void print_mlock_help(unsigned size)
     called = 1;
 
     if (size) {
-	psoib_dprint(0, "OPENIB: memlock(%u) failed.", size);
+	psoib_dprint(0, "OPENIB: memlock(%zu) failed.", size);
     } else {
 	psoib_dprint(0, "OPENIB: memlock failed.");
     }
@@ -551,7 +552,7 @@ void psoib_con_cleanup(psoib_con_info_t *con_info, hca_info_t *hca_info)
  */
 static
 int move_to_rtr(struct ibv_qp *qp,
-		unsigned int port_num,
+		uint8_t port_num,
 		uint16_t remote_lid, /* remote peer's LID */
 		uint32_t remote_qpn) /* remote peer's QPN */
 {
@@ -845,7 +846,7 @@ static
 int psoib_init_port(hca_info_t *hca_info, port_info_t *port_info)
 {
     port_info->hca_info = hca_info;
-    port_info->port_num = psoib_port;
+    port_info->port_num = (uint8_t)psoib_port;
 
     {
 	struct ibv_port_attr attr;
@@ -857,7 +858,7 @@ int psoib_init_port(hca_info_t *hca_info, port_info_t *port_info)
 	if (attr.lid == 0)
 	    goto err_no_lid;
 
-	port_info->lid = attr.lid + (uint16_t)psoib_lid_offset;
+	port_info->lid = (uint16_t)(attr.lid + psoib_lid_offset);
     }
 
     return 0;
@@ -909,7 +910,7 @@ int psoib_poll(hca_info_t *hca_info, int blocking);
 /* It's important, that the sending side is aligned to IB_MTU_SPEC,
    else we loose a lot of performance!!! */
 static inline
-ssize_t _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size, unsigned int magic)
+int _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size, unsigned int magic)
 {
     int len;
     int psoiblen;
@@ -942,7 +943,7 @@ ssize_t _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size,
 	goto err_busy;
     }
 
-    len = (size <= IB_MTU_PAYLOAD) ? size : IB_MTU_PAYLOAD;
+    len = (size <= IB_MTU_PAYLOAD) ? (unsigned)size : IB_MTU_PAYLOAD;
     psoiblen = PSOIB_LEN(len);
 
     ringbuf_t *send = (con_info->send.bufs.mr) ? &con_info->send : &hca_info->send;
@@ -950,8 +951,8 @@ ssize_t _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size,
 
     tail = (psoib_msgheader_t *)((char*)_msg + psoiblen);
 
-    tail->token = con_info->n_tosend_toks;
-    tail->payload = len;
+    tail->token = (uint16_t)con_info->n_tosend_toks;
+    tail->payload = (uint16_t)len;
     tail->magic = magic;
 
     /* copy to registerd send buffer */
@@ -963,7 +964,7 @@ ssize_t _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size,
     {
 	struct ibv_sge list = {
 	    .addr	= (uintptr_t) _msg,
-	    .length = psoiblen + sizeof(psoib_msgheader_t),
+	    .length = psoiblen + (unsigned)sizeof(psoib_msgheader_t),
 	    .lkey	= send->bufs.mr->lkey,
 	};
 	struct ibv_send_wr wr = {
@@ -1028,7 +1029,7 @@ ssize_t _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size,
 }
 
 
-ssize_t psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size)
+int psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size)
 {
 	return _psoib_sendv(con_info, iov, size, PSOIB_MAGIC_IO);
 }
@@ -1439,7 +1440,7 @@ int psoib_post_rma_get(psoib_rma_req_t *req)
 
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) req->mreg.mem_info.ptr,
-		.length = req->mreg.size,
+		.length = (unsigned)req->mreg.size,
 		.lkey	= req->mreg.mem_info.mr->lkey,
 	};
 	struct ibv_send_wr wr = {
@@ -1458,6 +1459,8 @@ int psoib_post_rma_get(psoib_rma_req_t *req)
 	};
 
 	struct ibv_send_wr *bad_wr;
+
+	assert(req->mreg.size < UINT_MAX);
 
 	perf_add("openib_post_rma_get");
 
@@ -1479,7 +1482,7 @@ int psoib_post_rma_put(psoib_rma_req_t *req)
 
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) req->mreg.mem_info.ptr,
-		.length = req->mreg.size,
+		.length = (unsigned)req->mreg.size,
 		.lkey	= req->mreg.mem_info.mr->lkey,
 	};
 	struct ibv_send_wr wr = {
@@ -1498,6 +1501,8 @@ int psoib_post_rma_put(psoib_rma_req_t *req)
 	};
 
 	struct ibv_send_wr *bad_wr;
+
+	assert(req->mreg.size < UINT_MAX);
 
 	perf_add("openib_post_rma_put");
 

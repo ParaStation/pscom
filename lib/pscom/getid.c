@@ -50,7 +50,7 @@ in_addr_t psp_hostip(char *name)
     if (!mhost->h_addr_list) goto err_empty;
 
     while (*mhost->h_addr_list) {
-	ret = *(int *)*mhost->h_addr_list;
+	ret = *(unsigned *)*mhost->h_addr_list;
 	if (ret != INADDR_LOOPBACK) { /* Dont allow localhost */
 	    break;
 	}
@@ -95,7 +95,7 @@ struct nw_dev_list_s {
 static
 struct nw_dev_list_s *psp_get_dev_list(void)
 {
-    const int list_n = 64;
+    const unsigned int list_n = 64;
     int cnt = 0;
     struct ifconf ifc;
     int sfd = -1;
@@ -149,11 +149,11 @@ struct nw_dev_list_s *psp_get_dev_list(void)
 static
 in_addr_t *psp_get_nw_list(char *str)
 {
-    const int list_n = 64;
+    const unsigned list_n = 64;
     in_addr_t *ret = malloc(sizeof(in_addr_t) * list_n);
     char *tmp = strdup(str);
     char *otmp = tmp;
-    int cnt = 0;
+    unsigned cnt = 0;
 
     if (!ret || !tmp) goto error;
 

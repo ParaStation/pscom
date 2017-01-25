@@ -105,7 +105,6 @@ int pscom_ofed_do_read(pscom_poll_reader_t *reader)
 static
 void pscom_ofed_do_write(pscom_con_t *con)
 {
-	unsigned int len;
 	struct iovec iov[2];
 	pscom_req_t *req;
 
@@ -113,9 +112,9 @@ void pscom_ofed_do_write(pscom_con_t *con)
 
 	if (req) {
 		psofed_con_info_t *mcon = con->arch.ofed.mcon;
-		len = iov[0].iov_len + iov[1].iov_len;
+		size_t len = iov[0].iov_len + iov[1].iov_len;
 
-		int rlen = psofed_sendv(mcon, iov, len);
+		ssize_t rlen = psofed_sendv(mcon, iov, len);
 
 		if (rlen >= 0) {
 			pscom_write_done(con, req, rlen);
@@ -194,7 +193,7 @@ void pscom_ofed_init(void)
 
 	{
 		unsigned int auint;
-		auint = psofed_resend_timeout;
+		auint = (unsigned)psofed_resend_timeout;
 		pscom_env_get_uint(&auint, ENV_OFED_RESEND_TIMEOUT);
 		psofed_resend_timeout = auint;
 	}

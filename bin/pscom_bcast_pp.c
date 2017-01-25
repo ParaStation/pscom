@@ -135,7 +135,7 @@ void run_pp(pscom_socket_t *socket, pscom_group_t *group, unsigned msize, unsign
 
 	if (arg_verbose) {
 		for (cnt = 0; cnt < xsize; cnt++) {
-			xbuf[cnt] = cnt + 1;
+			xbuf[cnt] = (char)(cnt + 1);
 		}
 	}
 
@@ -204,8 +204,8 @@ void do_pp(pscom_connection_t *con_server, pscom_connection_t *con_client,
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned int)(loops + 0.5);
+		msgsize = (unsigned int)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp(socket, group, 2, 2, 2);
@@ -221,7 +221,7 @@ void do_pp(pscom_connection_t *con_server, pscom_connection_t *con_client,
 		fflush(stdout);
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

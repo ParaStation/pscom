@@ -189,14 +189,14 @@ struct PSCOM_env {
 									\
 	.unexpected_receives = 0,					\
 	.sched_yield = 0,						\
-	.rendezvous_size = ~0,						\
-	.rendezvous_size_shm = ~0, /* default rendezvous_size for shm */ \
-	.rendezvous_size_dapl = ~0, /* default rendezvous_size for dapl */ \
-	.rendezvous_size_elan = ~0, /* default rendezvous_size for elan */ \
-	.rendezvous_size_extoll = ~0, /* default rendezvous_size for extoll */ \
+	.rendezvous_size = ~0U,						\
+	.rendezvous_size_shm = ~0U, /* default rendezvous_size for shm */ \
+	.rendezvous_size_dapl = ~0U, /* default rendezvous_size for dapl */ \
+	.rendezvous_size_elan = ~0U, /* default rendezvous_size for elan */ \
+	.rendezvous_size_extoll = ~0U, /* default rendezvous_size for extoll */ \
 	.rendezvous_size_velo = 1024, /* default rendezvous_size for velo */ \
 	.rendezvous_size_openib = 40000, /* default rendezvous_size for openib */ \
-	.rendezvous_size_ucp = ~0, /* default rendezvous_size for ucp */ \
+	.rendezvous_size_ucp = ~0U, /* default rendezvous_size for ucp */ \
 	.psm_uniq_id = 0,						\
 	.sigquit = 0,							\
 	.sigsuspend = 0,						\

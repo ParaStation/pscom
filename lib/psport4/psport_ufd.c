@@ -81,14 +81,14 @@ void ufd_del(ufd_t *ufd, int fd)
     return;
 }
 
-void ufd_event_set(ufd_t *ufd, int idx, int event)
+void ufd_event_set(ufd_t *ufd, int idx, short event)
 {
     ufd->ufds[idx].events |= event;
 }
 
-void ufd_event_clr(ufd_t *ufd, int idx, int event)
+void ufd_event_clr(ufd_t *ufd, int idx, short event)
 {
-    ufd->ufds[idx].events &= ~event;
+    ufd->ufds[idx].events &= (short)~event;
 }
 
 int ufd_poll(ufd_t *ufd, int timeout)

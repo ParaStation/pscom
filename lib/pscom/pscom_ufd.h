@@ -57,8 +57,8 @@ void ufd_add(ufd_t *ufd, ufd_info_t *ufd_info);
 			void *priv);
 */
 void ufd_del(ufd_t *ufd, ufd_info_t *ufd_info);
-void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, int event) __attribute__((nonnull (1, 2)));
-void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, int event) __attribute__((nonnull (1, 2)));
+void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, short event) __attribute__((nonnull (1, 2)));
+void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, short event) __attribute__((nonnull (1, 2)));
 
 /* find ufd_info_t associated with fd. Return NULL if not found. */
 ufd_info_t *ufd_info_find_fd(ufd_t *ufd, int fd);

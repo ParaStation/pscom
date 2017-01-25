@@ -147,7 +147,7 @@ void run_pp_server(pscom_connection_t *con)
 	req = pscom_request_create(MAX_XHEADER, 0);
 
 	for (i = 0; i < MAX_XHEADER; i++) {
-		req->xheader.user[i] = i + 0xe1;
+		req->xheader.user[i] = (char)(i + 0xe1);
 	}
 
 	while (1) {
@@ -165,8 +165,8 @@ void run_pp_server(pscom_connection_t *con)
 			       req->header.xheader_len,
 			       pscom_dumpstr(&req->xheader, req->header.xheader_len));
 
-			printf("        %d data :%s\n",
-			       req->header.data_len,
+			printf("        %lu data :%s\n",
+			       (unsigned long)req->header.data_len,
 			       pscom_dumpstr(req->data, req->header.data_len));
 		}
 
@@ -204,7 +204,7 @@ int run_pp_c(pscom_connection_t *con, int msize, int xsize, int loops)
 
 	if (arg_verbose) {
 		for (cnt = 0; cnt < xsize; cnt++) {
-			sreq->xheader.user[cnt] = cnt + 1;
+			sreq->xheader.user[cnt] = (char)(cnt + 1);
 		}
 	}
 
@@ -253,7 +253,7 @@ int run_pp_c_histo(pscom_connection_t *con, int msize, int xsize, int loops)
 
 	if (arg_verbose) {
 		for (cnt = 0; cnt < xsize; cnt++) {
-			sreq->xheader.user[cnt] = cnt + 1;
+			sreq->xheader.user[cnt] = (char)(cnt + 1);
 		}
 	}
 
@@ -273,7 +273,7 @@ int run_pp_c_histo(pscom_connection_t *con, int msize, int xsize, int loops)
 
 	printf("Message size %7d. Rtt/2[usec]\n", msize);
 	for (cnt = 1; cnt < loops; cnt++) {
-		printf("%5d %8.1f\n", cnt, (time[cnt] - time[cnt - 1]) / 2.0);
+		printf("%5d %8.1f\n", cnt, (double)(time[cnt] - time[cnt - 1]) / 2.0);
 	}
 	fflush(stdout);
 
@@ -305,8 +305,8 @@ void do_pp_client(pscom_connection_t *con)
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 1.4142135; (int)(ms + 0.5) <= arg_maxmsize; ms = ms * 1.4142135) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned int)(loops + 0.5);
+		msgsize = (unsigned int)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp_c(con, 2, 2, 2);
@@ -331,7 +331,7 @@ void do_pp_client(pscom_connection_t *con)
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

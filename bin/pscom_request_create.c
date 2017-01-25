@@ -72,7 +72,7 @@ int main(int argc, char **argv)
 		}
 
 		t1 += getusec();
-		printf("%4u\t%8.3f\n", cnt, t1 * 1.0 / cnt);
+		printf("%4u\t%8.3f\n", cnt, (double)t1 / cnt);
 	}
 
 	return 0;

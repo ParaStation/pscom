@@ -103,7 +103,7 @@ void psofed_recvdone(context_info_t *context);
 /* returnvalue like writev(), except on error errno is negative return */
 /* It's important, that the sending side is aligned to IB_MTU_SPEC,
    else we loose a lot of performance!!! */
-int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, int size);
+int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, size_t size);
 
 /* Handle outstanding cq events on context.
  * Use default_context, if context is NULL.

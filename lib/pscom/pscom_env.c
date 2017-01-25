@@ -75,7 +75,7 @@ void pscom_env_get_dir(char **val, const char *name)
 
 	aval = pscom_env_get(name);
 	if (aval) {
-		unsigned int len = strlen(aval);
+		size_t len = strlen(aval);
 		if (len && (aval[len-1] != '/')) {
 			// append a '/'
 			*val = malloc(len + 2);

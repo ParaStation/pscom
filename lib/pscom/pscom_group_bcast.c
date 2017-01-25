@@ -682,11 +682,11 @@ pscom_req_t *_pscom_get_bcast_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 
 static inline
 pscom_req_t *pscom_bcast_create_req(pscom_group_t *group,
-				    void *xheader, unsigned xheader_len,
-				    void *data, unsigned data_len)
+				    void *xheader, size_t xheader_len,
+				    void *data, size_t data_len)
 {
 	pscom_req_t *req;
-	unsigned xlen = sizeof(req->pub.xheader.bcast) + xheader_len;
+	size_t xlen = sizeof(req->pub.xheader.bcast) + xheader_len;
 
 	req = pscom_req_create(xlen, 0);
 
@@ -715,8 +715,8 @@ int recv_accept_bcast(pscom_request_t *request,
 
 /* Blocking version of bcast */
 void pscom_bcast(pscom_group_t *group, unsigned bcast_root,
-		 void *xheader, unsigned int xheader_len,
-		 void *data, unsigned int data_len)
+		 void *xheader, size_t xheader_len,
+		 void *data, size_t data_len)
 {
 	pscom_req_t *req = NULL;
 	unsigned subg_size;

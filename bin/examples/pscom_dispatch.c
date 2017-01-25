@@ -52,24 +52,24 @@ typedef struct xhead {
 } xhead_t;
 
 
-void msg_hello(pscom_connection_t *con, void *data, unsigned data_len)
+void msg_hello(pscom_connection_t *con, void *data, size_t data_len)
 {
 	printf("Receive HELLO from %s ('%s')\n", pscom_con_str(con), (char*)data);
 	pscom_send(con, &(xhead_t) { .msg_type = HELLO_RESPONSE}, sizeof(xhead_t),
 			   "Hello Client", 13);
 }
 
-void msg_hello_response(pscom_connection_t *con, void *data, unsigned data_len)
+void msg_hello_response(pscom_connection_t *con, void *data, size_t data_len)
 {
 	printf("Receive HELLO_RESPONSE from %s ('%s')\n", pscom_con_str(con), (char*)data);
 }
 
-void msg_client_info(pscom_connection_t *con, void *data, unsigned data_len)
+void msg_client_info(pscom_connection_t *con, void *data, size_t data_len)
 {
 	printf("Receive CLIENT_INFO : '%s'\n", (char*)data);
 }
 
-void msg_hello_bcast(pscom_connection_t *con, void *data, unsigned data_len)
+void msg_hello_bcast(pscom_connection_t *con, void *data, size_t data_len)
 {
 	printf("Receive HELLO_BCAST from %s ('%s')\n", pscom_con_str(con), (char*)data);
 

@@ -96,7 +96,7 @@ int PSP_ascii_to_sockaddr_in(const char *host, const char *port,
 
 	addr->sin_family = PF_INET;
 
-	addr->sin_port = aint = PSP_atoport(port, protocol);
+	addr->sin_port = (unsigned short)(aint = PSP_atoport(port, protocol));
 	if (aint < 0) ret = -1;
 
 	aint = PSP_atoaddr(host, &addr->sin_addr);

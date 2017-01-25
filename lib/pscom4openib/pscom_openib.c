@@ -85,7 +85,7 @@ int _pscom_openib_do_read(pscom_con_t *con, psoib_con_info_t *mcon)
 		return 0;
 	} else {
 		// Error
-		errno = -size;
+		errno = (int)-size;
 		pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_STDERROR);
 		return 1;
 	}

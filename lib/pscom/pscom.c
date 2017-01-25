@@ -68,10 +68,10 @@ pscom_t pscom = {
 };
 
 
-int pscom_writeall(int fd, const void *buf, int count)
+ssize_t pscom_writeall(int fd, const void *buf, size_t count)
 {
-	int len;
-	int c = count;
+	ssize_t len;
+	size_t c = count;
 
 	while (c > 0) {
 		len = write(fd, buf, c);
@@ -82,18 +82,18 @@ int pscom_writeall(int fd, const void *buf, int count)
 			} else
 				return -1;
 		}
-		c -= len;
+		c -= (size_t)len;
 		buf = ((char*)buf) + len;
 	}
 
-	return count;
+	return (ssize_t)count;
 }
 
 
-int pscom_readall(int fd, void *buf, int count)
+ssize_t pscom_readall(int fd, void *buf, size_t count)
 {
-	int len;
-	int c = count;
+	ssize_t len;
+	size_t c = count;
 
 	while (c > 0) {
 		len = read(fd, buf, c);
@@ -105,14 +105,14 @@ int pscom_readall(int fd, void *buf, int count)
 				} else
 					return -1;
 			} else {
-				return count - c;
+				return (ssize_t)(count - c);
 			}
 		}
-		c -= len;
+		c -= (size_t)len;
 		buf = ((char*)buf) + len;
 	}
 
-	return count;
+	return (ssize_t)count;
 }
 
 
@@ -311,7 +311,7 @@ void _pscom_suspend_sighandler(int signum)
 ******************************************************************************
 */
 
-void pscom_set_debug(unsigned int level)
+void pscom_set_debug(int level)
 {
 	pscom.env.debug = level;
 }
@@ -327,6 +327,10 @@ int pscom_init(int pscom_version)
 	    (pscom_version > PSCOM_VERSION)) {
 		// different major number, or minor number bigger
 		// (new libs support old api, if major number is equal)
+		DPRINT(0, "Error: libpscom ABI version mismatch! Application requested V%u.%u but this is V%u.%u.",
+		       (pscom_version >> 8) & 0xff, pscom_version & 0xff,
+		       (PSCOM_VERSION >> 8) & 0xff, PSCOM_VERSION & 0xff
+		);
 		return PSCOM_ERR_UNSUPPORTED_VERSION;
 	}
 	if (init)
@@ -374,7 +378,7 @@ int pscom_init_thread(int pscom_version)
 
 int pscom_get_nodeid(void)
 {
-	static uint32_t id = 0;
+	static int id = 0;
 	/*  p4s_node_id(void) expect the IP of this node! */
 
 	if (!id) {

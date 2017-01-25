@@ -22,6 +22,7 @@
 #include <sys/resource.h>
 #include <unistd.h>
 #include <assert.h>
+#include <limits.h>
 
 #include "pscom_util.h"
 #include "pscom_env.h"
@@ -190,7 +191,7 @@ static
 void psex_err_errno(char *str, int err_no)
 {
 	const char *err_str = strerror(err_no);
-	int len = strlen(str) + strlen(err_str) + 10;
+	size_t len = strlen(str) + strlen(err_str) + 10;
 	char *msg = malloc(len);
 
 	assert(msg);
@@ -208,7 +209,7 @@ static
 void psex_err_rma2_error(char *str, int rc)
 {
 	char rma2_err_str[100];
-	int len;
+	size_t len;
 	char *msg;
 
 	rma2_serror(rc, rma2_err_str, sizeof(rma2_err_str));
@@ -447,7 +448,7 @@ void psex_rma_get_continue(psex_rma_req_t *req)
 	if (len > PSEX_RMA2_GET_MAX) len = PSEX_RMA2_GET_MAX;
 
 	rma2_error = rma2_post_get_bt_direct(ci->rma2_port, ci->rma2_handle,
-					     req->mreg.rma2_nla + req->pos, len,
+					     req->mreg.rma2_nla + req->pos, (uint32_t)len,
 					     req->rma2_nla + req->pos,
 					     RMA2_COMPLETER_NOTIFICATION, RMA2_CMD_DEFAULT);
 	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
@@ -819,7 +820,7 @@ err_hca:
 #ifndef DISABLE_RMA2
 /* returnvalue like write(), except on error errno is negative return */
 static
-int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned int magic)
+ssize_t _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, size_t size, unsigned int magic)
 {
 	int len;
 	int psex_len;
@@ -897,7 +898,7 @@ err_rma2_post_cl:
 }
 
 
-int psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size)
+ssize_t psex_sendv(psex_con_info_t *con_info, struct iovec *iov, size_t size)
 {
 	return _psex_sendv(con_info, iov, size, PSEX_MAGIC_IO);
 }
@@ -1021,14 +1022,14 @@ int psex_recvlook(psex_con_info_t *con_info, void **buf)
 
 
 /* returnvalue like write(), except on error errno is negative return */
-int psex_velo2_sendv(psex_con_info_t *con_info, struct iovec *iov, int size)
+int psex_velo2_sendv(psex_con_info_t *con_info, struct iovec *iov, size_t size)
 {
-	int len;
+	unsigned len;
 	velo2_ret_t vrc;
 
 	if (con_info->con_broken) goto err_broken;
 
-	len = (size <= (int)PSEX_VELO2_MTU) ? size : (int)PSEX_VELO2_MTU;
+	len = (size <= PSEX_VELO2_MTU) ? (unsigned)size : PSEX_VELO2_MTU;
 	if (0 /* iov[0].iov_len == 0 && iov[1].iov_len >= len */) {
 		// direct copy
 		char *msg = iov[1].iov_base;
@@ -1067,7 +1068,9 @@ int psex_velo2_recv(hca_info_t *hca_info, void **priv, void *msg, size_t msglen)
 	uint8_t tag, mtt;
 	velo2_ret_t vrc;
 
-	vrc = velo2_probe_recv(&hca_info->velo2_port, msg, msglen, &mlen, &srcid, &tag, &mtt);
+	if (msglen >= INT_MAX) msglen = INT_MAX;
+
+	vrc = velo2_probe_recv(&hca_info->velo2_port, msg, (unsigned)msglen, &mlen, &srcid, &tag, &mtt);
 
 	if (vrc == VELO2_RET_SUCCESS) {
 		psex_con_info_t *con = psex_map_get_con(srcid);

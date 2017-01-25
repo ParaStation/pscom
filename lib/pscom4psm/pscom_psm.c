@@ -19,6 +19,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <limits.h>
 
 
 /*
@@ -642,7 +643,7 @@ void pspsm_iov_print(const struct iovec *iov, size_t len)
 
 
 static inline
-int _pspsm_send_buf(pspsm_con_info_t *con_info, char *buf, size_t len,
+int _pspsm_send_buf(pspsm_con_info_t *con_info, char *buf, unsigned len,
 		    uint64_t tag, psm_mq_req_t *req, unsigned long nr)
 {
 	void *context = (void *)((uintptr_t)con_info | nr);
@@ -677,7 +678,7 @@ int _pspsm_sendv(pspsm_con_info_t *con_info, uint64_t magic)
 		/* we hope that doesn't block - it shouldn't, as the
 		 * message is sufficiently small */
 		ret = psm_mq_send(pspsm_mq, con_info->epaddr,
-				  /* flags*/ 0, tag, sendbuf, len);
+				  /* flags*/ 0, tag, sendbuf, (unsigned)len);
 		if (ret != PSM_OK) goto err;
 		return 0;
 	}
@@ -688,10 +689,11 @@ int _pspsm_sendv(pspsm_con_info_t *con_info, uint64_t magic)
 			   con_info->iov[i].iov_base, (int)con_info->iov[i].iov_len,
 			   con_info->con->pub.remote_con_info.name); */
 			if (_pspsm_send_buf(con_info, con_info->iov[i].iov_base,
-					    con_info->iov[i].iov_len,
+					    (unsigned)con_info->iov[i].iov_len,
 					    tag, &con_info->sreqs[i], i)){
 				return -EPIPE;
 			}
+			assert(con_info->iov[i].iov_len <= UINT_MAX);
 			/* inc for each outstanding send request */
 			poll_user_inc();
 		}
@@ -721,8 +723,9 @@ int pspsm_recvlook(pspsm_con_info_t *con_info)
 	void *context = (void *)((uintptr_t)con_info | 2);
 
 	assert(con_info->rreq == PSM_MQ_REQINVALID);
+	assert(con_info->rbuflen <= UINT_MAX);
 	ret = psm_mq_irecv(pspsm_mq, rtag, mask, 0 /*flags*/,
-			   con_info->rbuf, con_info->rbuflen,
+			   con_info->rbuf, (unsigned)con_info->rbuflen,
 			   context, &con_info->rreq);
 	if (ret != PSM_OK) goto out_err;
 

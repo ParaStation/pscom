@@ -15,14 +15,14 @@
 
 #include "pscom_priv.h"
 
-pscom_req_t *pscom_req_create(unsigned int max_xheader_len, unsigned int user_size);
+pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size);
 
 void pscom_req_free(pscom_req_t *req);
 
-unsigned int pscom_req_write(pscom_req_t *req, char *buf, unsigned int len);
+size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len);
 
 /* append data on req. used for partial send requests with pending data. */
-void pscom_req_append(pscom_req_t *req, char *buf, unsigned int len);
+void pscom_req_append(pscom_req_t *req, char *buf, size_t len);
 
 //#define USE_PSCOM_MALLOC 1
 
@@ -30,7 +30,7 @@ void pscom_req_append(pscom_req_t *req, char *buf, unsigned int len);
 
 #define PSCOM_MALLOC_SAFE_SIZE	0
 
-void *pscom_malloc(unsigned int size);
+void *pscom_malloc(size_t size);
 void pscom_free(void *ptr);
 void pscom_mverify(void *ptr);
 

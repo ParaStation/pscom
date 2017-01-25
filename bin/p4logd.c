@@ -50,7 +50,7 @@ void calc_time(void)
     usleep(100000);
     GET_CPU_CYCLES(ptime2);
     time += getusec();
-    mHZ = (0.001 * time) / (ptime2 - ptime1);
+    mHZ = (0.001 * (double)time) / (double)(ptime2 - ptime1);
     printf("# MHZ %10.3f\n", 0.001 / mHZ);
     printf("# type time[ms] value\n");
 }
@@ -75,12 +75,12 @@ int main(int argc, char **argv)
 
 
     while (1) {
-	len = read(lfd, logbuf, sizeof(logbuf[0]) * LOGSIZE);
-	len = len / sizeof(logbuf[0]);
+	len = (int)read(lfd, logbuf, sizeof(logbuf[0]) * LOGSIZE);
+	len = len / (unsigned)sizeof(logbuf[0]);
 	for (i = 0; i < len; i++) {
 	    printf("%d\t%13.5f\t%ld\n",
 		   logbuf[i].type,
-		   (logbuf[i].time - firsttime) * mHZ,
+		   (double)(logbuf[i].time - firsttime) * mHZ,
 		   logbuf[i].value);
 	}
     }

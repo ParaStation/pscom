@@ -57,9 +57,9 @@ struct PSCOM_req
 
 	struct iovec cur_header;
 	struct iovec cur_data;
-	unsigned int skip; /* recv: overread skip bytes at the end.
-			    * send: skip bytes to send, but currently
-			    *       not available (forwards/bcasts) */
+	size_t skip;			/* recv: overread skip bytes at the end.
+					 * send: skip bytes to send, but currently
+					 *       not available (forwards/bcasts) */
 	unsigned int pending_io; /* count pending io send requests */
 
 	/* partner_req:
@@ -73,7 +73,7 @@ struct PSCOM_req
 	*/
 	pscom_req_t *partner_req;
 
-	void (*write_hook)(pscom_req_t *req, char *buf, unsigned len);
+	void (*write_hook)(pscom_req_t *req, char *buf, size_t len);
 
 	unsigned int req_no; // debug counter
 	pscom_request_t pub;
@@ -100,7 +100,7 @@ typedef struct psoib_conn {
 
 typedef struct psofed_conn {
 	struct psofed_con_info *mcon;
-	int			reading : 1;
+	unsigned		reading : 1;
 } psofed_conn_t;
 
 
@@ -115,27 +115,27 @@ typedef struct pselan_conn {
 
 
 typedef struct pspsm_conn {
-	struct pspsm_con_info *ci;
-	int			reading : 1;
+	struct pspsm_con_info	*ci;
+	unsigned		reading : 1;
 } pspsm_conn_t;
 
 
 typedef struct psextoll_conn {
-	struct psex_con_info *ci;
-	int                     reading : 1;
+	struct psex_con_info	*ci;
+	unsigned		reading : 1;
 } psextoll_conn_t;
 
 
 typedef struct psmxm_conn {
 	struct psmxm_con_info	*ci;
-	int			reading : 1;
+	unsigned		reading : 1;
 	pscom_req_t		*sreq;
 } psmxm_conn_t;
 
 
 typedef struct psucp_conn {
 	struct psucp_con_info	*ci;
-	int			reading : 1;
+	unsigned		reading : 1;
 } psucp_conn_t;
 
 
@@ -156,7 +156,7 @@ typedef struct user_conn {
 typedef struct pscom_rendezvous_msg {
 	void		*id; /* == pscom_req_t *user_req; from sending side */
 	void		*data;
-	unsigned int	data_len;
+	size_t		data_len;
 	union {
 		struct {} shm;
 		struct {
@@ -176,7 +176,7 @@ typedef struct pscom_rendezvous_msg {
 } pscom_rendezvous_msg_t;
 
 static inline
-unsigned pscom_rendezvous_msg_size(unsigned arch_size) {
+size_t pscom_rendezvous_msg_size(size_t arch_size) {
 	return sizeof(pscom_rendezvous_msg_t) - sizeof(((pscom_rendezvous_msg_t*)0)->arch) + arch_size;
 }
 
@@ -250,7 +250,7 @@ struct PSCOM_con
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection
 
-	uint16_t		suspend_on_demand_portno; // remote listening portno on suspended connections
+	int			suspend_on_demand_portno; // remote listening portno on suspended connections
 
 	struct list_head	sendq;		// List of pscom_req_t.next
 
@@ -275,9 +275,9 @@ struct PSCOM_con
 		pscom_req_t	*req_locked; /* request in use by a plugin with an asynchronous receive (RMA)
 						set/unset by pscom_read_get_buf_locked/pscom_read_done_unlock */
 		struct iovec	readahead;
-		unsigned int	readahead_size;
+		size_t		readahead_size;
 
-		unsigned int	skip;
+		size_t		skip;
 	}			in;
 
 	union {
@@ -300,9 +300,9 @@ struct PSCOM_con
 	}			arch;
 
 	struct {
-		int		eof_received : 1;
-		int		close_called : 1;
-		int		suspend_active : 1;
+		unsigned	eof_received : 1;
+		unsigned	close_called : 1;
+		unsigned	suspend_active : 1;
 	}			state;
 
 	pscom_connection_t	pub;
@@ -435,6 +435,7 @@ extern pscom_t pscom;
 #define PSCOM_MXM_PRIO		30
 #define PSCOM_UCP_PRIO		30
 
+typedef uint8_t pscom_msgtype_t;
 
 #define PSCOM_MSGTYPE_USER	0
 #define PSCOM_MSGTYPE_RMA_WRITE	1
@@ -544,7 +545,7 @@ void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info);
 
 void _pscom_con_suspend(pscom_con_t *con);
 void _pscom_con_resume(pscom_con_t *con);
-void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, unsigned xheaderlen);
+void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, size_t xheaderlen);
 pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con,
 					int nodeid, int portno, const char name[8]);
 
@@ -554,9 +555,9 @@ void _pscom_send(pscom_con_t *con, unsigned msg_type,
 		 void *data, unsigned data_len);
 */
 
-void _pscom_send_inplace(pscom_con_t *con, unsigned msg_type,
-			 void *xheader, unsigned xheader_len,
-			 void *data, unsigned data_len,
+void _pscom_send_inplace(pscom_con_t *con, pscom_msgtype_t msg_type,
+			 void *xheader, size_t xheader_len,
+			 void *data, size_t data_len,
 			 void (*io_done)(pscom_req_state_t state, void *priv), void *priv);
 
 void pscom_poll_write_start(pscom_con_t *con);

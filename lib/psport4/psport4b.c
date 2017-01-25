@@ -160,15 +160,15 @@ int PSP_writeall(int fd, const void *buf, int count) {
     int c = count;
 
     while (c > 0) {
-        len = write(fd, buf, c);
-        if (len < 0) {
+	len = (int)write(fd, buf, c);
+	if (len < 0) {
 	    if ((errno == EINTR) || (errno == EAGAIN))
 		continue;
 	    else
 		return -1;
 	}
-        c -= len;
-        buf = ((char*)buf) + len;
+	c -= len;
+	buf = ((char*)buf) + len;
     }
 
     return count;
@@ -179,8 +179,8 @@ int PSP_readall(int fd, void *buf, int count) {
     int c = count;
 
     while (c > 0) {
-        len = read(fd, buf, c);
-        if (len <= 0) {
+	len = (int)read(fd, buf, c);
+	if (len <= 0) {
 	    if (len < 0) {
 		if ((errno == EINTR) || (errno == EAGAIN))
 		    continue;
@@ -190,8 +190,8 @@ int PSP_readall(int fd, void *buf, int count) {
 		return count - c;
 	    }
 	}
-        c -= len;
-        buf = ((char*)buf) + len;
+	c -= len;
+	buf = ((char*)buf) + len;
     }
 
     return count;
@@ -339,7 +339,7 @@ static char *trash = NULL;
 static inline
 void PSP_req_init_iov(PSP_Req_t *req, unsigned int skip)
 {
-    unsigned int len = sizeof(req->nethead) + req->nethead.xheaderlen;
+    unsigned int len = (unsigned)sizeof(req->nethead) + req->nethead.xheaderlen;
     req->u.req.iov[0].iov_base = &req->nethead;
     req->u.req.iov[0].iov_len = len;
     req->u.req.iov[1].iov_base = req->u.req.data;
@@ -476,8 +476,8 @@ void PSP_genreq_merge(PSP_Port_t *port, PSP_Req_t *req, PSP_Req_t *genreq)
     PSP_req_prepare_recv(req, &genreq->nethead, genreq->addr.from);
 
     len = genreq->nethead.xheaderlen + genreq->nethead.datalen +
-	sizeof(genreq->nethead) -
-	PSP_iovec_len(genreq->u.req.iov, PSP_IOV_BUFFERS);
+	(unsigned)sizeof(genreq->nethead) -
+	(unsigned)PSP_iovec_len(genreq->u.req.iov, PSP_IOV_BUFFERS);
 
     PSP_req_read(req, &genreq->nethead, len);
 
@@ -1449,10 +1449,10 @@ int PSP_IProbeFrom(PSP_PortH_t porth,
     req = genreq_probe(port, cb, cb_param, sender);
     if (req && header) {
 	memcpy(PSP_HEADER_NET(header),
-               &req->nethead,
-               PSP_HEADER_NET_LEN +
-               PSP_MIN(xheaderlen, req->nethead.xheaderlen));
-        header->addr.from = req->addr.from;
+	       &req->nethead,
+	       PSP_HEADER_NET_LEN +
+	       PSP_MIN(xheaderlen, req->nethead.xheaderlen));
+	header->addr.from = req->addr.from;
     }
 
     return (req != NULL);
@@ -1477,10 +1477,10 @@ int PSP_ProbeFrom(PSP_PortH_t porth,
 
     if (header) {
 	memcpy(PSP_HEADER_NET(header),
-               &req->nethead,
-               PSP_HEADER_NET_LEN +
-               PSP_MIN(xheaderlen, req->nethead.xheaderlen));
-        header->addr.from = req->addr.from;
+	       &req->nethead,
+	       PSP_HEADER_NET_LEN +
+	       PSP_MIN(xheaderlen, req->nethead.xheaderlen));
+	header->addr.from = req->addr.from;
     }
 
     return 1;
@@ -1559,7 +1559,7 @@ void PSP_set_write_loop(PSP_Port_t *port, PSP_Connection_t *con, int start)
 	PSP_Req_t *req = list_entry(con->sendq.next, PSP_Req_t, u.req.next);
 
 	PSP_read_do(port, con, &req->nethead,
-		    sizeof(req->nethead) + req->nethead.xheaderlen);
+		    (unsigned)sizeof(req->nethead) + req->nethead.xheaderlen);
 	PSP_read_do(port, con, req->u.req.data, req->nethead.datalen);
 
 	req->u.req.iov_len = 0;

@@ -207,7 +207,7 @@ void _pscom_con_suspend(pscom_con_t *con)
 }
 
 
-void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, unsigned xheaderlen)
+void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, size_t xheaderlen)
 {
 	int portno;
 	assert(xheaderlen == (unsigned)sizeof(portno));

@@ -126,7 +126,7 @@ void _ufd_put_pollfd_idx(ufd_t *ufd, ufd_info_t *ufd_info)
 }
 
 
-void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, int event)
+void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, short event)
 {
 	struct pollfd *pollfd = ufd_get_pollfd(ufd, ufd_info);
 
@@ -144,13 +144,13 @@ void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, int event)
 }
 
 
-void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, int event)
+void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, short event)
 {
 	struct pollfd *pollfd = ufd_get_pollfd(ufd, ufd_info);
 
 	if (!pollfd) return; // already empty
 
-	pollfd->events &= ~event;
+	pollfd->events &= (short)~event;
 
 	if (!pollfd->events) {
 		// empty events

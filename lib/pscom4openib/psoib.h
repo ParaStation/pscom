@@ -128,7 +128,7 @@ void psoib_recvdone(psoib_con_info_t *con_info);
 /* returnvalue like write(), except on error errno is negative return */
 /* It's important, that the sending side is aligned to IB_MTU_SPEC,
    else we loose a lot of performance!!! */
-ssize_t psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size);
+int psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size);
 
 /* Handle outstanding cq events. */
 void psoib_progress(void);

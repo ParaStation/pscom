@@ -112,7 +112,7 @@ void pscom_sock_init_con_info(pscom_sock_t *sock)
 
 
 static
-pscom_sock_t *pscom_sock_create(unsigned int userdata_size)
+pscom_sock_t *pscom_sock_create(size_t userdata_size)
 {
 	pscom_sock_t *sock;
 	sock = malloc(sizeof(*sock) + userdata_size);
@@ -177,8 +177,8 @@ int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type)
 ******************************************************************************
 */
 
-pscom_socket_t *pscom_open_socket(unsigned int userdata_size,
-				  unsigned int connection_userdata_size)
+pscom_socket_t *pscom_open_socket(size_t userdata_size,
+				  size_t connection_userdata_size)
 {
 	pscom_sock_t *sock;
 

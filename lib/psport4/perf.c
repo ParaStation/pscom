@@ -31,7 +31,7 @@ void cycles_cal(void)
 
     t2 -= t1;
     rt2 -= rt1;
-    cycles_us = 1.0 * t2 / rt2;
+    cycles_us = (double)t2 / (double)rt2;
     printf("# %ld usec = %ld cycles, 1 usec = %f\n", t2, rt2, 1 / cycles_us);
 }
 
@@ -61,8 +61,8 @@ void perf_print(void)
 	log_t *cur = &perf_log[i];
 
 	printf("%6d %12.2f %12.2f %20s %lu\n", pid,
-	       (cur->time - firsttime)* cycles_us,
-	       (cur->time - lasttime) * cycles_us,
+	       (double)(cur->time - firsttime)* cycles_us,
+	       (double)(cur->time - lasttime) * cycles_us,
 	       cur->id,
 	       cur->time);
 	lasttime = cur->time;

@@ -91,7 +91,7 @@ static
 void psucp_err_status(char *str, ucs_status_t status)
 {
 	const char *err_str = ucs_status_string(status);
-	int len = strlen(str) + strlen(err_str) + 10;
+	size_t len = strlen(str) + strlen(err_str) + 10;
 	char *msg = malloc(len);
 
 	assert(msg);
@@ -323,19 +323,19 @@ void psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
 		printf("psucp_info_msg_t.addr to small! Should be at least %zu!\n", hca_info->my_ucp_address_size);
 		// ToDo: Error recovery
 	}
-	info_msg->size = hca_info->my_ucp_address_size;
+	info_msg->size = (uint16_t)hca_info->my_ucp_address_size;
 	memcpy(info_msg->addr, hca_info->my_ucp_address, MIN(sizeof(info_msg->addr), info_msg->size));
 
 	info_msg->tag = tag;
 }
 
 
-int psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, unsigned size,
-		void (*cb)(void *req_priv), void *req_priv)
+ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
+		    void (*cb)(void *req_priv), void *req_priv)
 {
 	ucs_status_ptr_t request;
 	psucp_req_t *psucp_req;
-	unsigned tosend_data;
+	size_t tosend_data;
 
 	assert(size >= iov[0].iov_len);
 
@@ -389,7 +389,7 @@ err_send_header:
 }
 
 
-int psucp_probe(psucp_msg_t *msg)
+size_t psucp_probe(psucp_msg_t *msg)
 {
 	hca_info_t *hca_info = &default_hca;
 

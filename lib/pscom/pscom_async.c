@@ -27,7 +27,7 @@ struct pscom_async_ipc_s {
 	ufd_t			ufd;
 	int			pipe[2];
 	pthread_mutex_t		pipe_c2s_lock;
-	int			running : 1;
+	unsigned		running : 1;
 
 	ufd_info_t		ufd_service;
 };
@@ -169,11 +169,11 @@ void pscom_async_thread_service_read(ufd_t *ufd, ufd_info_t *ufd_service) {
 	int rlen;
 	int msg_rest_len;
 
-	rlen = read(fd, &msg.msg_common, sizeof(msg.msg_common)); // blocking!
+	rlen = (int)read(fd, &msg.msg_common, sizeof(msg.msg_common)); // blocking!
 	assert(rlen == sizeof(msg.msg_common));
 
-	msg_rest_len = pscom_async_msg_sizes[msg.msg_common.msg_type] - sizeof(msg.msg_common);
-	rlen = read(fd, (&msg.msg_common) + 1, msg_rest_len);
+	msg_rest_len = pscom_async_msg_sizes[msg.msg_common.msg_type] - (unsigned)sizeof(msg.msg_common);
+	rlen = (int)read(fd, (&msg.msg_common) + 1, msg_rest_len);
 	assert(rlen == msg_rest_len);
 
 
@@ -240,7 +240,7 @@ void pscom_async_client_send(pscom_async_msg_t *msg) {
 
 	msg->msg_common.ack = &ack;
 
-	rlen = write(ipc->pipe[1], msg, len); // Will block if pipe is full.
+	rlen = (int)write(ipc->pipe[1], msg, len); // Will block if pipe is full.
 	assert(rlen == (int)len);
 
 	// Busy wait for ack
