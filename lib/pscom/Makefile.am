@@ -11,7 +11,6 @@
 #
 include $(top_srcdir)/common.am
 
-AM_LDFLAGS += -version-info 2:0:0
 AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\"
 AM_CPPFLAGS += -I$(top_builddir)/include
 
@@ -33,6 +32,7 @@ noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_shm.h pscom_sock.h pscom_str_util.h pscom_tcp.h		\
 	pscom_types.h pscom_ufd.h pscom_util.h psshmalloc.h
 
+libpscom_la_LDFLAGS = -version-info 2:0:0
 libpscom_la_LIBADD = -ldl
 libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
 
