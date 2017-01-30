@@ -233,7 +233,7 @@ retry_listen:
 	}
 
 	sa.sin_family = AF_INET;
-	sa.sin_port = (portno == PSCOM_ANYPORT) ? 0 : htons(portno);
+	sa.sin_port = (in_port_t)((portno == PSCOM_ANYPORT) ? 0 : htons(portno));
 	sa.sin_addr.s_addr = INADDR_ANY;
 
 	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)

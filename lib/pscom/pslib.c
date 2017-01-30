@@ -118,7 +118,7 @@ void pscom_info_set(const char *path, const char *value)
 
 	// lowercase key:
 	char *i, *key = strdup(path);
-	for (i = key; *i; i++) *i = tolower(*i);
+	for (i = key; *i; i++) *i = (char)tolower(*i);
 
 	pslib.psinfo_set(pslib.info, key, value);
 

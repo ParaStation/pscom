@@ -683,7 +683,7 @@ int psex_con_connect(psex_con_info_t *con_info, psex_info_msg_t *info_msg)
 			    info_msg->velo2_nodeid, info_msg->velo2_vpid);
 	if (vrc != VELO2_RET_SUCCESS) goto err_velo2_connect;
 
-	con_info->velo2_srcid = VELO2_ADDR_PACK(info_msg->velo2_nodeid, info_msg->velo2_vpid);
+	con_info->velo2_srcid = (uint32_t)VELO2_ADDR_PACK(info_msg->velo2_nodeid, info_msg->velo2_vpid);
 	psex_map_add_con(con_info);
 
 	return 0;

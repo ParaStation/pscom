@@ -461,7 +461,7 @@ const char *pscom_dumpstr(const void *buf, size_t size)
 	s = size; b = (char *)buf;
 	for (; s ; s--, b++){
 		/* *tmp++ = isprint(*b) ? *b: '.';*/
-		*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
+		*tmp++ = (char)(((*b >= 32) && (*b < 127)) ? *b: '.');
 	}
 	*tmp++ = '\'';
 	*tmp++ = 0;

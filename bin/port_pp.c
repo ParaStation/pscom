@@ -120,7 +120,7 @@ char *dumpstr(void *buf, int size)
     *tmp++ = '\'';
     s = size; b = (char *)buf;
     for (; s ; s--, b++){
-	*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
+	*tmp++ = (char)(((*b >= 32) && (*b < 127)) ? *b: '.');
     }
     *tmp++ = '\'';
     *tmp++ = 0;

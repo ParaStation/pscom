@@ -1595,7 +1595,7 @@ PSP_PortH_t PSP_OpenPort(int portno)
     if (port->listen_fd < 0) goto err_socket;
 
     sa.sin_family = AF_INET;
-    sa.sin_port = (portno == PSP_ANYPORT) ? 0 : htons(portno);
+    sa.sin_port = (in_port_t)((portno == PSP_ANYPORT) ? 0 : htons(portno));
     sa.sin_addr.s_addr = INADDR_ANY;
 
     if (bind(port->listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)

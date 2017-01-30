@@ -44,7 +44,7 @@
 
 #define IB_UD_OFFSET 40 /* UD global routing header (GRH) */
 
-#define IB_MTU_PAYLOAD	(IB_MTU - (sizeof(psofed_msgheader_t) + IB_UD_OFFSET))
+#define IB_MTU_PAYLOAD	(IB_MTU - ((unsigned)sizeof(psofed_msgheader_t) + IB_UD_OFFSET))
 #define IB_MAX_INLINE	64
 
 //#define TRACE(cmd) cmd

@@ -27,7 +27,7 @@ static
 char *strtoupper(char *name)
 {
 	while (*name) {
-		*name = toupper(*name);
+		*name = (char)toupper(*name);
 		name++;
 	}
 	return name;
