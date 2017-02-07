@@ -1,3 +1,8 @@
+2017-02-07  Jens Hauke  <hauke@par-tec.com>	-	5.1.1-1
+
+	* Fix connection cleanup. A race sometimes fired:
+	"_pscom_con_destroy: Assertion `con->magic == 0x78626c61' failed."
+
 2016-10-04  Jens Hauke  <hauke@par-tec.com>
 
 	* Feature: ARM support (aarch64).
