@@ -303,6 +303,7 @@ struct PSCOM_con
 		int		eof_received : 1;
 		int		close_called : 1;
 		int		suspend_active : 1;
+		int		con_cleanup : 1;
 	}			state;
 
 	pscom_connection_t	pub;
