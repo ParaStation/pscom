@@ -168,7 +168,7 @@ am_libpscom_la_OBJECTS = libpscom_la-pscom.lo libpscom_la-pscom_con.lo \
 libpscom_la_OBJECTS = $(am_libpscom_la_OBJECTS)
 libpscom_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(libpscom_la_CFLAGS) \
-	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
+	$(CFLAGS) $(libpscom_la_LDFLAGS) $(LDFLAGS) -o $@
 libpscom_dprint_la_LIBADD =
 am_libpscom_dprint_la_OBJECTS = pscom_dprint.lo
 libpscom_dprint_la_OBJECTS = $(am_libpscom_dprint_la_OBJECTS)
@@ -250,19 +250,7 @@ ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_CFLAGS = @AM_CFLAGS@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
-
-#
-# ParaStation
-#
-# Copyright (C) 2012 ParTec Cluster Competence Center GmbH, Munich
-#
-# This file may be distributed under the terms of the Q Public License
-# as defined in the file LICENSE.QPL included in the packaging of this
-# file.
-#
-# Author:       Thomas Moschny <moschny@par-tec.com>
-#
-AM_LDFLAGS = @AM_LDFLAGS@ -avoid-version
+AM_LDFLAGS = @AM_LDFLAGS@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -400,6 +388,18 @@ target_vendor = @target_vendor@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
+
+#
+# ParaStation
+#
+# Copyright (C) 2012 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:       Thomas Moschny <moschny@par-tec.com>
+#
 AM_CPPFLAGS = -I$(top_srcdir)/include -DLIBDIR=\"$(libdir)\" \
 	-I$(top_builddir)/include
 VC_VERSION = $(shell ${top_srcdir}/scripts/vcversion -r $(top_srcdir) -n)
@@ -441,6 +441,7 @@ noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_shm.h pscom_sock.h pscom_str_util.h pscom_tcp.h		\
 	pscom_types.h pscom_ufd.h pscom_util.h psshmalloc.h
 
+libpscom_la_LDFLAGS = -version-info 2:0:0
 libpscom_la_LIBADD = -ldl
 libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
 
