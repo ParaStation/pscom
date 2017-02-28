@@ -675,6 +675,12 @@ GM_LDFLAGS
 GM_CPPFLAGS
 PSM_ENABLED_FALSE
 PSM_ENABLED_TRUE
+PSM2_ENABLED_FALSE
+PSM2_ENABLED_TRUE
+PSM2_LDFLAGS
+PSM2_CPPFLAGS
+PSM1_ENABLED_FALSE
+PSM1_ENABLED_TRUE
 PSM_LDFLAGS
 PSM_CPPFLAGS
 PSMGMT_ENABLED_FALSE
@@ -817,6 +823,7 @@ with_sysroot
 enable_libtool_lock
 enable_psmgmt
 enable_psm
+enable_psm2
 enable_gm
 enable_mellanox
 enable_openib
@@ -841,6 +848,8 @@ PSMGMT_CPPFLAGS
 PSMGMT_LDFLAGS
 PSM_CPPFLAGS
 PSM_LDFLAGS
+PSM2_CPPFLAGS
+PSM2_LDFLAGS
 GM_CPPFLAGS
 GM_LDFLAGS
 MELLANOX_CPPFLAGS
@@ -1492,6 +1501,7 @@ Optional Features:
   --disable-libtool-lock  avoid locking (might break parallel builds)
   --disable-psmgmt        disable ParaStation Management support
   --disable-psm           disable QLogic infinipath support
+  --disable-psm2          disable Intel omnipath support
   --disable-gm            disable Myrinet support
   --disable-mellanox      disable Mellanox support
   --disable-openib        disable Infiniband OFED with RC support
@@ -1532,6 +1542,10 @@ Some influential environment variables:
   PSM_CPPFLAGS
               C preprocessor flags for PSM headers
   PSM_LDFLAGS linker flags for PSM libraries
+  PSM2_CPPFLAGS
+              C preprocessor flags for PSM2 headers
+  PSM2_LDFLAGS
+              linker flags for PSM2 libraries
   GM_CPPFLAGS C preprocessor flags for GM headers
   GM_LDFLAGS  linker flags for GM libraries
   MELLANOX_CPPFLAGS
@@ -12364,6 +12378,114 @@ if test "x$have_psm" = xno -a "x$enable_psm" = xyes; then :
   as_fn_error $? "infinipath support requested but not found" "$LINENO" 5
 fi
  if test "x$enable_psm" != xno -a "x$have_psm" = xyes; then
+  PSM1_ENABLED_TRUE=
+  PSM1_ENABLED_FALSE='#'
+else
+  PSM1_ENABLED_TRUE='#'
+  PSM1_ENABLED_FALSE=
+fi
+
+
+# -- Intel Omnipath (aka Infinipath) --
+
+# Check whether --enable-psm2 was given.
+if test "${enable_psm2+set}" = set; then :
+  enableval=$enable_psm2;
+fi
+
+if test "x$enable_psm2" != xno; then :
+
+
+
+
+  if ${ax_cv_have_PSM2+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  save_CPPFLAGS="$CPPFLAGS"
+     save_LDFLAGS="$LDFLAGS"
+     save_LIBS="$LIBS"
+
+     if test "x$PSM2_CPPFLAGS" != "x"; then :
+  CPPFLAGS="$CPPFLAGS $PSM2_CPPFLAGS"
+fi
+
+     if test "x$PSM2_LDFLAGS" != "x"; then :
+  LDFLAGS="$LDFLAGS $PSM2_LDFLAGS"
+fi
+
+     ac_fn_c_check_header_mongrel "$LINENO" "psm2.h" "ac_cv_header_psm2_h" "$ac_includes_default"
+if test "x$ac_cv_header_psm2_h" = xyes; then :
+
+       { $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lpsm2" >&5
+$as_echo_n "checking for main in -lpsm2... " >&6; }
+if ${ac_cv_lib_psm2_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lpsm2  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_psm2_main=yes
+else
+  ac_cv_lib_psm2_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_psm2_main" >&5
+$as_echo "$ac_cv_lib_psm2_main" >&6; }
+if test "x$ac_cv_lib_psm2_main" = xyes; then :
+  ax_cv_have_PSM2=yes
+else
+  ax_cv_have_PSM2=no
+fi
+
+
+else
+  ax_cv_have_PSM2=no
+fi
+
+
+
+     CPPFLAGS="$save_CPPFLAGS"
+     LDFLAGS="$save_LDFLAGS"
+     LIBS="$save_LIBS"
+
+fi
+
+
+  if test "$ax_cv_have_PSM2" = "yes"; then :
+  have_psm2=yes
+else
+  have_psm2=no
+fi
+
+fi
+if test "x$have_psm2" = xno -a "x$enable_psm2" = xyes; then :
+  as_fn_error $? "infinipath support requested but not found" "$LINENO" 5
+fi
+ if test "x$enable_psm2" != xno -a "x$have_psm2" = xyes; then
+  PSM2_ENABLED_TRUE=
+  PSM2_ENABLED_FALSE='#'
+else
+  PSM2_ENABLED_TRUE='#'
+  PSM2_ENABLED_FALSE=
+fi
+
+
+ if test -z "$PSM1_ENABLED_TRUE" -o -z "$PSM2_ENABLED_TRUE" ; then
   PSM_ENABLED_TRUE=
   PSM_ENABLED_FALSE='#'
 else
@@ -13489,6 +13611,14 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${PSMGMT_ENABLED_TRUE}" && test -z "${PSMGMT_ENABLED_FALSE}"; then
   as_fn_error $? "conditional \"PSMGMT_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${PSM1_ENABLED_TRUE}" && test -z "${PSM1_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"PSM1_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${PSM2_ENABLED_TRUE}" && test -z "${PSM2_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"PSM2_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${PSM_ENABLED_TRUE}" && test -z "${PSM_ENABLED_FALSE}"; then
@@ -15564,6 +15694,13 @@ fi
 if test -z "$PSM_ENABLED_TRUE"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: PSM_ENABLED:      yes" >&5
 $as_echo "$as_me: PSM_ENABLED:      yes" >&6;}
+  if test -z "$PSM2_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}:            using psm2" >&5
+$as_echo "$as_me:            using psm2" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}:            using psm1" >&5
+$as_echo "$as_me:            using psm1" >&6;}
+fi
 else
   { $as_echo "$as_me:${as_lineno-$LINENO}: PSM_ENABLED:      no" >&5
 $as_echo "$as_me: PSM_ENABLED:      no" >&6;}

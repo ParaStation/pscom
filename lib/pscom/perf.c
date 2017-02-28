@@ -23,7 +23,7 @@
 #include <sys/time.h>
 
 static
-unsigned long getusec(void)
+unsigned long perf_getusec(void)
 {
     struct timeval tv;
     gettimeofday(&tv,NULL);
@@ -37,12 +37,12 @@ static
 void cycles_cal(void)
 {
     unsigned long t1, t2, rt1, rt2;
-    t1 = getusec();
+    t1 = perf_getusec();
     GET_CPU_CYCLES(rt1);
     /* usleep call kapm-idled and slowdown the cpu! */
-    while (getusec() - 1000 < t1);
+    while (perf_getusec() - 1000 < t1);
     GET_CPU_CYCLES(rt2);
-    t2 = getusec();
+    t2 = perf_getusec();
 
     t2 -= t1;
     rt2 -= rt1;

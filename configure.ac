@@ -62,8 +62,23 @@ AS_IF([test "x$enable_psm" != xno],
       [have_psm=yes], [have_psm=no])])
 AS_IF([test "x$have_psm" = xno -a "x$enable_psm" = xyes],
       [AC_MSG_ERROR([infinipath support requested but not found])])
-AM_CONDITIONAL([PSM_ENABLED],
+AM_CONDITIONAL([PSM1_ENABLED],
 	       [test "x$enable_psm" != xno -a "x$have_psm" = xyes])
+
+# -- Intel Omnipath (aka Infinipath) --
+
+AC_ARG_ENABLE([psm2],[AS_HELP_STRING([--disable-psm2],
+	      [disable Intel omnipath support])])
+AS_IF([test "x$enable_psm2" != xno],
+      [AX_CHECK_LIBRARY([PSM2], [psm2.h], [psm2],
+      [have_psm2=yes], [have_psm2=no])])
+AS_IF([test "x$have_psm2" = xno -a "x$enable_psm2" = xyes],
+      [AC_MSG_ERROR([infinipath support requested but not found])])
+AM_CONDITIONAL([PSM2_ENABLED],
+	       [test "x$enable_psm2" != xno -a "x$have_psm2" = xyes])
+
+AM_CONDITIONAL([PSM_ENABLED],
+	       [test -z "$PSM1_ENABLED_TRUE" -o -z "$PSM2_ENABLED_TRUE" ])
 
 # -- Myrinet GM --
 
@@ -219,7 +234,10 @@ AM_COND_IF([PSMGMT_ENABLED],
   [AC_MSG_NOTICE([PSMGMT_ENABLED:   yes])],
   [AC_MSG_NOTICE([PSMGMT_ENABLED:   no])])
 AM_COND_IF([PSM_ENABLED],
-  [AC_MSG_NOTICE([PSM_ENABLED:      yes])],
+  [AC_MSG_NOTICE([PSM_ENABLED:      yes])
+  AM_COND_IF([PSM2_ENABLED],
+    [AC_MSG_NOTICE([           using psm2])],
+    [AC_MSG_NOTICE([           using psm1])])],
   [AC_MSG_NOTICE([PSM_ENABLED:      no])])
 AM_COND_IF([GM_ENABLED],
   [AC_MSG_NOTICE([GM_ENABLED:       yes])],
