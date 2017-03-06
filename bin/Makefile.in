@@ -113,7 +113,7 @@ noinst_PROGRAMS = p4logd$(EXEEXT) porttest$(EXEEXT) \
 	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6) \
 	$(am__EXEEXT_7) $(am__EXEEXT_8) $(am__EXEEXT_9) \
 	$(am__EXEEXT_10) $(am__EXEEXT_11) $(am__EXEEXT_12) \
-	$(am__EXEEXT_13)
+	$(am__EXEEXT_13) $(am__EXEEXT_14)
 check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
 bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
@@ -123,19 +123,20 @@ bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
 @GM_ENABLED_TRUE@am__append_2 = gm_pp
 @OPENIB_ENABLED_TRUE@am__append_3 = openib_pp openib_ud_pp
 @UCP_ENABLED_TRUE@am__append_4 = ucp_pp
-@PSM_ENABLED_TRUE@am__append_5 = psm_pp
-@PSMGMT_ENABLED_TRUE@am__append_6 = pscp
-@DAPL_ENABLED_TRUE@am__append_7 = dapl_pp dapl_pp_lowlevel
+@PSM1_ENABLED_TRUE@am__append_5 = psm_pp
+@PSM2_ENABLED_TRUE@am__append_6 = psm2_pp pscom4psm_pp
+@PSMGMT_ENABLED_TRUE@am__append_7 = pscp
+@DAPL_ENABLED_TRUE@am__append_8 = dapl_pp dapl_pp_lowlevel
 
 # noinst_PROGRAMS += elan_pp
-@ELAN_ENABLED_TRUE@am__append_8 = elan_pp_lowlevel
-@EXTOLL_ENABLED_TRUE@am__append_9 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
-@MXM_ENABLED_TRUE@am__append_10 = mxm_pp
+@ELAN_ENABLED_TRUE@am__append_9 = elan_pp_lowlevel
+@EXTOLL_ENABLED_TRUE@am__append_10 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
+@MXM_ENABLED_TRUE@am__append_11 = mxm_pp
 
 # -- mem usage diagnostics --
-@OPENIB_ENABLED_TRUE@am__append_11 = pscom_memusage_openib
-@OFED_ENABLED_TRUE@am__append_12 = pscom_memusage_ofed
-@EXTOLL_ENABLED_TRUE@am__append_13 = pscom_memusage_extoll \
+@OPENIB_ENABLED_TRUE@am__append_12 = pscom_memusage_openib
+@OFED_ENABLED_TRUE@am__append_13 = pscom_memusage_ofed
+@EXTOLL_ENABLED_TRUE@am__append_14 = pscom_memusage_extoll \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo
 subdir = bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -162,17 +163,19 @@ am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 @OPENIB_ENABLED_TRUE@am__EXEEXT_4 = openib_pp$(EXEEXT) \
 @OPENIB_ENABLED_TRUE@	openib_ud_pp$(EXEEXT)
 @UCP_ENABLED_TRUE@am__EXEEXT_5 = ucp_pp$(EXEEXT)
-@PSM_ENABLED_TRUE@am__EXEEXT_6 = psm_pp$(EXEEXT)
-@DAPL_ENABLED_TRUE@am__EXEEXT_7 = dapl_pp$(EXEEXT) \
+@PSM1_ENABLED_TRUE@am__EXEEXT_6 = psm_pp$(EXEEXT)
+@PSM2_ENABLED_TRUE@am__EXEEXT_7 = psm2_pp$(EXEEXT) \
+@PSM2_ENABLED_TRUE@	pscom4psm_pp$(EXEEXT)
+@DAPL_ENABLED_TRUE@am__EXEEXT_8 = dapl_pp$(EXEEXT) \
 @DAPL_ENABLED_TRUE@	dapl_pp_lowlevel$(EXEEXT)
-@ELAN_ENABLED_TRUE@am__EXEEXT_8 = elan_pp_lowlevel$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_9 = extoll_pp_lowlevel$(EXEEXT) \
+@ELAN_ENABLED_TRUE@am__EXEEXT_9 = elan_pp_lowlevel$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_10 = extoll_pp_lowlevel$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_pp_velo$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_one_message$(EXEEXT)
-@MXM_ENABLED_TRUE@am__EXEEXT_10 = mxm_pp$(EXEEXT)
-@OPENIB_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_openib$(EXEEXT)
-@OFED_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_ofed$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_13 = pscom_memusage_extoll$(EXEEXT) \
+@MXM_ENABLED_TRUE@am__EXEEXT_11 = mxm_pp$(EXEEXT)
+@OPENIB_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_openib$(EXEEXT)
+@OFED_ENABLED_TRUE@am__EXEEXT_13 = pscom_memusage_ofed$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_14 = pscom_memusage_extoll$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -293,6 +296,12 @@ ps4_ib_pp_rdma_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
 	$(AM_CFLAGS) $(CFLAGS) $(ps4_ib_pp_rdma_LDFLAGS) $(LDFLAGS) -o \
 	$@
+am_pscom4psm_pp_OBJECTS = psm/pscom4psm_pp-pscom4psm_pp.$(OBJEXT)
+pscom4psm_pp_OBJECTS = $(am_pscom4psm_pp_OBJECTS)
+pscom4psm_pp_DEPENDENCIES =
+pscom4psm_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(pscom4psm_pp_LDFLAGS) $(LDFLAGS) -o $@
 am_pscom_bcast_pp_OBJECTS = pscom_bcast_pp.$(OBJEXT)
 pscom_bcast_pp_OBJECTS = $(am_pscom_bcast_pp_OBJECTS)
 pscom_bcast_pp_DEPENDENCIES = $(libpscom)
@@ -355,6 +364,12 @@ pscp_DEPENDENCIES = $(libpsport4)
 pscp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
 	$(pscp_LDFLAGS) $(LDFLAGS) -o $@
+am_psm2_pp_OBJECTS = psm/psm2_pp-psm2_pp.$(OBJEXT)
+psm2_pp_OBJECTS = $(am_psm2_pp_OBJECTS)
+psm2_pp_DEPENDENCIES =
+psm2_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(psm2_pp_LDFLAGS) $(LDFLAGS) -o $@
 am_psm_pp_OBJECTS = psm/psm_pp-psm_pp.$(OBJEXT)
 psm_pp_OBJECTS = $(am_psm_pp_OBJECTS)
 psm_pp_DEPENDENCIES =
@@ -463,18 +478,18 @@ SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(openib_pp_SOURCES) $(openib_ud_pp_SOURCES) $(p4logd_SOURCES) \
 	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(port_pp_SOURCES) \
 	$(porttest_SOURCES) $(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
-	$(ps4_ib_pp_rdma_SOURCES) $(pscom_bcast_pp_SOURCES) \
-	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
-	$(pscom_memusage_extoll_SOURCES) \
+	$(ps4_ib_pp_rdma_SOURCES) $(pscom4psm_pp_SOURCES) \
+	$(pscom_bcast_pp_SOURCES) $(pscom_bcast_test_SOURCES) \
+	$(pscom_maxcon_SOURCES) $(pscom_memusage_extoll_SOURCES) \
 	$(pscom_memusage_ofed_SOURCES) \
 	$(pscom_memusage_openib_SOURCES) \
 	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
 	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
-	$(pscp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
-	$(psock_test_SOURCES) $(pspipe_SOURCES) $(psport4_pp_SOURCES) \
-	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES) \
-	$(ucp_pp_SOURCES)
+	$(pscp_SOURCES) $(psm2_pp_SOURCES) $(psm_pp_SOURCES) \
+	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
+	$(psport4_pp_SOURCES) $(psport4mvapi_pp_SOURCES) \
+	$(test_nodes_SOURCES) $(ucp_pp_SOURCES)
 DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(elan_pp_lowlevel_SOURCES) $(extoll_one_message_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
@@ -482,18 +497,18 @@ DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(openib_pp_SOURCES) $(openib_ud_pp_SOURCES) $(p4logd_SOURCES) \
 	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(port_pp_SOURCES) \
 	$(porttest_SOURCES) $(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
-	$(ps4_ib_pp_rdma_SOURCES) $(pscom_bcast_pp_SOURCES) \
-	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
-	$(pscom_memusage_extoll_SOURCES) \
+	$(ps4_ib_pp_rdma_SOURCES) $(pscom4psm_pp_SOURCES) \
+	$(pscom_bcast_pp_SOURCES) $(pscom_bcast_test_SOURCES) \
+	$(pscom_maxcon_SOURCES) $(pscom_memusage_extoll_SOURCES) \
 	$(pscom_memusage_ofed_SOURCES) \
 	$(pscom_memusage_openib_SOURCES) \
 	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
 	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
-	$(pscp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
-	$(psock_test_SOURCES) $(pspipe_SOURCES) $(psport4_pp_SOURCES) \
-	$(psport4mvapi_pp_SOURCES) $(test_nodes_SOURCES) \
-	$(ucp_pp_SOURCES)
+	$(pscp_SOURCES) $(psm2_pp_SOURCES) $(psm_pp_SOURCES) \
+	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
+	$(psport4_pp_SOURCES) $(psport4mvapi_pp_SOURCES) \
+	$(test_nodes_SOURCES) $(ucp_pp_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -816,6 +831,8 @@ PACKAGE_TARNAME = @PACKAGE_TARNAME@
 PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
+PSM2_CPPFLAGS = @PSM2_CPPFLAGS@
+PSM2_LDFLAGS = @PSM2_LDFLAGS@
 PSMGMT_CPPFLAGS = @PSMGMT_CPPFLAGS@
 PSMGMT_LDFLAGS = @PSMGMT_LDFLAGS@
 PSM_CPPFLAGS = @PSM_CPPFLAGS@
@@ -1032,12 +1049,25 @@ ucp_pp_SOURCES = ucp/ucp_pp.c
 ucp_pp_CPPFLAGS = $(cppflags_ucp)
 ucp_pp_LDFLAGS = $(ldflags_ucp)
 ucp_pp_LDADD = $(ldadd_ucp)
+@PSM1_ENABLED_TRUE@@PSM2_ENABLED_FALSE@PSM_CPPFLAGS_EXTRA = -DPSM1
 
 # -- psm --
+@PSM2_ENABLED_TRUE@PSM_CPPFLAGS_EXTRA = 
 psm_pp_SOURCES = psm/psm_pp.c
 psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
 psm_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
 psm_pp_LDADD = -lpsm_infinipath -lpopt
+psm2_pp_SOURCES = psm/psm2_pp.c
+psm2_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS)
+psm2_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
+psm2_pp_LDADD = -lpsm2 -lpopt
+pscom4psm_pp_SOURCES = psm/pscom4psm_pp.c
+pscom4psm_pp_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS) $(PSM_CPPFLAGS_EXTRA) \
+	-I$(top_srcdir)/lib/pscom4psm \
+	-I$(top_srcdir)/lib/pscom
+
+pscom4psm_pp_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
+pscom4psm_pp_LDADD = -lpsm2 -lpopt
 
 # -- psmgmt --
 test_nodes_SOURCES = test_nodes.c
@@ -1366,6 +1396,18 @@ mellanox/ps4_ib_pp_rdma-ps4_ib_pp_rdma.$(OBJEXT):  \
 ps4_ib_pp_rdma$(EXEEXT): $(ps4_ib_pp_rdma_OBJECTS) $(ps4_ib_pp_rdma_DEPENDENCIES) $(EXTRA_ps4_ib_pp_rdma_DEPENDENCIES) 
 	@rm -f ps4_ib_pp_rdma$(EXEEXT)
 	$(AM_V_CCLD)$(ps4_ib_pp_rdma_LINK) $(ps4_ib_pp_rdma_OBJECTS) $(ps4_ib_pp_rdma_LDADD) $(LIBS)
+psm/$(am__dirstamp):
+	@$(MKDIR_P) psm
+	@: > psm/$(am__dirstamp)
+psm/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) psm/$(DEPDIR)
+	@: > psm/$(DEPDIR)/$(am__dirstamp)
+psm/pscom4psm_pp-pscom4psm_pp.$(OBJEXT): psm/$(am__dirstamp) \
+	psm/$(DEPDIR)/$(am__dirstamp)
+
+pscom4psm_pp$(EXEEXT): $(pscom4psm_pp_OBJECTS) $(pscom4psm_pp_DEPENDENCIES) $(EXTRA_pscom4psm_pp_DEPENDENCIES) 
+	@rm -f pscom4psm_pp$(EXEEXT)
+	$(AM_V_CCLD)$(pscom4psm_pp_LINK) $(pscom4psm_pp_OBJECTS) $(pscom4psm_pp_LDADD) $(LIBS)
 
 pscom_bcast_pp$(EXEEXT): $(pscom_bcast_pp_OBJECTS) $(pscom_bcast_pp_DEPENDENCIES) $(EXTRA_pscom_bcast_pp_DEPENDENCIES) 
 	@rm -f pscom_bcast_pp$(EXEEXT)
@@ -1418,12 +1460,12 @@ pscom_test_fault$(EXEEXT): $(pscom_test_fault_OBJECTS) $(pscom_test_fault_DEPEND
 pscp$(EXEEXT): $(pscp_OBJECTS) $(pscp_DEPENDENCIES) $(EXTRA_pscp_DEPENDENCIES) 
 	@rm -f pscp$(EXEEXT)
 	$(AM_V_CCLD)$(pscp_LINK) $(pscp_OBJECTS) $(pscp_LDADD) $(LIBS)
-psm/$(am__dirstamp):
-	@$(MKDIR_P) psm
-	@: > psm/$(am__dirstamp)
-psm/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) psm/$(DEPDIR)
-	@: > psm/$(DEPDIR)/$(am__dirstamp)
+psm/psm2_pp-psm2_pp.$(OBJEXT): psm/$(am__dirstamp) \
+	psm/$(DEPDIR)/$(am__dirstamp)
+
+psm2_pp$(EXEEXT): $(psm2_pp_OBJECTS) $(psm2_pp_DEPENDENCIES) $(EXTRA_psm2_pp_DEPENDENCIES) 
+	@rm -f psm2_pp$(EXEEXT)
+	$(AM_V_CCLD)$(psm2_pp_LINK) $(psm2_pp_OBJECTS) $(psm2_pp_LDADD) $(LIBS)
 psm/psm_pp-psm_pp.$(OBJEXT): psm/$(am__dirstamp) \
 	psm/$(DEPDIR)/$(am__dirstamp)
 
@@ -1557,6 +1599,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@mxm/$(DEPDIR)/mxm_pp-mxm_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@openib/$(DEPDIR)/openib_pp-openib_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@openib/$(DEPDIR)/openib_ud_pp-openib_ud_pp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Po@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@psm/$(DEPDIR)/psm2_pp-psm2_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@psm/$(DEPDIR)/psm_pp-psm_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ucp/$(DEPDIR)/ucp_pp-ucp_pp.Po@am__quote@
 
@@ -1766,6 +1810,20 @@ mellanox/ps4_ib_pp_rdma-ps4_ib_pp_rdma.obj: mellanox/ps4_ib_pp_rdma.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(ps4_ib_pp_rdma_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mellanox/ps4_ib_pp_rdma-ps4_ib_pp_rdma.obj `if test -f 'mellanox/ps4_ib_pp_rdma.c'; then $(CYGPATH_W) 'mellanox/ps4_ib_pp_rdma.c'; else $(CYGPATH_W) '$(srcdir)/mellanox/ps4_ib_pp_rdma.c'; fi`
 
+psm/pscom4psm_pp-pscom4psm_pp.o: psm/pscom4psm_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom4psm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psm/pscom4psm_pp-pscom4psm_pp.o -MD -MP -MF psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Tpo -c -o psm/pscom4psm_pp-pscom4psm_pp.o `test -f 'psm/pscom4psm_pp.c' || echo '$(srcdir)/'`psm/pscom4psm_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Tpo psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psm/pscom4psm_pp.c' object='psm/pscom4psm_pp-pscom4psm_pp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom4psm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psm/pscom4psm_pp-pscom4psm_pp.o `test -f 'psm/pscom4psm_pp.c' || echo '$(srcdir)/'`psm/pscom4psm_pp.c
+
+psm/pscom4psm_pp-pscom4psm_pp.obj: psm/pscom4psm_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom4psm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psm/pscom4psm_pp-pscom4psm_pp.obj -MD -MP -MF psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Tpo -c -o psm/pscom4psm_pp-pscom4psm_pp.obj `if test -f 'psm/pscom4psm_pp.c'; then $(CYGPATH_W) 'psm/pscom4psm_pp.c'; else $(CYGPATH_W) '$(srcdir)/psm/pscom4psm_pp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Tpo psm/$(DEPDIR)/pscom4psm_pp-pscom4psm_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psm/pscom4psm_pp.c' object='psm/pscom4psm_pp-pscom4psm_pp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom4psm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psm/pscom4psm_pp-pscom4psm_pp.obj `if test -f 'psm/pscom4psm_pp.c'; then $(CYGPATH_W) 'psm/pscom4psm_pp.c'; else $(CYGPATH_W) '$(srcdir)/psm/pscom4psm_pp.c'; fi`
+
 pscom_memusage_extoll-pscom_memusage.o: pscom_memusage.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_extoll_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_memusage_extoll-pscom_memusage.o -MD -MP -MF $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Tpo -c -o pscom_memusage_extoll-pscom_memusage.o `test -f 'pscom_memusage.c' || echo '$(srcdir)/'`pscom_memusage.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Tpo $(DEPDIR)/pscom_memusage_extoll-pscom_memusage.Po
@@ -1849,6 +1907,20 @@ pscp-psport_util.obj: psport_util.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psport_util.c' object='pscp-psport_util.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscp-psport_util.obj `if test -f 'psport_util.c'; then $(CYGPATH_W) 'psport_util.c'; else $(CYGPATH_W) '$(srcdir)/psport_util.c'; fi`
+
+psm/psm2_pp-psm2_pp.o: psm/psm2_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm2_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psm/psm2_pp-psm2_pp.o -MD -MP -MF psm/$(DEPDIR)/psm2_pp-psm2_pp.Tpo -c -o psm/psm2_pp-psm2_pp.o `test -f 'psm/psm2_pp.c' || echo '$(srcdir)/'`psm/psm2_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) psm/$(DEPDIR)/psm2_pp-psm2_pp.Tpo psm/$(DEPDIR)/psm2_pp-psm2_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psm/psm2_pp.c' object='psm/psm2_pp-psm2_pp.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm2_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psm/psm2_pp-psm2_pp.o `test -f 'psm/psm2_pp.c' || echo '$(srcdir)/'`psm/psm2_pp.c
+
+psm/psm2_pp-psm2_pp.obj: psm/psm2_pp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm2_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psm/psm2_pp-psm2_pp.obj -MD -MP -MF psm/$(DEPDIR)/psm2_pp-psm2_pp.Tpo -c -o psm/psm2_pp-psm2_pp.obj `if test -f 'psm/psm2_pp.c'; then $(CYGPATH_W) 'psm/psm2_pp.c'; else $(CYGPATH_W) '$(srcdir)/psm/psm2_pp.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) psm/$(DEPDIR)/psm2_pp-psm2_pp.Tpo psm/$(DEPDIR)/psm2_pp-psm2_pp.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psm/psm2_pp.c' object='psm/psm2_pp-psm2_pp.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm2_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psm/psm2_pp-psm2_pp.obj `if test -f 'psm/psm2_pp.c'; then $(CYGPATH_W) 'psm/psm2_pp.c'; else $(CYGPATH_W) '$(srcdir)/psm/psm2_pp.c'; fi`
 
 psm/psm_pp-psm_pp.o: psm/psm_pp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psm/psm_pp-psm_pp.o -MD -MP -MF psm/$(DEPDIR)/psm_pp-psm_pp.Tpo -c -o psm/psm_pp-psm_pp.o `test -f 'psm/psm_pp.c' || echo '$(srcdir)/'`psm/psm_pp.c
