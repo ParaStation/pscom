@@ -13,6 +13,7 @@
 #include <malloc.h>
 #include <stdlib.h>
 #include <unistd.h>
+#include <limits.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
@@ -458,8 +459,9 @@ int _pspsm_send_buf(pspsm_con_info_t *con_info, char *buf, size_t len,
 	psm2_error_t ret;
 	assert(*req == PSM2_MQ_REQINVALID);
 	ret = psm2_mq_isend(pspsm_mq, con_info->epaddr,
-			    /* flags */ 0, tag, buf, len,
+			    /* flags */ 0, tag, buf, (unsigned)len,
 			    context, req);
+	assert(len < UINT_MAX);
 	if (ret != PSM2_OK) goto err;
 	return 0;
 
@@ -490,7 +492,7 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 		/* we hope that doesn't block - it shouldn't, as the
 		 * message is sufficiently small */
 		ret = psm2_mq_send(pspsm_mq, con_info->epaddr,
-				   /* flags*/ 0, tag, sendbuf, len);
+				   /* flags*/ 0, tag, sendbuf, (unsigned)len);
 		if (ret != PSM2_OK) goto err;
 		return 0;
 	}
@@ -532,7 +534,7 @@ int pspsm_recv_start(pspsm_con_info_t *con_info, char *rbuf, size_t rbuflen)
 
 	assert(con_info->rreq == PSM2_MQ_REQINVALID);
 	ret = psm2_mq_irecv(pspsm_mq, rtag, mask, 0 /*flags*/,
-			    rbuf, rbuflen,
+			    rbuf, (unsigned)rbuflen,
 			    context, &con_info->rreq);
 	con_info->rbuf = rbuf;
 	if (ret != PSM2_OK) goto out_err;
