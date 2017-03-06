@@ -303,6 +303,7 @@ struct PSCOM_con
 		unsigned	eof_received : 1;
 		unsigned	close_called : 1;
 		unsigned	suspend_active : 1;
+		unsigned	con_cleanup : 1;
 	}			state;
 
 	pscom_connection_t	pub;

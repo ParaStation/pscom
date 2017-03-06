@@ -197,6 +197,9 @@ static
 void _pscom_con_cleanup(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
+	if (con->state.con_cleanup) return; // Reentrant call
+	con->state.con_cleanup = 1;
+
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
 		D_TR(printf("%s:%u:%s(con:%p) : state: %s\n", __FILE__, __LINE__, __func__,
 			    con, pscom_con_state_str(con->pub.state)));
@@ -244,6 +247,8 @@ void _pscom_con_cleanup(pscom_con_t *con)
 	} else {
 		list_del_init(&con->next); // May dequeue multiple times.
 	}
+
+	con->state.con_cleanup = 0;
 
 	if (con->pub.state == PSCOM_CON_STATE_CLOSED && con->state.close_called) {
 		_pscom_con_destroy(con);
@@ -394,6 +399,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->state.eof_received = 0;
 	con->state.close_called = 0;
 	con->state.suspend_active = 0;
+	con->state.con_cleanup = 0;
 
 	return con;
 }
