@@ -389,3 +389,39 @@ int pscom_con_type_mask_is_set(pscom_socket_t *socket, pscom_con_type_t con_type
 	} pscom_unlock();
 	return res;
 }
+
+
+#define PSCOM_CON_TYPE_MASK_MAGIC 0x6522feab23
+typedef struct {
+	unsigned long magic;
+	uint64_t con_type_mask;
+} pscom_con_type_mask_backup_t;
+
+
+void *pscom_con_type_mask_backup(pscom_socket_t *socket)
+{
+	pscom_con_type_mask_backup_t *mask = malloc(sizeof(*mask));
+	mask->magic = PSCOM_CON_TYPE_MASK_MAGIC;
+
+	pscom_lock(); {
+		pscom_sock_t *sock = get_sock(socket);
+		mask->con_type_mask = sock->con_type_mask;
+	} pscom_unlock();
+
+	return mask;
+}
+
+
+void pscom_con_type_mask_restore(pscom_socket_t *socket, void *con_type_mask_backup)
+{
+	pscom_con_type_mask_backup_t *mask = (pscom_con_type_mask_backup_t *)con_type_mask_backup;
+	assert(mask->magic == PSCOM_CON_TYPE_MASK_MAGIC);
+
+	pscom_lock(); {
+		pscom_sock_t *sock = get_sock(socket);
+		sock->con_type_mask = mask->con_type_mask;
+	} pscom_unlock();
+
+	mask->magic = 0;
+	free(mask);
+}

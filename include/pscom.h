@@ -596,6 +596,8 @@ void pscom_con_type_mask_del(pscom_socket_t *socket, pscom_con_type_t con_type);
 /* Communication path con_type on socket allowed? */
 int pscom_con_type_mask_is_set(pscom_socket_t *socket, pscom_con_type_t con_type);
 
+void *pscom_con_type_mask_backup(pscom_socket_t *socket);
+void pscom_con_type_mask_restore(pscom_socket_t *socket, void *con_type_mask_backup);
 
 /*
  * query
