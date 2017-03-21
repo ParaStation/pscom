@@ -90,6 +90,7 @@
 #define ENV_OPENIB_EVENT_CNT "PSP_OPENIB_EVENT_CNT" /* bool: Be busy if outstanding_cq_entries is to high? default: 1(yes) */
 #define ENV_OPENIB_IGNORE_WRONG_OPCODES "PSP_OPENIB_IGNORE_WRONG_OPCODES" /* bool: ignore wrong cq opcodes */
 #define ENV_OPENIB_LID_OFFSET "PSP_OPENIB_LID_OFFSET" /* int: offset to base LID (adaptive routing) */
+#define ENV_OPENIB_MCACHE_SIZE "PSP_OPENIB_MCACHE_SIZE" /* uint: max #entries in the memory registration cache. 0:disable cache */
 
 
 /* OFED HCA and port */

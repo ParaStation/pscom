@@ -21,7 +21,7 @@ struct psoib_mregion_cache {
 } psoib_mregion_cache_t;
 
 
-unsigned psoib_mregion_cache_max_size = IB_RNDV_MREG_CACHE_SIZE;
+unsigned psoib_mregion_cache_max_size = PSOIB_MREGION_CACHE_MAX_SIZE_DEFAULT;
 static unsigned psoib_mregion_cache_size = 0;
 static LIST_HEAD(psoib_mregion_cache);
 
@@ -165,6 +165,10 @@ void psoib_mregion_cache_cleanup(void)
 
 void psoib_mregion_cache_init(void)
 {
+	if (!psoib_mregion_cache_max_size) {
+		// Disabled cache. Nothing to Initialize.
+		return;
+	}
 	psoib_page_size = getpagesize();
 	assert(psoib_page_size != 0);
 	assert((psoib_page_size & (psoib_page_size - 1)) == 0); /* power of 2 */

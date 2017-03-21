@@ -490,6 +490,10 @@ void pscom_openib_init(void)
 	pscom_env_get_int(&psoib_ignore_wrong_opcodes, ENV_OPENIB_IGNORE_WRONG_OPCODES);
 	pscom_env_get_int(&psoib_lid_offset, ENV_OPENIB_LID_OFFSET);
 
+#if PSOIB_USE_MREGION_CACHE
+	pscom_env_get_uint(&psoib_mregion_cache_max_size, ENV_OPENIB_MCACHE_SIZE);
+#endif
+
 	INIT_LIST_HEAD(&pscom_cq_poll.next);
 	pscom_cq_poll.do_read = pscom_poll_cq;
 
