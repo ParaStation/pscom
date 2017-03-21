@@ -27,7 +27,7 @@ extern struct Psshm psshm_info;
 static inline
 int is_psshm_ptr(void *ptr)
 {
-	return psshm_info.base <= ptr && ptr < psshm_info.end;
+	return (ptr < psshm_info.end) && (psshm_info.base <= ptr);
 }
 
 
