@@ -1,3 +1,9 @@
+2017-03-21  Jens Hauke  <jens@localhost>
+
+	* Feature: pscom4openib with configurable memory registration
+	cache. Use export PSP_OPENIB_MCACHE_SIZE, to set the size.
+	PSP_OPENIB_MCACHE_SIZE=0 disables the cache.
+
 2017-02-28  Jens Hauke  <hauke@par-tec.com>
 
 	* Feature: Add support for psm2 omnipath (pscom4psm).
