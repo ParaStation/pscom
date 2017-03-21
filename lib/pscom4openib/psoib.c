@@ -774,8 +774,10 @@ void psoib_cleanup_hca(hca_info_t *hca_info)
 	hca_info->ctx = NULL;
     }
 
+#ifdef IB_USE_RNDV
 #if PSOIB_USE_MREGION_CACHE
     psoib_mregion_cache_cleanup();
+#endif
 #endif
 }
 
@@ -825,10 +827,10 @@ int psoib_init_hca(hca_info_t *hca_info)
 #ifdef IB_USE_RNDV
     INIT_LIST_HEAD(&hca_info->rma_reqs);
     hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
-#endif
 #if PSOIB_USE_MREGION_CACHE
     psoib_mregion_cache_init();
-#endif
+#endif /* PSOIB_USE_MREGION_CACHE */
+#endif /* IB_USE_RNDV */
 
     return 0;
     /* --- */
@@ -1293,7 +1295,6 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 }
 
 
-
 /*
  * ++ RMA rendezvous begin
  */
@@ -1340,54 +1341,6 @@ int psoib_rma_mreg_deregister(psoib_rma_mreg_t *mreg)
 #if PSOIB_USE_MREGION_CACHE
 
 #include "psoib_mregion_cache.c"
-
-int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
-{
-	psoib_mregion_cache_t *mregc;
-	if (!psoib_mregion_cache_max_size) {
-		// Disabled cache
-		return psoib_rma_mreg_register(mreg, buf, size, ci);
-	}
-
-	mregc = psoib_mregion_find(buf, size);
-	if (mregc) {
-		// cached mregion
-		psoib_mregion_use_inc(mregc);
-	} else {
-		psoib_mregion_gc(psoib_mregion_cache_max_size);
-
-		// create new mregion
-		mregc = psoib_mregion_create(buf, size, ci);
-		if (!mregc) goto err_register;
-
-		psoib_mregion_enq(mregc);
-		mregc->use_cnt = 1; /* shortcut for psoib_mregion_use_inc(mreg); */
-	}
-
-	mreg->mem_info.ptr = buf;
-	mreg->size = size;
-	mreg->mem_info.mr = mregc->mregion.mem_info.mr;
-	mreg->mreg_cache = mregc;
-
-	return 0;
-err_register:
-	psoib_dprint(3, "psoib_get_mregion() failed");
-	return -1;
-}
-
-
-int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
-{
-	if (!psoib_mregion_cache_max_size) {
-		// Disabled cache
-		return psoib_rma_mreg_deregister(mreg);
-	}
-
-	psoib_mregion_use_dec(mreg->mreg_cache);
-	mreg->mreg_cache = NULL;
-
-	return 0;
-}
 
 #else
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)

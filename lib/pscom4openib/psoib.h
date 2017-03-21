@@ -45,10 +45,16 @@ typedef struct {
 
 #define IB_USE_RNDV
 #endif
+
+
+/*
+ * ++ RMA rendezvous
+ */
+#ifdef IB_USE_RNDV
+
 #define IB_RNDV_RDMA_WRITE
 #define IB_RNDV_THRESHOLD 4096
-#define IB_RNDV_DISABLE_FREE_TO_OS
-#undef  IB_RNDV_USE_MALLOC_HOOKS
+
 /* Use IB_RNDV_USE_PADDING not together with IB_RNDV_RDMA_WRITE! */
 // #define IB_RNDV_USE_PADDING
 #define IB_RNDV_PADDING_SIZE 64
@@ -56,15 +62,7 @@ typedef struct {
 
 #define IB_MAX_RDMA_MSG_SIZE 2147483647 /* RDMA supports up to 2GiB */
 
-#if PSOIB_USE_MREGION_CACHE
-/* if we use a registration cache, we _have_ to disable free() returning memory to the OS: */
-#define IB_RNDV_DISABLE_FREE_TO_OS
-#endif
 
-/*
- * ++ RMA rendezvous
- */
-#ifdef IB_USE_RNDV
 /* registered memory region. (Opaque object for users of psoib_get_rma_mreg() and psoib_put_rma_mreg()) */
 typedef struct psoib_rma_req psoib_rma_req_t;
 
@@ -93,12 +91,13 @@ int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib
 int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
 int psoib_post_rma_get(psoib_rma_req_t *req);
 int psoib_post_rma_put(psoib_rma_req_t *req);
+
 #if PSOIB_USE_MREGION_CACHE
 void psoib_mregion_cache_cleanup(void);
 void psoib_mregion_cache_init(void);
-#endif
+#endif /* PSOIB_USE_MREGION_CACHE */
+#endif /* IB_USE_RNDV */
 
-#endif
 /*
  *  -- RMA rendezvous end
  */

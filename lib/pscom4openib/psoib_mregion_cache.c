@@ -8,7 +8,10 @@
  * Author:	Jens Hauke <hauke@par-tec.com>
  */
 
+#include <stdlib.h>
+#include <malloc.h>
 #include "list.h"
+#include "psshmalloc.h"
 
 typedef
 struct psoib_mregion_cache {
@@ -26,6 +29,8 @@ static unsigned psoib_mregion_cache_size = 0;
 static LIST_HEAD(psoib_mregion_cache);
 
 static unsigned psoib_page_size;
+static void *psoib_safe_mreg_start = NULL;
+static void *psoib_safe_mreg_end   = NULL;
 
 
 static inline
@@ -153,6 +158,62 @@ void psoib_mregion_gc(unsigned max_size)
 	}
 }
 
+
+static void *psoib_morecore_hook(ptrdiff_t incr)
+{
+	/* Do not return memory back to the OS: (do not trim) */
+	if(incr < 0) {
+		return __default_morecore(0);
+	} else {
+		psoib_safe_mreg_end += incr;
+		return __default_morecore(incr);
+	}
+}
+
+
+static
+void psoib_mregion_malloc_init(void)
+{
+	if (is_psshm_enabled()) {
+		/* direct shared mem is used. */
+		/* In the psshmalloc case, we can assume the whole shared region as being safe: */
+		psoib_safe_mreg_start = psshm_info.base;
+		psoib_safe_mreg_end = psshm_info.end;
+	} else if (psoib_mregion_cache_max_size) {
+		/* Rendezvous and mregion cache is enabled! */
+
+		/* We have to prevent free() from returning memory back to the OS: */
+		/* See 'man mallopt(3) / M_MMAP_MAX': Setting this parameter to 0
+		   disables the use of mmap(2) for servicing large allocation requests. */
+		mallopt(M_MMAP_MAX, 0);
+
+		/* See 'man mallopt(3) / M_TRIM_THRESHOLD': Setting M_TRIM_THRESHOLD to -1
+		   disables trimming completely. */
+		mallopt(M_TRIM_THRESHOLD, -1);
+
+		if (__morecore == __default_morecore) {
+			psoib_safe_mreg_end = psoib_safe_mreg_start = __morecore(0);
+
+			/* Switch to our own function pscom_openib_morecore() that does not trim and
+			   update psoib_safe_mreg_end: */
+			__morecore = psoib_morecore_hook;
+		} else if (__morecore == psoib_morecore_hook) {
+			/* Already set to pscom_openib_morecore_hook */
+		} else {
+			/* Unknown __morecore hook. Disable mregion cache and rendezvous. */
+			psoib_mregion_cache_max_size = 0;
+			{
+				static int warned = 0;
+				if (!warned) {
+					warned = 1;
+					psoib_dprint(1, "psoib: mregion cache disabled: Unknown __morecore hook");
+				}
+			}
+		}
+	}
+}
+
+
 static int psoib_mregion_cache_initialized = 0;
 
 void psoib_mregion_cache_cleanup(void)
@@ -163,14 +224,68 @@ void psoib_mregion_cache_cleanup(void)
 	}
 }
 
+
 void psoib_mregion_cache_init(void)
 {
-	if (!psoib_mregion_cache_max_size) {
-		// Disabled cache. Nothing to Initialize.
+	if (!psoib_mregion_cache_max_size || psoib_mregion_cache_initialized) {
+		// Disabled cache or already initialized. Nothing to Initialize.
 		return;
 	}
 	psoib_page_size = getpagesize();
 	assert(psoib_page_size != 0);
 	assert((psoib_page_size & (psoib_page_size - 1)) == 0); /* power of 2 */
 	psoib_mregion_cache_initialized = 1;
+
+	psoib_mregion_malloc_init();
+}
+
+
+int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	psoib_mregion_cache_t *mregc;
+	if (!psoib_mregion_cache_max_size ||
+	    /* buf < psoib_safe_mreg_start || */ buf > psoib_safe_mreg_end) {
+		// Disabled cache
+		mreg->mreg_cache = NULL;
+		return psoib_rma_mreg_register(mreg, buf, size, ci);
+	}
+
+	mregc = psoib_mregion_find(buf, size);
+	if (mregc) {
+		// cached mregion
+		psoib_mregion_use_inc(mregc);
+	} else {
+		psoib_mregion_gc(psoib_mregion_cache_max_size);
+
+		// create new mregion
+		mregc = psoib_mregion_create(buf, size, ci);
+		if (!mregc) goto err_register;
+
+		psoib_mregion_enq(mregc);
+		mregc->use_cnt = 1; /* shortcut for psoib_mregion_use_inc(mreg); */
+	}
+
+	mreg->mem_info.ptr = buf;
+	mreg->size = size;
+	mreg->mem_info.mr = mregc->mregion.mem_info.mr;
+	mreg->mreg_cache = mregc;
+
+	return 0;
+err_register:
+	psoib_dprint(3, "psoib_get_mregion() failed");
+	return -1;
+}
+
+
+int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
+{
+	if(mreg->mreg_cache == NULL) {
+		// Disabled cache
+		return psoib_rma_mreg_deregister(mreg);
+	}
+
+	psoib_mregion_use_dec(mreg->mreg_cache);
+	mreg->mreg_cache = NULL;
+
+	return 0;
 }

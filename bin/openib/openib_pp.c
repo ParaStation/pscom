@@ -134,6 +134,7 @@ void pscom_free(void *ptr) {
 	free(ptr);
 }
 
+#define IB_DONT_USE_ZERO_COPY
 #include "psoib.c"
 pscom_t pscom = {
 	/* parameter from environment */
