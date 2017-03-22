@@ -1,4 +1,8 @@
-2017-03-21  Jens Hauke  <jens@localhost>
+2017-03-21  Jens Hauke  <hauke@par-tec.com>	-	5.1.2-1
+
+	* Fix: much more conservative usage of the memory registration
+	cache for infiniband. Fix message data corruption seen with some
+	fortran applications with dynamic allocated user data.
 
 	* Feature: pscom4openib with configurable memory registration
 	cache. Use export PSP_OPENIB_MCACHE_SIZE, to set the size.
