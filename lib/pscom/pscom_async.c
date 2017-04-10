@@ -88,6 +88,7 @@ pscom_async_ipc_t pscom_async_ipc = {
 };
 
 
+#if 0
 static
 pscom_backlog_t *pscom_backlog_pop(void) {
 	pscom_backlog_t *bl;
@@ -102,6 +103,15 @@ pscom_backlog_t *pscom_backlog_pop(void) {
 	} pthread_mutex_unlock(&pscom.backlog_lock);
 	return bl;
 }
+#endif
+
+static
+void pscom_backlog_getall(struct list_head *backlog) {
+	pthread_mutex_lock(&pscom.backlog_lock);{
+		list_add(backlog, &pscom.backlog); // Set new head
+		list_del_init(&pscom.backlog); // detach from old head
+	} pthread_mutex_unlock(&pscom.backlog_lock);
+}
 
 
 void pscom_backlog_push(void (*call)(void *priv), void *priv) {
@@ -115,8 +125,14 @@ void pscom_backlog_push(void (*call)(void *priv), void *priv) {
 
 
 void pscom_backlog_execute() {
-	pscom_backlog_t *bl;
-	while ( (bl = pscom_backlog_pop()) ) {
+	struct list_head backlog;
+	struct list_head *pos, *next;
+
+	pscom_backlog_getall(&backlog);
+
+	list_for_each_safe(pos, next, &backlog) {
+		pscom_backlog_t *bl = list_entry(pos, pscom_backlog_t, next);
+
 		bl->call(bl->priv);
 		free(bl);
 	}
