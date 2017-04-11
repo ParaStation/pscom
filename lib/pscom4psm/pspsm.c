@@ -112,6 +112,9 @@ static
 void pspsm_print_stats()
 {
 	psm2_mq_stats_t stats;
+
+	if (!pspsm_mq) return;
+
 	memset(&stats, 0, sizeof(stats));
 
 	psm2_mq_get_stats(pspsm_mq, &stats);
@@ -231,6 +234,7 @@ int pspsm_finalize_mq(void)
 
 	if (pspsm_mq){
 		ret = psm2_mq_finalize(pspsm_mq);
+		pspsm_mq = 0;
 		if (ret != PSM2_OK) goto err;
 		pspsm_dprint(2, "pspsm_finalize_mq: OK");
 	}
