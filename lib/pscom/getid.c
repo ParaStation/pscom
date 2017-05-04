@@ -50,8 +50,8 @@ in_addr_t psp_hostip(char *name)
     if (!mhost->h_addr_list) goto err_empty;
 
     while (*mhost->h_addr_list) {
-	ret = *(int *)*mhost->h_addr_list;
-	if (ret != INADDR_LOOPBACK) { /* Dont allow localhost */
+	ret = *(unsigned *)*mhost->h_addr_list;
+	if (ret != htonl(INADDR_LOOPBACK)) { /* Dont allow localhost */
 	    break;
 	}
 	mhost->h_addr_list++;
