@@ -189,6 +189,9 @@ void pscom_mxm_init(void)
 
 	INIT_LIST_HEAD(&psmxm_poll.poll.next);
 	psmxm_poll.poll.do_read = pscom_mxm_make_progress;
+
+	pscom_env_get_uint(&psmxm_devcheck, ENV_MXM_DEVCHECK);
+
 /*
   Disabled. Init will be called with the first connect.
 	// Preinitialize psmxm. Ignore errors. pscom_mxm_connect will see the error again.

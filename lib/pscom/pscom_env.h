@@ -52,6 +52,9 @@
 #define ENV_PSM_DEVCHECK "PSP_PSM_DEVCHECK"
 #define ENV_PMI_ID "PMI_ID"
 
+/* MXM */
+#define ENV_MXM_DEVCHECK "PSP_MXM_DEVCHECK"
+
 /* Debugoutput on signal SIGQUIT (i386:3) (key: ^\) */
 #define ENV_SIGQUIT "PSP_SIGQUIT"
 /* signal number to listen on for connection suspend */

@@ -28,6 +28,7 @@ typedef struct {
 
 extern int psmxm_debug;
 extern FILE *psmxm_debug_stream;
+extern unsigned psmxm_devcheck; // disable mxm device check
 
 int psmxm_init(void);
 int psmxm_close_endpoint(void);

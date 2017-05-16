@@ -19,6 +19,7 @@
 
 int psmxm_debug = 2;
 FILE *psmxm_debug_stream = NULL;
+unsigned psmxm_devcheck = 1;
 
 static char *psmxm_err_str = NULL; /* last error string */
 
@@ -112,17 +113,25 @@ void psmxm_con_get_info_msg(psmxm_con_info_t *con_info,
 }
 
 
-/* Check for the device files /dev/knem.
-   return 0 if the file is there, -1 else. */
+/* return 0 if the mxm device is there, -1 else. */
 static
-int psmxm_check_dev_knem(void)
+int psmxm_check_dev(void)
 {
 	struct stat s;
-	int rc;
-	rc = stat("/dev/knem", &s);
-	/* if (rc) rc = stat("/dev/knem0", &s); */
+	const char **df;
+	const char *devfiles[] = {
+		"/sys/class/infiniband/mlx5_0", "/sys/class/infiniband/mlx5_1", "/sys/class/infiniband/mlx5_2",
+		NULL
+	};
+	if (!psmxm_devcheck) return 0;
 
-	return rc;
+	for (df = devfiles; *df; df++) {
+		if (!stat(*df, &s)) {
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 
@@ -399,8 +408,8 @@ int psmxm_init(void)
 	int ret;
 
 	if (init_state == 1) {
-		/* Check for an available /dev/knem */
-		ret = psmxm_check_dev_knem();
+		/* Check for an available mxm device */
+		ret = psmxm_check_dev();
 		if (ret != 0) {
 			goto err_dev_knem;
 		}
