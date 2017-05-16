@@ -9,7 +9,7 @@
  *
  * Author:	Jens Hauke <hauke@par-tec.com>
  */
-
+#define _GNU_SOURCE
 #include "pscom_priv.h"
 #include <string.h>
 #include <ctype.h>
@@ -197,6 +197,25 @@ pscom_plugin_t *load_plugin_lib(char *lib)
 
 
 static
+const char *pscom_libdir_self(void) {
+	static const char *libdir;
+	Dl_info info;
+
+	if (libdir) return libdir; // return cached one
+
+	if (dladdr(pscom_init, &info) && info.dli_fname) {
+		char *fname = strdup(info.dli_fname);
+		char *dirend = rindex(fname, '/');
+		if (dirend) dirend[1] = 0; // like dirname(), but keep '/'
+		libdir = fname;
+	} else {
+		// Fall back to compile time dir:
+		libdir = LIBDIR "/";
+	}
+	return libdir;
+}
+
+static
 void pscom_plugin_load(const char *arch)
 {
 	unsigned int uprio = pscom_plugin_uprio(arch);
@@ -205,15 +224,14 @@ void pscom_plugin_load(const char *arch)
 		return; // disabled arch
 	}
 
-	char *libdirs[] = {
-		"",
-		LIBDIR,
+	const char *libdirs[] = {
+		pscom.env.plugindir, // "" or environ,
+		pscom_libdir_self(),
 		NULL
 	};
 	unsigned cnt = 0;
-	libdirs[0] = pscom.env.plugindir; // "" or environ
 
-	char **ld_p;
+	const char **ld_p;
 	for (ld_p = libdirs; *ld_p; ld_p++) {
 		char libpath[400];
 		pscom_plugin_t *plugin;
