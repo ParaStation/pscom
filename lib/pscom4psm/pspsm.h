@@ -90,6 +90,7 @@ static void pscom_psm_do_read_check(struct PSCOM_con *con);
  */
 extern int pspsm_debug; /**< debug level */
 extern FILE *pspsm_debug_stream; /**< Stream to use for debug output */
+extern unsigned pspsm_devcheck; /* bool: check for psm device? */
 
 
 #endif /* _PSPSM_H_ */

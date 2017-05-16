@@ -200,6 +200,7 @@ void pscom_psm_init(void)
 	if (!pscom.env.psm_uniq_id) {
 		pscom_env_get_uint(&pscom.env.psm_uniq_id, ENV_PMI_ID);
 	}
+	pscom_env_get_uint(&pspsm_devcheck, ENV_PSM_DEVCHECK);
 
 	INIT_LIST_HEAD(&pspsm_poll.poll.next);
 	pspsm_poll.poll.do_read = pscom_psm_make_progress;

@@ -49,6 +49,7 @@
 
 /* Used in constructing the UUID for QLogic */
 #define ENV_PSM_UNIQ_ID "PSP_PSM_UNIQ_ID"
+#define ENV_PSM_DEVCHECK "PSP_PSM_DEVCHECK"
 #define ENV_PMI_ID "PMI_ID"
 
 /* Debugoutput on signal SIGQUIT (i386:3) (key: ^\) */

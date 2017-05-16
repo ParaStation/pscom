@@ -65,6 +65,7 @@ static const uint64_t mask = (UINTMAX_C(1) << 48) - 1;
 
 int pspsm_debug = 2;
 FILE *pspsm_debug_stream = NULL;
+unsigned pspsm_devcheck = 1;
 
 
 /*
@@ -99,12 +100,22 @@ static
 int pspsm_check_dev_ipath(void)
 {
 	struct stat s;
-	int rc;
-	rc = stat("/dev/ipath", &s);
-	if (rc) rc = stat("/dev/ipath0", &s);
-	if (rc) rc = stat("/dev/ipath1", &s);
+	const char **df;
+	const char *devfiles[] = {
+		"/dev/hfi1", "/dev/hfi1_0", "/dev/hfi1_1", "/dev/hfi1_2",
+		"/dev/hfi2", "/dev/hfi2_0", "/dev/hfi2_1", "/dev/hfi2_2",
+		"/dev/ipath", "/dev/ipath0", "/dev/ipath1",
+		NULL
+	};
+	if (!pspsm_devcheck) return 0;
 
-	return rc;
+	for (df = devfiles; *df; df++) {
+		if (!stat(*df, &s)) {
+			return 0;
+		}
+	}
+
+	return -1;
 }
 
 
@@ -369,7 +380,7 @@ int pspsm_init(void)
 	}
 	return init_state; /* 0 = success, -1 = error */
 err_dev_ipath:
-	pspsm_dprint(2, "pspsm_init: No \"/dev/ipath\" found. Arch psm is disabled.");
+	pspsm_dprint(2, "pspsm_init: No psm2 device found. Arch psm is disabled.");
 	goto err_exit;
 err_init:
 	pspsm_err(psm2_error_get_string(ret));
