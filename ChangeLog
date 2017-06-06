@@ -1,3 +1,12 @@
+2017-05-23  Jens Hauke  <hauke@par-tec.com>	-	5.1.3-1
+
+	* Fix: MXM availability check by stat(/sys/class/infiniband/mlx…)
+
+	* Fix: PSM availability check by stat(/dev/hfi…) and stat(/dev/ipath…)
+
+	* Enhance: Search for plugins also in the directory containing the
+	used libpscom.so
+
 2017-03-21  Jens Hauke  <hauke@par-tec.com>	-	5.1.2-1
 
 	* Fix: much more conservative usage of the memory registration
