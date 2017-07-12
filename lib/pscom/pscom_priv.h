@@ -72,6 +72,7 @@ struct PSCOM_req
 	   - fw_send point to req_master
 	*/
 	pscom_req_t *partner_req;
+	struct pscom_rendezvous_data *rndv_data;
 
 	void (*write_hook)(pscom_req_t *req, char *buf, unsigned len);
 
