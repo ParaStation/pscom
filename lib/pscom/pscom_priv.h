@@ -381,6 +381,10 @@ struct PSCOM
 		unsigned int	gen_reqs;
 		unsigned int	gen_reqs_used;
 
+		unsigned int	rendezvous_reqs;
+		unsigned int	fallback_to_eager;
+		unsigned int	fallback_to_sw_rndv;
+
 		unsigned int	progresscounter;
 		unsigned int	progresscounter_check;
 

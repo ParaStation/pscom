@@ -469,6 +469,7 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 
 		pscom_mverify(req_answer);
 		if(con->rma_write(con, rd_msg->data, rd_msg, _rma_write_done, req_answer)) {
+			pscom.stat.fallback_to_sw_rndv++;
 			goto fallback_to_sw_rndv;
 		}
 	}
@@ -585,6 +586,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 	} else {
 	rma_read_fallback:
 		perf_add("rndv_fallback_rma_read");
+		pscom.stat.fallback_to_sw_rndv++;
 		_pscom_post_rma_read(rendezvous_req);
 	}
 }
@@ -1172,6 +1174,8 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 	req = pscom_req_create(user_req->pub.xheader_len,
 			       sizeof(pscom_rendezvous_data_t));
 
+	pscom.stat.rendezvous_reqs++;
+
 	req->pub.xheader_len = user_req->pub.xheader_len;
 	req->pub.data_len = pscom_rendezvous_msg_size(0);
 	req->pub.data = req->pub.user;
@@ -1209,6 +1213,7 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 
 fallback_to_eager:
 	pscom_req_free(req);
+	pscom.stat.fallback_to_eager++;
 	pscom_post_send_direct_inline(user_req, PSCOM_MSGTYPE_USER);
 }
 

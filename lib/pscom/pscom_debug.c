@@ -270,6 +270,12 @@ void pscom_dump_reqstat(FILE *out)
 			pscom.stat.shm_direct_nonshmptr,
 			pscom.stat.shm_direct_failed);
 	}
+	if (pscom.stat.rendezvous_reqs || pscom.stat.fallback_to_eager || pscom.stat.fallback_to_sw_rndv) {
+		fprintf(out, "RndvReqs:%u EagerFallback:%u swRndvFallback:%u\n",
+			pscom.stat.rendezvous_reqs,
+			pscom.stat.fallback_to_eager,
+			pscom.stat.fallback_to_sw_rndv);
+	}
 }
 
 
