@@ -155,6 +155,15 @@ pscom_rendezvous_data_openib_t *get_req_data(pscom_rendezvous_data_t *rd)
 	return res;
 }
 
+static
+int pscom_openib_rma_mem_register_check(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+{
+	pscom_rendezvous_data_openib_t *openib_rd = get_req_data(rd);
+	psoib_con_info_t *ci = con->arch.openib.mcon;
+	psoib_rma_mreg_t *mreg = &openib_rd->rma_req.mreg;
+
+	return psoib_check_rma_mreg(mreg, rd->msg.data, rd->msg.data_len, ci);
+}
 
 static
 unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_data_t *rd)
@@ -246,6 +255,9 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 	psoib_con_info_t *ci = con->arch.openib.mcon;
 
 	perf_add("openib_rma_read");
+
+	if (!pscom_openib_rma_mem_register_check(con, rd)) goto err_register;
+
 #ifdef IB_RNDV_USE_PADDING
 	memcpy(rendezvous_req->pub.data, rd->msg.arch.openib.padding_data, rd->msg.arch.openib.padding_size);
 	rendezvous_req->pub.data += rd->msg.arch.openib.padding_size;
@@ -270,7 +282,7 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 	return 0;
 
 err_register:
-       return -1;
+	return -1;
 }
 
 
@@ -341,7 +353,6 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 	return 0;
 
 err_register:
-       printf("pscom_openib_rma_write() failed!\n");
        return -1;
 }
 #endif /* IB_USE_RNDV */
@@ -392,6 +403,7 @@ void pscom_openib_init_con(pscom_con_t *con)
 #ifdef IB_USE_RNDV
 	con->rma_mem_register = pscom_openib_rma_mem_register;
 	con->rma_mem_deregister = pscom_openib_rma_mem_deregister;
+	con->rma_mem_register_check = pscom_openib_rma_mem_register_check;
 #ifdef IB_RNDV_RDMA_WRITE
 	con->rma_write = pscom_openib_rma_write;
 #else

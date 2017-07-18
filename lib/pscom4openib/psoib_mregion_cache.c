@@ -239,6 +239,15 @@ void psoib_mregion_cache_init(void)
 	psoib_mregion_malloc_init();
 }
 
+int psoib_check_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
+{
+	if (!psoib_mregion_cache_max_size ||
+	    /* buf < psoib_safe_mreg_start || */ buf > psoib_safe_mreg_end) {
+		return 0;
+	} else {
+		return 1;
+	}
+}
 
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
 {

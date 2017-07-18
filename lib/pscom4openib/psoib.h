@@ -87,6 +87,7 @@ struct psoib_rma_req {
 	void		*priv;
 };
 
+int psoib_check_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
 int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci);
 int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg);
 int psoib_post_rma_get(psoib_rma_req_t *req);
