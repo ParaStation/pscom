@@ -178,7 +178,6 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 	/* get mem region */
 	perf_add("openib_acquire_rma_mreg");
 	err = psoib_acquire_rma_mreg(mreg, rd->msg.data + rd->msg.arch.openib.padding_size, rd->msg.data_len - rd->msg.arch.openib.padding_size, ci);
-	assert(!err);
 
 	if (err) goto err_get_region;
 
@@ -191,7 +190,6 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 	/* get mem region */
 	perf_add("openib_acquire_rma_mreg2");
 	err = psoib_acquire_rma_mreg(mreg, rd->msg.data, rd->msg.data_len, ci);
-	assert(!err);
 
 	if (err) goto err_get_region;
 
@@ -203,7 +201,7 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 
 err_get_region:
 err_size:
-	// ToDo: Handle Errors!
+	// return len_arch=0 in the error case:
 	return 0;
 }
 
@@ -255,7 +253,7 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 #endif
 
 	err = psoib_acquire_rma_mreg(&dreq->mreg, rendezvous_req->pub.data, rendezvous_req->pub.data_len, ci);
-	assert(!err); // ToDo: Catch error
+	if(err) goto err_register;
 
 	dreq->remote_addr = rd->msg.arch.openib.mr_addr;
 	dreq->remote_key  = rd->msg.arch.openib.mr_key;
@@ -270,6 +268,9 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 	assert(!err); // ToDo: Catch error
 
 	return 0;
+
+err_register:
+       return -1;
 }
 
 
@@ -313,7 +314,7 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 	rd_data->msg.data_len = des->data_len;
 
 	len = pscom_openib_rma_mem_register(con, rd_data);
-	assert(len); // ToDo: Catch error
+       if(!len) goto err_register;
 /*
 	dreq->mreg.mem_info.ptr = xxx;
 	dreq->mreg.size = xxx;
@@ -338,6 +339,10 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 			   io_done might already be called and freed rd_data. */
 
 	return 0;
+
+err_register:
+       printf("pscom_openib_rma_write() failed!\n");
+       return -1;
 }
 #endif /* IB_USE_RNDV */
 /*

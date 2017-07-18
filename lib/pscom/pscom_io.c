@@ -454,6 +454,7 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 	req_answer->pub.connection = &con->pub;
 
 	if (nh->xheader_len == pscom_rendezvous_msg_size(0)) {
+	fallback_to_sw_rndv:
 		req_answer->pub.data_len = rd_msg->data_len;
 		req_answer->pub.data = rd_msg->data;
 
@@ -467,8 +468,9 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 		D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req_answer)));
 
 		pscom_mverify(req_answer);
-		con->rma_write(con, rd_msg->data, rd_msg,
-			       _rma_write_done, req_answer);
+		if(con->rma_write(con, rd_msg->data, rd_msg, _rma_write_done, req_answer)) {
+			goto fallback_to_sw_rndv;
+		}
 	}
 	return NULL;
 }
@@ -582,7 +584,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 #endif
 	} else {
 	rma_read_fallback:
-		perf_add("rndv_fallbaack_rma_read");
+		perf_add("rndv_fallback_rma_read");
 		_pscom_post_rma_read(rendezvous_req);
 	}
 }
@@ -1185,7 +1187,9 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 	rd->msg.data_len = user_req->pub.data_len;
 
 	if (con->rma_read && con->rma_mem_register) {
-		req->pub.data_len += con->rma_mem_register(con, rd);
+		int len_arch = con->rma_mem_register(con, rd);
+		if(!len_arch) goto fallback_to_eager;
+		req->pub.data_len += len_arch;
 	}
 
 	memcpy(&req->pub.xheader, &user_req->pub.xheader, user_req->pub.xheader_len);
@@ -1200,6 +1204,12 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 		_pscom_post_send_direct(con, req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
 		_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
 	} pscom_unlock();
+
+	return;
+
+fallback_to_eager:
+	pscom_req_free(req);
+	pscom_post_send_direct_inline(user_req, PSCOM_MSGTYPE_USER);
 }
 
 
@@ -1225,7 +1235,7 @@ void _pscom_post_rma_read(pscom_req_t *req)
 
 		len_arch = con->rma_mem_register(con, rd);
 
-		if(con->rma_mem_deregister) {
+		if(len_arch && con->rma_mem_deregister) {
 			req->rndv_data = pscom_malloc(sizeof(pscom_rendezvous_data_t));
 			memcpy(req->rndv_data, rd, sizeof(pscom_rendezvous_data_t));
 		}
