@@ -389,9 +389,11 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->do_write = NULL;
 	con->close = pscom_no_rw_start_stop;
 	/* RMA */
+	con->rma_mem_register_check = NULL;
 	con->rma_mem_register = NULL;
 	con->rma_mem_deregister = NULL;
 	con->rma_read = NULL;
+	con->rma_write = NULL;
 
 	con->rendezvous_size = pscom.env.rendezvous_size;
 

@@ -462,6 +462,8 @@ pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con, pscom_header_net_t *
 
 		_send_rma_read_answer(req_answer);
 	} else {
+		assert(con->rma_write);
+
 		req_answer->pub.data_len = 0;
 		req_answer->pub.data = NULL;
 
@@ -489,8 +491,11 @@ pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con, pscom_header_
 
 	assert(_pscom_recvq_rma_contains(con, req));
 
-	if (con->rma_mem_deregister && req->rndv_data && (req->pub.data_len > pscom_rendezvous_msg_size(0))) {
+	if (con->rma_mem_deregister && req->rndv_data) {
 		pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *) req->rndv_data;
+
+		assert(req->pub.data_len > pscom_rendezvous_msg_size(0));
+
 		con->rma_mem_deregister(con, rd);
 		pscom_free(rd);
 		req->rndv_data = NULL;
@@ -1190,6 +1195,10 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 	rd->msg.data = user_req->pub.data;
 	rd->msg.data_len = user_req->pub.data_len;
 
+	if (con->rma_mem_register && con->rma_mem_register_check && !con->rma_mem_register_check(con, rd)) {
+		goto fallback_to_eager;
+	}
+
 	if (con->rma_read && con->rma_mem_register) {
 		int len_arch = con->rma_mem_register(con, rd);
 		if(!len_arch) goto fallback_to_eager;
@@ -1235,14 +1244,22 @@ void _pscom_post_rma_read(pscom_req_t *req)
 	req->rndv_data = NULL;
 
 	if (con->rma_write && con->rma_mem_register) {
+
 		rd->msg.data = req->pub.data;
 		rd->msg.data_len = req->pub.data_len;
 
-		len_arch = con->rma_mem_register(con, rd);
+		if(!con->rma_mem_register_check || (con->rma_mem_register_check && con->rma_mem_register_check(con, rd))) {
 
-		if(len_arch && con->rma_mem_deregister) {
-			req->rndv_data = pscom_malloc(sizeof(pscom_rendezvous_data_t));
-			memcpy(req->rndv_data, rd, sizeof(pscom_rendezvous_data_t));
+			len_arch = con->rma_mem_register(con, rd);
+
+			if(len_arch && con->rma_mem_deregister) {
+				req->rndv_data = pscom_malloc(sizeof(pscom_rendezvous_data_t));
+				memcpy(req->rndv_data, rd, sizeof(pscom_rendezvous_data_t));
+			}
+		}
+
+		if(!len_arch) {
+			pscom.stat.fallback_to_sw_rndv++;
 		}
 	}
 

@@ -238,6 +238,7 @@ struct PSCOM_con
 	 * the rendezvous message). return 0 to disable arch read (in
 	 * case of a failure). */
 	unsigned int (*rma_mem_register)(pscom_con_t *con, pscom_rendezvous_data_t *rd);
+	int (*rma_mem_register_check)(pscom_con_t *con, pscom_rendezvous_data_t *rd);
 	/* deregister mem. */
 	void (*rma_mem_deregister)(pscom_con_t *con, pscom_rendezvous_data_t *rd);
 	/* return -1 on error.
