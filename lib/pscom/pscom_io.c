@@ -580,6 +580,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 				printf("WorkCnt:%u, FailCnt: %u\n", work_cnt, fail_cnt);
 			}
 #endif
+			pscom.stat.fallback_to_sw_rndv++;
 			goto rma_read_fallback;
 		}
 #ifdef RMA_CNT
@@ -591,7 +592,6 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 	} else {
 	rma_read_fallback:
 		perf_add("rndv_fallback_rma_read");
-		pscom.stat.fallback_to_sw_rndv++;
 		_pscom_post_rma_read(rendezvous_req);
 	}
 }
