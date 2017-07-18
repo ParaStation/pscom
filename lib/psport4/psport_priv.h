@@ -231,7 +231,7 @@ extern int env_debug;
 #define DPRINT(level,fmt,arg... ) do{				\
     if ((level)<=env_debug){					\
 	fprintf(stderr, "<PSP%5d:"fmt">\n",getpid() ,##arg);	\
-        fflush(stderr);						\
+	fflush(stderr);						\
     }								\
 }while(0);
 
@@ -261,7 +261,7 @@ void PSP_memcpy_from_iov(char *data, struct iovec *iov, size_t len)
 {
     while (len > 0) {
 	if (iov->iov_len) {
-	    int copy = PSP_MIN(len, iov->iov_len);
+	    size_t copy = PSP_MIN(len, iov->iov_len);
 	    memcpy(data, iov->iov_base, copy);
 	    len -= copy;
 	    data += copy;
@@ -290,7 +290,7 @@ void PSP_memcpy_to_iov(struct iovec *iov, char *data, size_t len)
 {
     while (len > 0) {
 	if (iov->iov_len) {
-	    int copy = PSP_MIN(len, iov->iov_len);
+	    size_t copy = PSP_MIN(len, iov->iov_len);
 	    memcpy(iov->iov_base, data, copy);
 	    len -= copy;
 	    data += copy;
@@ -306,7 +306,7 @@ void PSP_forward_iov(struct iovec *iov, size_t len)
 {
     while (len > 0) {
 	if (iov->iov_len) {
-	    int copy = PSP_MIN(len, iov->iov_len);
+	    size_t copy = PSP_MIN(len, iov->iov_len);
 	    len -= copy;
 	    iov->iov_base += copy;
 	    iov->iov_len -= copy;
@@ -320,7 +320,7 @@ void PSP_memcpy_from_iov_const(char *data, struct iovec *iov, size_t len)
 {
     while (len > 0) {
 	if (iov->iov_len) {
-	    int copy = PSP_MIN(len, iov->iov_len);
+	    size_t copy = PSP_MIN(len, iov->iov_len);
 	    memcpy(data, iov->iov_base, copy);
 	    len -= copy;
 	    data += copy;

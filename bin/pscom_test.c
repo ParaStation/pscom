@@ -206,7 +206,7 @@ struct PSCOM_socket_ops socket_ops_server = {
 static
 void io_done_default(pscom_request_t *req)
 {
-	printf("Request %p state %s io_done (xhlen:%3d, dlen:%4d)\n",
+	printf("Request %p state %s io_done (xhlen:%3lu, dlen:%4lu)\n",
 	       req, pscom_req_state_str(req->state),
 	       req->xheader_len, req->data_len);
 }
@@ -273,7 +273,7 @@ static int msg_ordering_jobs = 0;
 static
 void io_done_msg_ordering(pscom_request_t *req)
 {
-	printf("### Request %p state %s io_done_msg_ordering (hlen:%3d, dlen:%4d) recv_tag %d expect_tag %d idx %d\n",
+	printf("### Request %p state %s io_done_msg_ordering (hlen:%3lu, dlen:%4lu) recv_tag %d expect_tag %d idx %d\n",
 	       req, pscom_req_state_str(req->state),
 	       req->xheader_len, req->data_len,
 	       req->xheader.user.tag,
@@ -377,7 +377,7 @@ void client_msg_ordering(pscom_connection_t *con)
 		req->ops.io_done = io_done_msg_ordering;
 
 		for (j = 0; j < req->data_len; j++) {
-			((char *)req->data)[j] = j;
+			((char *)req->data)[j] = (char)j;
 		}
 		pscom_post_send(req);
 		msg_ordering_jobs ++;

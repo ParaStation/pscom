@@ -93,7 +93,7 @@ void psex_recvdone(psex_con_info_t *con_info);
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
  */
-int psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size);
+ssize_t psex_sendv(psex_con_info_t *con_info, struct iovec *iov, size_t size);
 
 
 /* Flush the notification queue and make progress in the rma2 engine. */

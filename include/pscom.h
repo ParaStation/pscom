@@ -32,7 +32,7 @@ extern "C" {
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PSCOM_VERSION 0x0200
+#define PSCOM_VERSION 0x0300
 
 typedef enum PSCOM_err {
 	PSCOM_SUCCESS = 0,		/* Success */
@@ -139,7 +139,7 @@ typedef struct PSCOM_xheader_rma_read
 {
 	void		*id;
 	void		*src;
-	uint32_t	src_len;
+	uint64_t	src_len;
 } pscom_xheader_rma_read_t;
 
 
@@ -180,10 +180,11 @@ typedef union PSCOM_xheader
 } pscom_xheader_t;
 
 
+#define PSCOM_DATA_LEN_MASK 0xffffffffffff
 struct PSCOM_header_net {
-	uint16_t	msg_type;
-	uint16_t	xheader_len;
-	uint32_t	data_len;
+	uint8_t		msg_type;
+	uint8_t		xheader_len;
+	uint64_t	data_len : 48;
 
 	pscom_xheader_t	xheader[0]; /* zero length xheader */
 };
@@ -192,8 +193,8 @@ struct PSCOM_request
 {
 	pscom_req_state_t state;
 
-	unsigned int	xheader_len;
-	unsigned int	data_len;
+	size_t		xheader_len;
+	size_t		data_len;
 	void		*data;
 
 	pscom_connection_t *connection;
@@ -207,10 +208,10 @@ struct PSCOM_request
 		void	(*io_done)(pscom_request_t *request);
 	} ops;
 
-	unsigned int		user_size;
+	size_t			user_size;
 	struct PSCOM_req_user	*user; /* define your own struct PSCOM_req_user! */
 
-	unsigned int		max_xheader_len;
+	size_t			max_xheader_len;
 
 	pscom_header_net_t	header;
 
@@ -244,8 +245,8 @@ struct PSCOM_socket
 
 	pscom_con_info_t local_con_info;
 
-	unsigned int	connection_userdata_size;
-	unsigned int	userdata_size;
+	size_t		connection_userdata_size;
+	size_t		userdata_size;
 #ifdef PSCOM_SOCKET_USERDATA_TYPE
 	PSCOM_SOCKET_USERDATA_TYPE userdata;
 #else
@@ -262,7 +263,7 @@ struct PSCOM_connection
 
 	pscom_con_info_t remote_con_info;
 
-	unsigned int	userdata_size;
+	size_t		userdata_size;
 #ifdef PSCOM_CONNECTION_USERDATA_TYPE
 	PSCOM_CONNECTION_USERDATA_TYPE userdata;
 #else
@@ -308,8 +309,8 @@ int pscom_get_nodeid(void);
 int pscom_get_portno(pscom_socket_t *socket);
 
 
-pscom_socket_t *pscom_open_socket(unsigned int socket_userdata_size,
-				  unsigned int connection_userdata_size);
+pscom_socket_t *pscom_open_socket(size_t socket_userdata_size,
+				  size_t connection_userdata_size);
 
 #define PSCOM_OPEN_SOCKET()						\
 	pscom_open_socket(sizeof(PSCOM_SOCKET_USERDATA_TYPE),		\
@@ -350,7 +351,7 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid, int portno
 pscom_err_t pscom_connect_ondemand(pscom_connection_t *connection,
 				   int nodeid, int portno, const char name[8]);
 
-pscom_request_t *pscom_request_create(unsigned int max_xheader_len, unsigned int user_size);
+pscom_request_t *pscom_request_create(size_t max_xheader_len, size_t user_size);
 
 #define PSCOM_REQUEST_CREATE()						\
 	pscom_request_create(sizeof(PSCOM_XHEADER_USER_TYPE),		\
@@ -382,8 +383,8 @@ void pscom_post_send(pscom_request_t *request);
 static inline
 pscom_request_t *pscom_req_prepare(pscom_request_t *req,
 				   pscom_connection_t *connection,
-				   void *data, unsigned int data_len,
-				   void *xheader, unsigned int xheader_len)
+				   void *data, size_t data_len,
+				   void *xheader, size_t xheader_len)
 {
 	req->connection = connection;
 	req->data = data; req->data_len = data_len;
@@ -398,27 +399,27 @@ pscom_request_t *pscom_req_prepare(pscom_request_t *req,
 
 /* send a copy of data (non blocking) */
 void pscom_send(pscom_connection_t *connection,
-		void *xheader, unsigned int xheader_len,
-		void *data, unsigned int data_len);
+		void *xheader, size_t xheader_len,
+		void *data, size_t data_len);
 
 /* send data. (non blocking). Do not modify data, until io_done is called. */
 void pscom_send_inplace(pscom_connection_t *connection,
-			void *xheader, unsigned int xheader_len,
-			void *data, unsigned int data_len,
+			void *xheader, size_t xheader_len,
+			void *data, size_t data_len,
 			void (*io_done)(pscom_req_state_t state, void *priv), void *priv);
 
 
 /* blocking receive */
 pscom_err_t pscom_recv(pscom_connection_t *connection, pscom_socket_t *socket,
-		       void *xheader, unsigned int xheader_len,
-		       void *data, unsigned int data_len);
+		       void *xheader, size_t xheader_len,
+		       void *data, size_t data_len);
 
 
 /* blocking receive */
 static inline
 pscom_err_t pscom_recv_from(pscom_connection_t *connection,
-			    void *xheader, unsigned int xheader_len,
-			    void *data, unsigned int data_len)
+			    void *xheader, size_t xheader_len,
+			    void *data, size_t data_len)
 {
 	return pscom_recv(connection, connection->socket,
 			  xheader, xheader_len,
@@ -429,8 +430,8 @@ pscom_err_t pscom_recv_from(pscom_connection_t *connection,
 /* blocking receive */
 static inline
 pscom_err_t pscom_recv_any(pscom_socket_t *socket,
-			   void *xheader, unsigned int xheader_len,
-			   void *data, unsigned int data_len)
+			   void *xheader, size_t xheader_len,
+			   void *data, size_t data_len)
 {
 	return pscom_recv(NULL, socket,
 			  xheader, xheader_len,
@@ -563,8 +564,8 @@ void pscom_post_bcast(pscom_request_t *request);
 
 /* Blocking version of bcast */
 void pscom_bcast(pscom_group_t *group, unsigned bcast_root,
-		 void *xheader, unsigned int xheader_len,
-		 void *data, unsigned int data_len);
+		 void *xheader, size_t xheader_len,
+		 void *data, size_t data_len);
 
 
 /* communication barrier in group group. */
@@ -634,17 +635,17 @@ int pscom_parse_socket_str(const char *socket_str, int *nodeid, int *portno);
 int pscom_parse_socket_ondemand_str(const char *socket_str, int *nodeid, int *portno, char (*name)[8]);
 
 
-void pscom_set_debug(unsigned int level);
+void pscom_set_debug(int level);
 
-int pscom_readall(int fd, void *buf, int count);
-int pscom_writeall(int fd, const void *buf, int count);
+ssize_t pscom_readall(int fd, void *buf, size_t count);
+ssize_t pscom_writeall(int fd, const void *buf, size_t count);
 int pscom_atoport(const char *service, const char *proto);
 int pscom_atoaddr(const char *address, struct in_addr *addr);
 int pscom_ascii_to_sockaddr_in(const char *host, const char *port,
 			       const char *protocol,
 			       struct sockaddr_in *addr);
 
-const char *pscom_dumpstr(const void *buf, int size);
+const char *pscom_dumpstr(const void *buf, size_t size);
 
 
 #define pscom_min(a,b)      (((a)<(b))?(a):(b))

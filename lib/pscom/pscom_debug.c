@@ -85,7 +85,7 @@ const char *mpid_msgtype_str(enum MPID_PSP_MSGTYPE msg_type)
 
 #include "perf.c"
 
-const char *pscom_msgtype_str(unsigned msg_type)
+const char *pscom_msgtype_str(pscom_msgtype_t msg_type)
 {
 	switch(msg_type) {
 	case PSCOM_MSGTYPE_USER:		return "USER_";
@@ -106,7 +106,7 @@ const char *pscom_msgtype_str(unsigned msg_type)
 static
 void pscom_dump_request(FILE *out, pscom_req_t *req)
 {
-	fprintf(out, "req#%p state:%20s xhlen:%3d dlen:%7d ty:%s con:%p no:%5u received:%7d\n",
+	fprintf(out, "req#%p state:%20s xhlen:%3lu dlen:%7lu ty:%s con:%p no:%5u received:%7d\n",
 		&req->pub,
 		pscom_req_state_str(req->pub.state),
 		req->pub.xheader_len,

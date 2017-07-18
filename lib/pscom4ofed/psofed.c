@@ -44,7 +44,7 @@
 
 #define IB_UD_OFFSET 40 /* UD global routing header (GRH) */
 
-#define IB_MTU_PAYLOAD	(IB_MTU - (sizeof(psofed_msgheader_t) + IB_UD_OFFSET))
+#define IB_MTU_PAYLOAD	(IB_MTU - ((unsigned)sizeof(psofed_msgheader_t) + IB_UD_OFFSET))
 #define IB_MAX_INLINE	64
 
 //#define TRACE(cmd) cmd
@@ -135,7 +135,7 @@ struct context_info {
 	unsigned		connections_firstfree_hint; /* hint for the first free place
 							     * There is never a free place before! */
 
-	unsigned		port_num;		// Used port
+	uint8_t			port_num;		// Used port
 	uint16_t		lid;			// my lid
 	psofed_recv_t		last_recv;
 
@@ -174,7 +174,7 @@ struct psofed_con_info {
 
 
 // msg length for payload len
-#define PSOFED_LEN(len) (((len + sizeof(psofed_msgheader_t)) + 7) & ~7)
+#define PSOFED_LEN(len) (((len + (unsigned)sizeof(psofed_msgheader_t)) + 7) & ~7)
 
 /*
  * static variables
@@ -253,7 +253,7 @@ static
 void psofed_err_errno(char *str, int err_no)
 {
 	const char *vapi_err = strerror(err_no);
-	int len = strlen(str) + strlen(vapi_err) + 20;
+	size_t len = strlen(str) + strlen(vapi_err) + 20;
 	char *msg = malloc(len);
 
 	assert(msg);
@@ -336,8 +336,8 @@ void psofed_scan_hca_ports(struct ibv_device *ib_dev)
 	struct ibv_context *ctx;
 	struct ibv_device_attr device_attr;
 	int rc;
-	unsigned port_cnt;
-	unsigned port;
+	uint8_t port_cnt;
+	uint8_t port;
 	const char *dev_name;
 
 	dev_name =ibv_get_device_name(ib_dev);
@@ -525,7 +525,7 @@ struct ibv_pd *psofed_open_pd(struct ibv_context *ctx)
 
 
 static
-uint16_t psofed_get_lid(struct ibv_context *ctx, unsigned port_num)
+uint16_t psofed_get_lid(struct ibv_context *ctx, uint8_t port_num)
 {
 	struct ibv_port_attr attr;
 	if (ibv_query_port(ctx, port_num, &attr))
@@ -537,7 +537,7 @@ uint16_t psofed_get_lid(struct ibv_context *ctx, unsigned port_num)
 	if (attr.lid == 0)
 		goto err_no_lid;
 
-	return attr.lid + (uint16_t)psofed_lid_offset;
+	return (uint16_t)(attr.lid + psofed_lid_offset);
 	/* --- */
 err_query_port:
 	if (errno != EINVAL) {
@@ -872,7 +872,7 @@ int psofed_con_connect(psofed_con_info_t *con_info, psofed_info_msg_t *info_msg)
 
 	// Initialize receive tokens
 	con_info->s_seq = 0x80;
-	con_info->s_acked = con_info->s_seq - 1;
+	con_info->s_acked = (psofed_seqno_t)(con_info->s_seq - 1);
 	con_info->r_seq = 0x80;
 
 	con_info->qp_num = info_msg->qp_num;
@@ -1021,7 +1021,7 @@ int psofed_init_context(context_info_t *context)
 	context->pd = psofed_open_pd(context->ctx);
 	if (!context->pd) goto err_pd;
 
-	context->port_num = psofed_port;
+	context->port_num = (uint8_t)psofed_port;
 	context->lid = psofed_get_lid(context->ctx, context->port_num);
 	if (!context->lid) goto err_lid;
 
@@ -1100,7 +1100,7 @@ int send_send_buffer(psofed_con_info_t *con_info, psofed_send_buffer_t *sbuf)
 	context_info_t *context = con_info->context;
 
 	// Update header.ack
-	sbuf->msg->header.ack = con_info->r_seq - 1;
+	sbuf->msg->header.ack = (psofed_seqno_t)(con_info->r_seq - 1);
 
 	struct ibv_sge list = {
 		.addr	= (uintptr_t) sbuf->msg,
@@ -1134,7 +1134,7 @@ int send_send_buffer(psofed_con_info_t *con_info, psofed_send_buffer_t *sbuf)
 		sbuf->state |= SBUF_SENDING;
 		con_info->sending_count++;
 
-		con_info->r_ack = con_info->r_seq - 1;
+		con_info->r_ack = (psofed_seqno_t)(con_info->r_seq - 1);
 	}
 	return rc;
 }
@@ -1205,21 +1205,21 @@ void resend(context_info_t *context)
 
 /* returnvalue like writev(), except on error errno is negative return */
 static
-int _psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, unsigned size)
+int _psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, size_t size)
 {
 	context_info_t *context = con_info->context;
 	psofed_send_buffer_t *sbuf;
 	psofed_msg_t *msg;
 	unsigned len;
 
-	if (psofed_seqcmp(con_info->s_seq, con_info->s_acked + psofed_winsize) > 0) {
+	if (psofed_seqcmp(con_info->s_seq, (psofed_seqno_t)(con_info->s_acked + psofed_winsize)) > 0) {
 		goto err_winclosed;
 	}
 
 	sbuf = get_send_buffer(context);
 	if (!sbuf) goto err_getsbuf;
 
-	len = (size <= IB_MTU_PAYLOAD) ? size : IB_MTU_PAYLOAD;
+	len = (size <= IB_MTU_PAYLOAD) ? (unsigned)size : IB_MTU_PAYLOAD;
 	sbuf->psofed_len = PSOFED_LEN(len);
 	sbuf->con_info = con_info;
 	/* ToDo: send more than one fragment with one ibv_post_send,
@@ -1228,7 +1228,7 @@ int _psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, unsigned size)
 	msg = sbuf->msg;
 	msg->header.src	= con_info->src;
 	msg->header.seq = con_info->s_seq ++;
-	msg->header.len = len;
+	msg->header.len = (uint16_t)len;
 
 	pscom_memcpy_from_iov(msg->data, iov, len);
 
@@ -1259,7 +1259,7 @@ err_getsbuf:
 }
 
 
-int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, int size)
+int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, size_t size)
 {
 	return _psofed_sendv(con_info, iov, size);//, PSOFED_MAGIC_IO);
 }
@@ -1302,7 +1302,7 @@ static
 void psofed_cond_send_ack(psofed_con_info_t *con_info)
 {
 	// Conditional send ack.
-	if ((unsigned)psofed_seqcmp(con_info->r_seq - 1, con_info->r_ack) >= psofed_pending_tokens) {
+	if ((unsigned)psofed_seqcmp((psofed_seqno_t)(con_info->r_seq - 1), con_info->r_ack) >= psofed_pending_tokens) {
 		psofed_send_ack(con_info);
 	}
 }

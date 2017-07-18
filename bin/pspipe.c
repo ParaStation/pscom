@@ -146,7 +146,7 @@ char *append(char *str1, const char *str2)
     if (!str1) {
 	return strdup(str2);
     } else {
-	unsigned int len1 = strlen(str1);
+	size_t len1 = strlen(str1);
 	str1 = realloc(str1, strlen(str1) + strlen(str2) + 1);
 	strcpy(str1 + len1, str2);
 	return str1;
@@ -475,10 +475,10 @@ void print_stat(int newline)
     unsigned long long now;
     double dt;
     now = getusec();
-    dt = (now - stat_time_start) / 1000000.0;
+    dt = (double)(now - stat_time_start) / 1000000.0;
     fprintf(stderr, "%10ld bytes in %7.3f seconds (%7.2f MB/s)    %c",
 	    stat_bytes_tx, dt,
-	    stat_bytes_tx / (1024.0 * 1024.0) / dt,
+	    (double)stat_bytes_tx / (1024.0 * 1024.0) / dt,
 	    newline ? '\n' : '\r');
     fflush(stderr);
 }
@@ -518,7 +518,7 @@ int main(int argc, char **argv)
     parse_opt(argc, argv);
 
     if (arg_cp) {
-	unsigned int slen = strlen(copy_command_src) + strlen(arg_cp) + 1000;
+	size_t slen = strlen(copy_command_src) + strlen(arg_cp) + 1000;
 	char *icmd = malloc(slen);
 	snprintf(icmd, slen,"%s %s", copy_command_src, arg_cp);
 	arg_icmd = icmd;
@@ -591,7 +591,7 @@ int main(int argc, char **argv)
 	    char *tmp;
 	    // fprintf(stderr, "Tokens s:%3d\n", sinfo.tokens);
 
-	    len = read(fileno(input), buf, arg_maxmsize);
+	    len = (int)read(fileno(input), buf, arg_maxmsize);
 	    if (len <= 0) break;
 
 	    ps_send(&sinfo, buf, len);

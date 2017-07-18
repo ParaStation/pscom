@@ -42,7 +42,7 @@ static inline void announce_free_req(pscom_req_t *req) { }
 #endif
 
 static inline
-unsigned int round_up8(unsigned int val)
+size_t round_up8(size_t val)
 {
 	return (val + 7) & ~7;
 }
@@ -133,11 +133,11 @@ void pscom_free(void *ptr)
 
 #endif
 
-pscom_req_t *pscom_req_create(unsigned int max_xheader_len, unsigned int user_size)
+pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 {
 	pscom_req_t *req;
-	unsigned int max_xhl = pscom_max(round_up8(max_xheader_len), sizeof(req->pub.xheader));
-	unsigned int extra_xh_size = max_xhl - sizeof(req->pub.xheader);
+	size_t max_xhl = pscom_max(round_up8(max_xheader_len), sizeof(req->pub.xheader));
+	size_t extra_xh_size = max_xhl - sizeof(req->pub.xheader);
 
 	req = pscom_malloc(sizeof(*req) + extra_xh_size + user_size);
 	if (!req) return NULL;
@@ -185,7 +185,7 @@ void pscom_req_free(pscom_req_t *req)
 }
 
 
-unsigned int pscom_req_write(pscom_req_t *req, char *buf, unsigned int len)
+size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len)
 {
 	// printf("req_write() %s\n", pscom_dumpstr(buf, pscom_min(len, 32)));
 	if (len <= req->cur_data.iov_len) {
@@ -195,8 +195,8 @@ unsigned int pscom_req_write(pscom_req_t *req, char *buf, unsigned int len)
 		req->cur_data.iov_base += len;
 		req->cur_data.iov_len -= len;
 	} else {
-		unsigned int clen = req->cur_data.iov_len;
-		unsigned int left;
+		size_t clen = req->cur_data.iov_len;
+		size_t left;
 		if (req->cur_data.iov_base != buf) {
 			memcpy(req->cur_data.iov_base, buf, clen);
 		}
@@ -220,12 +220,12 @@ unsigned int pscom_req_write(pscom_req_t *req, char *buf, unsigned int len)
 
 
 /* append data on req. used for partial send requests. */
-void pscom_req_append(pscom_req_t *req, char *buf, unsigned int len)
+void pscom_req_append(pscom_req_t *req, char *buf, size_t len)
 {
-	unsigned int send = (char*)req->cur_data.iov_base - (char *)req->pub.data;
+	size_t send = (char*)req->cur_data.iov_base - (char *)req->pub.data;
 	char *tail = (char*)req->cur_data.iov_base + req->cur_data.iov_len;
 
-	unsigned msg_len = send + req->cur_data.iov_len + len;
+	size_t msg_len = send + req->cur_data.iov_len + len;
 	assert(msg_len <= req->pub.data_len);
 	assert(len <= req->skip);
 

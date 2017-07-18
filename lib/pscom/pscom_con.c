@@ -626,7 +626,7 @@ static void
 loopback_write_start(pscom_con_t *con)
 {
 	int i;
-	unsigned int len;
+	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
 
@@ -704,7 +704,7 @@ void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info) {
 	pscom_con_t *con = (pscom_con_t *)ufd_info->priv;
 	char msg = 0;
 	int error = 0;
-	int rc;
+	ssize_t rc;
 
 	rc = read(ufd_info->fd, &msg, 1); // Good bye or error?
 	error = (rc <= 0) || (msg != GUARD_BYE);

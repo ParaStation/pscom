@@ -62,7 +62,7 @@ typedef struct psmxm_send_req {
 
 int psmxm_send_done(psmxm_con_info_t *con_info);
 
-int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, int size);
+int psmxm_sendv(psmxm_con_info_t *con_info, struct iovec *iov, size_t size);
 
 /* Progress requests from previous sendv's. Return proceeded bytes or 0 */
 unsigned psmxm_send_progress(psmxm_con_info_t *con_info);

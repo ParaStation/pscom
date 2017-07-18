@@ -104,7 +104,7 @@ int pscom_ascii_to_sockaddr_in(const char *host, const char *port,
 
 	if (addr) {
 		addr->sin_family = PF_INET;
-		addr->sin_port = portno;
+		addr->sin_port = (short)portno;
 		addr->sin_addr = inaddr;
 	}
 
@@ -445,11 +445,11 @@ pscom_op_str(pscom_op_t operation)
 }
 
 
-const char *pscom_dumpstr(const void *buf, int size)
+const char *pscom_dumpstr(const void *buf, size_t size)
 {
 	static char *ret=NULL;
 	char *tmp;
-	int s;
+	size_t s;
 	char *b;
 	if (ret) free(ret);
 	ret = (char *)malloc(size * 5 + 4);
@@ -462,7 +462,7 @@ const char *pscom_dumpstr(const void *buf, int size)
 	s = size; b = (char *)buf;
 	for (; s ; s--, b++){
 		/* *tmp++ = isprint(*b) ? *b: '.';*/
-		*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
+		*tmp++ = (char)(((*b >= 32) && (*b < 127)) ? *b: '.');
 	}
 	*tmp++ = '\'';
 	*tmp++ = 0;

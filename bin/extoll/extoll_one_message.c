@@ -175,8 +175,8 @@ void init_bufs(void)
 {
 	int rc;
 
-	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xee;
-	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xee;
+	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xeeU;
+	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xeeU;
 
 	memset(s_buf, 0x11, sizeof(*s_buf));
 	memset(r_buf, 0x22, sizeof(*r_buf));
@@ -327,7 +327,7 @@ void run_server(void)
 {
 	unsigned i;
 	int rc;
-	for (i = 0; i < sizeof(*s_buf); i++) s_buf->buf[i] = i;
+	for (i = 0; i < sizeof(*s_buf); i++) s_buf->buf[i] = (char)i;
 	const unsigned dump_size = (arg_bytes + 4 + 31) / 32 * 32;
 
 	dump_msg(s_buf, 0, dump_size);

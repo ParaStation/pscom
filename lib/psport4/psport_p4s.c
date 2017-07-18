@@ -75,9 +75,9 @@ int psp_recvmsg(int fd, struct iovec *iov, int iovlen, int flags, int *from)
 {
     int ret;
     struct p4s_io_recv_iov_s rs;
-    rs.Flags = flags;
+    rs.Flags = (uint16_t)flags;
     rs.iov = iov;
-    rs.iov_len = iovlen;
+    rs.iov_len = (uint16_t)iovlen;
     ret = ioctl(fd, P4S_IO_RECV_IOV, &rs);
     if ((ret >= 0) && from) {
 	*from = rs.SrcNode;
@@ -91,7 +91,7 @@ int psp_recv(int fd, char *buf, int len, int flags, int *from)
 {
     int ret;
     struct p4s_io_recv_s rs;
-    rs.Flags = flags;
+    rs.Flags = (uint16_t)flags;
     rs.iov.iov_base = buf;
     rs.iov.iov_len = len;
 
@@ -111,10 +111,10 @@ int psp_sendmsg(int fd, int dest, struct iovec *iov, int iovlen, int flags)
 {
     int ret;
     struct p4s_io_send_iov_s s;
-    s.DestNode = dest;
-    s.Flags = flags;
+    s.DestNode = (uint16_t)dest;
+    s.Flags = (uint16_t)flags;
     s.iov = iov;
-    s.iov_len = iovlen;
+    s.iov_len = (uint16_t)iovlen;
 
 //    perf_add(" p4s sends");
     ret = ioctl(fd, P4S_IO_SEND_IOV, &s);
@@ -465,7 +465,7 @@ void p4s_send_ack(PSP_Port_t *port, int p4s_con)
     iov[0].iov_len = 1;
 
     while (1) {
-        len = psp_sendmsg(port->p4s_fd, p4s_con, iov, 1, 0);
+	len = psp_sendmsg(port->p4s_fd, p4s_con, iov, 1, 0);
 	if (len < 0) {
 	    if ((errno == EINTR) || (errno == EAGAIN))
 		continue;

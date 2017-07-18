@@ -52,8 +52,8 @@ int ufd_add(ufd_t *ufd, int fd,
 	    int *pindex,
 	    void *priv);
 void ufd_del(ufd_t *ufd, int fd);
-void ufd_event_set(ufd_t *ufd, int idx, int event);
-void ufd_event_clr(ufd_t *ufd, int idx, int event);
+void ufd_event_set(ufd_t *ufd, int idx, short event);
+void ufd_event_clr(ufd_t *ufd, int idx, short event);
 int ufd_poll(ufd_t *ufd, int timeout);
 
 #endif /* _PSPORT_UFD_H_ */

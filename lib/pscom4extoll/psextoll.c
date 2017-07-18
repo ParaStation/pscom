@@ -109,7 +109,7 @@ typedef struct {
 
 
 // PSEXTOLL_LEN(len) + sizeof(header) must be a multiple of 64 bytes (cacheline)
-#define PSEX_LEN(len) (((len) + sizeof(psex_msgheader_t) + 63) & ~63)
+#define PSEX_LEN(len) (((len) + (unsigned)sizeof(psex_msgheader_t) + 63) & ~63)
 #define PSEX_DATA(buf, psexlen) ((buf) + sizeof(psex_msg_t) - (psexlen))
 
 
@@ -164,7 +164,7 @@ static
 void psex_err_errno(char *str, int err_no)
 {
 	const char *err_str = strerror(err_no);
-	int len = strlen(str) + strlen(err_str) + 10;
+	size_t len = strlen(str) + strlen(err_str) + 10;
 	char *msg = malloc(len);
 
 	assert(msg);
@@ -182,10 +182,10 @@ static
 void psex_err_rma2_error(char *str, int rc)
 {
 	char rma2_err_str[100];
-	int len;
+	size_t len;
 	char *msg;
 
-	rma2_serror(rc, rma2_err_str, sizeof(rma2_err_str));
+	rma2_serror(rc, rma2_err_str, (unsigned)sizeof(rma2_err_str));
 
 	len = strlen(str) + strlen(rma2_err_str) + 10;
 	msg = malloc(len);
@@ -459,7 +459,7 @@ err_hca:
 
 /* returnvalue like write(), except on error errno is negative return */
 static
-int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned int magic)
+ssize_t _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, size_t size, unsigned int magic)
 {
 	int len;
 	int psex_len;
@@ -486,7 +486,7 @@ int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned
 		goto err_busy;
 	}
 
-	len = (size <= (int)PSEX_RMA2_PAYLOAD) ? size : (int)PSEX_RMA2_PAYLOAD;
+	len = (int)((size <= PSEX_RMA2_PAYLOAD) ? size : PSEX_RMA2_PAYLOAD);
 	psex_len = PSEX_LEN(len);
 
 	ringbuf_t *send = (con_info->send.bufs.mr) ? &con_info->send : &hca_info->send;
@@ -494,16 +494,16 @@ int _psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size, unsigned
 
 	tail = (psex_msgheader_t *)((char*)_msg + psex_len - sizeof(psex_msgheader_t));
 
-	tail->token = con_info->n_tosend_toks;
-	tail->payload = len;
+	tail->token = (uint16_t)con_info->n_tosend_toks;
+	tail->payload = (uint16_t)len;
 	tail->magic = magic;
 
 	/* copy to registerd send buffer */
 	pscom_memcpy_from_iov((void *)_msg, iov, len);
 	rc = rma2_post_put_bt(con_info->rma2_port, con_info->rma2_handle, send->bufs.mr,
-			     ((char*)_msg - (char *)send->bufs.ptr), psex_len,
-			     PSEX_DATA(con_info->remote_rbuf_nla +
-				       con_info->remote_recv_pos * sizeof(psex_msg_t), psex_len),
+			      (unsigned)((char*)_msg - (char *)send->bufs.ptr), psex_len,
+			      PSEX_DATA(con_info->remote_rbuf_nla +
+					con_info->remote_recv_pos * sizeof(psex_msg_t), psex_len),
 			      0, 0);
 	if (rc != 0) goto err_rma2_post_cl;
 
@@ -537,7 +537,7 @@ err_rma2_post_cl:
 }
 
 
-int psex_sendv(psex_con_info_t *con_info, struct iovec *iov, int size)
+ssize_t psex_sendv(psex_con_info_t *con_info, struct iovec *iov, size_t size)
 {
 	return _psex_sendv(con_info, iov, size, PSEX_MAGIC_IO);
 }

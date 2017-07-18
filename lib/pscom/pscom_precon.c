@@ -122,7 +122,7 @@ void pscom_precon_print_stat(precon_t *pre)
 			strcpy(state, "no poll");
 		}
 	}
-	DPRINT(PRECON_LL, "precon(%p): #%u send:%u recv:%u to_send:%u recv:%s active:%u state:%s\n",
+	DPRINT(PRECON_LL, "precon(%p): #%u send:%zu recv:%zu to_send:%u recv:%s active:%u state:%s\n",
 	       pre, pre->stat_poll_cnt, pre->stat_send, pre->stat_recv,
 	       pre->send_len, pre->recv_done ? "no" : "yes", pscom_precon_count, state);
 }
@@ -636,7 +636,7 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 	assert(pre->magic == MAGIC_PRECON);
 
 	if (pre->send_len) {
-		len = send(pre->ufd_info.fd, pre->send, pre->send_len, MSG_NOSIGNAL);
+		len = (int)send(pre->ufd_info.fd, pre->send, pre->send_len, MSG_NOSIGNAL);
 	} else {
 		len = 0;
 	}
@@ -706,7 +706,7 @@ void pscom_precon_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 
 	/* Read the header */
 	if (pre->recv_len < header_size) {
-		len = read(fd, pre->recv + pre->recv_len, header_size - pre->recv_len);
+		len = (int)read(fd, pre->recv + pre->recv_len, header_size - pre->recv_len);
 		// printf("read#1(%d, %p, %u) = %d(%s)\n", fd, pre->recv + pre->recv_len,
 		//        header_size - pre->recv_len, len, len < 0 ? strerror(errno) : "ok");
 		if (len <= 0) goto check_read_error;
@@ -728,7 +728,7 @@ void pscom_precon_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 		/* Read the data */
 		len = msg_len - pre->recv_len;
 		if (len) {
-			len = read(fd, pre->recv + pre->recv_len, len);
+			len = (int)read(fd, pre->recv + pre->recv_len, len);
 			// printf("read#2(%d, %p, %u) = %d(%s)\n", fd, pre->recv + pre->recv_len,
 			//        msg_len - pre->recv_len, len, len < 0 ? strerror(errno) : "ok");
 			if (len <= 0) goto check_read_error;
@@ -779,7 +779,7 @@ void pscom_precon_send(precon_t *pre, unsigned type, void *data, unsigned size)
 	assert(pre->magic == MAGIC_PRECON);
 	uint32_t ntype = htonl(type);
 	uint32_t nsize = htonl(size);
-	unsigned msg_size = size + sizeof(ntype) + sizeof(nsize);
+	unsigned msg_size = size + (unsigned)(sizeof(ntype) + sizeof(nsize));
 	char *msg;
 
 	pscom_precon_info_dump(pre, "send", type, data, size);

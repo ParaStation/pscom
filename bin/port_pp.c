@@ -120,7 +120,7 @@ char *dumpstr(void *buf, int size)
     *tmp++ = '\'';
     s = size; b = (char *)buf;
     for (; s ; s--, b++){
-	*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
+	*tmp++ = (char)(((*b >= 32) && (*b < 127)) ? *b: '.');
     }
     *tmp++ = '\'';
     *tmp++ = 0;
@@ -194,7 +194,7 @@ int sock_send(int sock, uint16_t DestNode, char *buf, int len)
     iov.iov_base = buf;
     iov.iov_len = len;
 
-    len = sendmsg(sock, &hdr, 0);
+    len = (int)sendmsg(sock, &hdr, 0);
     if (len < 0) { perror("sendmsg");}
     return len;
 #else
@@ -230,7 +230,7 @@ int sock_recv(int sock, uint16_t *src, char *buf, int len)
 
     /* len = recvmsg(sock, &hdr, MSG_NOSIGNAL | MSG_DONTWAIT);*/
     do {
-	len = recvmsg(sock, &hdr, MSG_DONTWAIT);
+	len = (int)recvmsg(sock, &hdr, MSG_DONTWAIT);
     } while ((len < 0) && (errno == EAGAIN));
     if (arg_verbose > 0) {
 	printf("Recv %d bytes from %d\n",len , *src);
@@ -345,7 +345,7 @@ void run_client()
     t1 = getusec();
 
     for (i = 0; i < arg_cnt; i++) {
-	uint16_t dest = conid;
+	uint16_t dest = (uint16_t)conid;
 	uint16_t src;
 	int len;
 
@@ -369,7 +369,7 @@ void run_client()
 
     printf("#Packets Size Time[us] HRTT[us]\n");
     printf("%8d %4d %8ld %8.3f\n",
-	   i, CLIENT_BUFSIZE, t2 - t1, (t2 - t1) / (2.0 * i));
+	   i, CLIENT_BUFSIZE, t2 - t1, (double)(t2 - t1) / (2.0 * i));
 
     printf("Sleep...\n");
     sleep(1000);

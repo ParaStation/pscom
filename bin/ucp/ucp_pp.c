@@ -191,8 +191,8 @@ typedef struct {
 static
 void init_bufs(void)
 {
-	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xee;
-	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xee;
+	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xeeU;
+	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xeeU;
 
 	memset(s_buf->data, 0x11, sizeof(s_buf->data));
 	memset(r_buf->data, 0x22, sizeof(r_buf->data));
@@ -224,7 +224,7 @@ static
 void pp_info_write(FILE *peer, pp_info_msg_t *msg)
 {
 	printf("Lokal:  size:%u %s\n", (unsigned)msg->size,
-	       dumpstr(msg->addr, msg->size));
+	       dumpstr(msg->addr, (int)msg->size));
 
 	fwrite(msg, sizeof(*msg), 1, peer);
 	fflush(peer);
@@ -239,7 +239,7 @@ void pp_info_read(FILE *peer, pp_info_msg_t *msg)
 	if (rc != 1) error(1, 0, "Receiving handshake error!\n");
 
 	printf("Remote: size:%u %s\n", (unsigned)msg->size,
-	       dumpstr(msg->addr, msg->size));
+	       dumpstr(msg->addr, (int)msg->size));
 }
 
 
@@ -356,7 +356,7 @@ void recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t *info) {
 static inline
 void myucp_send(unsigned len)
 {
-	unsigned slen = len + sizeof(s_buf->len);
+	unsigned slen = len + (unsigned)sizeof(s_buf->len);
 
 	void *request;
 	ucs_status_t status;
@@ -491,8 +491,8 @@ void do_pp_client(void)
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 0.0/*1.4142135*/; ms < arg_maxmsize;
 	     ms = (ms < 128) ? (ms + 1) : (ms * 1.4142135)) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned int)(loops + 0.5);
+		msgsize = (unsigned int)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp_c(1, 2);
@@ -511,7 +511,7 @@ void do_pp_client(void)
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

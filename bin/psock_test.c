@@ -126,7 +126,7 @@ char *dumpstr(void *buf, int size)
     *tmp++ = '\'';
     s = size; b = (char *)buf;
     for (; s ; s--, b++){
-	*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
+	*tmp++ = (char)(((*b >= 32) && (*b < 127)) ? *b: '.');
     }
     *tmp++ = '\'';
     *tmp++ = 0;
@@ -420,10 +420,10 @@ void run_send()
     if (!buf) goto err_malloc;
 
     for (i = 0; i < arg_size; i++) {
-	buf[i] = i;
+	buf[i] = (char)i;
     }
     for (i = 0; i < arg_size; i++) {
-	buf[i] = (i & ~3) >> (8*(3-(i & 3)));
+	buf[i] = (char)((i & ~3) >> (8*(3-(i & 3))));
     }
 //    memset(buf, 0x42, arg_size);
 
@@ -446,7 +446,7 @@ void run_send()
     }
 
     {
-	uint16_t dest = conid;
+	uint16_t dest = (uint16_t)conid;
 	int len;
 	int offset = 0;
 

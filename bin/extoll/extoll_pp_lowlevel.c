@@ -199,8 +199,8 @@ void init_bufs(void)
 {
 	int rc;
 
-	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xee;
-	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xee;
+	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xeeU;
+	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xeeU;
 
 	memset(s_buf->_buf_, 0x11, sizeof(s_buf->_buf_));
 	memset(r_buf->_buf_, 0x22, sizeof(r_buf->_buf_));
@@ -316,7 +316,7 @@ void extoll_send(unsigned len)
 	if (!arg_imm_put) {
 		unsigned msglen = PSEXTOLL_MSGLEN(len + TAIL_SIZE);
 		rc = rma2_post_put_bt(extoll_port, remote_handle, extoll_s_region,
-				      sizeof(*s_buf) - msglen, msglen,
+				      (unsigned)sizeof(*s_buf) - msglen, msglen,
 				      remote_rbuf + sizeof(*s_buf) - msglen,
 				      arg_with_completion_notification ? RMA2_COMPLETER_NOTIFICATION : 0,
 				      /* RMA2_Command_Modifier */ 0);
@@ -429,8 +429,8 @@ void do_pp_client(void)
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned int)(loops + 0.5);
+		msgsize = (unsigned int)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp_c(1, 2);
@@ -449,7 +449,7 @@ void do_pp_client(void)
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

@@ -22,9 +22,9 @@
 #include "list.h"
 
 typedef struct p4s_conn_s {
-	int			p4s_con;
+	uint16_t		p4s_con;
 	struct list_head	con_sendq_next; // used by list p4s_sock_t.con_sendq
-	int			reading : 1;
+	unsigned		reading : 1;
 } p4s_conn_t;
 
 
@@ -33,11 +33,11 @@ typedef struct p4s_sock_s {
 	int			readers;
 	ufd_info_t		ufd_info;
 	struct PSCOM_con	**p4s_conidx;
-	int			p4s_conidx_cnt;
+	uint16_t		p4s_conidx_cnt;
 	struct sockaddr_p4	p4s_sockaddr;
 	struct list_head	con_sendq;	// list of p4s_conn_t.con_sendq_next
 	pscom_con_t		*recv_cur_con;
-	int			recv_cur_con_idx;
+	uint16_t		recv_cur_con_idx;
 } p4s_sock_t;
 
 

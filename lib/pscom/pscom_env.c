@@ -75,7 +75,7 @@ void pscom_env_get_dir(char **val, const char *name)
 
 	aval = pscom_env_get(name);
 	if (aval) {
-		unsigned int len = strlen(aval);
+		size_t len = strlen(aval);
 		if (len && (aval[len-1] != '/')) {
 			// append a '/'
 			*val = malloc(len + 2);
@@ -150,7 +150,7 @@ void pscom_env_init(void)
 	pscom_env_get_int(&pscom.env.sigsuspend, ENV_SIGSUSPEND);
 	pscom_env_get_uint(&pscom.env.readahead, ENV_READAHEAD);
 	pscom_env_get_uint(&pscom.env.retry, ENV_RETRY);
-	pscom.env.readahead = pscom_max(pscom.env.readahead, sizeof(pscom_header_net_t));
+	pscom.env.readahead = pscom_max(pscom.env.readahead, (unsigned)sizeof(pscom_header_net_t));
 
 	pscom_env_get_uint(&pscom.env.guard, ENV_GUARD);
 

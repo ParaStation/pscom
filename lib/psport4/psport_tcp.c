@@ -34,13 +34,13 @@ void PSP_do_read_tcp(ufd_t *ufd, int ufd_idx)
 {
     PSP_Port_t *port = list_entry(ufd, PSP_Port_t, ufd);
     PSP_Connection_t *con = ufd->ufds_info[ufd_idx].priv;
-    ssize_t len;
+    int len;
     PSP_Req_t *req = con->in.req;
 
     if (req) {
 	/* tcp are configured non-blocking inside tcp_configure() */
-	len = readv(con->arch.tcp.con_fd,
-		    req->u.req.iov, PSP_IOV_BUFFERS);
+	len = (int)readv(con->arch.tcp.con_fd,
+			 req->u.req.iov, PSP_IOV_BUFFERS);
 	if (len > 0) {
 	    PSP_read_done(port, con, req, len);
 	    return;
@@ -48,8 +48,8 @@ void PSP_do_read_tcp(ufd_t *ufd, int ufd_idx)
     } else {
 //	len = read(con->arch.tcp.con_fd,
 //		   tmp_read_buf, sizeof(tmp_read_buf));
-	len = recv(con->arch.tcp.con_fd, tmp_read_buf,
-		   sizeof(tmp_read_buf), MSG_NOSIGNAL | MSG_DONTWAIT);
+	len = (int)recv(con->arch.tcp.con_fd, tmp_read_buf,
+			sizeof(tmp_read_buf), MSG_NOSIGNAL | MSG_DONTWAIT);
 	if (len > 0) {
 	    PSP_read_do(port, con, tmp_read_buf, len);
 	    return;
@@ -80,7 +80,7 @@ void _PSP_do_write_tcp(PSP_Port_t *port, PSP_Connection_t *con)
     PSP_Req_t *req = con->out.req;
 
     if (req) {
-	ssize_t len;
+	int len;
 //	len = writev(con->arch.tcp.con_fd,
 //		     con->out.iov, con->out.count);
 	struct msghdr msg;
@@ -92,7 +92,7 @@ void _PSP_do_write_tcp(PSP_Port_t *port, PSP_Connection_t *con)
 	msg.msg_controllen = 0;
 	msg.msg_flags = MSG_NOSIGNAL | MSG_DONTWAIT;
 
-	len = sendmsg(con->arch.tcp.con_fd, &msg, MSG_NOSIGNAL | MSG_DONTWAIT);
+	len = (int)sendmsg(con->arch.tcp.con_fd, &msg, MSG_NOSIGNAL | MSG_DONTWAIT);
 
 	if (len > 0) {
 	    PSP_write_done(port, con, req, len);

@@ -421,8 +421,8 @@ void do_pp_client(void)
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned)loops;
+		msgsize = (unsigned)(ms + 0.5);
 
 		if (((unsigned)msgsize < 4) && !arg_poll_char) continue;
 
@@ -452,7 +452,7 @@ void do_pp_client(void)
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000.0;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;
@@ -489,7 +489,7 @@ static void info_read(FILE *peer, psoib_info_msg_t *msg)
 		    &a1, &a2,
 		    &msg->remote_ptr, &a4, &arg_recvoffset, &arg_poll_char, &arg_pscom);
 
-	msg->lid = a1;
+	msg->lid = (uint16_t)a1;
 	msg->qp_num = a2;
 	msg->remote_rkey = a4;
 

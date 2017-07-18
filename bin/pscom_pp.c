@@ -122,14 +122,6 @@ void parse_opt(int argc, char **argv)
 		exit(1);
 	}
 
-	if (arg_maxmsize > UINT_MAX) {
-		fprintf(stderr, "--maxsize=%ld: number too large or to small (min 0, max %u)\n", (long)arg_maxmsize, UINT_MAX);
-		exit(1);
-	}
-	if (arg_minmsize > UINT_MAX) {
-		fprintf(stderr, "--minsize=%ld: number too large or to small (min 0, max %u)\n", (long)arg_minmsize, UINT_MAX);
-		exit(1);
-	}
 	poptFreeContext(optCon);
 }
 
@@ -158,7 +150,7 @@ void run_pp_server(pscom_connection_t *con)
 	req = pscom_request_create(MAX_XHEADER, 0);
 
 	for (i = 0; i < MAX_XHEADER; i++) {
-		req->xheader.user[i] = i + 0xe1;
+		req->xheader.user[i] = (char)(i + 0xe1);
 	}
 
 	if (arg_verbose) {
@@ -177,8 +169,8 @@ void run_pp_server(pscom_connection_t *con)
 			       req->header.xheader_len,
 			       pscom_dumpstr(&req->xheader, req->header.xheader_len));
 
-			printf("        %u data :%s\n",
-			       req->header.data_len,
+			printf("        %lu data :%s\n",
+			       (unsigned long)req->header.data_len,
 			       pscom_dumpstr(req->data, MIN(req->header.data_len, 64)));
 		}
 
@@ -218,7 +210,7 @@ int pp_loop_verify(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 	unsigned cnt, i, err = 0;
 	for (cnt = 0; cnt < loops; cnt++) {
 		for (i = 0; i < sreq->data_len; i++) {
-			((unsigned char *)sreq->data)[i] = cnt + i;
+			((unsigned char *)sreq->data)[i] = (unsigned char)(cnt + i);
 		}
 		pscom_post_send(sreq);
 
@@ -230,7 +222,7 @@ int pp_loop_verify(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 		pscom_wait(rreq);
 
 		if (rreq->data_len != sreq->data_len) {
-			printf("Corrupted data_len in msg %u! (recv:%5u != send:%5u)\n",
+			printf("Corrupted data_len in msg %u! (recv:%5lu != send:%5lu)\n",
 			       cnt, rreq->data_len, sreq->data_len);
 			err = 1;
 		}
@@ -250,7 +242,7 @@ static
 int pp_loop_histo(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 {
 	unsigned cnt, i;
-	unsigned msize = sreq->data_len;
+	size_t msize = sreq->data_len;
 	unsigned long *time = malloc(sizeof(*time) * loops + 1);
 	for (cnt = 0; cnt < loops; cnt++) {
 		time[cnt] = getusec();
@@ -263,9 +255,9 @@ int pp_loop_histo(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 		pscom_wait(rreq);
 	}
 
-	printf("Message size %7d. Rtt/2[usec]\n", msize);
+	printf("Message size %7lu. Rtt/2[usec]\n", msize);
 	for (cnt = 1; cnt < loops; cnt++) {
-		printf("%5d %8.1f\n", cnt, (time[cnt] - time[cnt - 1]) / 2.0);
+		printf("%5d %8.1f\n", cnt, (double)(time[cnt] - time[cnt - 1]) / 2.0);
 	}
 	fflush(stdout);
 	free(time);
@@ -274,7 +266,7 @@ int pp_loop_histo(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 
 
 static
-int run_pp_c(pscom_connection_t *con, unsigned msize, unsigned xsize, unsigned loops,
+int run_pp_c(pscom_connection_t *con, size_t msize, unsigned xsize, unsigned loops,
 	     int (*pp_loop)(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops))
 {
 	unsigned cnt;
@@ -291,9 +283,9 @@ int run_pp_c(pscom_connection_t *con, unsigned msize, unsigned xsize, unsigned l
 	rreq = pscom_request_create(xsize, 0);
 
 	if (arg_verbose) {
-		printf("Buffers: sbuf:%p[%u] rbuf:%p[%u]\n", sbuf, msize, rbuf, msize);
+		printf("Buffers: sbuf:%p[%lu] rbuf:%p[%lu]\n", sbuf, msize, rbuf, msize);
 		for (cnt = 0; cnt < xsize; cnt++) {
-			sreq->xheader.user[cnt] = cnt + 1;
+			sreq->xheader.user[cnt] = (char)(cnt + 1);
 		}
 	}
 
@@ -317,7 +309,7 @@ void do_pp_client(pscom_connection_t *con)
 	unsigned long t1, t2;
 	double time;
 	double throuput;
-	unsigned int msgsize;
+	size_t msgsize;
 	double ms;
 	int res;
 	double loops = arg_loops;
@@ -328,9 +320,9 @@ void do_pp_client(pscom_connection_t *con)
 	printf("Xheader : %d bytes\n", arg_xheader);
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
-	for (ms = arg_minmsize; (unsigned long)(ms + 0.5) <= (unsigned long)arg_maxmsize; ms = ms < 2.0 ? ms + 1 : ms * 1.4142135623730950488) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+	for (ms = (double)arg_minmsize; (size_t)(ms + 0.5) <= (size_t)arg_maxmsize; ms = ms < 2.0 ? ms + 1 : ms * 1.4142135623730950488) {
+		unsigned int iloops = (unsigned)(loops + 0.5);
+		msgsize = (size_t)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp_c(con, 2, 2, 2, pp_loop);
@@ -348,17 +340,17 @@ void do_pp_client(pscom_connection_t *con)
 		t2 = getusec();
 
 		time = (double)(t2 - t1) / (iloops * 2);
-		throuput = msgsize / time;
+		throuput = (double)msgsize / time;
 		if (res == 0) {
-			printf("%7u %8u %8.2f %8.2f%s\n", msgsize, iloops, time, throuput,
+			printf("%7lu %8u %8.2f %8.2f%s\n", msgsize, iloops, time, throuput,
 			       pp_loop_func == pp_loop_verify ? " ok" : "");
 			fflush(stdout);
 		} else {
-			printf("%7u Error in communication...\n", msgsize);
+			printf("%7lu Error in communication...\n", msgsize);
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

@@ -32,6 +32,7 @@
 #include <error.h>
 #include <errno.h>
 #include <inttypes.h>
+#include <limits.h>
 
 #include <psm2.h>
 #include <psm2_mq.h>
@@ -190,8 +191,8 @@ char *pspsm_uuid_str(psm2_uuid_t uuid)
 static
 void pspsm_init_bufs(void)
 {
-	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = 0xee;
-	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = 0xee;
+	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = (char)0xee;
+	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = (char)0xee;
 
 	memset(s_buf->data, 0x11, sizeof(s_buf->data));
 	memset(r_buf->data, 0x22, sizeof(r_buf->data));
@@ -318,12 +319,12 @@ void init(FILE *peer)
 
 
 static inline
-void pspsm_send(unsigned len)
+void pspsm_send(size_t len)
 {
 	psm2_error_t ret;
-	unsigned slen;
+	size_t slen;
 
-	s_buf->len = len;
+	s_buf->len = (uint32_t)len;
 
 	slen = len + sizeof(s_buf->len);
 
@@ -332,7 +333,8 @@ void pspsm_send(unsigned len)
 	ret = psm2_mq_send(my_mq, remote_epaddr,
 			   MQ_FLAGS_NONE,  /* no flags, not a sync send */
 			   MQ_TAG, /* don't care tag */
-			   s_buf, slen);
+			   s_buf, (unsigned int)slen);
+	assert(slen <= UINT_MAX);
 	pspsm_ret_check(ret, "psm_mq_send()");
 }
 
@@ -373,7 +375,7 @@ void run_pp_server(void)
 
 
 static
-int run_pp_c(int msize, int loops)
+int run_pp_c(size_t msize, int loops)
 {
 	int cnt;
 	assert(msize <= MAX_MSIZE);
@@ -381,7 +383,7 @@ int run_pp_c(int msize, int loops)
 	//printf("Send %d\n", msize);
 
 	for (cnt = 0; cnt < loops; cnt++) {
-		unsigned len = msize;
+		size_t len = msize;
 		unsigned rlen;
 
 		pspsm_send(len);
@@ -398,7 +400,7 @@ void do_pp_client(void)
 	unsigned long t1, t2;
 	double time;
 	double throuput;
-	unsigned int msgsize;
+	size_t msgsize;
 	double ms;
 	int res;
 	double loops = arg_loops;
@@ -407,8 +409,8 @@ void do_pp_client(void)
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 0.0/*1.4142135*/; ms < arg_maxmsize;
 	     ms = (ms < 128) ? (ms + 1) : (ms * 1.4142135)) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned)(loops + 0.5);
+		msgsize = (size_t)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp_c(1, 2);
@@ -418,16 +420,17 @@ void do_pp_client(void)
 		t2 = getusec();
 
 		time = (double)(t2 - t1) / (iloops * 2);
-		throuput = msgsize / time;
+		throuput = (double)msgsize / time;
 		if (res == 0) {
-			printf("%7d %8d %8.2f %8.2f\n", msgsize, iloops, time, throuput);
+			printf("%7zu %8d %8.2f %8.2f\n", msgsize, iloops, time, throuput);
 			fflush(stdout);
 		} else {
 			printf("Error in communication...\n");
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
+
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

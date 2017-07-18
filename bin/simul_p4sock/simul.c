@@ -289,7 +289,7 @@ void dev_queue_xmit(conn_t *consrc, conn_t *condst, long busy, msg_t *msg)
     long dbusy;
     msg_t *dmsg;
 
-    busy += (rand()*randombusyoffset*1.0)/ RAND_MAX;
+    busy += (long)((rand()*randombusyoffset*1.0)/ RAND_MAX);
     dbusy = consrc->_sendbusyuntil - current;
     dbusy = MAX(0, dbusy);
     dbusy += busy;
@@ -304,12 +304,12 @@ void dev_queue_xmit(conn_t *consrc, conn_t *condst, long busy, msg_t *msg)
     consrc->_sendbusyuntil = current + dbusy;
 }
 
-int sendqsize(conn_t *conn)
+long sendqsize(conn_t *conn)
 {
     return conn->SSeqNo - conn->SStart;
 }
 
-int recvqsize(conn_t *conn)
+long recvqsize(conn_t *conn)
 {
     return conn->RSeqNo - conn->RStart;
 }
@@ -636,7 +636,7 @@ int main(int argc, char **argv)
 	t1 += current;
 	fprintf(stderr,"SendRecv time %ld (pipesize %d ackssend:%d fragssend:%d)\n",
 		t1, maxpipesize, ackssend, fragssend);
-	fprintf(stderr,"sqsize: %d\n",sendqsize(&con1));
+	fprintf(stderr,"sqsize: %ld\n",sendqsize(&con1));
     } else {
 	/* Send only : */
 	t1 = -current;

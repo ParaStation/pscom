@@ -79,7 +79,7 @@ static
 int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 {
 	psucp_msg_t msg;
-	int rc;
+	ssize_t rc;
 
 	rc = psucp_probe(&msg);
 
@@ -121,7 +121,7 @@ void pscom_psucp_sendv_done(void *req_priv)
 static
 void pscom_ucp_do_write(pscom_con_t *con)
 {
-	int len;
+	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
 
@@ -133,17 +133,17 @@ void pscom_ucp_do_write(pscom_con_t *con)
 
 		pscom_write_pending(con, req, len);
 
-		int rlen = psucp_sendv(ci, iov, len,
+		ssize_t rlen = psucp_sendv(ci, iov, len,
 				       pscom_psucp_sendv_done, req);
 
 		if (rlen >= 0) {
-			assert(rlen == len);
+			assert((size_t)rlen == len);
 			reader_inc();
 			// pscom_write_done(con, req, rlen);
 		} else if ((rlen == -EINTR) || (rlen == -EAGAIN)) {
 			// Busy: Retry later.
 			// ToDo: revert the call to pscom_write_pending. For now, fail:
-			assert(rlen == len);
+			assert(0);
 		} else {
 			// Error
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);

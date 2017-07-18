@@ -21,7 +21,7 @@
 
 typedef struct psgm_conn {
 	struct psgm_con_info	*gmcon;
-	int			reading : 1;
+	unsigned		reading : 1;
 } psgm_conn_t;
 
 

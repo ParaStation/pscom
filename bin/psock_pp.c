@@ -118,7 +118,7 @@ char *dumpstr(void *buf, int size)
     *tmp++ = '\'';
     s = size; b = (char *)buf;
     for (; s ; s--, b++){
-	*tmp++ = ((*b >= 32) && (*b < 127)) ? *b: '.';
+	*tmp++ = (char)(((*b >= 32) && (*b < 127)) ? *b: '.');
     }
     *tmp++ = '\'';
     *tmp++ = 0;
@@ -352,7 +352,7 @@ void run_client()
     buf = (char*)malloc(arg_size);
     if (!buf) goto err_malloc;
     for (i = 0; i < arg_size; i++) {
-	buf[i] = i;
+	buf[i] = (char)i;
     }
 //    memset(buf, 0x42, arg_size);
 
@@ -369,7 +369,7 @@ void run_client()
     t1 = getusec();
 
     for (i = 0; i < arg_cnt; i++) {
-	uint16_t dest = conid;
+	uint16_t dest = (uint16_t)conid;
 	uint16_t src;
 	int len;
 
@@ -393,7 +393,7 @@ void run_client()
 
     printf("#Packets Size Time[us] HRTT[us]\n");
     printf("%8d %4d %8ld %8.3f\n",
-	   i, arg_size, t2 - t1, (t2 - t1) / (2.0 * i));
+	   i, arg_size, t2 - t1, (double)(t2 - t1) / (2.0 * i));
 
 //    printf("Sleep...\n");
 //    sleep(5);

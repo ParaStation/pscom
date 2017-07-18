@@ -44,7 +44,7 @@ void pscom_debug_set_filename(const char *filename, int expand);
 // Set prefix if output goes to stderr. Default to $hostname:$pid.
 void pscom_debug_set_prefix(const char *prefix);
 
-const char *pscom_msgtype_str(unsigned msg_type);
+const char *pscom_msgtype_str(uint8_t msg_type);
 
 // return an id string for the req and some state
 char *pscom_debug_req_str(pscom_req_t *req);

@@ -40,9 +40,9 @@ typedef struct precon {
 	char		*send;		// Send buffer
 	char		*recv;		// Receive buffer
 
-	int		recv_done : 1;
-	int		closefd_on_cleanup : 1; // Call close(fd) on cleanup?
-	int		back_connect : 1;	// Is this a back connect precon?
+	unsigned	recv_done : 1;
+	unsigned	closefd_on_cleanup : 1; // Call close(fd) on cleanup?
+	unsigned	back_connect : 1;	// Is this a back connect precon?
 
 	int		nodeid, portno; // Retry connect to nodeid:portno on ECONNREFUSED
 	unsigned	reconnect_cnt;
@@ -54,8 +54,8 @@ typedef struct precon {
 	unsigned long		last_reconnect; // usec of last reconnect
 	pscom_poll_reader_t	poll_reader; // timeout handling
 
-	unsigned	stat_send;	// bytes send
-	unsigned	stat_recv;	// bytes received
+	size_t		stat_send;	// bytes send
+	size_t		stat_recv;	// bytes received
 	unsigned	stat_poll_cnt;	// loops in poll
 
 	/* state information */

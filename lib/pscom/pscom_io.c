@@ -19,13 +19,13 @@
 #include "pscom_str_util.h"
 #include "pscom_util.h"
 
-static inline unsigned int header_length(pscom_header_net_t *header);
-static inline int          header_complete(void *buf, unsigned int size);
+static inline size_t       header_length(pscom_header_net_t *header);
+static inline int          header_complete(void *buf, size_t size);
 static inline int          is_recv_req_done(pscom_req_t *req);
 static        void         _pscom_rendezvous_read_data(pscom_req_t *user_recv_req,
 						       pscom_req_t *rendezvous_req);
 static        void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvous_req);
-static        void         pscom_req_prepare_send(pscom_req_t *req, unsigned msg_type);
+static        void         pscom_req_prepare_send(pscom_req_t *req, pscom_msgtype_t msg_type);
 static        void         pscom_req_prepare_rma_write(pscom_req_t *req);
 static        void         _check_readahead(pscom_con_t *con, size_t len);
 static        void         _pscom_update_in_recv_req(pscom_con_t *con);
@@ -45,21 +45,17 @@ static        pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom
 static        pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
 // return true at the end of each message
-static        void         _pscom_send(pscom_con_t *con, unsigned msg_type,
-				       void *xheader, unsigned xheader_len,
-				       void *data, unsigned data_len);
+static        void         _pscom_send(pscom_con_t *con, pscom_msgtype_t msg_type,
+				       void *xheader, size_t xheader_len,
+				       void *data, size_t data_len);
 static        void         pscom_send_inplace_io_done(pscom_request_t *req);
 static        int          _pscom_cancel_send(pscom_req_t *req);
 static        int          _pscom_cancel_recv(pscom_req_t *req);
-static inline void         pscom_post_send_direct_inline(pscom_req_t *req, unsigned msg_type);
-static inline void         _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, unsigned msg_type);
+static inline void         pscom_post_send_direct_inline(pscom_req_t *req, pscom_msgtype_t msg_type);
+static inline void         _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type);
 static inline void         pscom_post_send_rendezvous(pscom_req_t *user_req);
 static inline void         _pscom_post_rma_read(pscom_req_t *req);
 
-void                       _pscom_send_inplace(pscom_con_t *con, unsigned msg_type,
-					       void *xheader, unsigned xheader_len,
-					       void *data, unsigned data_len,
-					       void (*io_done)(pscom_req_state_t state, void *priv), void *priv);
 int                        pscom_read_is_at_message_start(pscom_con_t *con);
 void                       pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
 void                       pscom_read_done(pscom_con_t *con, char *buf, size_t len);
@@ -67,7 +63,7 @@ void                       pscom_read_done(pscom_con_t *con, char *buf, size_t l
 
 void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, pscom_connection_t *connection)
 {
-	unsigned int copy_header = sizeof(req->pub.header) +
+	size_t copy_header = sizeof(req->pub.header) +
 		pscom_min(req->pub.xheader_len, nh->xheader_len);
 
 	memcpy(&req->pub.header, nh, copy_header);
@@ -95,14 +91,14 @@ void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, psco
 
 
 static inline
-unsigned int header_length(pscom_header_net_t *header)
+size_t header_length(pscom_header_net_t *header)
 {
 	return sizeof(pscom_header_net_t) + header->xheader_len;
 }
 
 
 static inline
-int header_complete(void *buf, unsigned int size)
+int header_complete(void *buf, size_t size)
 {
 	pscom_header_net_t *nhead = (pscom_header_net_t *)buf;
 
@@ -119,11 +115,11 @@ int is_recv_req_done(pscom_req_t *req)
 
 
 static inline
-void pscom_req_prepare_send_pending_inline(pscom_req_t *req, unsigned msg_type, unsigned data_pending)
+void pscom_req_prepare_send_pending_inline(pscom_req_t *req, pscom_msgtype_t msg_type, unsigned data_pending)
 {
 	req->pub.header.msg_type = msg_type;
-	req->pub.header.xheader_len = req->pub.xheader_len;
-	req->pub.header.data_len = req->pub.data_len;
+	req->pub.header.xheader_len = (uint8_t)req->pub.xheader_len;
+	req->pub.header.data_len = PSCOM_DATA_LEN_MASK & req->pub.data_len;
 
 	req->cur_header.iov_base = &req->pub.header;
 	req->cur_header.iov_len = sizeof(pscom_header_net_t) + req->pub.header.xheader_len;
@@ -135,14 +131,14 @@ void pscom_req_prepare_send_pending_inline(pscom_req_t *req, unsigned msg_type, 
 }
 
 
-void pscom_req_prepare_send_pending(pscom_req_t *req, unsigned msg_type, unsigned data_pending)
+void pscom_req_prepare_send_pending(pscom_req_t *req, pscom_msgtype_t msg_type, unsigned data_pending)
 {
 	pscom_req_prepare_send_pending_inline(req, msg_type, data_pending);
 }
 
 
 static
-void pscom_req_prepare_send(pscom_req_t *req, unsigned msg_type)
+void pscom_req_prepare_send(pscom_req_t *req, pscom_msgtype_t msg_type)
 {
 	pscom_req_prepare_send_pending_inline(req, msg_type, 0);
 }
@@ -546,7 +542,7 @@ void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req, pscom_req_t *rendez
 	pscom_rendezvous_data_t *rd =
 		(pscom_rendezvous_data_t *) rendezvous_req->pub.user;
 
-	unsigned int to_read = pscom_min(rd->msg.data_len, user_recv_req->pub.data_len);
+	size_t to_read = pscom_min(rd->msg.data_len, user_recv_req->pub.data_len);
 	pscom_con_t *con = get_con(rendezvous_req->pub.connection);
 	assert(rendezvous_req->magic == MAGIC_REQUEST);
 	assert(user_recv_req->magic == MAGIC_REQUEST);
@@ -622,7 +618,7 @@ void pscom_rendezvous_receiver_io_done(pscom_request_t *req)
 	/* rewrite the header */
 	req->header.msg_type = PSCOM_MSGTYPE_USER;
 	/* req->header.xheader_len already set */
-	req->header.data_len = rd->msg.data_len;
+	req->header.data_len = PSCOM_DATA_LEN_MASK & rd->msg.data_len;
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(get_req(req))));
 
@@ -811,7 +807,7 @@ pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
 		*len = req->cur_data.iov_len;
 		assert(req->cur_data.iov_len > 0);
 	} else if (!con->in.skip) {
-		unsigned int readlen = pscom.env.readahead;
+		size_t readlen = pscom.env.readahead;
 
 		if (con->in.readahead.iov_len >= sizeof(pscom_header_net_t)) {
 			readlen = header_length((pscom_header_net_t *)con->in.readahead.iov_base);
@@ -821,7 +817,7 @@ pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
 		*buf = con->in.readahead.iov_base + con->in.readahead.iov_len;
 		*len = readlen - con->in.readahead.iov_len;
 	} else {
-		unsigned int rlen = pscom_min(pscom.env.skipblocksize, con->in.skip);
+		size_t rlen = pscom_min(pscom.env.skipblocksize, con->in.skip);
 		_check_readahead(con, rlen);
 		*buf = con->in.readahead.iov_base;
 		*len = rlen;
@@ -871,7 +867,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 	if (!len) goto err_eof;
 
 	if (req) {
-		unsigned int _len;
+		size_t _len;
 
 		_len = pscom_req_write(req, buf, len);
 		len -= _len;
@@ -916,8 +912,8 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 	while (header_complete(buf, len)) {
 		// consume data
 		pscom_header_net_t *header = (pscom_header_net_t *)buf;
-		unsigned int hlen = header_length(header);
-		unsigned int l;
+		size_t hlen = header_length(header);
+		size_t l;
 
 		con->in.req = _pscom_get_recv_req(con, header);
 		req = con->in.req;
@@ -932,7 +928,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 			len -= l;
 		} else {
 			/* Skip message */
-			unsigned skip = pscom_min(header->data_len, len);
+			size_t skip = pscom_min(header->data_len, len);
 
 			buf += skip;
 			len -= skip;
@@ -1022,7 +1018,7 @@ void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 
 /* Use con to send req with msg_type. pscom_lock must be held. */
 static inline
-void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, unsigned msg_type)
+void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type)
 {
 	pscom_req_prepare_send(req, msg_type); // build header and iovec
 	req->pub.connection = &con->pub;
@@ -1036,7 +1032,7 @@ void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, unsigned msg_ty
 
 /* inline version of pscom_post_send_direct */
 static inline
-void pscom_post_send_direct_inline(pscom_req_t *req, unsigned msg_type)
+void pscom_post_send_direct_inline(pscom_req_t *req, pscom_msgtype_t msg_type)
 {
 	pscom_req_prepare_send(req, msg_type); // build header and iovec
 
@@ -1050,16 +1046,16 @@ void pscom_post_send_direct_inline(pscom_req_t *req, unsigned msg_type)
 
 
 /* _pscom_post_send_direct version, but pscom_lock NOT held. */
-void pscom_post_send_direct(pscom_req_t *req, unsigned msg_type)
+void pscom_post_send_direct(pscom_req_t *req, pscom_msgtype_t msg_type)
 {
 	pscom_post_send_direct_inline(req, msg_type);
 }
 
 
 static
-void _pscom_send(pscom_con_t *con, unsigned msg_type,
-		 void *xheader, unsigned xheader_len,
-		 void *data, unsigned data_len)
+void _pscom_send(pscom_con_t *con, pscom_msgtype_t msg_type,
+		 void *xheader, size_t xheader_len,
+		 void *data, size_t data_len)
 {
 	pscom_req_t *req;
 
@@ -1100,9 +1096,9 @@ void pscom_send_inplace_io_done(pscom_request_t *req)
 }
 
 
-void _pscom_send_inplace(pscom_con_t *con, unsigned msg_type,
-			 void *xheader, unsigned xheader_len,
-			 void *data, unsigned data_len,
+void _pscom_send_inplace(pscom_con_t *con, pscom_msgtype_t msg_type,
+			 void *xheader, size_t xheader_len,
+			 void *data, size_t data_len,
 			 void (*io_done)(pscom_req_state_t state, void *priv), void *priv)
 {
 	pscom_req_t *req;
@@ -1334,7 +1330,7 @@ void _pscom_wait_any(void)
 ******************************************************************************
 */
 
-pscom_request_t *pscom_request_create(unsigned int max_xheader_len, unsigned int user_size)
+pscom_request_t *pscom_request_create(size_t max_xheader_len, size_t user_size)
 {
 	pscom_req_t *req;
 
@@ -1560,8 +1556,8 @@ void pscom_post_send(pscom_request_t *request)
 
 
 void pscom_send(pscom_connection_t *connection,
-		void *xheader, unsigned int xheader_len,
-		void *data, unsigned int data_len)
+		void *xheader, size_t xheader_len,
+		void *data, size_t data_len)
 {
 	pscom_lock(); {
 		_pscom_send(get_con(connection), PSCOM_MSGTYPE_USER,
@@ -1572,8 +1568,8 @@ void pscom_send(pscom_connection_t *connection,
 
 
 void pscom_send_inplace(pscom_connection_t *connection,
-			void *xheader, unsigned int xheader_len,
-			void *data, unsigned int data_len,
+			void *xheader, size_t xheader_len,
+			void *data, size_t data_len,
 			void (*io_done)(pscom_req_state_t state, void *priv), void *priv)
 {
 	pscom_lock(); {
@@ -1586,8 +1582,8 @@ void pscom_send_inplace(pscom_connection_t *connection,
 
 
 pscom_err_t pscom_recv(pscom_connection_t *connection, pscom_socket_t *socket,
-		       void *xheader, unsigned int xheader_len,
-		       void *data, unsigned int data_len)
+		       void *xheader, size_t xheader_len,
+		       void *data, size_t data_len)
 {
 	pscom_request_t *req = pscom_request_create(xheader_len, 0);
 	pscom_err_t ret = PSCOM_ERR_IOERROR;

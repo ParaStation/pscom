@@ -68,8 +68,8 @@ void	psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
  */
-int psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, unsigned size,
-		void (*cb)(void *req_priv), void *req_priv);
+ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
+		    void (*cb)(void *req_priv), void *req_priv);
 
 
 /* Include ucp.h for psucp_msg_t */
@@ -82,7 +82,7 @@ typedef struct {
 } psucp_msg_t;
 
 
-int psucp_probe(psucp_msg_t *msg);
+size_t psucp_probe(psucp_msg_t *msg);
 ssize_t psucp_recv(psucp_msg_t *msg, void *buf, size_t size);
 
 /* Flush the notification queue and make progress. */

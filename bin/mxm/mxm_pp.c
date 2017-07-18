@@ -283,7 +283,7 @@ void pp_info_read(FILE *peer, pp_info_msg_t *msg)
 	rc = fscanf(peer, VERSION "\n");
 	if (rc != 0) error(1, 0, "Parsing error! Only %d fields. Version mismatch?\n", rc);
 
-	rc = fread(msg, sizeof(*msg), 1, peer);
+	rc = (int)fread(msg, sizeof(*msg), 1, peer);
 	if (rc != 1) error(1, 0, "Reading info message failed!\n");
 
 	printf("Remote: msg: %s ...\n", dumpstr(msg, 16));
@@ -410,8 +410,8 @@ void do_pp_client(void)
 	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
 	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
 	for (ms = 1.4142135; ms < arg_maxmsize; ms = ms * 1.4142135) {
-		unsigned int iloops = loops;
-		msgsize = ms + 0.5;
+		unsigned int iloops = (unsigned int)(loops + 0.5);
+		msgsize = (unsigned int)(ms + 0.5);
 
 		/* warmup, for sync */
 		run_pp_c(1, 2);
@@ -430,7 +430,7 @@ void do_pp_client(void)
 		}
 
 		{
-			double t = (t2 - t1) / 1000;
+			double t = (double)(t2 - t1) / 1000;
 			while (t > arg_maxtime) {
 				loops = loops / 1.4142135;
 				t /= 1.4142135;

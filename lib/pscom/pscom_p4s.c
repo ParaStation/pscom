@@ -40,8 +40,8 @@ void p4s_register_conidx(p4s_sock_t *sock, pscom_con_t *con, int p4s_idx)
 		fprintf(stderr, "internal error in pscom_p4s.c (idx %d) : %d\n", p4s_idx, __LINE__);
 		exit(1);
 	}
-	unsigned int old_cnt = sock->p4s_conidx_cnt;
-	unsigned int new_cnt = (p4s_idx + 1);
+	int old_cnt = sock->p4s_conidx_cnt;
+	int new_cnt = p4s_idx + 1;
 
 	if (old_cnt < new_cnt) {
 		sock->p4s_conidx = realloc(sock->p4s_conidx,
@@ -51,7 +51,7 @@ void p4s_register_conidx(p4s_sock_t *sock, pscom_con_t *con, int p4s_idx)
 		memset(&sock->p4s_conidx[old_cnt], 0,
 		       sizeof(sock->p4s_conidx[0]) * (new_cnt - old_cnt));
 
-		sock->p4s_conidx_cnt = new_cnt;
+		sock->p4s_conidx_cnt = (uint16_t)new_cnt;
 	}
 	sock->p4s_conidx[p4s_idx] = con;
 }
@@ -84,7 +84,7 @@ pscom_con_t *p4s_get_con(p4s_sock_t *sock, int p4s_idx)
 
 
 static inline
-int p4s_recvmsg(int fd, struct iovec *iov, int iovlen, int flags, int *from)
+int p4s_recvmsg(int fd, struct iovec *iov, uint16_t iovlen, uint16_t flags, int *from)
 {
 	int ret;
 	struct p4s_io_recv_iov_s rs;
@@ -103,11 +103,12 @@ int p4s_recvmsg(int fd, struct iovec *iov, int iovlen, int flags, int *from)
 
 
 static inline
-int p4s_recv(int fd, char *buf, int len, int flags, int *from)
+int p4s_recv(int fd, char *buf, size_t len, int flags, int *from)
 {
 	int ret;
 	struct p4s_io_recv_s rs;
-	rs.Flags = flags;
+	assert(flags <= 0xffff);
+	rs.Flags = (uint16_t)flags;
 	rs.iov.iov_base = buf;
 	rs.iov.iov_len = len;
 
@@ -121,23 +122,27 @@ int p4s_recv(int fd, char *buf, int len, int flags, int *from)
 }
 
 static inline
-int p4s_sendmsg(int fd, int dest, struct iovec *iov, int iovlen, int flags)
+int p4s_sendmsg(int fd, int dest, struct iovec *iov, uint16_t iovlen, uint16_t flags)
 {
 	int ret;
 	struct p4s_io_send_iov_s s;
-	s.DestNode = dest;
+	s.DestNode = (uint16_t)dest;
 	s.Flags = flags;
 	s.iov = iov;
 	s.iov_len = iovlen;
+	if (s.DestNode != dest) goto err;
 
 	ret = ioctl(fd, P4S_IO_SEND_IOV, &s);
 
 	return ret;
+err:
+	errno = EINVAL;
+	return -1;
 }
 
 
 static inline
-int p4s_send(int fd, int dest, void *buf, size_t len, int flags)
+int p4s_send(int fd, int dest, void *buf, size_t len, uint16_t flags)
 {
 	struct iovec iov;
 	iov.iov_base = buf;
@@ -196,7 +201,7 @@ int _p4s_do_read(p4s_sock_t *sock, int flags)
 				if (!pscom_read_is_at_message_start(con)) {
 					// read more from same connection
 					sock->recv_cur_con = con;
-					sock->recv_cur_con_idx = from;
+					sock->recv_cur_con_idx = (uint16_t)from;
 				}
 			} else {
 				/* ignore unknown data */
@@ -289,7 +294,7 @@ int p4s_do_poll(struct ufd_s *ufd, ufd_funcinfo_t *ufd_info, int timeout)
 {
 	p4s_sock_t *sock = (p4s_sock_t *) ufd_info->priv;
 
-	int nonblocking = (timeout >= 0);
+	uint16_t nonblocking = (timeout >= 0);
 
 	if (list_empty(&sock->con_sendq)) {
 		_p4s_do_read(sock, nonblocking * (MSG_NOSIGNAL | MSG_DONTWAIT));
@@ -557,7 +562,7 @@ void p4s_read_stop(pscom_con_t *con)
 static
 void p4s_close(pscom_con_t *con)
 {
-	if (con->arch.p4s.p4s_con != -1) {
+	if (con->arch.p4s.p4s_con != 0xffff) {
 		p4s_sock_t *sock = &get_sock(con->pub.socket)->p4s;
 		int rc;
 
@@ -641,7 +646,7 @@ int pscom_p4s_open(p4s_sock_t *sock, pscom_con_t *con)
 static
 void pscom_p4s_cleanup(pscom_con_t *con)
 {
-	if (con->arch.p4s.p4s_con >= 0) {
+	if (con->arch.p4s.p4s_con != 0xffff) {
 		p4s_close(con);
 	}
 }
@@ -699,7 +704,7 @@ void pscom_p4s_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 			goto error_connect;
 		}
 
-		con->arch.p4s.p4s_con = p4s_con;
+		con->arch.p4s.p4s_con = (uint16_t)p4s_con;
 		p4s_register_conidx(sock, con, p4s_con);
 
 		/* Send ACK over p4sock */
@@ -712,7 +717,7 @@ void pscom_p4s_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 	case PSCOM_INFO_ARCH_OK: {
 		int p4s_con = p4s_recv_ack(sock);
 
-		con->arch.p4s.p4s_con = p4s_con;
+		con->arch.p4s.p4s_con = (uint16_t)p4s_con;
 		p4s_register_conidx(sock, con, p4s_con);
 
 		if (p4s_con < 0) {
