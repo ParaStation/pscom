@@ -363,6 +363,9 @@ struct PSCOM
 	struct list_head	sockets; // List of pscom_sock_t.next
 	struct list_head	requests; // List of pscom_req_t.all_req_next
 
+	struct list_head	recvq_any_global;
+	unsigned int            recv_req_cnt_any_global;
+
 	pthread_mutex_t		global_lock;
 	pthread_mutex_t		lock_requests;
 	int			threaded;	// Bool: multithreaded? (=Use locking)
@@ -391,6 +394,7 @@ struct PSCOM
 
 		unsigned int	reqs_any_source; // count enqueued ANY_SOURCE requests in sock->recvq_any
 		unsigned int	recvq_any;  // count enqueued requests in sock->recvq_any (SOURCED and ANY_SOURCE)
+		unsigned int    recvq_any_global; // count enqueued requests in global queueu (")
 
 		unsigned int	probes;		// All probes (including any)
 		unsigned int	iprobes_ok;	// All iprobes returning 1 = "received"

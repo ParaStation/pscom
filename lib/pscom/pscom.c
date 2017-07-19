@@ -46,6 +46,7 @@
 #include "pscom_async.h"
 
 pscom_t pscom = {
+	.recv_req_cnt_any_global = 0,
 	.threaded = 0, /* default is unthreaded */
 	/* parameter from environment */
 	.env = PSCOM_ENV_defaults,
@@ -61,6 +62,7 @@ pscom_t pscom = {
 		.progresscounter_check = 0,
 		.reqs_any_source = 0,
 		.recvq_any = 0,
+		.recvq_any_global = 0,
 		.probes = 0,
 		.iprobes_ok = 0,
 		.probes_any_source = 0,
@@ -354,6 +356,8 @@ int pscom_init(int pscom_version)
 	INIT_LIST_HEAD(&pscom.sockets);
 	INIT_LIST_HEAD(&pscom.requests);
 	INIT_LIST_HEAD(&pscom.io_doneq);
+
+	INIT_LIST_HEAD(&pscom.recvq_any_global);
 
 	INIT_LIST_HEAD(&pscom.poll_reader);
 	INIT_LIST_HEAD(&pscom.poll_sender);

@@ -1351,7 +1351,7 @@ void pscom_post_recv(pscom_request_t *request)
 	pscom_req_t *req = get_req(request);
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_DONE);
-	assert((request->connection != NULL) || (request->socket != NULL));
+//	assert((request->connection != NULL) || (request->socket != NULL));
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
@@ -1471,26 +1471,47 @@ int pscom_iprobe(pscom_request_t *request)
 		} pscom_unlock();
 	} else {
 		/* probe on all connections */
-		assert((request->connection != NULL) || (request->socket != NULL));
-		pscom_sock_t *sock = get_sock(request->socket);
+		if (request->socket) {
 
-		pscom_lock(); {
-			pscom.stat.probes++;
-			pscom.stat.probes_any_source++;
-			make_progress = pscom_iprobe_make_progress();
+			pscom_sock_t *sock = get_sock(request->socket);
 
-			if (make_progress) {
-				_pscom_recv_req_cnt_any_inc(sock);
-				pscom_progress(0);
-			}
+			pscom_lock(); {
+				pscom.stat.probes++;
+				pscom.stat.probes_any_source++;
+				make_progress = pscom_iprobe_make_progress();
 
-			res = _pscom_iprobe(req);
-			if (make_progress) {
-				_pscom_recv_req_cnt_any_dec(sock);
-			}
+				if (make_progress) {
+					_pscom_recv_req_cnt_any_inc(sock);
+					pscom_progress(0);
+				}
 
-			pscom.stat.iprobes_ok += res;
-		} pscom_unlock();
+				res = _pscom_iprobe(req);
+				if (make_progress) {
+					_pscom_recv_req_cnt_any_dec(sock);
+				}
+
+				pscom.stat.iprobes_ok += res;
+			} pscom_unlock();
+		} else {
+			pscom_lock(); {
+				pscom.stat.probes++;
+				pscom.stat.probes_any_source++;
+				make_progress = pscom_iprobe_make_progress();
+
+				if (make_progress) {
+					_pscom_recv_req_cnt_any_global_inc();
+					pscom_progress(0);
+				}
+
+				res = _pscom_iprobe(req);
+				if (make_progress) {
+					_pscom_recv_req_cnt_any_global_dec();
+				}
+
+				pscom.stat.iprobes_ok += res;
+			} pscom_unlock();
+
+		}
 	}
 
 	return res;
@@ -1523,17 +1544,28 @@ void pscom_probe(pscom_request_t *request)
 		} pscom_unlock();
 	} else {
 		/* probe on all connections */
-		assert((request->connection != NULL) || (request->socket != NULL));
-		pscom_sock_t *sock = get_sock(request->socket);
+		if (request->socket) {
 
-		pscom_lock(); {
-			pscom.stat.probes++;
-			pscom.stat.probes_any_source++;
+			pscom_sock_t *sock = get_sock(request->socket);
 
-			_pscom_recv_req_cnt_any_inc(sock);
-			_pscom_probe(req);
-			_pscom_recv_req_cnt_any_dec(sock);
-		} pscom_unlock();
+			pscom_lock(); {
+				pscom.stat.probes++;
+				pscom.stat.probes_any_source++;
+
+				_pscom_recv_req_cnt_any_inc(sock);
+				_pscom_probe(req);
+				_pscom_recv_req_cnt_any_dec(sock);
+			} pscom_unlock();
+		} else {
+			pscom_lock(); {
+				pscom.stat.probes++;
+				pscom.stat.probes_any_source++;
+
+				_pscom_recv_req_cnt_any_global_inc();
+				_pscom_probe(req);
+				_pscom_recv_req_cnt_any_global_dec();
+			} pscom_unlock();
+		}
 	}
 }
 
