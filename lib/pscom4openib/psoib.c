@@ -170,6 +170,7 @@ int psoib_event_count = 1; /* bool. Be busy if outstanding_cq_entries is to high
 int psoib_ignore_wrong_opcodes = 0; /* bool: ignore wrong cq opcodes */
 int psoib_lid_offset; /* int: offset to base LID (adaptive routing) */
 int psoib_use_mcache = 1; /* bool. Use the mcache. */
+int psoib_rndv_fallbacks = 1; /* bool: Use eager/sw-rndv if memory cannot be registered for rndv? */
 
 struct psoib_stat_s {
     unsigned busy_notokens;	// connection out of tokens for sending
@@ -1325,6 +1326,7 @@ err_reg_mr:
 	mem_info->ptr = NULL;
 	psoib_err_errno("ibv_reg_mr() failed", errno);
 	if (errno == ENOMEM) print_mlock_help(size);
+	assert(psoib_rndv_fallbacks);
 	return -1;
 }
 

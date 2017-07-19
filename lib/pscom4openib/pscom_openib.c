@@ -256,7 +256,7 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 
 	perf_add("openib_rma_read");
 
-	if (!pscom_openib_rma_mem_register_check(con, rd)) goto err_register;
+	if (con->rma_mem_register_check && !con->rma_mem_register_check(con, rd)) goto err_register;
 
 #ifdef IB_RNDV_USE_PADDING
 	memcpy(rendezvous_req->pub.data, rd->msg.arch.openib.padding_data, rd->msg.arch.openib.padding_size);
@@ -403,7 +403,12 @@ void pscom_openib_init_con(pscom_con_t *con)
 #ifdef IB_USE_RNDV
 	con->rma_mem_register = pscom_openib_rma_mem_register;
 	con->rma_mem_deregister = pscom_openib_rma_mem_deregister;
-	con->rma_mem_register_check = pscom_openib_rma_mem_register_check;
+
+	if(psoib_rndv_fallbacks) {
+		con->rma_mem_register_check = pscom_openib_rma_mem_register_check;
+	} else {
+		con->rma_mem_register_check = NULL;
+	}
 #ifdef IB_RNDV_RDMA_WRITE
 	con->rma_write = pscom_openib_rma_write;
 #else
@@ -454,6 +459,7 @@ void pscom_openib_init(void)
 #if PSOIB_USE_MREGION_CACHE
 	pscom_env_get_uint(&psoib_mregion_cache_max_size, ENV_OPENIB_MCACHE_SIZE);
 #endif
+	pscom_env_get_int(&psoib_rndv_fallbacks, ENV_OPENIB_RNDV_FALLBACKS);
 
 	INIT_LIST_HEAD(&pscom_cq_poll.next);
 	pscom_cq_poll.do_read = pscom_poll_cq;
