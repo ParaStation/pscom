@@ -118,7 +118,7 @@ static inline
 void pscom_req_prepare_send_pending_inline(pscom_req_t *req, pscom_msgtype_t msg_type, unsigned data_pending)
 {
 	req->pub.header.msg_type = msg_type;
-	req->pub.header.xheader_len = (uint8_t)req->pub.xheader_len;
+	req->pub.header.xheader_len = (uint16_t)req->pub.xheader_len;
 	req->pub.header.data_len = PSCOM_DATA_LEN_MASK & req->pub.data_len;
 
 	req->cur_header.iov_base = &req->pub.header;

@@ -180,11 +180,11 @@ typedef union PSCOM_xheader
 } pscom_xheader_t;
 
 
-#define PSCOM_DATA_LEN_MASK 0xffffffffffff
+#define PSCOM_DATA_LEN_MASK 0xffffffffff
 struct PSCOM_header_net {
+	uint16_t	xheader_len;
 	uint8_t		msg_type;
-	uint8_t		xheader_len;
-	uint64_t	data_len : 48;
+	uint64_t	data_len : 40;
 
 	pscom_xheader_t	xheader[0]; /* zero length xheader */
 };
