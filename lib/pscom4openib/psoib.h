@@ -60,7 +60,7 @@ typedef struct {
 #define IB_RNDV_PADDING_SIZE 64
 /* IB_RNDV_PADDING_SIZE must not be bigger than 64 (or adjust pscom_priv.h respectively!) */
 
-#define IB_MAX_RDMA_MSG_SIZE 2147483647 /* RDMA supports up to 2GiB */
+#define IB_MAX_RDMA_MSG_SIZE 1073741824 /* RDMA supports up to 1GiB */
 
 
 /* registered memory region. (Opaque object for users of psoib_get_rma_mreg() and psoib_put_rma_mreg()) */
