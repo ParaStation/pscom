@@ -1,3 +1,20 @@
+2017-08-04  Carsten Clauss <clauss@par-tec.com>	-	5.2.0-1
+
+	* Feature: Fallback to Eager and/or SW-Rendezvous in case of
+	resource shortage for pscom4openib (can be disabled again with
+	PSP_OPENIB_RNDV_FALLBACKS=0)
+
+	* Fix: Resolved memory de-registration leak in the RNDV_RDMA_WRITE
+	case for pscom4openib
+
+	* Enhancement: Add global any-source queue that fixes the usage	of
+	MPI_ANY_SOURCE on intercommunicators for psmpi-5.2.0
+
+2017-01-25  Jens Hauke  <hauke@par-tec.com>
+
+	* Enhancement: New API that allows for message sizes > 4GiB by
+	using size_t as datatype for the message length
+
 2017-05-23  Jens Hauke  <hauke@par-tec.com>	-	5.1.3-1
 
 	* Fix: MXM availability check by stat(/sys/class/infiniband/mlx…)
