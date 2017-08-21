@@ -317,28 +317,21 @@ void _pscom_recvq_user_enq(pscom_req_t *req)
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
-	if(req->pub.socket || req->pub.connection) {
-
-		if (req->pub.connection) {
-			req->pub.socket = req->pub.connection->socket;
-		}
-
-		sock = get_sock(req->pub.socket);
-
-		if (list_empty(&sock->recvq_any) && req->pub.connection) {
-			pscom_con_t *con = get_con(req->pub.connection);
-
-			_pscom_recvq_user_enq_con(con, req);
-		} else {
-			if (list_empty(&pscom.recvq_any_global)) {
-				_pscom_recvq_user_enq_any(sock, req);
-			} else {
-				_pscom_recvq_user_enq_any_global(req);
-			}
-		}
-
-	} else {
+	if (req->pub.connection) {
+		req->pub.socket = req->pub.connection->socket;
+	} else if (!req->pub.socket) {
 		_pscom_recvq_user_enq_any_global(req);
+		return;
+	}
+
+	sock = get_sock(req->pub.socket);
+
+	if (list_empty(&sock->recvq_any) && req->pub.connection) {
+		pscom_con_t *con = get_con(req->pub.connection);
+
+		_pscom_recvq_user_enq_con(con, req);
+	} else {
+		_pscom_recvq_user_enq_any(sock, req);
 	}
 }
 

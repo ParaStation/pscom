@@ -1351,7 +1351,6 @@ void pscom_post_recv(pscom_request_t *request)
 	pscom_req_t *req = get_req(request);
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_DONE);
-//	assert((request->connection != NULL) || (request->socket != NULL));
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 
