@@ -368,6 +368,7 @@ void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type)
 static
 void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsigned size)
 {
+	int err;
 	pscom_con_t *con = pre->con;
 	assert(pre->magic == MAGIC_PRECON);
 	assert(!con || con->magic == MAGIC_CONNECTION);
@@ -383,11 +384,13 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		break;
 	case PSCOM_INFO_FD_ERROR:
 		if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+		err = data ? *(int*)data : 0;
 		if (con && (
-			    !pre->back_connect ||			/* not a back connect */
-			    (con->pub.type == PSCOM_CON_TYPE_ONDEMAND))	/* or a back connect still of type on demand. */
+			    !pre->back_connect                              || /* not a back connect */
+			    ((err != ECONNRESET) && (err != ECONNREFUSED))     /* or a back connect and the error is not due to a reverse
+										  connection already triggered or established by the peer. */
+			   )
 		) {
-			int err = data ? *(int*)data : 0;
 			pscom_con_setup_failed(con, err == ECONNREFUSED ? PSCOM_ERR_CONNECTION_REFUSED : PSCOM_ERR_IOERROR);
 		}
 		pscom_precon_terminate(pre);

@@ -331,7 +331,11 @@ void _pscom_recvq_user_enq(pscom_req_t *req)
 
 		_pscom_recvq_user_enq_con(con, req);
 	} else {
-		_pscom_recvq_user_enq_any(sock, req);
+		if (list_empty(&pscom.recvq_any_global)) {
+			_pscom_recvq_user_enq_any(sock, req);
+		} else {
+			_pscom_recvq_user_enq_any_global(req);
+		}
 	}
 }
 
