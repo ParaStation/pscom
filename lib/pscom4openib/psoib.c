@@ -300,6 +300,8 @@ void psoib_scan_hca_ports(struct ibv_device *ib_dev)
 	port_cnt = 2;
     }
 
+    psoib_dprint(10, "psoib_scan_hca_ports(\"%s\") port_cnt=%u", dev_name, port_cnt);
+
     for (port = 1; port <= port_cnt; port++) {
 	struct ibv_port_attr port_attr;
 	enum ibv_port_state port_state;
