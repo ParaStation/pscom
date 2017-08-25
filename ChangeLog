@@ -1,3 +1,11 @@
+2017-08-25  Carsten Clauss <clauss@par-tec.com>	-	5.2.1-1
+
+	* Fix: Proper handling of race conditions in the connection
+	establishment with PSP_ONDEMAND=1
+
+	* Enhancement: Mitigate the impact of the global any-source queue
+	within the critical path
+
 2017-08-04  Carsten Clauss <clauss@par-tec.com>	-	5.2.0-1
 
 	* Feature: Fallback to Eager and/or SW-Rendezvous in case of
