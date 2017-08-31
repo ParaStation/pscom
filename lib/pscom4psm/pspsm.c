@@ -412,7 +412,7 @@ void pspsm_iov_print(const struct iovec *iov, size_t len)
 
 /* Process a mq_status. return 1, if a read made progress. 0 else */
 static
-int pspsm_process(psm2_mq_status_t *status)
+int pspsm_process(psm2_mq_status2_t *status)
 {
 	uintptr_t c = (uintptr_t)status->context & 7;
 	pspsm_con_info_t *ci = (pspsm_con_info_t *)((uintptr_t)status->context & ~(uintptr_t)7);
@@ -574,7 +574,7 @@ int pspsm_progress()
 {
 	unsigned read_progress = 0;
 	psm2_mq_req_t req;
-	psm2_mq_status_t status;
+	psm2_mq_status2_t status;
 	psm2_error_t ret;
 	do {
 		ret = psm2_mq_ipeek(pspsm_mq, &req, /* status */ NULL);
@@ -582,7 +582,7 @@ int pspsm_progress()
 			return read_progress;
 		if (ret != PSM2_OK)
 			goto err;
-		ret = psm2_mq_test(&req, &status);
+		ret = psm2_mq_test2(&req, &status);
 		if (ret != PSM2_OK)
 			goto err;
 		read_progress += pspsm_process(&status);
