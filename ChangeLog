@@ -1,3 +1,7 @@
+2017-10-10  Jens Hauke  <hauke@par-tec.com>
+
+	* Fix: Mem leak with generated requests from psm2 connections
+
 2017-08-25  Carsten Clauss <clauss@par-tec.com>	-	5.2.1-1
 
 	* Fix: Proper handling of race conditions in the connection
@@ -5,7 +9,6 @@
 
 	* Enhancement: Mitigate the impact of the global any-source queue
 	within the critical path
-
 2017-08-04  Carsten Clauss <clauss@par-tec.com>	-	5.2.0-1
 
 	* Feature: Fallback to Eager and/or SW-Rendezvous in case of

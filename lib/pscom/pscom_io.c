@@ -850,8 +850,9 @@ pscom_read_done_unlock(pscom_con_t *con, char *buf, size_t len)
 	pscom_read_done(con, buf, len);
 
 	if (con->in.req_locked) {
-		pscom_greq_check_free(con, con->in.req_locked);
+		pscom_req_t *req = con->in.req_locked;
 		con->in.req_locked = NULL;
+		pscom_greq_check_free(con, req);
 	}
 }
 
