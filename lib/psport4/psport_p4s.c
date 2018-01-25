@@ -342,9 +342,10 @@ int p4s_open_port(PSP_Port_t *port)
     for(i = 0; i < 300; i++) {
 	struct sockaddr_p4 sp4;
 	struct sockaddr *sa = (struct sockaddr *)&sp4;
-
-	snprintf((char *)&sp4.sp4_port, 8,
+	char buf[16];
+	snprintf(buf, sizeof(buf),
 		 "psp2%04u", (unsigned int)random());
+	memcpy(&sp4.sp4_port, buf, 8);
 
 	sp4.sp4_family = PF_P4S;
 	sp4.sp4_ra.type = P4REMADDR_PSID;
