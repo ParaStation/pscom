@@ -81,7 +81,6 @@ int arg_type = 0;
 
 int arg_listenport = 5006;
 int arg_verbose = 0;
-int arg_one_connection = 0;
 
 void parse_opt(int argc, char **argv)
 {
@@ -95,9 +94,6 @@ void parse_opt(int argc, char **argv)
 
 		{ "listen"	, 'l', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_listenport, 'l', "listen on port", "port" },
-
-		{ "onecon"	, '1', POPT_ARG_NONE,
-		  &arg_one_connection, 0, "stop after one connect", NULL },
 
 		{ "client"	, 'c', POPT_ARGFLAG_OR | POPT_ARG_VAL,
 		  &arg_type	, ARG_CLIENT, "run as client", NULL },
@@ -171,10 +167,10 @@ void init_common(void)
 
 void connection_accept_server(pscom_connection_t *new_connection)
 {
-	printf("New connection from %s via %s\n",
-	       pscom_con_info_str(&new_connection->remote_con_info),
-	       pscom_con_type_str(new_connection->type));
 	if (!connection) {
+		printf("New connection from %s via %s\n",
+		       pscom_con_info_str(&new_connection->remote_con_info),
+		       pscom_con_type_str(new_connection->type));
 		connection = new_connection;
 	} else {
 		printf("New connection from %s via %s closing!\n",
@@ -439,6 +435,7 @@ void run_server(void)
 				printf("EXIT\n");
 				pscom_close_connection(con);
 				connection = NULL;
+				running = 0;
 				break;
 			default:
 				printf("Unknown test %d requested\n", type);
@@ -446,6 +443,7 @@ void run_server(void)
 		}
 	}
 }
+
 
 static
 void run_client(void)
@@ -499,7 +497,6 @@ int main(int argc, char **argv)
 	default:{
 		if (arg_verbose) fprintf(stderr, "run as server AND client.\n");
 		if (fork()) {
-			arg_one_connection = 1;
 			run_server();
 		} else {
 			run_client();
