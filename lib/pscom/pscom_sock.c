@@ -173,6 +173,33 @@ int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type)
 	return !!(sock->con_type_mask & (1ULL << con_type));
 }
 
+
+pscom_sock_t *pscom_open_sock(size_t userdata_size,
+			      size_t connection_userdata_size)
+{
+	/* Must hold the pscom_lock */
+	pscom_sock_t *sock;
+
+	sock = pscom_sock_create(userdata_size);
+	if (!sock) return NULL; // error
+
+	sock->pub.connection_userdata_size = connection_userdata_size;
+
+	list_add_tail(&sock->next, &pscom.sockets);
+
+	return sock;
+}
+
+
+void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type)
+{
+	assert(sock->magic == MAGIC_SOCKET);
+	assert(con_type < 64);
+
+	sock->con_type_mask &= ~(1ULL << con_type);
+}
+
+
 /*
 ******************************************************************************
 */
@@ -222,39 +249,44 @@ pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 	if (sock->pub.listen_portno != -1)
 		goto err_already_listening;
 
-retry_listen:
-	listen_fd = socket(PF_INET, SOCK_STREAM, 0);
-	if (listen_fd < 0) goto err_socket;
+	if (portno == PSCOM_LISTEN_FD0) {
+		// Use socket on FD 0
+		listen_fd = 0;
+	} else {
+	retry_listen:
+		listen_fd = socket(PF_INET, SOCK_STREAM, 0);
+		if (listen_fd < 0) goto err_socket;
 
-	{
-		int val = 1;
-		setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
-			   (void*) &val, sizeof(val));
+		{
+			int val = 1;
+			setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
+				   (void*) &val, sizeof(val));
+		}
+
+		sa.sin_family = AF_INET;
+		sa.sin_port = (in_port_t)((portno == PSCOM_ANYPORT) ? 0 : htons(portno));
+		sa.sin_addr.s_addr = INADDR_ANY;
+
+		if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
+			goto err_bind;
+
+		if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
+			if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
+				// Yes, this happens on 64 core machines. bind() rarely assign the same portno twice.
+				retry_cnt++; // Print warning every 10th retry, or with PSP_DEBUG >= 1
+				DPRINT((retry_cnt % 10 == 0) ? 0 : 1,
+				       "listen(port %d): Address already in use", (int)ntohs(sa.sin_port));
+				close(listen_fd);
+				sleep(1);
+				goto retry_listen;
+			}
+			goto err_listen;
+		}
 	}
-
-	sa.sin_family = AF_INET;
-	sa.sin_port = (in_port_t)((portno == PSCOM_ANYPORT) ? 0 : htons(portno));
-	sa.sin_addr.s_addr = INADDR_ANY;
-
-	if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)
-		goto err_bind;
 
 	size = sizeof(sa);
 	if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0)
 		goto err_getsockname;
-
-	if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
-		if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
-			// Yes, this happens on 64 core machines. bind() rarely assign the same portno twice.
-			retry_cnt++; // Print warning every 10th retry, or with PSP_DEBUG >= 1
-			DPRINT((retry_cnt % 10 == 0) ? 0 : 1,
-			       "listen(port %d): Address already in use", (int)ntohs(sa.sin_port));
-			close(listen_fd);
-			sleep(1);
-			goto retry_listen;
-		}
-		goto err_listen;
-	}
 
 	DPRINT(PRECON_LL, "precon: listen(%d, %d) on port %u", listen_fd,
 	       pscom.env.tcp_backlog, ntohs(sa.sin_port));
@@ -273,11 +305,11 @@ retry_listen:
 err_nonblock:
 	DPRINT(1, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
 	goto err_stderror;
-err_getsockname:
-	DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
-	goto err_stderror;
 err_listen:
 	DPRINT(1, "listen(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	goto err_stderror;
+err_getsockname:
+	DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
 	goto err_stderror;
 err_bind:
 	DPRINT(1, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
@@ -368,11 +400,7 @@ void pscom_con_type_mask_add(pscom_socket_t *socket, pscom_con_type_t con_type)
 void pscom_con_type_mask_del(pscom_socket_t *socket, pscom_con_type_t con_type)
 {
 	pscom_lock(); {
-		pscom_sock_t *sock = get_sock(socket);
-		assert(sock->magic == MAGIC_SOCKET);
-		assert(con_type < 64);
-
-		sock->con_type_mask &= ~(1ULL << con_type);
+		_pscom_con_type_mask_del(get_sock(socket), con_type);
 	} pscom_unlock();
 }
 

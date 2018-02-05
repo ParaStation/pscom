@@ -139,6 +139,14 @@ typedef struct psucp_conn {
 	unsigned		reading : 1;
 } psucp_conn_t;
 
+typedef struct psgw_conn {
+	struct psgw_con_info	*ci;
+	unsigned		reading : 1;
+	unsigned		info_received : 1;
+	unsigned		info_sent : 1;
+	unsigned		ack_sent : 1;
+} psgw_conn_t;
+
 
 typedef struct ondemand_conn {
 	int node_id; /* on demand node_id to connect to */
@@ -253,6 +261,7 @@ struct PSCOM_con
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection
 
 	int			suspend_on_demand_portno; // remote listening portno on suspended connections
+	unsigned		id;		// Process local unique connection id
 
 	struct list_head	sendq;		// List of pscom_req_t.next
 
@@ -296,6 +305,7 @@ struct PSCOM_con
 		psextoll_conn_t	extoll;
 		psmxm_conn_t	mxm;
 		psucp_conn_t	ucp;
+		psgw_conn_t	gateway;
 		ondemand_conn_t ondemand;
 		pspsm_conn_t    psm;
 		user_conn_t	user; // Future usage (new plugins)
@@ -306,6 +316,7 @@ struct PSCOM_con
 		unsigned	close_called : 1;
 		unsigned	suspend_active : 1;
 		unsigned	con_cleanup : 1;
+		unsigned	use_count : 3;
 	}			state;
 
 	pscom_connection_t	pub;
@@ -352,6 +363,7 @@ struct PSCOM_sock
 //	psdapl_sock_t		dapl;
 //	pselan_sock_t		elan;
 //	psextoll_sock_t		extoll;
+//	psgw_sock_t		gateway;
 
 	pscom_socket_t		pub;
 };
@@ -447,6 +459,7 @@ extern pscom_t pscom;
 #define PSCOM_PSM_PRIO		30
 #define PSCOM_MXM_PRIO		30
 #define PSCOM_UCP_PRIO		30
+#define PSCOM_GW_PRIO		10
 
 typedef uint8_t pscom_msgtype_t;
 
@@ -460,6 +473,9 @@ typedef uint8_t pscom_msgtype_t;
 #define PSCOM_MSGTYPE_BARRIER	7
 #define PSCOM_MSGTYPE_EOF	8
 #define PSCOM_MSGTYPE_SUSPEND	9
+#define PSCOM_MSGTYPE_GW_ENVELOPE	10
+#define PSCOM_MSGTYPE_GW_CTRL		11
+
 
 extern int mt_locked;
 
@@ -501,6 +517,13 @@ void pscom_call_io_done(void)
 }
 
 
+/* Open a socket while holding the pscom_lock */
+pscom_sock_t *pscom_open_sock(size_t userdata_size,
+			      size_t connection_userdata_size);
+
+/* Connecting while holding the pscom_lock */
+pscom_err_t pscom_con_connect(pscom_con_t *con, int nodeid, int portno);
+
 static inline
 pscom_con_t *get_con(pscom_connection_t *con)
 {
@@ -519,6 +542,21 @@ static inline
 pscom_req_t *get_req(pscom_request_t *request)
 {
 	return list_entry(request, pscom_req_t, pub);
+}
+
+
+extern pscom_con_t **pscom_con_ids;
+extern unsigned pscom_con_ids_mask;
+
+
+void *pscom_con_to_id(pscom_con_t *con);
+
+static inline
+pscom_con_t *pscom_id_to_con(void *_id) {
+	unsigned id = (unsigned)(unsigned long)_id;
+	pscom_con_t *con = pscom_con_ids[id & pscom_con_ids_mask];
+	if (!con || (con->id != id)) con = NULL;
+	return con;
 }
 
 
@@ -581,6 +619,7 @@ void pscom_poll_read_stop(pscom_con_t *con);
 int pscom_progress(int timeout);
 
 int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type);
+void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type);
 
 void pscom_listener_init(struct pscom_listener *listener,
 			 void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info),
@@ -595,5 +634,8 @@ void pscom_listener_active_inc(struct pscom_listener *listener);
 void pscom_listener_active_dec(struct pscom_listener *listener);
 
 const char *pscom_con_str_reverse(pscom_connection_t *connection);
+
+/* Translate name into an IPv4 address. Accept IPs in dotted notation or hostnames. */
+in_addr_t pscom_hostip(char *name);
 
 #endif /* _PSCOM_PRIV_H_ */

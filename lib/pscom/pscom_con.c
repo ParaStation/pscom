@@ -25,6 +25,7 @@
 #include <netinet/tcp.h>
 #include <errno.h>
 
+
 static
 void _pscom_con_destroy(pscom_con_t *con);
 
@@ -90,6 +91,8 @@ __attribute__((visibility("hidden")))
 void pscom_con_terminate_recvq(pscom_con_t *con)
 {
 	struct list_head *pos, *next;
+
+	assert(con->magic == MAGIC_CONNECTION);
 
 	// current receive:
 	if (con->in.req) {
@@ -163,6 +166,8 @@ void pscom_con_end_read(pscom_con_t *con)
 	con->read_stop(con);
 	con->pub.state &= ~PSCOM_CON_STATE_R; // clear R
 	con->read_start = pscom_con_terminate_recvq;
+
+	assert(con->magic == MAGIC_CONNECTION);
 
 	pscom_con_terminate_recvq(con);
 }
@@ -307,6 +312,53 @@ void pscom_con_close(pscom_con_t *con)
 		_pscom_con_cleanup(con);
 	}
 }
+
+
+typedef struct {
+	pscom_op_t operation;
+	pscom_err_t error;
+} pscom_req_io_con_error_t;
+
+
+static
+void pscom_con_error_io_done(pscom_request_t *request)
+{
+	pscom_con_t *con = get_con(request->connection);
+	pscom_req_t *req = get_req(request);
+
+	pscom_req_io_con_error_t *rdata = (pscom_req_io_con_error_t *)request->user;
+
+	assert(con->magic == MAGIC_CONNECTION);
+
+	if (request->socket->ops.con_error) {
+		// Call socket->ops.con_error hook
+		request->socket->ops.con_error(
+			request->connection, rdata->operation, rdata->error
+		);
+	}
+	pscom_request_free(request);
+}
+
+
+static
+void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
+{
+	pscom_req_t *req = pscom_req_create(0, sizeof(pscom_req_io_con_error_t));
+	pscom_req_io_con_error_t *rdata = (pscom_req_io_con_error_t *)req->pub.user;
+
+	rdata->operation = operation;
+	rdata->error = error;
+
+	req->pub.socket = con->pub.socket;
+	req->pub.connection = &con->pub;
+	req->pub.ops.io_done = pscom_con_error_io_done;
+
+	assert(con->magic == MAGIC_CONNECTION);
+
+	_pscom_req_done(req);
+}
+
+
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 {
 	assert(con->magic == MAGIC_CONNECTION);
@@ -334,17 +386,103 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 		pscom_con_error_read_failed(con, error);
 		break;
 	}
+	assert(con->magic == MAGIC_CONNECTION);
 
 	if (con->pub.socket->ops.con_error) {
-		con->pub.socket->ops.con_error(&con->pub, operation, error);
+		pscom_con_error_deferred(con, operation, error);
+		// con->pub.socket->ops.con_error(&con->pub, operation, error);
 	}
+}
+
+
+pscom_con_t **pscom_con_ids = NULL;
+unsigned pscom_con_ids_mask = 0;
+unsigned pscom_con_id_last = ~0;
+
+
+static
+void pscom_con_id_increase(void) {
+	unsigned size = pscom_con_ids_mask + 1; // = power of 2
+	unsigned i;
+
+	// Double the array size
+	pscom_con_ids = realloc(pscom_con_ids, sizeof(pscom_con_t*) * 2 * size);
+
+	// new mask with one more bit
+	pscom_con_ids_mask = (pscom_con_ids_mask << 1) | 1;
+
+	// Reassign existing connections to new slots and initialize unused slots.
+	for (i = 0; i < size; i++) {
+		pscom_con_t *con = pscom_con_ids[i];
+		unsigned id = con ? con->id : i;
+
+		pscom_con_ids[id & pscom_con_ids_mask] = con;
+		pscom_con_ids[(id + size) & pscom_con_ids_mask] = NULL; // empty slot
+	}
+}
+
+
+static
+unsigned pscom_con_next_id(void) {
+	unsigned id;
+
+	while (1) {
+		for (id = pscom_con_id_last + 1;
+		     (id & pscom_con_ids_mask) != (pscom_con_id_last & pscom_con_ids_mask);
+		     id++) {
+			if (!pscom_con_ids[id & pscom_con_ids_mask]) {
+				return id;
+			}
+		}
+		pscom_con_id_increase();
+	}
+}
+
+
+static
+unsigned pscom_con_id_register(pscom_con_t *con) {
+	assert(!pscom_con_ids_mask || pscom_con_ids[con->id & pscom_con_ids_mask] != con);
+
+	con->id = pscom_con_next_id();
+
+	pscom_con_id_last = con->id;
+
+	pscom_con_ids[con->id & pscom_con_ids_mask] = con;
+
+	return con->id;
+}
+
+
+static
+void pscom_con_id_unregister(pscom_con_t *con) {
+	unsigned i;
+	assert(pscom_con_ids[con->id & pscom_con_ids_mask] == con);
+
+	pscom_con_ids[con->id & pscom_con_ids_mask] = NULL;
+
+	// All con unregistered?
+	for (i = 0; i <= pscom_con_ids_mask; i++) {
+		if (pscom_con_ids[i]) return;
+	}
+
+	// Yes, cleanup.
+	free(pscom_con_ids);
+	pscom_con_ids = NULL;
+	pscom_con_ids_mask = 0;
+}
+
+
+void *pscom_con_to_id(pscom_con_t *con)
+{
+	// Force result to be unequal to NULL
+	return (void*)((unsigned long)con->id | 1UL << (sizeof(unsigned)*8));
 }
 
 
 void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info)
 {
 	*con_info = con->pub.socket->local_con_info;
-	con_info->id = &con->pub;
+	con_info->id = pscom_con_to_id(con);
 }
 
 
@@ -372,6 +510,8 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 
 	INIT_LIST_HEAD(&con->poll_reader.next);
 	INIT_LIST_HEAD(&con->poll_next_send);
+
+	pscom_con_id_register(con);
 
 	con->con_guard.fd = -1;
 	con->precon = NULL;
@@ -404,8 +544,30 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->state.close_called = 0;
 	con->state.suspend_active = 0;
 	con->state.con_cleanup = 0;
+	con->state.use_count = 1; // until _pscom_con_destroy
 
 	return con;
+}
+
+
+static
+void _pscom_con_ref_hold(pscom_con_t *con) {
+	con->state.use_count++;
+	assert(con->state.use_count);
+}
+
+
+static
+void _pscom_con_ref_release(pscom_con_t *con) {
+	assert(con->magic == MAGIC_CONNECTION);
+	assert(con->state.use_count);
+
+	con->state.use_count--;
+	if (!con->state.use_count) {
+		pscom_con_id_unregister(con);
+		con->magic = 0;
+		free(con);
+	}
 }
 
 
@@ -413,6 +575,7 @@ static
 void _pscom_con_destroy(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
+
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
 		DPRINT(0, "pscom_con_destroy(con) : con state %s",
 		       pscom_con_state_str(con->pub.state));
@@ -429,8 +592,7 @@ void _pscom_con_destroy(pscom_con_t *con)
 		pscom_con_guard_stop(con);
 	}
 
-	con->magic = 0;
-	free(con);
+	_pscom_con_ref_release(con);
 }
 
 
@@ -692,12 +854,32 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 }
 
 
+pscom_err_t pscom_con_connect(pscom_con_t *con, int nodeid, int portno)
+{
+	pscom_err_t rc;
+
+	if (pscom_is_local(con->pub.socket, nodeid, portno)) {
+		rc = pscom_con_connect_loopback(con);
+	} else {
+		/* Initial connection via TCP */
+		rc = pscom_con_connect_via_tcp(con, nodeid, portno);
+	}
+	return rc;
+}
+
+
 static
 void pscom_con_guard_error(void *_con) {
 	pscom_con_t *con = (pscom_con_t *)_con;
 
-	pscom_con_error(con, PSCOM_OP_RW, PSCOM_ERR_IOERROR);
+	assert(con->magic == MAGIC_CONNECTION);
+
+	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
+		pscom_con_error(con, PSCOM_OP_RW, PSCOM_ERR_IOERROR);
+	}
+	_pscom_con_ref_release(con);
 }
+
 
 #define GUARD_BYE 0x25
 
@@ -719,6 +901,7 @@ void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info) {
 
 	if (error) {
 		// Call pscom_con_guard_error in the main thread
+		_pscom_con_ref_hold(con);
 		pscom_backlog_push(pscom_con_guard_error, con);
 	}
 }
@@ -736,6 +919,7 @@ void pscom_con_guard_start(pscom_con_t *con)
 	pre->closefd_on_cleanup = 0;
 	con->con_guard.fd = fd;
 	DPRINT(5, "precon(%p): Start guard on fd %d", pre, fd);
+	_pscom_con_ref_hold(con);
 	pscom_async_on_readable(fd, pscom_guard_readable, con);
 }
 
@@ -749,6 +933,7 @@ void pscom_con_guard_stop(pscom_con_t *con)
 
 		con->con_guard.fd = -1;
 		pscom_async_off_readable(fd, pscom_guard_readable, con);
+		_pscom_con_ref_release(con);
 		close(fd);
 	}
 	DPRINT(5, "Stop guard on fd %d", fd);
@@ -786,12 +971,7 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid, int portno
 
 
 	pscom_lock(); {
-		if (pscom_is_local(con->pub.socket, nodeid, portno)) {
-			rc = pscom_con_connect_loopback(con);
-		} else {
-			/* Initial connection via TCP */
-			rc = pscom_con_connect_via_tcp(con, nodeid, portno);
-		}
+		rc = pscom_con_connect(con, nodeid, portno);
 	} pscom_unlock();
 
 

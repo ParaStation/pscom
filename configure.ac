@@ -196,7 +196,7 @@ AM_CONDITIONAL([MXM_ENABLED],
 AX_CHECK_COMPILE_FLAG([-O3],
   [AM_CFLAGS="$AM_CFLAGS -O3"])
 # -Wsign-conversion 
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter],
+AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter],
   [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"])
 
 AC_SUBST([AM_CFLAGS])

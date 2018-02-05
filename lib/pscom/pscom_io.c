@@ -52,7 +52,7 @@ static        void         pscom_send_inplace_io_done(pscom_request_t *req);
 static        int          _pscom_cancel_send(pscom_req_t *req);
 static        int          _pscom_cancel_recv(pscom_req_t *req);
 static inline void         pscom_post_send_direct_inline(pscom_req_t *req, pscom_msgtype_t msg_type);
-static inline void         _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type);
+static inline void         _pscom_post_send_direct_inline(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type);
 static inline void         pscom_post_send_rendezvous(pscom_req_t *user_req);
 static inline void         _pscom_post_rma_read(pscom_req_t *req);
 
@@ -60,6 +60,9 @@ int                        pscom_read_is_at_message_start(pscom_con_t *con);
 void                       pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
 void                       pscom_read_done(pscom_con_t *con, char *buf, size_t len);
 
+
+pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
+pscom_req_t *(*_pscom_get_gw_ctrl_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
 
 void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, pscom_connection_t *connection)
 {
@@ -407,7 +410,7 @@ void _send_rma_read_answer(pscom_req_t *req_answer)
 
 	req_answer->pub.ops.io_done = pscom_request_free;
 
-	_pscom_post_send_direct(get_con(req_answer->pub.connection), req_answer, PSCOM_MSGTYPE_RMA_READ_ANSWER);
+	_pscom_post_send_direct_inline(get_con(req_answer->pub.connection), req_answer, PSCOM_MSGTYPE_RMA_READ_ANSWER);
 }
 
 
@@ -778,6 +781,12 @@ pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 		case PSCOM_MSGTYPE_SUSPEND:
 			req = _pscom_get_suspend_receiver(con, nh);
 			break;
+		case PSCOM_MSGTYPE_GW_ENVELOPE:
+			req = _pscom_get_gw_envelope_receiver ? _pscom_get_gw_envelope_receiver(con, nh) : NULL;
+			break;
+		case PSCOM_MSGTYPE_GW_CTRL:
+			req = _pscom_get_gw_ctrl_receiver ? _pscom_get_gw_ctrl_receiver(con, nh) : NULL;
+			break;
 		default:
 			DPRINT(0, "Receive unknown msg_type %u", nh->msg_type);
 			req = NULL;
@@ -927,7 +936,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 			l = pscom_req_write(req, buf, len);
 			buf += l;
 			len -= l;
-		} else {
+		} else if (len) {
 			/* Skip message */
 			size_t skip = pscom_min(header->data_len, len);
 
@@ -946,6 +955,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 		_check_readahead(con, len);
 		memmove(con->in.readahead.iov_base, buf, len);
 	}
+
 	con->in.readahead.iov_len = len;
 
 	return;
@@ -1019,7 +1029,7 @@ void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 
 /* Use con to send req with msg_type. pscom_lock must be held. */
 static inline
-void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type)
+void _pscom_post_send_direct_inline(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type)
 {
 	pscom_req_prepare_send(req, msg_type); // build header and iovec
 	req->pub.connection = &con->pub;
@@ -1028,6 +1038,13 @@ void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t
 		    pscom_debug_req_str(req)));
 
 	_pscom_sendq_enq(con, req);
+}
+
+
+/* Use con to send req with msg_type. pscom_lock must be held. */
+void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type)
+{
+	_pscom_post_send_direct_inline(con, req, msg_type);
 }
 
 
@@ -1071,7 +1088,7 @@ void _pscom_send(pscom_con_t *con, pscom_msgtype_t msg_type,
 
 	req->pub.ops.io_done = pscom_request_free;
 
-	_pscom_post_send_direct(con, req, msg_type);
+	_pscom_post_send_direct_inline(con, req, msg_type);
 }
 
 
@@ -1120,7 +1137,7 @@ void _pscom_send_inplace(pscom_con_t *con, pscom_msgtype_t msg_type,
 
 	req->pub.ops.io_done = pscom_send_inplace_io_done;
 
-	_pscom_post_send_direct(con, req, msg_type);
+	_pscom_post_send_direct_inline(con, req, msg_type);
 }
 
 
@@ -1211,7 +1228,7 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 		PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
 
 	pscom_lock(); {
-		_pscom_post_send_direct(con, req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
+		_pscom_post_send_direct_inline(con, req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
 		_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
 	} pscom_unlock();
 

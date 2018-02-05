@@ -125,6 +125,10 @@
 #define ENV_EXTOLL_PENDING_TOKENS "PSP_EXTOLL_PENDING_TOKENS"
 #define ENV_EXTOLL_MCACHE_SIZE "PSP_EXTOLL_MCACHE_SIZE"
 
+/* Gateway */
+#define ENV_GW_SERVER "PSP_GW_SERVER"
+#define ENV_GW_MTU "PSP_GW_MTU"
+
 /* Allocate memory in a shared mem segment */
 /* "PSP_MALLOC*" settings have to be known already in the __malloc_initialize_hook() before we
    run through pscom_pslib_init(). Therefore they are not printed with PSP_DEBUG > 0 and can only set from

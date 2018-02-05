@@ -128,7 +128,6 @@ typedef struct PSCOM_request pscom_request_t;
 typedef struct PSCOM_header_net pscom_header_net_t;
 typedef struct PSCOM_con_info pscom_con_info_t;
 
-
 typedef struct PSCOM_xheader_rma_write
 {
 	void		*dest;
@@ -323,6 +322,8 @@ void pscom_socket_set_name(pscom_socket_t *socket, const char *name);
 pscom_err_t pscom_listen(pscom_socket_t *socket, int portno);
 #define PSCOM_ANYPORT -1 /**< When used as a port-number, stands for any
 			    port (wildcard). */
+#define PSCOM_LISTEN_FD0 0 /**< When used as a port-number,
+			      listen on socket at fd=0. */
 
 /**
  * @brief Stop listening for new connections on port.

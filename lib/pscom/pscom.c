@@ -400,6 +400,12 @@ int pscom_get_nodeid(void)
 }
 
 
+in_addr_t pscom_hostip(char *name)
+{
+	return ntohl(psp_hostip(name));
+}
+
+
 int pscom_get_portno(pscom_socket_t *socket)
 {
 	return socket->listen_portno;
