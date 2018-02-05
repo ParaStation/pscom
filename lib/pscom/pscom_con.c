@@ -38,6 +38,7 @@ void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
 }
 
 
+__attribute__((visibility("hidden")))
 void pscom_no_rw_start_stop(pscom_con_t *con)
 {
 }
@@ -85,6 +86,7 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 
 // clear all recvq's of this connection. finish all recv requests
 // of this connection with error. (keep recv any!)
+__attribute__((visibility("hidden")))
 void pscom_con_terminate_recvq(pscom_con_t *con)
 {
 	struct list_head *pos, *next;

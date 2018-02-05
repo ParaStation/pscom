@@ -19,6 +19,7 @@
 #include "pscom.h"
 #include "pscom_priv.h"
 #include "pscom_debug.h"
+#include "pslib.h"
 
 typedef struct psinfo_s psinfo_t;
 
@@ -40,7 +41,7 @@ struct {
 int pscom_pslib_available = 0;
 
 
-void pscom_pslib_init(const char *configfiles)
+void pscom_pslib_init(void)
 {
 	void *libh;
 

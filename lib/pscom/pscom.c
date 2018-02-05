@@ -169,6 +169,7 @@ restart:
 }
 
 
+__attribute__((visibility("default")))
 void pscom_poll_write_stop(pscom_con_t *con)
 {
 	/* it's save to dequeue more then once */
@@ -176,6 +177,7 @@ void pscom_poll_write_stop(pscom_con_t *con)
 }
 
 
+__attribute__((visibility("default")))
 void pscom_poll_write_start(pscom_con_t *con)
 {
 	if (list_empty(&con->poll_next_send)) {
@@ -187,6 +189,7 @@ void pscom_poll_write_start(pscom_con_t *con)
 }
 
 
+__attribute__((visibility("default")))
 void pscom_poll_read_start(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
@@ -200,6 +203,7 @@ void pscom_poll_read_start(pscom_con_t *con)
 }
 
 
+__attribute__((visibility("hidden")))
 void pscom_poll_read_stop(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
@@ -322,6 +326,7 @@ void pscom_set_debug(int level)
 }
 
 
+__attribute__((visibility("default")))
 int pscom_init(int pscom_version)
 {
 	static int init=0;

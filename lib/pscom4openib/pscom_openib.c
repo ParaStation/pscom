@@ -39,6 +39,7 @@
 static
 struct pscom_poll_reader pscom_cq_poll;
 
+__attribute__((visibility("hidden")))
 int pscom_poll_cq(pscom_poll_reader_t *reader)
 {
 	psoib_progress();

@@ -1341,6 +1341,7 @@ pscom_request_t *pscom_request_create(size_t max_xheader_len, size_t user_size)
 }
 
 
+__attribute__((visibility("default")))
 void pscom_request_free(pscom_request_t *request)
 {
 	pscom_req_free(get_req(request));

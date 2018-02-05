@@ -106,6 +106,7 @@ int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 }
 
 
+__attribute__((visibility("hidden")))
 void pscom_psucp_sendv_done(void *req_priv)
 {
 	pscom_req_t *req = (pscom_req_t *)req_priv;

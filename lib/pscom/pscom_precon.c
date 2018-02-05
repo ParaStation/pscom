@@ -959,6 +959,7 @@ void pscom_precon_handshake(precon_t *pre)
 }
 
 
+__attribute__((visibility("hidden")))
 void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
 	pscom_sock_t *sock = ufd_info->priv;
