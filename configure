@@ -11153,6 +11153,9 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  # Add ABI-specific directories to the system library path.
+  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
+
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -11161,7 +11164,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -13346,14 +13349,14 @@ else
 fi
 
 # -Wsign-conversion
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter" >&5
-$as_echo_n "checking whether C compiler accepts -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter... " >&6; }
-if ${ax_cv_check_cflags___Wall__Wextra__Wconversion__Wno_sign_conversion__Wno_unused__Wno_unused_parameter+:} false; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter" >&5
+$as_echo_n "checking whether C compiler accepts -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter... " >&6; }
+if ${ax_cv_check_cflags___Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
   ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"
+  CFLAGS="$CFLAGS  -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -13366,16 +13369,16 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___Wall__Wextra__Wconversion__Wno_sign_conversion__Wno_unused__Wno_unused_parameter=yes
+  ax_cv_check_cflags___Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter=yes
 else
-  ax_cv_check_cflags___Wall__Wextra__Wconversion__Wno_sign_conversion__Wno_unused__Wno_unused_parameter=no
+  ax_cv_check_cflags___Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   CFLAGS=$ax_check_save_flags
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Wall__Wextra__Wconversion__Wno_sign_conversion__Wno_unused__Wno_unused_parameter" >&5
-$as_echo "$ax_cv_check_cflags___Wall__Wextra__Wconversion__Wno_sign_conversion__Wno_unused__Wno_unused_parameter" >&6; }
-if test x"$ax_cv_check_cflags___Wall__Wextra__Wconversion__Wno_sign_conversion__Wno_unused__Wno_unused_parameter" = xyes; then :
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter" >&5
+$as_echo "$ax_cv_check_cflags___Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter" >&6; }
+if test x"$ax_cv_check_cflags___Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter" = xyes; then :
   AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"
 else
   :
