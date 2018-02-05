@@ -54,6 +54,25 @@ void pscom_env_get_uint(unsigned int *val, const char *name)
 }
 
 
+void pscom_env_get_size_t(size_t *val, const char *name)
+{
+	char *aval;
+
+	aval = pscom_env_get(name);
+	if (aval) {
+		*val = atoll(aval);
+		DPRINT(1, "set %s = %zu", name, *val);
+	} else {
+		if (*val != ENV_SIZE_T_AUTO) {
+			DPRINT(2, "default %s = %zu", name, *val);
+		} else {
+			DPRINT(2, "default %s = auto", name);
+		}
+	}
+	pscom_info_set_size_t(name, *val);
+}
+
+
 void pscom_env_get_str(char **val, const char *name)
 {
 	char *aval;

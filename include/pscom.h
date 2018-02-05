@@ -658,6 +658,7 @@ void pscom_dump_info(FILE *out);
 /* Get value name from environment */
 void pscom_env_get_int(int *val, const char *name);
 void pscom_env_get_uint(unsigned int *val, const char *name);
+void pscom_env_get_size_t(size_t *val, const char *name);
 void pscom_env_get_str(char **val, const char *name);
 void pscom_env_get_dir(char **val, const char *name);
 

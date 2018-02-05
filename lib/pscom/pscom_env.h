@@ -147,6 +147,7 @@
 #define ENV_IPROBE_COUNT "PSP_IPROBE_COUNT"
 
 #define ENV_UINT_AUTO ((unsigned)~0U)
+#define ENV_SIZE_T_AUTO ((size_t)~0LLU)
 
 struct PSCOM_env {
 	int		debug;

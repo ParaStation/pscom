@@ -135,6 +135,15 @@ void pscom_info_set_uint(const char *path, unsigned value)
 }
 
 
+void pscom_info_set_size_t(const char *path, size_t value)
+{
+	if (!pslib.info || !pslib.psinfo_set) return;
+	char buf[32];
+	snprintf(buf, sizeof(buf), "%zu", value);
+	pscom_info_set(path, buf);
+}
+
+
 void pscom_info_set_int(const char *path, int value)
 {
 	if (!pslib.info || !pslib.psinfo_set) return;

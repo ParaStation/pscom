@@ -19,6 +19,7 @@ void pscom_pslib_cleanup(void);
 void pscom_info_connect(const char *url);
 void pscom_info_set(const char *path, const char *value);
 void pscom_info_set_uint(const char *path, unsigned value);
+void pscom_info_set_size_t(const char *path, size_t value);
 void pscom_info_set_int(const char *path, int value);
 
 extern int pscom_pslib_available;
