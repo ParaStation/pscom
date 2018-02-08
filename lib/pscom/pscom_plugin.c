@@ -21,6 +21,17 @@
 #include <unistd.h>
 #include "pscom_env.h"
 
+#ifdef PSCOM_ALLIN
+#ifdef PSCOM_ALLIN_PSM2
+#include "../pscom4psm/pspsm.h"
+extern pscom_plugin_t pscom_plugin_psm;
+#endif
+#ifdef PSCOM_ALLIN_OPENIB
+#include "../pscom4openib/psoib.h"
+extern pscom_plugin_t pscom_plugin_openib;
+#endif
+#endif
+
 LIST_HEAD(pscom_plugins);
 
 static
@@ -306,6 +317,15 @@ void pscom_plugins_init(void)
 	pscom_plugin_register(&pscom_plugin_shm, pscom_plugin_uprio("shm"));
 	pscom_plugin_register(&pscom_plugin_p4s, pscom_plugin_uprio("p4s"));
 
+#ifdef PSCOM_ALLIN
+#ifdef PSCOM_ALLIN_PSM2
+	pscom_plugin_register(&pscom_plugin_psm, pscom_plugin_uprio("psm"));
+#endif
+#ifdef PSCOM_ALLIN_OPENIB
+	pscom_plugin_register(&pscom_plugin_openib, pscom_plugin_uprio("openib"));
+#endif
+	char *pls[] = { NULL };
+#else
 	// ToDo: Use file globbing!
 	char *pls[] = {
 		"psm",
@@ -321,6 +341,7 @@ void pscom_plugins_init(void)
 		"ucp",
 		"gateway",
 		NULL };
+#endif
 	char **tmp;
 
 	for (tmp = pls; *tmp; tmp++) {
@@ -372,3 +393,38 @@ pscom_plugin_t *pscom_plugin_first(void)
 
 	return list_entry(pscom_plugins.next, pscom_plugin_t, next);
 }
+
+#ifdef PSCOM_ALLIN
+#ifdef PSCOM_ALLIN_PSM2
+#include "../pscom4psm/pscom_psm.c"
+// ../pscom4psm/pspsm.c is included by pscom_psm.c
+pscom_plugin_t pscom_plugin_psm = {
+        .name           = "psm",
+        .version        = PSCOM_PLUGIN_VERSION,
+        .arch_id        = PSCOM_ARCH_PSM,
+        .priority       = PSCOM_PSM_PRIO,
+        .init           = pscom_psm_init,
+        .destroy        = pscom_psm_finalize,
+        .sock_init      = NULL,
+        .sock_destroy   = NULL,
+        .con_init       = pscom_psm_con_init,
+        .con_handshake  = pscom_psm_handshake,
+};
+#endif
+#ifdef PSCOM_ALLIN_OPENIB
+#include "../pscom4openib/pscom_openib.c"
+#include "../pscom4openib/psoib.c"
+pscom_plugin_t pscom_plugin_openib = {
+	.name		= "openib",
+	.version	= PSCOM_PLUGIN_VERSION,
+	.arch_id	= PSCOM_ARCH_OPENIB,
+	.priority	= PSCOM_OPENIB_PRIO,
+	.init		= pscom_openib_init,
+	.destroy	= NULL,
+	.sock_init	= NULL,
+	.sock_destroy	= NULL,
+	.con_init	= pscom_openib_con_init,
+	.con_handshake	= pscom_openib_handshake,
+};
+#endif
+#endif

@@ -278,7 +278,7 @@ void pscom_psm_finalize(void){
 /* ToDo: Clean Separation of pscom_psm_* and pspsm_* */
 #include "pspsm.c"
 
-
+#ifndef PSCOM_ALLIN
 pscom_plugin_t pscom_plugin = {
 	.name		= "psm",
 	.version	= PSCOM_PLUGIN_VERSION,
@@ -291,3 +291,4 @@ pscom_plugin_t pscom_plugin = {
 	.con_init	= pscom_psm_con_init,
 	.con_handshake	= pscom_psm_handshake,
 };
+#endif

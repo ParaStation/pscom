@@ -11,6 +11,7 @@
  */
 
 #define _GNU_SOURCE
+#include "pslib.h"
 #include <dlfcn.h>
 #include <stdlib.h>
 #include <wordexp.h>
