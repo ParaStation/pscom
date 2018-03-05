@@ -305,11 +305,21 @@ void pscom_plugins_init(void)
 	pscom_plugin_register(&pscom_plugin_tcp, pscom_plugin_uprio("tcp"));
 	pscom_plugin_register(&pscom_plugin_shm, pscom_plugin_uprio("shm"));
 	pscom_plugin_register(&pscom_plugin_p4s, pscom_plugin_uprio("p4s"));
+#ifdef PSCOM_ALLIN_PSM2
+	pscom_plugin_register(&pscom_plugin_psm, pscom_plugin_uprio("psm"));
+#endif
+#ifdef PSCOM_ALLIN_OPENIB
+	pscom_plugin_register(&pscom_plugin_openib, pscom_plugin_uprio("openib"));
+#endif
 
 	// ToDo: Use file globbing!
 	char *pls[] = {
+#ifdef PSCOM_ALLIN_PSM2
 		"psm",
+#endif
+#ifndef PSCOM_ALLIN_OPENIB
 		"openib",
+#endif
 		"ofed",
 		"mvapi",
 		"gm",

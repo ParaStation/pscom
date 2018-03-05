@@ -527,8 +527,7 @@ error_con_connect:
 	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
-
-pscom_plugin_t pscom_plugin = {
+pscom_plugin_t pscom_plugin_openib = {
 	.name		= "openib",
 	.version	= PSCOM_PLUGIN_VERSION,
 	.arch_id	= PSCOM_ARCH_OPENIB,

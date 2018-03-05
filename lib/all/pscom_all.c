@@ -23,7 +23,19 @@
 #include "../pscom/pscom_listener.c"
 #include "../pscom/pscom_ondemand.c"
 #include "../pscom/pscom_p4s.c"
+
+#ifdef PSCOM_ALLIN_PSM2
+#include "../pscom4psm/pscom_psm.c"
+// ../pscom4psm/pspsm.c is included by pscom_psm.c
+#endif
+
+#ifdef PSCOM_ALLIN_OPENIB
+#include "../pscom4openib/pscom_openib.c"
+#include "../pscom4openib/psoib.c"
+#endif
+
 #include "../pscom/pscom_plugin.c"
+
 #include "../pscom/pscom_precon.c"
 #include "../pscom/pscom_queues.c"
 #include "../pscom/pscom_req.c"

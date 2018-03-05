@@ -1,4 +1,14 @@
-# (c) 2009 Jens Hauke <hauke@wtal.de>
+#
+# ParaStation
+#
+# Copyright (C) 2018 ParTec Cluster Competence Center GmbH, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+# Author:       Jens Hauke <hauke@par-tec.com>
+#
 
 all:
 
@@ -10,6 +20,8 @@ LDLIBS += $(LDLIBS_$@)
 
 
 CPPFLAGS += -I../pscom -I../../include -I. -DLIBDIR='"lib64"'
+CPPFLAGS += -DPSCOM_ALLIN_PSM2
+CPPFLAGS += -DPSCOM_ALLIN_OPENIB
 PSCOM_OBJS = pscom_all.o
 PSCOM_SONAME = libpscom.so.2
 
