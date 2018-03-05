@@ -527,7 +527,7 @@ error_con_connect:
 	pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
 }
 
-#ifndef PSCOM_ALLIN
+
 pscom_plugin_t pscom_plugin = {
 	.name		= "openib",
 	.version	= PSCOM_PLUGIN_VERSION,
@@ -541,4 +541,3 @@ pscom_plugin_t pscom_plugin = {
 	.con_init	= pscom_openib_con_init,
 	.con_handshake	= pscom_openib_handshake,
 };
-#endif

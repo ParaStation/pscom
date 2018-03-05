@@ -12,7 +12,6 @@
 
 #ifndef _PSLIB_H_
 #define _PSLIB_H_
-#include <stddef.h>
 
 void pscom_pslib_init(void);
 void pscom_pslib_read_config(const char *configfiles);

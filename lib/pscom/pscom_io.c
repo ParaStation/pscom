@@ -711,7 +711,7 @@ void _pscom_req_suspend_io_done(pscom_request_t *request)
 	pscom_req_t *req = get_req(request);
 	pscom_con_t *con = get_con(req->pub.connection);
 	pscom_lock(); {
-		_pscom_con_suspend_received(con, &req->pub.xheader.user, req->pub.xheader_len);
+		_pscom_con_suspend_received(con, req->pub.xheader.user, req->pub.xheader_len);
 	} pscom_unlock();
 
 	pscom_req_free(req);
@@ -1246,7 +1246,7 @@ void _pscom_post_rma_read(pscom_req_t *req)
 {
 	pscom_con_t *con = get_con(req->pub.connection);
 	pscom_req_t *req_rma = pscom_req_create(sizeof(pscom_rendezvous_data_t), 0);
-	pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)&req_rma->pub.xheader.user;
+	pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)req_rma->pub.xheader.user;
 	unsigned len_arch = 0;
 
 	req->pub.state = PSCOM_REQ_STATE_RMA_READ_REQUEST | PSCOM_REQ_STATE_POSTED;
@@ -1654,7 +1654,7 @@ pscom_err_t pscom_recv(pscom_connection_t *connection, pscom_socket_t *socket,
 	pscom_wait(req);
 
 	if (pscom_req_successful(req)) {
-		memcpy(xheader, &req->xheader.user, xheader_len);
+		memcpy(xheader, req->xheader.user, xheader_len);
 		ret = PSCOM_SUCCESS;
 	}
 
