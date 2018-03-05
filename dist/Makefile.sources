@@ -101,6 +101,10 @@ include/psockt.h \
 include/psport4.h \
 lib/Makefile.am \
 lib/Makefile.in \
+lib/all/.gitignore \
+lib/all/Makefile \
+lib/all/pscom_all.c \
+lib/all/vc_version.h \
 lib/bcast/bcast.jpg \
 lib/bcast/bcast.py \
 lib/bcast/bcast2.py \
