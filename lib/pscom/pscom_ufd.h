@@ -37,7 +37,7 @@ struct ufd_info_s {
 	void *priv;	/* free usage */
 };
 
-#define PSCOM_MAX_UFDS 4096
+#define PSCOM_MAX_UFDS (256*1024)
 
 struct ufd_s {
 	struct list_head ufd_info; // List of ufd_info_t.next
