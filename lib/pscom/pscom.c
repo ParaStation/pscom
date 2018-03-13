@@ -203,7 +203,7 @@ void pscom_poll_read_start(pscom_con_t *con)
 }
 
 
-__attribute__((visibility("hidden")))
+__attribute__((visibility("default")))
 void pscom_poll_read_stop(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
