@@ -206,7 +206,9 @@ void pscom_psm_init(void)
 	pspsm_poll.poll.do_read = pscom_psm_make_progress;
 
 	// Preinitialize pspsm. Ignore errors. pscom_psm_connect will see the error again.
-	pspsm_init();
+
+	pscom_env_get_uint(&pscom.env.psm_fastinit, ENV_PSM_FASTINIT);
+	if (pscom.env.psm_fastinit) pspsm_init();
 }
 
 
