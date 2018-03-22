@@ -280,7 +280,12 @@ void pscom_psm_finalize(void){
 /* ToDo: Clean Separation of pscom_psm_* and pspsm_* */
 #include "pspsm.c"
 
-pscom_plugin_t pscom_plugin_psm = {
+#ifndef PSCOM_ALLIN_PSM2
+pscom_plugin_t pscom_plugin =
+#else
+pscom_plugin_t pscom_plugin_psm =
+#endif
+{
 	.name		= "psm",
 	.version	= PSCOM_PLUGIN_VERSION,
 	.arch_id	= PSCOM_ARCH_PSM,

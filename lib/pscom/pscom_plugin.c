@@ -314,7 +314,7 @@ void pscom_plugins_init(void)
 
 	// ToDo: Use file globbing!
 	char *pls[] = {
-#ifdef PSCOM_ALLIN_PSM2
+#ifndef PSCOM_ALLIN_PSM2
 		"psm",
 #endif
 #ifndef PSCOM_ALLIN_OPENIB
