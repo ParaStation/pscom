@@ -183,6 +183,7 @@ int psucp_init_hca(hca_info_t *hca_info)
 	ucs_status_t status;
 	ucp_config_t *config;
 	ucp_params_t ucp_params;
+	ucp_worker_params_t ucp_worker_params;
 
 	memset(hca_info, 0, sizeof(*hca_info));
 
@@ -190,6 +191,11 @@ int psucp_init_hca(hca_info_t *hca_info)
 	status = ucp_config_read(NULL, NULL, &config);
 	assert(status == UCS_OK);
 
+	memset(&ucp_params, 0, sizeof(ucp_params));
+	ucp_params.field_mask      =
+		UCP_PARAM_FIELD_FEATURES |
+		UCP_PARAM_FIELD_REQUEST_SIZE |
+		UCP_PARAM_FIELD_REQUEST_INIT;
 	ucp_params.features        = UCP_FEATURE_TAG;
 	ucp_params.request_size    = sizeof(psucp_req_t);
 	ucp_params.request_init    = psucp_req_init;
@@ -203,7 +209,11 @@ int psucp_init_hca(hca_info_t *hca_info)
 	// ucp_config_print(config, stdout, NULL, UCS_CONFIG_PRINT_CONFIG);
 	ucp_config_release(config);
 
-	status = ucp_worker_create(hca_info->ucp_context, UCS_THREAD_MODE_SINGLE,
+	memset(&ucp_worker_params, 0, sizeof(ucp_worker_params));
+	ucp_worker_params.field_mask = UCP_WORKER_PARAM_FIELD_THREAD_MODE;
+	ucp_worker_params.thread_mode = UCS_THREAD_MODE_SINGLE;
+
+	status = ucp_worker_create(hca_info->ucp_context, &ucp_worker_params,
 				   &hca_info->ucp_worker);
 	if (status != UCS_OK) goto err_worker;
 
@@ -283,10 +293,15 @@ int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 	hca_info_t *hca_info = con_info->hca_info;
 	int rc;
 	ucs_status_t status;
+	ucp_ep_params_t ep_params;
 
 	con_info->remote_tag = info_msg->tag;
 
-	status = ucp_ep_create(hca_info->ucp_worker, (ucp_address_t *)info_msg->addr, &con_info->ucp_ep);
+	memset(&ep_params, 0, sizeof(ep_params));
+	ep_params.field_mask = UCP_EP_PARAM_FIELD_REMOTE_ADDRESS;
+	ep_params.address = (ucp_address_t *)info_msg->addr;
+
+	status = ucp_ep_create(hca_info->ucp_worker, &ep_params, &con_info->ucp_ep);
 	if (status != UCS_OK) goto err_ep_create;
 
 	return 0;

@@ -248,14 +248,20 @@ void psucp_init(void) {
 	ucs_status_t status;
 	ucp_config_t *config;
 	ucp_params_t ucp_params;
+	ucp_worker_params_t ucp_worker_params;
 
 	/* UCP initialization */
 	status = ucp_config_read(NULL, NULL, &config);
 	assert(status == UCS_OK);
 
+	memset(&ucp_params, 0, sizeof(ucp_params));
+	ucp_params.field_mask      =
+		UCP_PARAM_FIELD_FEATURES |
+		UCP_PARAM_FIELD_REQUEST_SIZE |
+		UCP_PARAM_FIELD_REQUEST_INIT;
 	ucp_params.features        = UCP_FEATURE_TAG;
 	ucp_params.request_size    = 16;	// sizeof(struct ucx_context);
-	ucp_params.request_init    = NULL;	// request_init;
+	ucp_params.request_init    = NULL;
 	ucp_params.request_cleanup = NULL;
 
 	status = ucp_init(&ucp_params, config, &ucp_context);
@@ -264,7 +270,12 @@ void psucp_init(void) {
 	ucp_config_print(config, stdout, NULL, UCS_CONFIG_PRINT_CONFIG);
 	ucp_config_release(config);
 
-	status = ucp_worker_create(ucp_context, UCS_THREAD_MODE_SINGLE,
+
+	memset(&ucp_worker_params, 0, sizeof(ucp_worker_params));
+	ucp_worker_params.field_mask = UCP_WORKER_PARAM_FIELD_THREAD_MODE;
+	ucp_worker_params.thread_mode = UCS_THREAD_MODE_SINGLE;
+
+	status = ucp_worker_create(ucp_context, &ucp_worker_params,
 				   &ucp_worker);
 	assert(status == UCS_OK);
 
@@ -276,7 +287,13 @@ void psucp_init(void) {
 static
 void psucp_connect(void) {
 	ucs_status_t status;
-	status = ucp_ep_create(ucp_worker, remote_addr.ucp_address, &ucp_ep);
+	ucp_ep_params_t ep_params;
+
+	memset(&ep_params, 0, sizeof(ep_params));
+	ep_params.field_mask = UCP_EP_PARAM_FIELD_REMOTE_ADDRESS;
+	ep_params.address = remote_addr.ucp_address;
+
+	status = ucp_ep_create(ucp_worker, &ep_params, &ucp_ep);
 	assert(status == UCS_OK);
 }
 
@@ -314,7 +331,7 @@ void init(FILE *peer)
 static inline
 ucs_status_t wait(void *request, int is_requestor)
 {
-	if (ucs_likely(!UCS_PTR_IS_PTR(request))) {
+	if (!UCS_PTR_IS_PTR(request)) {
 		return UCS_PTR_STATUS(request);
 	}
 
