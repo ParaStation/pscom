@@ -1,3 +1,14 @@
+2018-04-03  Jens Hauke  <hauke@par-tec.com>	-	5.2.2-1
+
+	* Enhancement: Increase PSCOM_MAX_UFDS.
+
+	* Enhancement: Support for external pscom4gateway plugin.
+
+	* Enhancement: Optional "allin" to link plugins and libpscom into
+	libmpi.
+
+	* Enhancement: pscom4psm: Implement env switch PSP_PSM_FASTINIT.
+
 2017-10-10  Jens Hauke  <hauke@par-tec.com>
 
 	* Fix: Mem leak with generated requests from psm2 connections
