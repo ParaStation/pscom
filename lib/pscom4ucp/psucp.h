@@ -18,7 +18,7 @@
 typedef struct psucp_con_info psucp_con_info_t;
 typedef struct hca_info hca_info_t;
 
-#define X_UCP_MAX_ADDR 256
+#define X_UCP_MAX_ADDR 530
 
 // contact endpoint info
 typedef struct psucp_info_msg_s {
