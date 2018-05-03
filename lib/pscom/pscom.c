@@ -327,7 +327,7 @@ void pscom_set_debug(int level)
 
 
 __attribute__((visibility("default")))
-int pscom_init(int pscom_version)
+pscom_err_t pscom_init(int pscom_version)
 {
 	static int init=0;
 
@@ -381,7 +381,7 @@ int pscom_init(int pscom_version)
 }
 
 
-int pscom_init_thread(int pscom_version)
+pscom_err_t pscom_init_thread(int pscom_version)
 {
 	pscom.threaded = 1;
 	return pscom_init(pscom_version);
