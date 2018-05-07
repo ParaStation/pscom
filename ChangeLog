@@ -1,3 +1,8 @@
+2018-05-07  Jens Hauke  <hauke@par-tec.com>	-	5.2.3-1
+
+	* Fix: UCP: pscom4ucp: Increased space for ucp_address_t endpoint
+	address (Supporting ucx >= 1.3.0-1)
+
 2018-04-03  Jens Hauke  <hauke@par-tec.com>	-	5.2.2-1
 
 	* Enhancement: Increase PSCOM_MAX_UFDS.
