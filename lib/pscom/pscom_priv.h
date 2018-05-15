@@ -228,6 +228,9 @@ typedef struct pscom_backlog {
 } pscom_backlog_t;
 
 
+typedef uint32_t pscom_con_id_t;
+
+
 #define MAGIC_CONNECTION	0x78626c61
 struct PSCOM_con
 {
@@ -261,7 +264,7 @@ struct PSCOM_con
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection
 
 	int			suspend_on_demand_portno; // remote listening portno on suspended connections
-	unsigned		id;		// Process local unique connection id
+	pscom_con_id_t		id;		// Process local unique connection id
 
 	struct list_head	sendq;		// List of pscom_req_t.next
 
@@ -548,12 +551,10 @@ pscom_req_t *get_req(pscom_request_t *request)
 extern pscom_con_t **pscom_con_ids;
 extern unsigned pscom_con_ids_mask;
 
-
-void *pscom_con_to_id(pscom_con_t *con);
+pscom_con_id_t pscom_con_to_id(pscom_con_t *con);
 
 static inline
-pscom_con_t *pscom_id_to_con(void *_id) {
-	unsigned id = (unsigned)(unsigned long)_id;
+pscom_con_t *pscom_id_to_con(pscom_con_id_t id) {
 	pscom_con_t *con = pscom_con_ids[id & pscom_con_ids_mask];
 	if (!con || (con->id != id)) con = NULL;
 	return con;

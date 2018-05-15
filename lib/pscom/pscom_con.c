@@ -396,25 +396,27 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 
 
 pscom_con_t **pscom_con_ids = NULL;
-unsigned pscom_con_ids_mask = 0;
-unsigned pscom_con_id_last = ~0;
+pscom_con_id_t pscom_con_ids_mask = 0;
+pscom_con_id_t pscom_con_id_last = 0; // Start with con_id == 1.
 
 
 static
 void pscom_con_id_increase(void) {
-	unsigned size = pscom_con_ids_mask + 1; // = power of 2
-	unsigned i;
+	pscom_con_id_t size = pscom_con_ids_mask + 1; // = power of 2
+	pscom_con_id_t i;
 
 	// Double the array size
 	pscom_con_ids = realloc(pscom_con_ids, sizeof(pscom_con_t*) * 2 * size);
 
-	// new mask with one more bit
+	assert(pscom_con_ids_mask < 0xffffffff);
+
+	// new mask with one more bit set
 	pscom_con_ids_mask = (pscom_con_ids_mask << 1) | 1;
 
 	// Reassign existing connections to new slots and initialize unused slots.
 	for (i = 0; i < size; i++) {
 		pscom_con_t *con = pscom_con_ids[i];
-		unsigned id = con ? con->id : i;
+		pscom_con_id_t id = con ? con->id : i;
 
 		pscom_con_ids[id & pscom_con_ids_mask] = con;
 		pscom_con_ids[(id + size) & pscom_con_ids_mask] = NULL; // empty slot
@@ -423,14 +425,14 @@ void pscom_con_id_increase(void) {
 
 
 static
-unsigned pscom_con_next_id(void) {
-	unsigned id;
+pscom_con_id_t pscom_con_next_id(void) {
+	pscom_con_id_t id;
 
 	while (1) {
 		for (id = pscom_con_id_last + 1;
 		     (id & pscom_con_ids_mask) != (pscom_con_id_last & pscom_con_ids_mask);
 		     id++) {
-			if (!pscom_con_ids[id & pscom_con_ids_mask]) {
+			if ((id != 0) && !pscom_con_ids[id & pscom_con_ids_mask]) {
 				return id;
 			}
 		}
@@ -440,7 +442,7 @@ unsigned pscom_con_next_id(void) {
 
 
 static
-unsigned pscom_con_id_register(pscom_con_t *con) {
+pscom_con_id_t pscom_con_id_register(pscom_con_t *con) {
 	assert(!pscom_con_ids_mask || pscom_con_ids[con->id & pscom_con_ids_mask] != con);
 
 	con->id = pscom_con_next_id();
@@ -472,17 +474,16 @@ void pscom_con_id_unregister(pscom_con_t *con) {
 }
 
 
-void *pscom_con_to_id(pscom_con_t *con)
+pscom_con_id_t pscom_con_to_id(pscom_con_t *con)
 {
-	// Force result to be unequal to NULL
-	return (void*)((unsigned long)con->id | 1UL << (sizeof(unsigned)*8));
+	return con->id;
 }
 
 
 void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info)
 {
 	*con_info = con->pub.socket->local_con_info;
-	con_info->id = pscom_con_to_id(con);
+	con_info->id = (void*)(unsigned long)pscom_con_to_id(con);
 }
 
 
