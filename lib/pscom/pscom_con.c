@@ -343,8 +343,16 @@ void pscom_con_error_io_done(pscom_request_t *request)
 static
 void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 {
-	pscom_req_t *req = pscom_req_create(0, sizeof(pscom_req_io_con_error_t));
-	pscom_req_io_con_error_t *rdata = (pscom_req_io_con_error_t *)req->pub.user;
+	pscom_req_t *req;
+	pscom_req_io_con_error_t *rdata;
+
+	if (con->state.close_called) {
+		// Close already called. Ignore further errors.
+		return;
+	}
+
+	req = pscom_req_create(0, sizeof(pscom_req_io_con_error_t));
+	rdata = (pscom_req_io_con_error_t *)req->pub.user;
 
 	rdata->operation = operation;
 	rdata->error = error;
@@ -1005,6 +1013,7 @@ void pscom_close_connection(pscom_connection_t *connection)
 {
 	pscom_lock(); {
 		pscom_con_t *con = get_con(connection);
+		assert(con->magic == MAGIC_CONNECTION);
 		con->state.close_called = 1;
 		pscom_con_close(con);
 	} pscom_unlock();
