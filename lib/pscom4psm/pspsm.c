@@ -616,7 +616,12 @@ void pspsm_con_free(pspsm_con_info_t *con_info)
 static
 void pspsm_con_cleanup(pspsm_con_info_t *con_info)
 {
-	/* FIXME: implement */
+#ifdef PSM2_EP_DISCONNECT_FORCE
+	psm2_error_t err;
+	psm2_ep_disconnect2(pspsm_ep, 1, &con_info->epaddr, NULL, &err, PSM2_EP_DISCONNECT_FORCE, 0);
+#else
+#warning "Missing psm2_ep_disconnect2(). Maybe update libpsm2-devel?"
+#endif
 }
 
 
