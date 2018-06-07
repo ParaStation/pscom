@@ -988,13 +988,19 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 		pre->last_reconnect = now;
 
 		if (!pscom_precon_isconnected(pre) || (pre->stat_recv == 0)) {
-			if (pscom_precon_isconnected(pre) && (pre->stat_recv == 0)) {
+			if (pscom_precon_isconnected(pre) && (pre->stat_recv == 0) &&
+			    (pre->stalled_cnt < 4 /* ToDo: Configure option! */)) {
 				/* ToDo:
 				   If the peer is just busy, we should wait further, but if
 				   this connection is broken we should reconnect. How to detect that
 				   the remote missed the accept event? */
-				DPRINT(D_DBG, "precon(%p): connection stalled", pre);
+				DPRINT(D_DBG, "precon(%p): connection stalled %u/4", pre, pre->stalled_cnt);
+				pre->stalled_cnt++;
 			} else {
+				if (pre->stalled_cnt) {
+					DPRINT(1, "precon(%p): connection stalled to long - reconnecting", pre);
+				}
+				pre->stalled_cnt = 0;
 				pscom_precon_reconnect(pre);
 			}
 		}
@@ -1018,6 +1024,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 	pre->recv_done = 1;	// No recv
 	pre->closefd_on_cleanup = 1; // Default: Close fd on cleanup. Only PSCOM_CON_TYPE_TCP will overwrite this.
 	pre->back_connect = 0;	// Not a back connect
+	pre->stalled_cnt = 0;
 
 	pre->ufd_info.fd = -1;
 	pre->ufd_info.pollfd_idx = -1;
