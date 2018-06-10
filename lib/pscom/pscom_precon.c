@@ -762,7 +762,8 @@ check_read_error:
 	} else if (errno == EAGAIN || errno == EINTR) {
 		/* Try again later */
 		return;
-	} else if (errno == ECONNREFUSED) {
+	} else if ((errno == ECONNREFUSED) ||
+		   (errno == ECONNRESET)) {
 		DPRINT(3, "precon(%p): read(%d,...) : %s", pre, fd, strerror(errno));
 		/* pscom_precon_reconnect(pre); */
 		/* Terminate this connection. Reconnect after pscom.env.precon_reconnect_timeout.*/
