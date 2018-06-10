@@ -458,7 +458,15 @@ pscom_con_id_t pscom_con_id_register(pscom_con_t *con) {
 static
 void pscom_con_id_unregister(pscom_con_t *con) {
 	unsigned i;
-	assert(pscom_con_ids[con->id & pscom_con_ids_mask] == con);
+	if ((!pscom_con_ids_mask) ||
+	    (pscom_con_ids[con->id & pscom_con_ids_mask] != con)) {
+		pscom_con_t *con_reg = pscom_con_ids_mask ?
+			pscom_con_ids[con->id & pscom_con_ids_mask] : NULL;
+		DPRINT(1, "warning: pscom_con_id_unregister(con:%p [con_reg:%p]) called more than once!",
+		       con, con_reg);
+		// assert(pscom_con_ids[con->id & pscom_con_ids_mask] == con);
+		return;
+	}
 
 	pscom_con_ids[con->id & pscom_con_ids_mask] = NULL;
 
