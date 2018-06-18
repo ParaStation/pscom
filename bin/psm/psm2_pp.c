@@ -48,6 +48,7 @@ int arg_verbose = 0;
 const char *arg_port = "5538";
 const char *arg_servername = NULL;
 int arg_nokill = 0;
+int arg_uuid = 42;
 int is_server = 1;
 
 static
@@ -64,6 +65,8 @@ void parse_opt(int argc, char **argv)
 		  &arg_maxtime, 0, "max time", "ms" },
 		{ "maxsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
 		  &arg_maxmsize , 0, "maximal messagesize", "size" },
+		{ "uuid"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
+		  &arg_uuid, 0, "uuid seed (one byte only)", "uint8" },
 
 		{ "nokill" , 'k', POPT_ARGFLAG_OR | POPT_ARG_VAL,
 		  &arg_nokill, 1, "Dont kill the server afterwards", NULL },
@@ -227,9 +230,24 @@ void pspsm_connect(void)
 
 
 static
+void pspsm_disconnect(void) {
+#ifdef PSM2_EP_DISCONNECT_FORCE
+	psm2_error_t ret;
+	psm2_error_t err = PSM2_OK;
+
+	ret = psm2_ep_disconnect2(my_ep, 1, &remote_epaddr, NULL, &err, PSM2_EP_DISCONNECT_FORCE, 0);
+	pspsm_ret_check(ret, "ret=psm2_ep_disconnect2()");
+	pspsm_ret_check(err, "psm2_ep_disconnect2(&err)");
+#else
+#warning "Missing psm2_ep_disconnect2(). Maybe update libpsm2-devel?"
+#endif
+}
+
+
+static
 void pspsm_init_uuid(void)
 {
-	memset(my_uuid, 42, sizeof(my_uuid));
+	memset(my_uuid, arg_uuid, sizeof(my_uuid));
 	// uuid[0] = getuid();
 }
 
@@ -284,10 +302,9 @@ void pp_info_read(FILE *peer, pp_info_msg_t *msg)
 
 
 static
-void init(FILE *peer)
+void init(void)
 {
 	psm2_error_t ret;
-	pp_info_msg_t lmsg, rmsg;
 	int verno_minor = PSM2_VERNO_MINOR;
 	int verno_major = PSM2_VERNO_MAJOR;
 
@@ -298,6 +315,11 @@ void init(FILE *peer)
 	pspsm_init_uuid();
 
 	pspsm_init_con();
+}
+
+
+void connect_peer(FILE *peer) {
+	pp_info_msg_t lmsg, rmsg;
 
 	/* Get local peer information */
 	pp_info_get(&lmsg);
@@ -311,10 +333,19 @@ void init(FILE *peer)
 	}
 
 	pp_info_set(&rmsg);
+
+	// psm2 connect
 	pspsm_connect();
 
 	printf("I'm the %s\n", is_server ? "server" : "client");
 	sleep(1);
+
+}
+
+
+void disconnect_peer(FILE *peer) {
+	// psm2 disconnect
+	pspsm_disconnect();
 }
 
 
@@ -336,6 +367,24 @@ void pspsm_send(size_t len)
 			   s_buf, (unsigned int)slen);
 	assert(slen <= UINT_MAX);
 	pspsm_ret_check(ret, "psm_mq_send()");
+}
+
+#define EOF_MAGIC_LEN ((uint32_t)~0)
+static inline
+void pspsm_send_eof(void)
+{
+	psm2_error_t ret;
+	size_t slen;
+
+	s_buf->len = EOF_MAGIC_LEN;
+	slen = sizeof(s_buf->len);
+
+	ret = psm2_mq_send(my_mq, remote_epaddr,
+			   MQ_FLAGS_NONE,  /* no flags, not a sync send */
+			   MQ_TAG, /* don't care tag */
+			   s_buf, (unsigned int)slen);
+	assert(slen <= UINT_MAX);
+	pspsm_ret_check(ret, "psm_mq_send(EOF)");
 }
 
 
@@ -369,8 +418,10 @@ void run_pp_server(void)
 {
 	while (1) {
 		unsigned len = pspsm_recv();
+		if (len == EOF_MAGIC_LEN) break;
 		pspsm_send(len);
 	}
+	printf("EOF received\n");
 }
 
 
@@ -438,6 +489,7 @@ void do_pp_client(void)
 			if (loops < 1) loops = 1;
 		}
 	}
+	pspsm_send_eof();
 
 	return;
 }
@@ -471,6 +523,7 @@ FILE *get_peer(void)
 		.ai_socktype = SOCK_STREAM
 	};
 	struct addrinfo *addrinfo;
+	FILE *peer;
 
 	int n;
 	n = getaddrinfo(arg_servername ? arg_servername : "0", arg_port, &hints, &addrinfo);
@@ -492,6 +545,7 @@ FILE *get_peer(void)
 		SCALL(listen(listen_fd, 1));
 		printf("Waiting for connection\n");
 		fd = accept(listen_fd, NULL, 0);
+		close(listen_fd);
 	} else {
 		struct sockaddr_in *si = (struct sockaddr_in *)addrinfo->ai_addr;
 		assert(si->sin_family == AF_INET);
@@ -503,7 +557,32 @@ FILE *get_peer(void)
 	}
 
 	if (addrinfo) freeaddrinfo(addrinfo);
-	return fdopen(fd, "a+");
+
+	peer = fdopen(fd, "a+");
+
+	connect_peer(peer);
+
+	if (!arg_nokill) {
+		// Kill the server with SIGSTOP if the peer disappear.
+		SCALL(fcntl(fd, F_SETOWN, getpid()));
+		SCALL(fcntl(fd, F_SETSIG, SIGINT));
+		SCALL(fcntl(fd, F_SETFL, O_ASYNC));
+	}
+
+	return peer;
+}
+
+void put_peer(FILE *peer) {
+	disconnect_peer(peer);
+
+	if (!arg_nokill) {
+		int fd = fileno(peer);
+		// clean shutdown. don't kill me if the peer disappear.
+		SCALL(fcntl(fd, F_SETSIG, SIGIO));
+		SCALL(fcntl(fd, F_SETFL, 0));
+	}
+
+	fclose(peer);
 }
 
 
@@ -513,21 +592,24 @@ int main(int argc, char **argv)
 
 	parse_opt(argc, argv);
 
-	peer = get_peer();
-	init(peer);
+	init();
+
 
 	if (is_server) { // server
-		if (!arg_nokill) {
-			// Kill the server with SIGSTOP if the peer disappear.
-			int fd = fileno(peer);
-			SCALL(fcntl(fd, F_SETOWN, getpid()));
-			SCALL(fcntl(fd, F_SETSIG, SIGINT));
-			SCALL(fcntl(fd, F_SETFL, O_ASYNC));
+		while (1) {
+			peer = get_peer();
+
+			run_pp_server();
+
+			put_peer(peer);
 		}
-		run_pp_server();
 	} else {
+		peer = get_peer();
+
 		sleep(2);
 		do_pp_client();
+
+		put_peer(peer);
 	}
 
 	return 0;
