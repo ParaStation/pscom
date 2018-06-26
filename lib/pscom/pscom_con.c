@@ -777,6 +777,9 @@ pscom_err_t pscom_con_connect_via_tcp(pscom_con_t *con, int nodeid, int portno)
 	con->pub.state = PSCOM_CON_STATE_CONNECTING;
 	pscom_precon_handshake(pre);
 
+	if(con->pub.state == PSCOM_CON_STATE_CLOSED)
+		goto err_connect;
+
 	return PSCOM_SUCCESS;
 	/* --- */
 //err_init_failed:
