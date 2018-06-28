@@ -43,6 +43,7 @@ void pscom_ondemand_cleanup(pscom_con_t *con)
 	con->write_start = pscom_no_rw_start_stop;
 	con->read_start = pscom_no_rw_start_stop;
 	con->read_stop = pscom_no_rw_start_stop;
+	con->close = NULL;
 
 	pscom_ondemand_read_stop(con);
 	pscom_listener_user_dec(&sock->listen);

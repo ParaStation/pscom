@@ -273,7 +273,6 @@ void plugin_connect_next(pscom_con_t *con)
 	if (!pre->plugin) {
 		// error: No working plugin found
 		errno = ENOPROTOOPT;
-		pscom_precon_close(pre);
 		pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
 	} else {
 		// Try this plugin:
