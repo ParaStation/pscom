@@ -118,7 +118,11 @@ void psshm_init()
 {
 	/* Hook into the malloc handler with __morecore... */
 
+#ifndef PSCOM_ALLIN
 	unsigned long enabled = 1;
+#else
+	unsigned long enabled = 0;
+#endif
 
 	/* Disabled by "PSP_MALLOC=0, PSP_SHAREDMEM=0 or PSP_SHM=0? */
 	getenv_ulong(&enabled, ENV_MALLOC);
@@ -143,7 +147,11 @@ void psshm_init()
 
 	return;
 out_disabled:
+#ifndef PSCOM_ALLIN
 	psshm_info.msg = "disabled by " ENV_MALLOC " = 0";
+#else
+	psshm_info.msg = "not enabled by " ENV_MALLOC " = 1";
+#endif
 	return;
 out_disabled_shm:
 	psshm_info.msg = "disabled by " ENV_ARCH_NEW_SHM " = 0";
