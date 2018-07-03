@@ -29,7 +29,8 @@ struct pspsm_con_info {
 	psm2_epaddr_t epaddr;    /**< destination address of peer */
 	uint64_t send_id;       /**< tag used when sending to peer */
 	uint64_t recv_id;       /**< tag used when receiving from peer*/
-	int con_broken;         /**< set to 1 if connection broken */
+	unsigned con_broken : 1;/**< set to 1 if connection broken */
+	unsigned connected : 1;/**< set to 1 if connected */
 
 	/* sending */
 	struct PSCOM_req *sreq;       /**< pscom open send request */
@@ -212,19 +213,21 @@ int pspsm_init_mq(void)
 static
 int pspsm_close_endpoint(void)
 {
-#if 1
-	/* psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
+#if 0
+	/* Hack: psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
 	   the cleanup always helps.
 	   (Seen with infinipath-libs-3.2-32129.1162_rhel6_qlc.x86_64) */
 	if (pspsm_debug >= 3) pspsm_print_stats();
 	return 0;
 #else
-	psm_error_t ret;
+	psm2_error_t ret;
+
+	if (pspsm_debug >= 3) pspsm_print_stats();
 
 	if (pspsm_ep){
-		ret = psm_ep_close(pspsm_ep, PSM_EP_CLOSE_GRACEFUL, 0);
+		ret = psm2_ep_close(pspsm_ep, PSM2_EP_CLOSE_GRACEFUL, 150000 /* nsec timeout*/);
 		pspsm_ep = NULL;
-		if (ret != PSM_OK) goto err;
+		if (ret != PSM2_OK) goto err;
 
 		if (sendbuf) free(sendbuf);
 
@@ -233,7 +236,7 @@ int pspsm_close_endpoint(void)
 	return 0;
 
  err:
-	pspsm_err(psm_error_get_string(ret));
+	pspsm_err(psm2_error_get_string(ret));
 	pspsm_dprint(1, "pspsm_close_endpoint: %s", pspsm_err_str);
 	return -1;
 #endif
@@ -265,6 +268,7 @@ int pspsm_con_init(pspsm_con_info_t *con_info, struct PSCOM_con *con)
 	static uint64_t id = 42;
 
 	con_info->con_broken = 0;
+	con_info->connected = 0;
 	con_info->recv_id = id++;
 	con_info->rbuf = NULL;
 	con_info->sreq = NULL;
@@ -295,9 +299,13 @@ int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 
 	ret = psm2_ep_connect(pspsm_ep, 1, &info_msg->epid, NULL, &ret1,
 			      &con_info->epaddr, 0);
+
 	con_info->send_id = info_msg->id;
 
 	if (ret != PSM2_OK) goto err_connect;
+
+	con_info->connected = 1;
+
 	pspsm_dprint(2, "pspsm_con_connect: OK");
 	pspsm_dprint(2, "sending with %"PRIx64", receiving %"PRIx64,
 		     con_info->send_id, con_info->recv_id);
@@ -618,7 +626,11 @@ void pspsm_con_cleanup(pspsm_con_info_t *con_info)
 {
 #ifdef PSM2_EP_DISCONNECT_FORCE
 	psm2_error_t err;
-	psm2_ep_disconnect2(pspsm_ep, 1, &con_info->epaddr, NULL, &err, PSM2_EP_DISCONNECT_FORCE, 0);
+
+	if (con_info->connected) {
+		psm2_ep_disconnect2(pspsm_ep, 1, &con_info->epaddr, NULL, &err, PSM2_EP_DISCONNECT_FORCE, 0);
+		con_info->connected = 0;
+	}
 #else
 #warning "Missing psm2_ep_disconnect2(). Maybe update libpsm2-devel?"
 #endif
