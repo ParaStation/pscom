@@ -1,3 +1,17 @@
+2018-07-09  Jens Hauke  <hauke@par-tec.com>	-	5.2.4-1
+
+	* Enhancement: At connection startup, recover from ECONNRESET
+	errors (improve scaling).
+
+	* Fix: Error handling for failing ondemand connections (fix double
+	cleanup in case of on error).
+
+	* Fix: Error handling for the non-ondemand case if no usable
+	plugin can be found (e.g. PSP_TCP=0).
+
+	* Fix: PSM2: clean disconnect of psm2 connections. (requires
+	libpsm >= PSM2_10.2-260).
+
 2018-05-07  Jens Hauke  <hauke@par-tec.com>	-	5.2.3-1
 
 	* Fix: UCP: pscom4ucp: Increased space for ucp_address_t endpoint
