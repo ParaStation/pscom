@@ -114,6 +114,7 @@ void getenv_ulong(unsigned long *val, const char *name)
 }
 
 
+__attribute__((visibility("default")))
 void psshm_init()
 {
 	/* Hook into the malloc handler with __morecore... */
@@ -138,6 +139,10 @@ void psshm_init()
 
 	/* Initialize shared mem region */
 	if (psshm_init_base()) goto err_init_base;
+
+#ifdef PSCOM_ALLIN
+	malloc_trim(0);
+#endif
 
 //	mallopt(M_MMAP_THRESHOLD, 0/* psshm_config.max_size*/); // always use our psshm_morecore()
 	mallopt(M_MMAP_MAX, 0); // Do not use mmap(). Always use psshm_morecore()
