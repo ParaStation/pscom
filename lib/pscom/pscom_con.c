@@ -413,6 +413,8 @@ void pscom_con_id_increase(void) {
 	// new mask with one more bit set
 	pscom_con_ids_mask = (pscom_con_ids_mask << 1) | 1;
 
+	if (size == 1) pscom_con_ids[0] = NULL;
+
 	// Reassign existing connections to new slots and initialize unused slots.
 	for (i = 0; i < size; i++) {
 		pscom_con_t *con = pscom_con_ids[i];
@@ -432,6 +434,7 @@ pscom_con_id_t pscom_con_next_id(void) {
 		for (id = pscom_con_id_last + 1;
 		     (id & pscom_con_ids_mask) != (pscom_con_id_last & pscom_con_ids_mask);
 		     id++) {
+			assert(pscom_con_ids);
 			if ((id != 0) && !pscom_con_ids[id & pscom_con_ids_mask]) {
 				return id;
 			}
