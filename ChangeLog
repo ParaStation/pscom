@@ -1,3 +1,11 @@
+2018-07-16  Jens Hauke  <hauke@par-tec.com>	-	5.2.5-0rc1
+
+	* Fix: heap corruption at first connect
+
+2018-07-10  Carsten Clauss <clauss@par-tec.com>
+
+	* psmalloc: support for the PSCOM_ALLIN case
+
 2018-07-09  Jens Hauke  <hauke@par-tec.com>	-	5.2.4-1
 
 	* Enhancement: At connection startup, recover from ECONNRESET
