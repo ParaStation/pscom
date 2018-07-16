@@ -214,7 +214,7 @@ struct PSCOM_env {
 	.psm_fastinit = 1,						\
 	.sigquit = 0,							\
 	.sigsuspend = 0,						\
-	.readahead = 100,						\
+	.readahead = 350,						\
 	.skipblocksize = 8192,						\
 	.retry = 10,							\
 	.guard = 1,							\
