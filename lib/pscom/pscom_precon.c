@@ -684,6 +684,7 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 		if (retry_on_error(errno)) {
 			/* Nonblocking connect() failed e.g. on ECONNREFUSED */
 			pscom_precon_reconnect(pre);
+			pre = NULL; // pscom_precon_reconnect() might close pre. Don't use pre afterwards.
 		} else {
 			switch (errno) {
 			case EAGAIN:
@@ -703,7 +704,7 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 		}
 	}
 
-	pscom_precon_check_end(pre);
+	if (pre) pscom_precon_check_end(pre);
 }
 
 
