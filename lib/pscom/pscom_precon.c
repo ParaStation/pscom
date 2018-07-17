@@ -318,7 +318,9 @@ void pscom_precon_terminate(precon_t *pre)
 	if (pre->send_len) {
 		// Dont send
 		pre->send_len = 0;
-		ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
+		if (pre->ufd_info.fd != -1) {
+			ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
+		}
 	}
 }
 
@@ -572,7 +574,7 @@ void pscom_precon_destroy(precon_t *pre)
 
 static
 int pscom_precon_isconnected(precon_t *pre) {
-	return pre->ufd_info.fd >= 0;
+	return pre->ufd_info.fd != -1;
 }
 
 
@@ -831,7 +833,9 @@ static
 void pscom_precon_recv_stop(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
-	ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLIN);
+	if (pscom_precon_isconnected(pre)) {
+		ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLIN);
+	}
 	pre->recv_done = 1;
 }
 
@@ -839,6 +843,7 @@ void pscom_precon_recv_stop(precon_t *pre)
 void pscom_precon_assign_fd(precon_t *pre, int con_fd)
 {
 	assert(pre->magic == MAGIC_PRECON);
+	assert(pre->ufd_info.fd == -1);
 	tcp_configure(con_fd);
 
 	pre->ufd_info.fd = con_fd;
@@ -924,6 +929,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 	pre->back_connect = 0;	// Not a back connect
 
 	pre->ufd_info.fd = -1;
+	pre->ufd_info.pollfd_idx = -1;
 
 	pre->last_reconnect =
 		pre->last_print_stat = getusec();
