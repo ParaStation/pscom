@@ -365,6 +365,15 @@ void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type)
 
 
 static
+void pscom_precon_abort_plugin(precon_t *pre)
+{
+	pscom_con_t *con = pre->con;
+	if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+	pre->plugin = NULL; // Do not use plugin anymore after PSCOM_INFO_ARCH_NEXT
+}
+
+
+static
 void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsigned size)
 {
 	int err;
@@ -377,12 +386,12 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 
 	switch (type) {
 	case PSCOM_INFO_FD_EOF:
-		if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+		pscom_precon_abort_plugin(pre);
 		if (con) pscom_con_setup_failed(con, PSCOM_ERR_EOF);
 		if (!pre->recv_done) pscom_precon_terminate(pre);
 		break;
 	case PSCOM_INFO_FD_ERROR:
-		if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+		pscom_precon_abort_plugin(pre);
 		err = data ? *(int*)data : 0;
 		if (con && (
 			    !pre->back_connect                              || /* not a back connect */
