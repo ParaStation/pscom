@@ -1,3 +1,10 @@
+2018-07-18  Jens Hauke  <hauke@par-tec.com>	-	5.2.5-0rc2
+
+	* Fix: Error handling on failing connections (Segfault after
+	"connection refused" and "Network unreachable"
+
+	* Enhancement: Increase default: PSP_READAHEAD=350
+
 2018-07-16  Jens Hauke  <hauke@par-tec.com>	-	5.2.5-0rc1
 
 	* Fix: heap corruption at first connect
