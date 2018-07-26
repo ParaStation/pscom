@@ -31,6 +31,7 @@ extern short PSC_getMyID(void);
 #endif
 
 #define maxnp (4*1024)
+#define DEFAULT_PORT 6020
 
 static int arg_np=-1;
 static int arg_port=PSCOM_ANYPORT;
@@ -49,11 +50,12 @@ int map_psid[maxnp];
 #define HOSTNAME_SIZE 16
 char map_nodename[maxnp][HOSTNAME_SIZE]; // = { [0 ... maxnp-1 ] = "???" };
 int myrank = -1;
-int master_node;
-int master_port;
+int master_node = -1;
+int master_port = -1;
 int finish=0;
 pscom_socket_t *pscom_socket = NULL;
 int changes = 1;
+int i_am_server = 0;
 
 static
 int get_unused_rank(void);
@@ -567,9 +569,55 @@ void send_exit(int to)
 
 
 static
+void spawn_manual_master(int argc, char **argv, int np)
+{
+    int me = pscom_get_nodeid();
+
+    if (arg_server) {
+	int rc = pscom_parse_socket_str(arg_server, &master_node, &master_port);
+	exit_on_error(rc, "Server: '%s'\n", arg_server);
+
+	if ((master_port == 0) && (master_node == me)) {
+	    // i am the server (rank=0).
+	    i_am_server = 1;
+
+	    if (arg_port == -1) {
+		// Use default port, if not specified otherwise.
+		arg_port = DEFAULT_PORT;
+	    }
+	    arg_server = NULL;
+	}
+	if (master_port == 0) {
+	    master_port = arg_port == -1 ? DEFAULT_PORT : arg_port;
+	}
+    } else {
+	i_am_server = 1;
+	master_node = me;
+    }
+}
+
+
+static
+void spawn_manual(int argc, char **argv, int np)
+{
+    if (i_am_server) {
+	set_myrank(0);
+	master_port = pscom_get_portno(pscom_socket);
+	printf("Call:\n%s %s\n", argv[0], pscom_socket_str(master_node, master_port));
+    }
+}
+
+
+static
 void spawn_master(int argc, char **argv, int np)
 {
-    if (arg_manual) return;
+#ifndef PSMGMT_ENABLED
+    arg_manual = 1;
+#endif
+    if (arg_manual) {
+	spawn_manual_master(argc, argv, np);
+	return;
+    }
 #ifdef PSMGMT_ENABLED
     PSE_initialize();
 
@@ -594,8 +642,6 @@ void spawn_master(int argc, char **argv, int np)
     }
 
     /* PSE_registerToParent(); */
-#else
-    arg_manual = 1;
 #endif
 }
 
@@ -611,21 +657,6 @@ void spawn_pse(int argc, char **argv, int np)
     master_node = PSE_getMasterNode();
     master_port = PSE_getMasterPort();
 #endif
-}
-
-
-static
-void spawn_manual(int argc, char **argv, int np)
-{
-    if (arg_server) {
-	int rc = pscom_parse_socket_str(arg_server, &master_node, &master_port);
-	exit_on_error(rc, "Server: '%s'\n", arg_server);
-    } else {
-	master_node = pscom_get_nodeid();
-	master_port = pscom_get_portno(pscom_socket);
-	set_myrank(0);
-	printf("Call:\n%s %s\n", argv[0], pscom_socket_str(master_node, master_port));
-    }
 }
 
 
@@ -658,8 +689,18 @@ void run(int argc,char **argv,int np)
     pscom_socket = pscom_open_socket(0, 0);
 
     if (pscom_listen(pscom_socket, arg_port)) {
-	perror("Cant bind port!");
-	exit(-1);
+	if ((errno == EADDRINUSE) && i_am_server && (arg_port == DEFAULT_PORT)) {
+	    // server already started? Try again as a client with rank > 0 with any port.
+	    i_am_server = 0;
+	    arg_port = PSCOM_ANYPORT;
+	    if (pscom_listen(pscom_socket, arg_port)) {
+		perror("Cant bind any port!");
+		exit(-1);
+	    }
+	} else {
+	    perror("Cant bind port!");
+	    exit(-1);
+	}
     }
 
     init_conns(np);
