@@ -417,6 +417,26 @@ void connect_to_rank(int rank, int node, int port)
 
 
 static
+void con_error_handler(pscom_connection_t *connection, pscom_op_t operation, pscom_err_t error)
+{
+    if (error == PSCOM_ERR_EOF) return; // do not report EOF
+
+    if (map_conn[0] == connection) {
+	fprintf(stderr, "#%u: Master Connection to %s : %s, Exiting.\n",
+		myrank,
+		pscom_con_info_str(&connection->remote_con_info),
+		pscom_err_str(error));
+	exit(1);
+    } else {
+	fprintf(stderr, "#%u: Connection to %s : %s\n",
+		myrank,
+		pscom_con_info_str(&connection->remote_con_info),
+		pscom_err_str(error));
+    }
+}
+
+
+static
 void set_myrank(int rank)
 {
     myrank = rank;
@@ -687,6 +707,8 @@ void run(int argc,char **argv,int np)
     }
 
     pscom_socket = pscom_open_socket(0, 0);
+
+    pscom_socket->ops.con_error = con_error_handler;
 
     if (pscom_listen(pscom_socket, arg_port)) {
 	if ((errno == EADDRINUSE) && i_am_server && (arg_port == DEFAULT_PORT)) {
