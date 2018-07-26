@@ -59,11 +59,25 @@ int i_am_server = 0;
 
 static
 int get_unused_rank(void);
+void send_test_response(int from, int to, int type);
+
+#define max_used_con_types 50
+#define con_type_error 49
+
+const char *
+con_type_str(int type)
+{
+    if (type == con_type_error) {
+	return "Error";
+    } else {
+	return pscom_con_type_str(type);
+    }
+}
+
 
 void time_handler_old(int signal)
 {
     int j,k;
-#define max_used_con_types 30
     int used_con_types[max_used_con_types];
     int ranks_n;
     char *space;
@@ -123,7 +137,7 @@ void time_handler_old(int signal)
 		if (ctype == PSCOM_CON_TYPE_NONE) {
 		    fprintf(stdout,"?%s", space);
 		} else {
-		    fprintf(stdout, "%c%s", pscom_con_type_str(ctype)[0], space);
+		    fprintf(stdout, "%c%s", con_type_str(ctype)[0], space);
 		    if (ctype < max_used_con_types) used_con_types[ctype] = 1;
 		}
 	    }
@@ -135,7 +149,7 @@ void time_handler_old(int signal)
 	fprintf(stdout,"Types: ");
 	for (j = PSCOM_CON_TYPE_LOOP; j < max_used_con_types; ++j) {
 	    if (!used_con_types[j]) continue;
-	    const char *state = pscom_con_type_str(j);
+	    const char *state = con_type_str(j);
 	    fprintf(stdout,"  %c=%s", state[0], state);
 	}
 	fprintf(stdout,"\n");
@@ -388,6 +402,18 @@ int get_unused_rank(void)
 }
 
 
+static
+int rank_of_connection(pscom_connection_t *con) {
+    int rank;
+    for (rank = 0; rank < maxnp; rank++) {
+	if (map_conn[rank] == con) {
+	    return rank;
+	}
+    }
+    return -1;
+}
+
+
 void connect_to_rank(int rank, int node, int port)
 {
     if (map_conn[rank]) {
@@ -401,18 +427,20 @@ void connect_to_rank(int rank, int node, int port)
 //	    pscom_socket_str(node, port));
 
     pscom_connection_t *con = pscom_open_connection(pscom_socket);
+
+    map_conn[rank] = con;
+    map_node[rank] = node;
+    map_port[rank] = port;
+
     pscom_err_t rc = pscom_connect(con, node, port);
 
     if (rc) {
-	printf("Connect to rank %d from rank %d failed : %s\n",
-	       rank, myrank, pscom_err_str(rc));
+	fprintf(stderr, "Connect to rank %d from rank %d failed : %s\n",
+		rank, myrank, pscom_err_str(rc));
 	pscom_close_connection(con);
 	con = NULL;
 	if (rank == 0) exit(1);
     }
-    map_conn[rank] = con;
-    map_node[rank] = node;
-    map_port[rank] = port;
 }
 
 
@@ -428,8 +456,14 @@ void con_error_handler(pscom_connection_t *connection, pscom_op_t operation, psc
 		pscom_err_str(error));
 	exit(1);
     } else {
-	fprintf(stderr, "#%u: Connection to %s : %s\n",
+	int peer_rank = rank_of_connection(connection);
+	if (peer_rank >= 0) {
+	    send_test_response(myrank, peer_rank, con_type_error);
+	}
+
+	fprintf(stderr, "#%u: Connection to #%u %s : %s\n",
 		myrank,
+		peer_rank,
 		pscom_con_info_str(&connection->remote_con_info),
 		pscom_err_str(error));
     }
@@ -566,15 +600,14 @@ void send_test(int to)
     send_msg(map_conn[to], &msg, sizeof(msg), NULL, 0);
 }
 
-void send_test_response(int from, int to)
+void send_test_response(int from, int to, int type)
 {
     test_xheader_t msg;
 
     msg.type = MSG_TEST_RESPONSE;
     msg.from = from;
     msg.to = to;
-    msg.con_type = map_conn[from] ? map_conn[from]->type : PSCOM_CON_TYPE_NONE;
-
+    msg.con_type = type;
     send_msg(map_conn[0], &msg, sizeof(msg), NULL, 0);
 }
 
@@ -822,7 +855,7 @@ void run(int argc,char **argv,int np)
 	    break;
 	}
 	case MSG_TEST: {
-	    send_test_response(head->from, head->to);
+	    send_test_response(head->from, head->to, req->connection->type);
 	    break;
 	}
 	case MSG_TEST_RESPONSE: { /* only the master receive the response */
