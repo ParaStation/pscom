@@ -128,6 +128,21 @@ void pscom_precon_print_stat(precon_t *pre)
 }
 
 
+// return true, if err indicate an temporary error and it make sense to retry later.
+static
+int retry_on_error(int err)
+{
+	switch (err) {
+	case ECONNREFUSED:
+	case ECONNRESET:
+	case ECONNABORTED:
+	case ENETRESET:
+	case ETIMEDOUT:
+		return 1;
+	}
+	return 0;
+}
+
 /*
  * Helpers for sockets
  */
@@ -149,7 +164,7 @@ int mtry_connect(int sockfd, const struct sockaddr *serv_addr,
 		       debug_id, sockfd, pscom_inetstr(ntohl(sa->sin_addr.s_addr)),
 		       ntohs(sa->sin_port), ret, ret ? strerror(errno) : "ok");
 		if (ret >= 0) break;
-		if (errno != ECONNREFUSED) break;
+		if (!retry_on_error(errno)) break;
 		sleep(1);
 		DPRINT(2, "Retry %d CONNECT to %s:%d",
 		       i + 1,
@@ -397,9 +412,8 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		err = data ? *(int*)data : 0;
 		if (con && (
 			    !pre->back_connect                              || /* not a back connect */
-			    ((err != ECONNRESET) && (err != ECONNREFUSED))     /* or a back connect and the error is not due to a reverse
-										  connection already triggered or established by the peer. */
-			   )
+			    (!retry_on_error(err)))     /* or a back connect and the error is not due to a reverse
+							   connection already triggered or established by the peer. */
 		) {
 			pscom_con_setup_failed(con, err == ECONNREFUSED ? PSCOM_ERR_CONNECTION_REFUSED : PSCOM_ERR_IOERROR);
 		}
@@ -667,25 +681,25 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 			ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
 		}
 	} else {
-		switch (errno) {
-		case EAGAIN:
-		case EINTR:
-			/* Try again later */
-			break;
-		case ECONNREFUSED:
-		case ECONNRESET:
-			/* Nonblocking connect() failed */
+		if (retry_on_error(errno)) {
+			/* Nonblocking connect() failed e.g. on ECONNREFUSED */
 			pscom_precon_reconnect(pre);
-			break;
-		default:
-			/* Unexpected error. Stop writing. Print diagnostics.
-			   The cleanup will be done in do_read, which will
-			   (hopefully) also fail in read(). */
-			DPRINT(1, "precon(%p): write(%d, %p, %u) : %s",
-			       pre, pre->ufd_info.fd, pre->send, pre->send_len, strerror(errno));
-			ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
-			close(pre->ufd_info.fd);
-			pre->send_len = 0;
+		} else {
+			switch (errno) {
+			case EAGAIN:
+			case EINTR:
+				/* Try again later */
+				break;
+			default:
+				/* Unexpected error. Stop writing. Print diagnostics.
+				   The cleanup will be done in do_read, which will
+				   (hopefully) also fail in read(). */
+				DPRINT(1, "precon(%p): write(%d, %p, %u) : %s",
+				       pre, pre->ufd_info.fd, pre->send, pre->send_len, strerror(errno));
+				ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
+				close(pre->ufd_info.fd);
+				pre->send_len = 0;
+			}
 		}
 	}
 
@@ -773,8 +787,7 @@ check_read_error:
 	} else if (errno == EAGAIN || errno == EINTR) {
 		/* Try again later */
 		return;
-	} else if ((errno == ECONNREFUSED) ||
-		   (errno == ECONNRESET)) {
+	} else if (retry_on_error(errno)) {
 		DPRINT(3, "precon(%p): read(%d,...) : %s", pre, fd, strerror(errno));
 		/* pscom_precon_reconnect(pre); */
 		/* Terminate this connection. Reconnect after pscom.env.precon_reconnect_timeout.*/
