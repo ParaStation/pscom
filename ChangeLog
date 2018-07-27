@@ -1,3 +1,9 @@
+2018-07-27  Jens Hauke  <hauke@par-tec.com>	-	5.2.5-1
+
+	* Enhancement: TCP connects: Recover from more network errors
+
+	* Enhancement: "test_nodes {masternode}" startable by mpiexec/srun
+
 2018-07-18  Jens Hauke  <hauke@par-tec.com>	-	5.2.5-0rc2
 
 	* Fix: Error handling on failing connections (Segfault after
