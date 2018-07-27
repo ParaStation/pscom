@@ -30,6 +30,9 @@
 extern short PSC_getMyID(void);
 #endif
 
+#define INET_ADDR_SPLIT(addr) ((addr) >> 24) & 0xff, ((addr) >> 16) & 0xff, ((addr) >>  8) & 0xff, (addr) & 0xff
+#define INET_ADDR_FORMAT "%u.%u.%u.%u"
+
 #define maxnp (4*1024)
 #define DEFAULT_PORT 6020
 
@@ -40,6 +43,7 @@ static int arg_map=0;
 static int arg_type=0;
 static int arg_manual=0;
 static int arg_rlimit_nofile=-1;
+static int arg_verbose = 0;
 static const char *arg_server = NULL;
 int conrecv[maxnp][maxnp];
 pscom_con_type_t con_type[maxnp][maxnp];
@@ -647,6 +651,10 @@ void spawn_manual_master(int argc, char **argv, int np)
 	i_am_server = 1;
 	master_node = me;
     }
+    if (arg_verbose) {
+	fprintf(stderr, "Me: "INET_ADDR_FORMAT" %s\n", INET_ADDR_SPLIT(me), i_am_server ? "server" : "client");
+	fflush(stderr);
+    }
 }
 
 
@@ -731,13 +739,13 @@ void run(int argc,char **argv,int np)
     struct itimerval timer;
     struct itimerval timer_old;
 
-    spawn_master(argc, argv, np);
 
     /* Initialize Myrinet */
     if (pscom_init(PSCOM_VERSION)) {
 	perror("pscom_init() failed!");
 	exit(-1);
     }
+    spawn_master(argc, argv, np);
 
     pscom_socket = pscom_open_socket(0, 0);
 
@@ -924,6 +932,8 @@ int main(int argc, char *argv[])
 	  &arg_port, 0, "listen on", "port" },
 	{ "rlnofile", '\0', POPT_ARG_INT | POPT_ARGFLAG_ONEDASH,
 	  &arg_rlimit_nofile, 0, "set RLIMIT_NOFILE (soft and hard)", "num"},
+	{ "verbose"	, 'v', POPT_ARGFLAG_OR | POPT_ARG_VAL,
+	  &arg_verbose, 1, "increase verbosity", NULL },
 	POPT_AUTOHELP
 	{ NULL, '\0', 0, NULL, 0, NULL, NULL}
     };
