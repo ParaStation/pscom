@@ -456,7 +456,12 @@ int pspsm_process(psm2_mq_status2_t *status)
 	case 2:
 		/* receive request */
 		assert(ci->rbuf);
-		assert(status->msg_length == status->nbytes);
+		if (status->msg_length != status->nbytes) {
+			pspsm_dprint(0, "fatal error: status->msg_length(%u) != status->nbytes(%u). As a workaround please set PSP_READAHEAD=%u or more.\n",
+				     status->msg_length, status->nbytes, status->msg_length + 10);
+			exit(1);
+		}
+
 		ci->rreq = PSM2_MQ_REQINVALID;
 		/* pspsm_dprint(0, "read done %p len %d con %s\n", ci->rbuf,
 		   (int)status->msg_length, ci->con->pub.remote_con_info.name); */
