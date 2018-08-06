@@ -24,6 +24,8 @@
 #include "psm1_compat.h"
 #endif
 
+// #define PSPSM_TRACE
+
 struct pspsm_con_info {
 	/* general info */
 	psm2_epaddr_t epaddr;    /**< destination address of peer */
@@ -35,7 +37,7 @@ struct pspsm_con_info {
 	/* sending */
 	struct PSCOM_req *sreq;       /**< pscom open send request */
 	size_t sreq_len;	/**< size of open send request */
-	psm2_mq_req_t sreqs[2];  /**< MQ send requests */
+	unsigned sreqs_active_count; /**< # Active MQ send requests */
 
 	/* receiving */
 	char* rbuf;             /**< buffer used for current receive */
@@ -64,6 +66,11 @@ typedef union {
  */
 static const uint64_t PSPSM_MAGIC_IO = UINTMAX_C(1) << 48;
 static const uint64_t mask = (UINTMAX_C(1) << 48) - 1;
+
+#define PSM_CONTEXT_TYPE_MASK    7
+#define PSM_CONTEXT_TYPE_SENDREQ 0
+#define PSM_CONTEXT_TYPE_RECVREQ 1
+
 
 int pspsm_debug = 2;
 FILE *pspsm_debug_stream = NULL;
@@ -274,8 +281,7 @@ int pspsm_con_init(pspsm_con_info_t *con_info, struct PSCOM_con *con)
 	con_info->sreq = NULL;
 
 	con_info->rreq = PSM2_MQ_REQINVALID;
-	con_info->sreqs[0] = PSM2_MQ_REQINVALID;
-	con_info->sreqs[1] = PSM2_MQ_REQINVALID;
+	con_info->sreqs_active_count = 0;
 
 	con_info->con = con;
 
@@ -422,49 +428,40 @@ void pspsm_iov_print(const struct iovec *iov, size_t len)
 static
 int pspsm_process(psm2_mq_status2_t *status)
 {
-	uintptr_t c = (uintptr_t)status->context & 7;
-	pspsm_con_info_t *ci = (pspsm_con_info_t *)((uintptr_t)status->context & ~(uintptr_t)7);
+	uintptr_t c = (uintptr_t)status->context & PSM_CONTEXT_TYPE_MASK;
+	pspsm_con_info_t *ci = (pspsm_con_info_t *)((uintptr_t)status->context & ~(uintptr_t)PSM_CONTEXT_TYPE_MASK);
 	struct PSCOM_con *con = ci->con;
 
 	assert(ci->magic == UINTMAX_C(0xdeadbeefcafebabe));
 
 	switch (c) {
-	case 0:
-		/* first send request */
-		assert(ci->sreqs[0] != PSM2_MQ_REQINVALID);
+	case PSM_CONTEXT_TYPE_SENDREQ:
+		/*  send request */
 		poll_user_dec();
-		ci->sreqs[0] = PSM2_MQ_REQINVALID;
-		/* pspsm_dprint(0, "Send0 done %p len %d con %s\n", ci->iov[0].iov_base,
-		   (int)ci->iov[0].iov_len, ci->con->pub.remote_con_info.name); */
-		if (ci->sreqs[1] == PSM2_MQ_REQINVALID) {
+		ci->sreqs_active_count--;
+#ifdef PSPSM_TRACE
+		pspsm_dprint(0, "psm send request done. active: %u, length:%u, pscom req length:%zu\n",
+			     ci->sreqs_active_count, status->msg_length, ci->sreq_len);
+#endif
+		if (!ci->sreqs_active_count) {
 			pscom_write_done(con, ci->sreq, ci->sreq_len);
 			ci->sreq = NULL;
 		}
 		break;
-	case 1:
-		/* second send request */
-		assert(ci->sreqs[1] != PSM2_MQ_REQINVALID);
-		poll_user_dec();
-		ci->sreqs[1] = PSM2_MQ_REQINVALID;
-		/* pspsm_dprint(0, "Send1 done %p len %d con %s\n", ci->iov[1].iov_base,
-		   (int)ci->iov[1].iov_len, ci->con->pub.remote_con_info.name); */
-		if (ci->sreqs[0] == PSM2_MQ_REQINVALID) {
-			pscom_write_done(con, ci->sreq, ci->sreq_len);
-			ci->sreq = NULL;
-		}
-		break;
-	case 2:
+	case PSM_CONTEXT_TYPE_RECVREQ:
 		/* receive request */
 		assert(ci->rbuf);
 		if (status->msg_length != status->nbytes) {
+			// ToDo: Implement "message truncated", if user post a recv req smaller than the matching send.
 			pspsm_dprint(0, "fatal error: status->msg_length(%u) != status->nbytes(%u). As a workaround please set PSP_READAHEAD=%u or more.\n",
 				     status->msg_length, status->nbytes, status->msg_length + 10);
 			exit(1);
 		}
 
 		ci->rreq = PSM2_MQ_REQINVALID;
-		/* pspsm_dprint(0, "read done %p len %d con %s\n", ci->rbuf,
-		   (int)status->msg_length, ci->con->pub.remote_con_info.name); */
+#ifdef PSPSM_TRACE
+		pspsm_dprint(0, "psm read done %p len %u\n", ci->rbuf, status->msg_length);
+#endif
 		pscom_read_done_unlock(con, ci->rbuf, status->msg_length);
 		ci->rbuf = NULL;
 		/* Check, if there is more to read. Post the next receive request, if so. */
@@ -525,18 +522,37 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 		return 0;
 	}
 
-	for (i=0; i<2; i++){
-		if (iov[i].iov_len){
-			/* pspsm_dprint(0, "Send part[%d], %p len %d to con %s\n", i,
-			   iov[i].iov_base, (int)iov[i].iov_len,
-			   con_info->con->pub.remote_con_info.name); */
+	struct iovec split_iov[3];
+	struct iovec *send_iov = iov;
+	unsigned send_iov_cnt = 2;
+	unsigned first_len = pscom.env.readahead;
+
+	if (iov[0].iov_len > first_len) {
+		// First fragment must not be larger than pscom.env.readahead! The receive
+		// request has limited length.
+		split_iov[0].iov_base = iov[0].iov_base;
+		split_iov[0].iov_len = first_len;
+		split_iov[1].iov_base = iov[0].iov_base + first_len;
+		split_iov[1].iov_len = iov[0].iov_len - first_len;
+		split_iov[2].iov_base = iov[1].iov_base;
+		split_iov[2].iov_len = iov[1].iov_len;
+		send_iov_cnt = 3;
+	}
+
+	for (i = 0; i < send_iov_cnt; i++) {
+		if (send_iov[i].iov_len){
+			psm2_mq_req_t sreq = PSM2_MQ_REQINVALID;
+#ifdef PSPSM_TRACE
+			pspsm_dprint(0, "Send part[%d], %p len:%zu\n", i, iov[i].iov_base, iov[i].iov_len);
+#endif
 			if (_pspsm_send_buf(con_info,
-					    iov[i].iov_base, iov[i].iov_len,
-					    tag, &con_info->sreqs[i], i)){
+					    send_iov[i].iov_base, send_iov[i].iov_len,
+					    tag, &sreq, PSM_CONTEXT_TYPE_SENDREQ)) {
 				return -EPIPE;
 			}
 			/* inc for each outstanding send request */
 			poll_user_inc();
+			con_info->sreqs_active_count++;
 		}
 	}
 
@@ -558,7 +574,7 @@ int pspsm_recv_start(pspsm_con_info_t *con_info, char *rbuf, size_t rbuflen)
 	/* ToDo: rename me to something like "post a receive". */
 	psm2_error_t ret;
 	uint64_t rtag = con_info->recv_id;
-	void *context = (void *)((uintptr_t)con_info | 2);
+	void *context = (void *)((uintptr_t)con_info | PSM_CONTEXT_TYPE_RECVREQ);
 
 	assert(con_info->rreq == PSM2_MQ_REQINVALID);
 	ret = psm2_mq_irecv(pspsm_mq, rtag, mask, 0 /*flags*/,
