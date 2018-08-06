@@ -18,12 +18,13 @@ typedef struct pspsm_info_msg_s {
 	uint64_t epid;          /**< endpoint id */
 	uint64_t id;            /**< tag to be used sending to that epid */
 	char protocol_version[8];  /**< 8 byte psm protocol identifier */
+	uint32_t small_msg_len; /**< max length for small messages (= size of "xheader" receive request) */
 } pspsm_info_msg_t;
 
 typedef struct pspsm_con_info pspsm_con_info_t;
 
 #define DEFAULT_UUID_PATTERN 42
-#define PSPSM_PROTOCOL_VERSION "master01"
+#define PSPSM_PROTOCOL_VERSION "master02"
 
 /*
  * fixme

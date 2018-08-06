@@ -38,6 +38,7 @@ struct pspsm_con_info {
 	struct PSCOM_req *sreq;       /**< pscom open send request */
 	size_t sreq_len;	/**< size of open send request */
 	unsigned sreqs_active_count; /**< # Active MQ send requests */
+	unsigned small_msg_len; // Remote pspsm_small_msg_len
 
 	/* receiving */
 	char* rbuf;             /**< buffer used for current receive */
@@ -75,14 +76,15 @@ static const uint64_t mask = (UINTMAX_C(1) << 48) - 1;
 int pspsm_debug = 2;
 FILE *pspsm_debug_stream = NULL;
 unsigned pspsm_devcheck = 1;
-
+unsigned pspsm_small_msg_len = 350; // will be overwritten by pscom.env.readahead (PSP_READAHEAD)
 
 /*
  * For now, psm allows only one endpoint per process, so we can safely
  * use a global variable.
  */
 static char *pspsm_err_str = NULL; /* last error string */
-static char* sendbuf = NULL;
+static char *sendbuf = NULL;
+static unsigned sendbuf_len = 0;
 static pspsm_uuid_t pspsm_uuid;
 static psm2_epid_t pspsm_epid;
 static psm2_ep_t pspsm_ep;
@@ -167,6 +169,32 @@ void pspsm_print_stats()
 	pspsm_dprint(0, "rx_sysbuf_bytes: %8lu", (unsigned long)stats.rx_sysbuf_bytes);
 }
 
+
+static
+void pspsm_sendbuf_free(void) {
+	if (!sendbuf) return;
+	free(sendbuf);
+	sendbuf = NULL;
+	sendbuf_len = 0;
+}
+
+
+static
+void pspsm_sendbuf_prepare(unsigned min_small_msg_len) {
+#ifdef PSPSM_TRACE
+	pspsm_dprint(0, "(send_buf_len: %u) pspsm_sendbuf_prepare(min_small_msg_len:%u)\n", min_small_msg_len, sendbuf_len);
+#endif
+	if (min_small_msg_len >= sendbuf_len) {
+		if (sendbuf) free(sendbuf);
+
+		sendbuf = valloc(min_small_msg_len);
+		assert(sendbuf != NULL);
+
+		sendbuf_len = min_small_msg_len;
+	}
+}
+
+
 static
 int pspsm_open_endpoint(void)
 {
@@ -182,8 +210,7 @@ int pspsm_open_endpoint(void)
 				  &pspsm_ep, &pspsm_epid);
 		if (ret != PSM2_OK) goto err;
 
-		//sendbuf = malloc(pscom.env.readahead);
-		sendbuf = valloc(pscom.env.readahead);
+		pspsm_sendbuf_prepare(pspsm_small_msg_len);
 
 		pspsm_dprint(2, "pspsm_open_endpoint: OK");
 	}
@@ -236,7 +263,7 @@ int pspsm_close_endpoint(void)
 		pspsm_ep = NULL;
 		if (ret != PSM2_OK) goto err;
 
-		if (sendbuf) free(sendbuf);
+		pspsm_sendbuf_free();
 
 		pspsm_dprint(2, "pspsm_close_endpoint: OK");
 	}
@@ -311,6 +338,9 @@ int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 	if (ret != PSM2_OK) goto err_connect;
 
 	con_info->connected = 1;
+	con_info->small_msg_len = info_msg->small_msg_len;
+
+	pspsm_sendbuf_prepare(con_info->small_msg_len);
 
 	pspsm_dprint(2, "pspsm_con_connect: OK");
 	pspsm_dprint(2, "sending with %"PRIx64", receiving %"PRIx64,
@@ -377,6 +407,11 @@ int pspsm_init(void)
 			pspsm_dprint(2, "seeding PSM UUID with %u", pscom.env.psm_uniq_id);
 			pspsm_uuid.as_uint = pscom.env.psm_uniq_id;
 		}
+
+		pspsm_small_msg_len = pscom.env.readahead;
+#ifdef PSPSM_TRACE
+		pspsm_dprint(0, "pspsm_small_msg_length = %u\n", pspsm_small_msg_len);
+#endif
 
 		/* Open the endpoint here in init with the hope that
 		   every mpi rank call indirect psm_ep_open() before
@@ -453,8 +488,8 @@ int pspsm_process(psm2_mq_status2_t *status)
 		assert(ci->rbuf);
 		if (status->msg_length != status->nbytes) {
 			// ToDo: Implement "message truncated", if user post a recv req smaller than the matching send.
-			pspsm_dprint(0, "fatal error: status->msg_length(%u) != status->nbytes(%u). As a workaround please set PSP_READAHEAD=%u or more.\n",
-				     status->msg_length, status->nbytes, status->msg_length + 10);
+			pspsm_dprint(0, "fatal error: status->msg_length(%u) != status->nbytes(%u).\n",
+				     status->msg_length, status->nbytes);
 			exit(1);
 		}
 
@@ -512,7 +547,7 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 	psm2_error_t ret;
 	size_t len = iov[0].iov_len + iov[1].iov_len;
 
-	if (len <= pscom.env.readahead){
+	if (len <= con_info->small_msg_len) {
 		pscom_memcpy_from_iov(sendbuf, iov, len);
 		/* we hope that doesn't block - it shouldn't, as the
 		 * message is sufficiently small */
@@ -525,10 +560,10 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 	struct iovec split_iov[3];
 	struct iovec *send_iov = iov;
 	unsigned send_iov_cnt = 2;
-	unsigned first_len = pscom.env.readahead;
+	unsigned first_len = con_info->small_msg_len;
 
 	if (iov[0].iov_len > first_len) {
-		// First fragment must not be larger than pscom.env.readahead! The receive
+		// First fragment must not be larger than remotes pspsm_small_msg_length! The receive
 		// request has limited length.
 		split_iov[0].iov_base = iov[0].iov_base;
 		split_iov[0].iov_len = first_len;
@@ -666,4 +701,5 @@ void pspsm_con_get_info_msg(pspsm_con_info_t *con_info,
 	info_msg->id = con_info->recv_id;
 	memcpy(info_msg->protocol_version, PSPSM_PROTOCOL_VERSION,
 	       sizeof(info_msg->protocol_version));
+	info_msg->small_msg_len = pspsm_small_msg_len;
 }
