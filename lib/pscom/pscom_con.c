@@ -28,6 +28,7 @@
 
 static void _pscom_con_destroy(pscom_con_t *con);
 static void _pscom_con_ref_hold(pscom_con_t *con);
+static void _pscom_con_ref_release(pscom_con_t *con);
 static void pscom_con_ref_release(pscom_con_t *con);
 
 
@@ -279,6 +280,7 @@ void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 	pscom_con_t *con = priv_con;
 	pscom_lock(); {
 		_pscom_con_cleanup(con);
+		_pscom_con_ref_release(con);
 	} pscom_unlock();
 
 }
@@ -287,6 +289,7 @@ void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 static
 void pscom_con_send_eof(pscom_con_t *con)
 {
+	_pscom_con_ref_hold(con);
 	_pscom_send_inplace(con, PSCOM_MSGTYPE_EOF,
 			    NULL, 0,
 			    NULL, 0,
