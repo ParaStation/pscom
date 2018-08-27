@@ -665,7 +665,7 @@ int pspsm_progress()
 static
 pspsm_con_info_t *pspsm_con_create(void)
 {
-	pspsm_con_info_t *con_info = memalign(8, sizeof(*con_info));
+	pspsm_con_info_t *con_info = malloc(sizeof(*con_info));
 	return con_info;
 }
 

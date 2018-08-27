@@ -528,7 +528,7 @@ void psmxm_recv_release(psmxm_recv_req_t *rreq)
 
 psmxm_con_info_t *psmxm_con_create(void)
 {
-	psmxm_con_info_t *con_info = memalign(8, sizeof(*con_info));
+	psmxm_con_info_t *con_info = malloc(sizeof(*con_info));
 	return con_info;
 }
 
