@@ -26,8 +26,10 @@
 #include <errno.h>
 
 
-static
-void _pscom_con_destroy(pscom_con_t *con);
+static void _pscom_con_destroy(pscom_con_t *con);
+static void _pscom_con_ref_hold(pscom_con_t *con);
+static void pscom_con_ref_release(pscom_con_t *con);
+
 
 void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
 {
@@ -337,6 +339,7 @@ void pscom_con_error_io_done(pscom_request_t *request)
 		);
 	}
 	pscom_request_free(request);
+	pscom_con_ref_release(con);
 }
 
 
@@ -362,6 +365,8 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 	req->pub.ops.io_done = pscom_con_error_io_done;
 
 	assert(con->magic == MAGIC_CONNECTION);
+
+	_pscom_con_ref_hold(con);
 
 	_pscom_req_done(req);
 }
@@ -562,6 +567,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	/* State */
 	con->state.eof_received = 0;
 	con->state.close_called = 0;
+	con->state.destroyed = 0;
 	con->state.suspend_active = 0;
 	con->state.con_cleanup = 0;
 	con->state.use_count = 1; // until _pscom_con_destroy
@@ -592,9 +598,19 @@ void _pscom_con_ref_release(pscom_con_t *con) {
 
 
 static
+void pscom_con_ref_release(pscom_con_t *con) {
+	pscom_lock(); {
+		_pscom_con_ref_release(con);
+	} pscom_unlock();
+}
+
+
+static
 void _pscom_con_destroy(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
+	if (con->state.destroyed) return; // Already destroyed (why?)
+	con->state.destroyed = 1;
 
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
 		DPRINT(0, "pscom_con_destroy(con) : con state %s",
