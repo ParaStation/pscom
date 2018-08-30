@@ -27,9 +27,6 @@
 
 
 static void _pscom_con_destroy(pscom_con_t *con);
-static void _pscom_con_ref_hold(pscom_con_t *con);
-static void _pscom_con_ref_release(pscom_con_t *con);
-static void pscom_con_ref_release(pscom_con_t *con);
 
 
 void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
@@ -581,14 +578,6 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 }
 
 
-static
-void _pscom_con_ref_hold(pscom_con_t *con) {
-	con->state.use_count++;
-	assert(con->state.use_count);
-}
-
-
-static
 void _pscom_con_ref_release(pscom_con_t *con) {
 	assert(con->magic == MAGIC_CONNECTION);
 	assert(con->state.use_count);
@@ -602,7 +591,6 @@ void _pscom_con_ref_release(pscom_con_t *con) {
 }
 
 
-static
 void pscom_con_ref_release(pscom_con_t *con) {
 	pscom_lock(); {
 		_pscom_con_ref_release(con);

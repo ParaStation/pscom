@@ -635,6 +635,15 @@ void pscom_listener_user_dec(struct pscom_listener *listener);
 void pscom_listener_active_inc(struct pscom_listener *listener);
 void pscom_listener_active_dec(struct pscom_listener *listener);
 
+static inline
+void _pscom_con_ref_hold(pscom_con_t *con) {
+	con->state.use_count++;
+	assert(con->state.use_count);
+}
+
+void _pscom_con_ref_release(pscom_con_t *con);
+void pscom_con_ref_release(pscom_con_t *con);
+
 const char *pscom_con_str_reverse(pscom_connection_t *connection);
 
 /* Translate name into an IPv4 address. Accept IPs in dotted notation or hostnames. */
