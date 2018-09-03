@@ -113,7 +113,11 @@ void pscom_con_terminate_recvq(pscom_con_t *con)
 	}
 
 	// RecvAny Queue:
-	list_for_each_safe(pos, next, &get_sock(con->pub.socket)->recvq_any) {
+	pscom_sock_t *sock = get_sock(con->pub.socket);
+
+	assert(sock->magic == MAGIC_SOCKET);
+
+	list_for_each_safe(pos, next, &sock->recvq_any) {
 		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
 
 //		fprintf(stderr, "Test rm "RED"req %p  con %p == %p "NORM"\n", req, req->pub.connection, &con->pub);
@@ -351,6 +355,8 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 	pscom_req_t *req;
 	pscom_req_io_con_error_t *rdata;
 
+	assert(con->magic == MAGIC_CONNECTION);
+
 	if (con->state.close_called) {
 		// Close already called. Ignore further errors.
 		return;
@@ -365,8 +371,6 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 	req->pub.socket = con->pub.socket;
 	req->pub.connection = &con->pub;
 	req->pub.ops.io_done = pscom_con_error_io_done;
-
-	assert(con->magic == MAGIC_CONNECTION);
 
 	_pscom_con_ref_hold(con);
 
