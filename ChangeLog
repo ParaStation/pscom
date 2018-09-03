@@ -1,3 +1,22 @@
+2018-09-03  Jens Hauke  <hauke@par-tec.com>	-	5.2.6-1
+
+	* Fix: con: "pscom_con.c:208: _pscom_con_cleanup: Assertion `con->magic
+	== MAGIC_CONNECTION' failed." (connection cleanup)
+
+	* Fix: con: "pscom_con.c:331: pscom_con_error_io_done: Assertion
+	`con->magic == MAGIC_CONNECTION' failed." (connection cleanup)
+
+	* Fix: precon: "pscom_precon.c:627: pscom_precon_check_end:
+	Assertion `pre->magic == MAGIC_PRECON' failed." (error handling on
+	noisy IP networks)
+
+	* Fix: PSM2: "pscom4psm/pspsm.c:459: pspsm_process: Assertion
+	`status->msg_length == status->nbytes' failed." (truncated
+	xheader)
+
+	* Workaround: PSM2: Segfault in psm2_ep_close (psm2 connection
+	cleanup)
+
 2018-07-27  Jens Hauke  <hauke@par-tec.com>	-	5.2.5-1
 
 	* Enhancement: TCP connects: Recover from more network errors
