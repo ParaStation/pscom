@@ -247,7 +247,7 @@ int pspsm_init_mq(void)
 static
 int pspsm_close_endpoint(void)
 {
-#if 0
+#if 1
 	/* Hack: psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
 	   the cleanup always helps.
 	   (Seen with infinipath-libs-3.2-32129.1162_rhel6_qlc.x86_64) */
