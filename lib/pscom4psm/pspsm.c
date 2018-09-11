@@ -378,6 +378,11 @@ int pspsm_init(void)
 			goto err_dev_ipath;
 		}
 
+		/* Change default from libpsm2 about cpu affinity */
+		if (!getenv("HFI_NO_CPUAFFINITY")) {
+			putenv("HFI_NO_CPUAFFINITY=1");
+		}
+
 		ret = psm2_init(&verno_major, &verno_minor);
 		if (ret != PSM2_OK) {
 			goto err_init;
