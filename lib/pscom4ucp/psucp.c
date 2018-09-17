@@ -35,9 +35,6 @@ struct hca_info {
 };
 
 
-#define PSUCP_COMPLETED_SEND 1
-#define PSUCP_COMPLETED_RECV 2
-
 typedef struct psucp_req psucp_req_t;
 
 /* UCP specific information about one connection */
@@ -52,18 +49,16 @@ struct psucp_con_info {
 	/* misc */
 	void		*con_priv;		/* priv data from psucp_con_init() */
 
-	/* Receive */
-	char		*rbuf;			/* recv buffer of current receive */
-	size_t		rbuf_len;
-	psucp_req_t	*rrequest;		/* rrequest of current ucp_tag_msg_recv_nb() */
-
 	int con_broken;
 };
 
+#define PSUCP_COMPLETED_PENDING 0
+#define PSUCP_COMPLETED_SEND 1
+#define PSUCP_COMPLETED_RECV 2
 
 struct psucp_req {
-	struct list_head	next; // list struct hca_info.pending_requests.
-	int	completed;
+	struct list_head	next;		// list struct hca_info.pending_requests.
+	int			completed;	// PSUCP_COMPLETED_*
 	union {
 		struct {
 			void	*req_priv;
@@ -71,6 +66,8 @@ struct psucp_req {
 		} send;
 		struct {
 			psucp_con_info_t *con_info;
+			char	*rbuf;		/* recv buffer of this receive */
+			size_t	rbuf_len;
 		} recv;
 	} type;
 };
@@ -137,6 +134,15 @@ void psucp_req_init(void *_req) {
 
 
 static
+void psucp_req_release(psucp_req_t *psucp_req) {
+	// Call psucp_req_init. ucp_request_release() move the request to
+	// the request pool and do NOT call psucp_req_init() before reusing it!
+	psucp_req_init(psucp_req);
+	ucp_request_release(psucp_req);
+}
+
+
+static
 void psucp_pending_req_enqueue(psucp_req_t *psucp_req) {
 	hca_info_t *hca_info = &default_hca;
 
@@ -161,11 +167,7 @@ void psucp_pending_req_attach(psucp_req_t *psucp_req) {
 static
 void psucp_pending_req_release(psucp_req_t *psucp_req) {
 	psucp_pending_req_dequeue(psucp_req);
-
-	// Call psucp_req_init. ucp_request_release() move the request to
-	// the request pool and do NOT call psucp_req_init() before reusing it!
-	psucp_req_init(psucp_req);
-	ucp_request_release(psucp_req);
+	psucp_req_release(psucp_req);
 }
 
 
@@ -272,6 +274,9 @@ int psucp_progress(void) {
 	struct list_head *pos, *next;
 	int progress = 0;
 
+	// ucp_worker_progress() will fire completed request callbacks.
+	ucp_worker_progress(hca_info->ucp_worker);
+
 	list_for_each_safe(pos, next, &hca_info->pending_requests) {
 		psucp_req_t *psucp_req = list_entry(pos, psucp_req_t, next);
 
@@ -297,9 +302,6 @@ int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_p
 	con_info->hca_info = hca_info;
 	con_info->con_priv = con_priv;
 	con_info->con_broken = 0;
-
-	con_info->rbuf = NULL;
-	con_info->rbuf_len = 0;
 
 	return 0;
 	/* --- */
@@ -437,8 +439,9 @@ size_t psucp_probe(psucp_msg_t *msg)
 		&msg->info_tag);
 
 	if (msg->msg_tag == NULL) {
-		ucp_worker_progress(hca_info->ucp_worker);
-		// psucp_progress();
+		// Progress with ucp_tag_probe_nb() alone didn't call the req callbacks.
+		// psucp_progres calls ucp_worker_progress(hca_info->ucp_worker);
+		psucp_progress();
 		return 0;
 	}
 	assert(msg->info_tag.length > 0);
@@ -453,12 +456,18 @@ void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t
 	psucp_req_t *psucp_req = (psucp_req_t *)request;
 	psucp_con_info_t *con_info = psucp_req->type.recv.con_info;
 
-	// ToDo: Handler called in correct thread for read_done()?
-	pscom_ucp_read_done(con_info->con_priv, con_info->rbuf, con_info->rbuf_len);
+	psucp_req->completed = PSUCP_COMPLETED_RECV;
 
-	ucp_request_release(request);
-
-	con_info->rbuf = NULL;
+	if (con_info) {
+		// On slow track. con_info set in psucp_irecv().
+		// printf("%s:%u:%s PSUCP_COMPLETED_RECV slow\n", __FILE__, __LINE__, __func__);
+		pscom_ucp_read_done(con_info->con_priv,
+				    psucp_req->type.recv.rbuf, psucp_req->type.recv.rbuf_len);
+	} /* else {
+		// called from within ucp_tag_msg_recv_nb(). con_info is still unset.
+		printf("%s:%u:%s PSUCP_COMPLETED_RECV fast\n", __FILE__, __LINE__, __func__);
+	}
+	  */
 }
 
 
@@ -481,14 +490,19 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, siz
 
 	psucp_req = (psucp_req_t *)request;
 
-	assert(con_info->rbuf == NULL);
-	con_info->rbuf = buf;
-	con_info->rbuf_len = len;
-	con_info->rrequest = psucp_req;
+	if (psucp_req->completed) {
+		// On fast track. Request already completed (probably small message).
+		pscom_ucp_read_done(con_info->con_priv, buf, len);
+		psucp_req_release(psucp_req);
+	} else {
+		// On slow track. Enqueue request into pending requests queue.
+		psucp_req->type.recv.rbuf = buf;
+		psucp_req->type.recv.rbuf_len = len;
+		psucp_req->type.recv.con_info = con_info;
 
-	psucp_req->type.recv.con_info = con_info;
-
-	ucp_worker_progress(hca_info->ucp_worker);
+		// psucp_req not yet done. Poll for completion later:
+		psucp_pending_req_attach(request);
+	}
 
 	//printf("%s:%u:%s recv %u : %s\n", __FILE__, __LINE__, __func__,
 	//      (unsigned) len, pscom_dumpstr(buf, len));

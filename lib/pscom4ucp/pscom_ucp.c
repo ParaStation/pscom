@@ -95,7 +95,10 @@ int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 	ssize_t rc;
 
 	// ToDo: Allow more than one receive at once.
-	if (recv_in_progress) return 0;
+	if (recv_in_progress) {
+		psucp_progress();
+		return 0;
+	}
 
 	rc = psucp_probe(&msg);
 
@@ -124,8 +127,6 @@ int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 //		printf("%s:%u:%s  recv len:%u rlen:%u buf:%s\n", __FILE__, __LINE__, __func__,
 //		       (unsigned)len, (unsigned)rlen, pscom_dumpstr(buf, rlen));
 //		pscom_read_done(con, buf, rlen);
-	} else {
-		psucp_progress();
 	}
 
 	return rc > 0;
