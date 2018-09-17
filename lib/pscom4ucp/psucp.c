@@ -35,6 +35,10 @@ struct hca_info {
 };
 
 
+#define PSUCP_COMPLETED_SEND 1
+#define PSUCP_COMPLETED_RECV 2
+
+typedef struct psucp_req psucp_req_t;
 
 /* UCP specific information about one connection */
 struct psucp_con_info {
@@ -48,16 +52,28 @@ struct psucp_con_info {
 	/* misc */
 	void		*con_priv;		/* priv data from psucp_con_init() */
 
+	/* Receive */
+	char		*rbuf;			/* recv buffer of current receive */
+	size_t		rbuf_len;
+	psucp_req_t	*rrequest;		/* rrequest of current ucp_tag_msg_recv_nb() */
+
 	int con_broken;
 };
 
 
-typedef struct psucp_req {
+struct psucp_req {
 	struct list_head	next; // list struct hca_info.pending_requests.
-	void	*req_priv;
-	void	(*cb)(void *req_priv);
 	int	completed;
-} psucp_req_t;
+	union {
+		struct {
+			void	*req_priv;
+			void	(*cb)(void *req_priv);
+		} send;
+		struct {
+			psucp_con_info_t *con_info;
+		} recv;
+	} type;
+};
 
 
 static hca_info_t  default_hca;
@@ -115,9 +131,7 @@ void psucp_cleanup_hca(hca_info_t *hca_info)
 static
 void psucp_req_init(void *_req) {
 	psucp_req_t *psucp_req = (psucp_req_t *)_req;
-	psucp_req->req_priv = NULL;
-	psucp_req->completed = 0;
-	psucp_req->cb = NULL;
+	memset(psucp_req, 0, sizeof(*psucp_req));
 	INIT_LIST_HEAD(&psucp_req->next); // allow multiple dequeues
 }
 
@@ -157,22 +171,27 @@ void psucp_pending_req_release(psucp_req_t *psucp_req) {
 
 static
 int psucp_pending_req_progress(psucp_req_t *psucp_req) {
-	if (psucp_req->completed) {
-		if (psucp_req->cb) {
-			psucp_req->cb(psucp_req->req_priv);
-		}
-		psucp_pending_req_release(psucp_req);
-		return 1;
-	} else {
+	if (!psucp_req->completed) {
 		return 0;
 	}
+
+	if (psucp_req->completed == PSUCP_COMPLETED_SEND) {
+		if (psucp_req->type.send.cb) {
+			psucp_req->type.send.cb(psucp_req->type.send.req_priv);
+		}
+	} else {
+		assert(psucp_req->completed == PSUCP_COMPLETED_RECV);
+	}
+
+	psucp_pending_req_release(psucp_req);
+	return 1;
 }
 
 
 static
-void psucp_req_done(void *request, ucs_status_t status) {
+void psucp_req_send_done(void *request, ucs_status_t status) {
 	psucp_req_t *psucp_req = (psucp_req_t *)request;
-	psucp_req->completed = 1;
+	psucp_req->completed = PSUCP_COMPLETED_SEND;
 }
 
 
@@ -279,6 +298,9 @@ int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_p
 	con_info->con_priv = con_priv;
 	con_info->con_broken = 0;
 
+	con_info->rbuf = NULL;
+	con_info->rbuf_len = 0;
+
 	return 0;
 	/* --- */
 err_alloc:
@@ -362,7 +384,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
 				  iov[0].iov_base, iov[0].iov_len,
 				  ucp_dt_make_contig(1),
 				  con_info->remote_tag,
-				  /*(ucp_send_callback_t)*/psucp_req_done);
+				  /*(ucp_send_callback_t)*/psucp_req_send_done);
 	if (UCS_PTR_IS_ERR(request)) goto err_send_header;
 
 	psucp_pending_req_attach(request);
@@ -377,15 +399,15 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
 					  iov[1].iov_base, tosend_data,
 					  ucp_dt_make_contig(1),
 					  con_info->remote_tag,
-					  /*(ucp_send_callback_t)*/psucp_req_done);
+					  /*(ucp_send_callback_t)*/psucp_req_send_done);
 		if (UCS_PTR_IS_ERR(request)) goto err_send_data;
 
 		psucp_pending_req_attach(request);
 	}
 	if (request) {
 		psucp_req = (psucp_req_t *)request;
-		psucp_req->cb = cb;
-		psucp_req->req_priv = req_priv;
+		psucp_req->type.send.cb = cb;
+		psucp_req->type.send.req_priv = req_priv;
 	} else {
 		if (cb) cb(req_priv);
 	}
@@ -426,42 +448,47 @@ size_t psucp_probe(psucp_msg_t *msg)
 
 
 static
-int recv_in_progress = 0;
-
-static
-void recv_handle(void *request, ucs_status_t status,
-		 ucp_tag_recv_info_t *info)
+void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t *info)
 {
-	recv_in_progress--;
+	psucp_req_t *psucp_req = (psucp_req_t *)request;
+	psucp_con_info_t *con_info = psucp_req->type.recv.con_info;
+
+	// ToDo: Handler called in correct thread for read_done()?
+	pscom_ucp_read_done(con_info->con_priv, con_info->rbuf, con_info->rbuf_len);
+
+	ucp_request_release(request);
+
+	con_info->rbuf = NULL;
 }
 
 
-ssize_t psucp_recv(psucp_msg_t *msg, void *buf, size_t size)
+ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, size_t size)
 {
 	hca_info_t *hca_info = &default_hca;
-	struct ucx_context *request;
-	// psucp_req_t *psucp_req;
+	ucs_status_ptr_t request;
+	psucp_req_t *psucp_req;
 
 	size_t len = size < msg->info_tag.length ? size : msg->info_tag.length;
 
 	request = ucp_tag_msg_recv_nb(hca_info->ucp_worker,
 				      buf, len,
 				      ucp_dt_make_contig(1), msg->msg_tag,
-				      recv_handle);
+				      psucp_req_recv_done);
 
 	if (UCS_PTR_IS_ERR(request)) {
 		goto err_recv;
 	}
-	recv_in_progress++;
 
-	// psucp_req = (psucp_req_t *)request;
+	psucp_req = (psucp_req_t *)request;
 
-	// ToDo: rewrite to be non-blocking.
-	while (recv_in_progress) {
-		ucp_worker_progress(hca_info->ucp_worker);
-	}
+	assert(con_info->rbuf == NULL);
+	con_info->rbuf = buf;
+	con_info->rbuf_len = len;
+	con_info->rrequest = psucp_req;
 
-	ucp_request_release(request);
+	psucp_req->type.recv.con_info = con_info;
+
+	ucp_worker_progress(hca_info->ucp_worker);
 
 	//printf("%s:%u:%s recv %u : %s\n", __FILE__, __LINE__, __func__,
 	//      (unsigned) len, pscom_dumpstr(buf, len));

@@ -81,7 +81,8 @@ typedef struct {
 	ucp_tag_recv_info_t	info_tag;
 } psucp_msg_t;
 
-
+// Probe for incoming message on any connection.
+// In success: MUST call psucp_recv(msg) or psucp_irecv(msg) afterwards!
 size_t psucp_probe(psucp_msg_t *msg);
 ssize_t psucp_recv(psucp_msg_t *msg, void *buf, size_t size);
 
@@ -90,6 +91,11 @@ int psucp_progress(void);
 
 /* Suggest a value for psucp_pending_tokens. Result depends on psucp_recvq_size. */
 unsigned psucp_pending_tokens_suggestion(void);
+
+
+ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, size_t size);
+/* Callback to be implemented by upper layer */
+void pscom_ucp_read_done(void *con_priv, char *buf, size_t len);
 
 /*
  * Configuration
