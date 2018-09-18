@@ -25,6 +25,7 @@ typedef struct psucp_info_msg_s {
 	uint64_t	tag;
 	uint16_t	size;
 	char		addr[X_UCP_MAX_ADDR];
+	uint32_t	small_msg_len; /**< max length for small messages (= size of "xheader" receive request) */
 } psucp_info_msg_t;
 
 
@@ -103,6 +104,7 @@ void pscom_psucp_read_done(void *con_priv, char *buf, size_t len);
  */
 extern int psucp_debug;
 extern FILE *psucp_debug_stream; /* Stream to use for debug output */
+extern unsigned psucp_small_msg_len;
 extern unsigned int psucp_sendq_size; /* sendqueue size. Used when psucp_global_sendq == 0 */
 extern unsigned int psucp_gsendq_size; /* Global sendqueue size. Used when psucp_global_sendq == 1 */
 extern unsigned int psucp_recvq_size;

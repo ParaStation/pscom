@@ -10,6 +10,7 @@
 
 #include "psucp.h"
 #include "pscom_priv.h"
+#include "pscom_util.h"
 
 #include <ucp/api/ucp.h>
 #include <ucp/api/ucp_def.h>
@@ -45,6 +46,7 @@ struct psucp_con_info {
 	hca_info_t	*hca_info;
 
 	uint64_t	remote_tag;
+	size_t		small_msg_len;		// Remote psucp_small_msg_len
 
 	/* misc */
 	void		*con_priv;		/* priv data from psucp_con_init() */
@@ -62,6 +64,7 @@ struct psucp_req {
 	union {
 		struct {
 			void	*req_priv;
+			void	*sendbuf;	// for small_msg only
 		} send;
 		struct {
 			psucp_con_info_t *con_info;
@@ -78,7 +81,9 @@ char *psucp_err_str = NULL; /* last error string */
 
 int psucp_debug = 2;
 FILE *psucp_debug_stream = NULL;
-
+unsigned psucp_small_msg_len = 350; // will be overwritten by pscom.env.readahead (PSP_READAHEAD)
+void *psucp_small_msg_sendbuf = NULL; // Prepared sendbuffer for small messages
+size_t psucp_small_msg_sendbuf_len = 0;
 
 #define psucp_dprint(level,fmt,arg... )					\
 do {									\
@@ -118,9 +123,42 @@ void psucp_err_status(char *str, ucs_status_t status)
 
 
 static
+void psucp_small_msg_sendbuf_check(size_t min_length)
+{
+	if (min_length > psucp_small_msg_sendbuf_len) {
+		psucp_small_msg_sendbuf = realloc(psucp_small_msg_sendbuf, min_length);
+		psucp_small_msg_sendbuf_len = min_length;
+		assert(psucp_small_msg_sendbuf);
+	}
+}
+
+
+static
+void psucp_small_msg_sendbuf_free(void)
+{
+	free(psucp_small_msg_sendbuf);
+	psucp_small_msg_sendbuf = NULL;
+	psucp_small_msg_sendbuf_len = 0;
+}
+
+
+// Caller has to free() the old psucp_small_msg_sendbuf (= return value)!
+static
+void *psucp_small_msg_sendbuf_get_ownership(void)
+{
+	void *old = psucp_small_msg_sendbuf;
+	psucp_small_msg_sendbuf = malloc(psucp_small_msg_sendbuf_len);
+	assert(psucp_small_msg_sendbuf);
+	return old;
+}
+
+
+static
 void psucp_cleanup_hca(hca_info_t *hca_info)
 {
 	// ToDo: Implement cleanup
+	psucp_small_msg_sendbuf_free();
+
 }
 
 
@@ -193,6 +231,16 @@ static
 void psucp_req_send_done(void *request, ucs_status_t status) {
 	psucp_req_t *psucp_req = (psucp_req_t *)request;
 	psucp_req->completed = PSUCP_COMPLETED_SEND;
+}
+
+
+static
+void psucp_req_send_small_done(void *request, ucs_status_t status) {
+	psucp_req_t *psucp_req = (psucp_req_t *)request;
+
+	free(psucp_req->type.send.sendbuf);
+
+	psucp_req_send_done(request, status);
 }
 
 
@@ -319,6 +367,9 @@ int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 	ucp_ep_params_t ep_params;
 
 	con_info->remote_tag = info_msg->tag;
+	con_info->small_msg_len = info_msg->small_msg_len;
+
+	psucp_small_msg_sendbuf_check(con_info->small_msg_len);
 
 	memset(&ep_params, 0, sizeof(ep_params));
 	ep_params.field_mask = UCP_EP_PARAM_FIELD_REMOTE_ADDRESS;
@@ -365,6 +416,7 @@ void psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
 	memcpy(info_msg->addr, hca_info->my_ucp_address, MIN(sizeof(info_msg->addr), info_msg->size));
 
 	info_msg->tag = tag;
+	info_msg->small_msg_len = psucp_small_msg_len;
 }
 
 
@@ -372,6 +424,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 {
 	ucs_status_ptr_t request;
 	psucp_req_t *psucp_req;
+	size_t len;
 #if 0	/* use UCP_DATATYPE_IOV ucp_tag_send_nb() */
 	ucp_dt_iov_t *ucp_iov = (ucp_dt_iov_t *)iov;
 	// assert ucp_dt_iov_t compatible to iovec:
@@ -392,8 +445,34 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 #else	/* individual ucp_tag_send_nb() for each iov[] */
 	assert(iov[0].iov_len > 0);
 
-	// ToDo: Copy small messages into one continuous buffer.
+	len = iov[0].iov_len + iov[1].iov_len;
+#if 1
+	// Copy small messages into one continuous buffer.
+	if (len <= con_info->small_msg_len) {
+		pscom_memcpy_from_iov(psucp_small_msg_sendbuf, iov, len);
 
+		request = ucp_tag_send_nb(con_info->ucp_ep,
+					  psucp_small_msg_sendbuf, len,
+					  ucp_dt_make_contig(1),
+					  con_info->remote_tag,
+					  /*(ucp_send_callback_t)*/psucp_req_send_small_done);
+		if (UCS_PTR_IS_ERR(request)) goto err_send;
+		if (!request) {
+			// Common case. Sent inline. No request.
+			pscom_psucp_sendv_done(req_priv);
+		} else {
+			psucp_req = (psucp_req_t *)request;
+			// Free() the sendbuf when done (psucp_req_send_small_done()).
+			psucp_req->type.send.sendbuf = psucp_small_msg_sendbuf_get_ownership();
+			assert(!psucp_req->completed);
+			psucp_req->type.send.req_priv = req_priv;
+
+			psucp_pending_req_attach(request);
+		}
+
+		return len;
+	}
+#endif
 	//printf("%s:%u:%s send head %3u of %3u : %s\n",
 	//      __FILE__, __LINE__, __func__, (unsigned)iov[0].iov_len, size,
 	//     pscom_dumpstr(iov[0].iov_base, iov[0].iov_len));
@@ -430,7 +509,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 	}
 
 
-	return iov[0].iov_len + iov[1].iov_len;
+	return len;
 err_send:
 err_send_data:
 err_send_header:

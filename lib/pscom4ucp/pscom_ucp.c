@@ -237,7 +237,7 @@ void pscom_ucp_init(void)
 	// pscom_env_get_uint(&psucp_recvq_size, ENV_UCP_RECVQ_SIZE);
 	// pscom_env_get_int(&psucp_global_sendq, ENV_UCP_GLOBAL_SENDQ);
 	// pscom_env_get_uint(&psucp_sendq_size, ENV_UCP_SENDQ_SIZE);
-
+	psucp_small_msg_len = pscom.env.readahead;
 
 	INIT_LIST_HEAD(&pscom_ucp.reader.next);
 	pscom_ucp.reader.do_read = pscom_ucp_do_read;
