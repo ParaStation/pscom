@@ -69,8 +69,10 @@ void	psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
  * -EPIPE in case of a broken connection.
  */
 ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
-		    void (*cb)(void *req_priv), void *req_priv);
+		    void *req_priv);
 
+/* Callback to be implemented by upper layer */
+void pscom_psucp_sendv_done(void *req_priv);
 
 /* Include ucp.h for psucp_msg_t */
 #include <ucp/api/ucp.h>
@@ -95,7 +97,7 @@ unsigned psucp_pending_tokens_suggestion(void);
 
 ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, size_t size);
 /* Callback to be implemented by upper layer */
-void pscom_ucp_read_done(void *con_priv, char *buf, size_t len);
+void pscom_psucp_read_done(void *con_priv, char *buf, size_t len);
 
 /*
  * Configuration

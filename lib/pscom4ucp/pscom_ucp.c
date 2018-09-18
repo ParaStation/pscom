@@ -79,7 +79,7 @@ static
 int recv_in_progress = 0;
 
 
-void pscom_ucp_read_done(void *con_priv, char *buf, size_t len)
+void pscom_psucp_read_done(void *con_priv, char *buf, size_t len)
 {
 	pscom_con_t *con = (pscom_con_t *)con_priv;
 	pscom_read_done_unlock(con, buf, len);
@@ -133,7 +133,6 @@ int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 }
 
 
-__attribute__((visibility("hidden")))
 void pscom_psucp_sendv_done(void *req_priv)
 {
 	pscom_req_t *req = (pscom_req_t *)req_priv;
@@ -161,8 +160,7 @@ void pscom_ucp_do_write(pscom_con_t *con)
 
 		pscom_write_pending(con, req, len);
 
-		ssize_t rlen = psucp_sendv(ci, iov, len,
-					   pscom_psucp_sendv_done, req);
+		ssize_t rlen = psucp_sendv(ci, iov, len, req);
 
 		if (rlen >= 0) {
 			assert((size_t)rlen == len);

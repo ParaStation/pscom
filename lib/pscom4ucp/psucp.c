@@ -62,7 +62,6 @@ struct psucp_req {
 	union {
 		struct {
 			void	*req_priv;
-			void	(*cb)(void *req_priv);
 		} send;
 		struct {
 			psucp_con_info_t *con_info;
@@ -178,8 +177,8 @@ int psucp_pending_req_progress(psucp_req_t *psucp_req) {
 	}
 
 	if (psucp_req->completed == PSUCP_COMPLETED_SEND) {
-		if (psucp_req->type.send.cb) {
-			psucp_req->type.send.cb(psucp_req->type.send.req_priv);
+		if (psucp_req->type.send.req_priv) {
+			pscom_psucp_sendv_done(psucp_req->type.send.req_priv);
 		}
 	} else {
 		assert(psucp_req->completed == PSUCP_COMPLETED_RECV);
@@ -370,13 +369,15 @@ void psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
 
 
 ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
-		    void (*cb)(void *req_priv), void *req_priv)
+		    void *req_priv)
 {
 	ucs_status_ptr_t request;
 	psucp_req_t *psucp_req;
 	size_t tosend_data;
 
 	assert(size >= iov[0].iov_len);
+
+	// ToDo: Copy small messages into one continuous buffer.
 
 	//printf("%s:%u:%s send head %3u of %3u : %s\n",
 	//      __FILE__, __LINE__, __func__, (unsigned)iov[0].iov_len, size,
@@ -408,10 +409,9 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
 	}
 	if (request) {
 		psucp_req = (psucp_req_t *)request;
-		psucp_req->type.send.cb = cb;
 		psucp_req->type.send.req_priv = req_priv;
 	} else {
-		if (cb) cb(req_priv);
+		pscom_psucp_sendv_done(req_priv);
 	}
 
 
@@ -461,8 +461,8 @@ void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t
 	if (con_info) {
 		// On slow track. con_info set in psucp_irecv().
 		// printf("%s:%u:%s PSUCP_COMPLETED_RECV slow\n", __FILE__, __LINE__, __func__);
-		pscom_ucp_read_done(con_info->con_priv,
-				    psucp_req->type.recv.rbuf, psucp_req->type.recv.rbuf_len);
+		pscom_psucp_read_done(con_info->con_priv,
+				      psucp_req->type.recv.rbuf, psucp_req->type.recv.rbuf_len);
 	} /* else {
 		// called from within ucp_tag_msg_recv_nb(). con_info is still unset.
 		printf("%s:%u:%s PSUCP_COMPLETED_RECV fast\n", __FILE__, __LINE__, __func__);
@@ -492,7 +492,7 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, siz
 
 	if (psucp_req->completed) {
 		// On fast track. Request already completed (probably small message).
-		pscom_ucp_read_done(con_info->con_priv, buf, len);
+		pscom_psucp_read_done(con_info->con_priv, buf, len);
 		psucp_req_release(psucp_req);
 	} else {
 		// On slow track. Enqueue request into pending requests queue.
