@@ -372,6 +372,24 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 {
 	ucs_status_ptr_t request;
 	psucp_req_t *psucp_req;
+#if 0	/* use UCP_DATATYPE_IOV ucp_tag_send_nb() */
+	ucp_dt_iov_t *ucp_iov = (ucp_dt_iov_t *)iov;
+	// assert ucp_dt_iov_t compatible to iovec:
+	assert((sizeof(ucp_dt_iov_t) == sizeof(struct iovec)) &&
+	       ( &(((ucp_dt_iov_t *)0)->length) == &(((struct iovec *)0)->iov_len)));
+
+	// printf("%s:%u:%s send head %3u, data %3u\n",
+	//        __FILE__, __LINE__, __func__, (unsigned)iov[0].iov_len, (unsigned)iov[1].iov_len);
+
+	request = ucp_tag_send_nb(con_info->ucp_ep,
+				  ucp_iov, 2,
+				  ucp_dt_make_iov(),
+				  con_info->remote_tag,
+				  /*(ucp_send_callback_t)*/psucp_req_send_done);
+	if (UCS_PTR_IS_ERR(request)) goto err_send;
+
+	psucp_pending_req_attach(request);
+#else	/* individual ucp_tag_send_nb() for each iov[] */
 	assert(iov[0].iov_len > 0);
 
 	// ToDo: Copy small messages into one continuous buffer.
@@ -402,8 +420,10 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 
 		psucp_pending_req_attach(request);
 	}
+#endif
 	if (request) {
 		psucp_req = (psucp_req_t *)request;
+		assert(!psucp_req->completed);
 		psucp_req->type.send.req_priv = req_priv;
 	} else {
 		pscom_psucp_sendv_done(req_priv);
@@ -411,6 +431,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 
 
 	return iov[0].iov_len + iov[1].iov_len;
+err_send:
 err_send_data:
 err_send_header:
 	{
@@ -473,6 +494,9 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, siz
 	psucp_req_t *psucp_req;
 
 	size_t len = size < msg->info_tag.length ? size : msg->info_tag.length;
+
+	// printf("%s:%u:%s irecv msg length %3u, expected %3u\n",
+	//        __FILE__, __LINE__, __func__, (unsigned)msg->info_tag.length, (unsigned)size);
 
 	request = ucp_tag_msg_recv_nb(hca_info->ucp_worker,
 				      buf, len,
