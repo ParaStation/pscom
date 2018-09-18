@@ -172,10 +172,10 @@ void psucp_req_init(void *_req) {
 
 static
 void psucp_req_release(psucp_req_t *psucp_req) {
-	// Call psucp_req_init. ucp_request_release() move the request to
+	// Call psucp_req_init. ucp_request_free() move the request to
 	// the request pool and do NOT call psucp_req_init() before reusing it!
 	psucp_req_init(psucp_req);
-	ucp_request_release(psucp_req);
+	ucp_request_free(psucp_req);
 }
 
 

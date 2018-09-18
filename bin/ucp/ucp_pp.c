@@ -345,7 +345,7 @@ ucs_status_t wait(void *request, int is_requestor)
 		}
 		*/
 	}
-	ucp_request_release(request);
+	ucp_request_free(request);
 	return UCS_OK;
 }
 
