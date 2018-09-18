@@ -368,21 +368,17 @@ void psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
 }
 
 
-ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
-		    void *req_priv)
+ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_priv)
 {
 	ucs_status_ptr_t request;
 	psucp_req_t *psucp_req;
-	size_t tosend_data;
-
-	assert(size >= iov[0].iov_len);
+	assert(iov[0].iov_len > 0);
 
 	// ToDo: Copy small messages into one continuous buffer.
 
 	//printf("%s:%u:%s send head %3u of %3u : %s\n",
 	//      __FILE__, __LINE__, __func__, (unsigned)iov[0].iov_len, size,
 	//     pscom_dumpstr(iov[0].iov_base, iov[0].iov_len));
-	tosend_data = size - iov[0].iov_len;
 	request = ucp_tag_send_nb(con_info->ucp_ep,
 				  iov[0].iov_base, iov[0].iov_len,
 				  ucp_dt_make_contig(1),
@@ -392,14 +388,13 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
 
 	psucp_pending_req_attach(request);
 
-	if (tosend_data) {
+	if (iov[1].iov_len) {
 		//printf("%s:%u:%s send data %3u : %s\n",
-		//      __FILE__, __LINE__, __func__, tosend,
-		//     pscom_dumpstr(iov[1].iov_base, tosend));
-		assert(iov[1].iov_len >= tosend_data);
+		//      __FILE__, __LINE__, __func__, iov[1].iov_len,
+		//     pscom_dumpstr(iov[1].iov_base, iov[1].iov_len));
 
 		request = ucp_tag_send_nb(con_info->ucp_ep,
-					  iov[1].iov_base, tosend_data,
+					  iov[1].iov_base, iov[1].iov_len,
 					  ucp_dt_make_contig(1),
 					  con_info->remote_tag,
 					  /*(ucp_send_callback_t)*/psucp_req_send_done);
@@ -415,7 +410,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
 	}
 
 
-	return size;
+	return iov[0].iov_len + iov[1].iov_len;
 err_send_data:
 err_send_header:
 	{

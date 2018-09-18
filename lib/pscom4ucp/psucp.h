@@ -63,13 +63,12 @@ void	psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
 
 
 /* returnvalue like write(), except on error errno is negative return
- * send size bytes from iov through ci. (size > 0)
+ * send through con_info. (iov[0].iov_len + iov[1].iov_len > 0)
  * return number of bytes send or:
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
  */
-ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec *iov, size_t size,
-		    void *req_priv);
+ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_priv);
 
 /* Callback to be implemented by upper layer */
 void pscom_psucp_sendv_done(void *req_priv);

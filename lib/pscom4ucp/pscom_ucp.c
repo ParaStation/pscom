@@ -160,7 +160,7 @@ void pscom_ucp_do_write(pscom_con_t *con)
 
 		pscom_write_pending(con, req, len);
 
-		ssize_t rlen = psucp_sendv(ci, iov, len, req);
+		ssize_t rlen = psucp_sendv(ci, iov, req);
 
 		if (rlen >= 0) {
 			assert((size_t)rlen == len);
