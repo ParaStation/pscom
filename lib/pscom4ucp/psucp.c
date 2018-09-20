@@ -335,7 +335,25 @@ int psucp_progress(void) {
 
 void psucp_con_cleanup(psucp_con_info_t *con_info)
 {
+	ucs_status_ptr_t request;
 	hca_info_t *hca_info = con_info->hca_info;
+
+	request = ucp_ep_close_nb(con_info->ucp_ep,
+//				  UCP_EP_CLOSE_MODE_FLUSH);
+				  UCP_EP_CLOSE_MODE_FORCE);
+	if (UCS_PTR_IS_ERR(request)) goto err_close;
+
+	if (request) {
+		// ToDo: Is it safe to free the request without waiting for completion?
+		ucp_request_free(request);
+	}
+	return;
+err_close:
+	{
+		ucs_status_t status = UCS_PTR_STATUS(request);
+		psucp_err_status("ucp_ep_close_nb()", status);
+		psucp_dprint(1, "failed psucp_con_cleanup() : %s", psucp_err_str);
+	}
 }
 
 
