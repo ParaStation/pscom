@@ -339,8 +339,8 @@ void psucp_con_cleanup(psucp_con_info_t *con_info)
 	hca_info_t *hca_info = con_info->hca_info;
 
 	request = ucp_ep_close_nb(con_info->ucp_ep,
-//				  UCP_EP_CLOSE_MODE_FLUSH);
-				  UCP_EP_CLOSE_MODE_FORCE);
+				  UCP_EP_CLOSE_MODE_FLUSH);
+//				  UCP_EP_CLOSE_MODE_FORCE);
 	if (UCS_PTR_IS_ERR(request)) goto err_close;
 
 	if (request) {
