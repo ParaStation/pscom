@@ -292,6 +292,9 @@ void pscom_ucp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 		/* Something failed. Cleanup. */
 		pscom_ucp_con_cleanup(con);
 		break; /* Done. Ucp failed */
+	case PSCOM_INFO_ARCH_OK:
+		pscom_con_guard_start(con);
+		break;
 	case PSCOM_INFO_EOF:
 		pscom_ucp_init_con(con);
 		break; /* Done. Use Ucp */
