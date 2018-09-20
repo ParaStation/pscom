@@ -61,13 +61,13 @@ struct psucp_con_info {
 struct psucp_req {
 	struct list_head	next;		// list struct hca_info.pending_requests.
 	int			completed;	// PSUCP_COMPLETED_*
+	psucp_con_info_t	*con_info;
 	union {
 		struct {
 			void	*req_priv;
 			void	*sendbuf;	// for small_msg only
 		} send;
 		struct {
-			psucp_con_info_t *con_info;
 			char	*rbuf;		/* recv buffer of this receive */
 			size_t	rbuf_len;
 		} recv;
@@ -194,15 +194,16 @@ void psucp_pending_req_dequeue(psucp_req_t *psucp_req) {
 }
 
 
-static
-void psucp_pending_req_attach(psucp_req_t *psucp_req) {
+static inline
+void psucp_pending_req_attach(psucp_req_t *psucp_req, psucp_con_info_t *con_info) {
 	if (!psucp_req) return;
+	psucp_req->con_info = con_info;
 	psucp_pending_req_enqueue(psucp_req);
 }
 
 
 static
-void psucp_pending_req_release(psucp_req_t *psucp_req) {
+void psucp_pending_req_dequeue_and_release(psucp_req_t *psucp_req) {
 	psucp_pending_req_dequeue(psucp_req);
 	psucp_req_release(psucp_req);
 }
@@ -222,7 +223,7 @@ int psucp_pending_req_progress(psucp_req_t *psucp_req) {
 		assert(psucp_req->completed == PSUCP_COMPLETED_RECV);
 	}
 
-	psucp_pending_req_release(psucp_req);
+	psucp_pending_req_dequeue_and_release(psucp_req);
 	return 1;
 }
 
@@ -337,11 +338,26 @@ void psucp_con_cleanup(psucp_con_info_t *con_info)
 {
 	ucs_status_ptr_t request;
 	hca_info_t *hca_info = con_info->hca_info;
+	struct list_head *pos, *next;
+
+	list_for_each_safe(pos, next, &hca_info->pending_requests) {
+		psucp_req_t *psucp_req = list_entry(pos, psucp_req_t, next);
+		// ucs_status_t status = ucp_request_check_status(psucp_req);
+		// printf("%s:%u:%s pending: %p : %d\n", __FILE__, __LINE__, __func__, psucp_req, status);
+
+		if (psucp_req->con_info == con_info) {
+			// Cancel request and free
+			ucp_request_cancel(hca_info->ucp_worker, psucp_req);
+			psucp_pending_req_dequeue_and_release(psucp_req);
+		}
+	}
 
 	request = ucp_ep_close_nb(con_info->ucp_ep,
 				  UCP_EP_CLOSE_MODE_FLUSH);
 //				  UCP_EP_CLOSE_MODE_FORCE);
 	if (UCS_PTR_IS_ERR(request)) goto err_close;
+
+	ucp_worker_progress(hca_info->ucp_worker);
 
 	if (request) {
 		// ToDo: Is it safe to free the request without waiting for completion?
@@ -485,7 +501,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 			assert(!psucp_req->completed);
 			psucp_req->type.send.req_priv = req_priv;
 
-			psucp_pending_req_attach(request);
+			psucp_pending_req_attach(request, con_info);
 		}
 
 		return len;
@@ -514,7 +530,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 					  /*(ucp_send_callback_t)*/psucp_req_send_done);
 		if (UCS_PTR_IS_ERR(request)) goto err_send;
 
-		psucp_pending_req_attach(request);
+		psucp_pending_req_attach(request, con_info);
 	}
 #endif
 	if (request) {
@@ -564,7 +580,7 @@ static
 void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t *info)
 {
 	psucp_req_t *psucp_req = (psucp_req_t *)request;
-	psucp_con_info_t *con_info = psucp_req->type.recv.con_info;
+	psucp_con_info_t *con_info = psucp_req->con_info;
 
 	psucp_req->completed = PSUCP_COMPLETED_RECV;
 
@@ -611,10 +627,9 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, siz
 		// On slow track. Enqueue request into pending requests queue.
 		psucp_req->type.recv.rbuf = buf;
 		psucp_req->type.recv.rbuf_len = len;
-		psucp_req->type.recv.con_info = con_info;
 
 		// psucp_req not yet done. Poll for completion later:
-		psucp_pending_req_attach(request);
+		psucp_pending_req_attach(request, con_info);
 	}
 
 	//printf("%s:%u:%s recv %u : %s\n", __FILE__, __LINE__, __func__,
