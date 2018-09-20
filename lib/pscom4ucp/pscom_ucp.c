@@ -172,6 +172,7 @@ void pscom_ucp_do_write(pscom_con_t *con)
 			assert(0);
 		} else {
 			// Error
+			pscom_write_pending_error(con, req);
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}

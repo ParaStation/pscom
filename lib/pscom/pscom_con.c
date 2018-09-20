@@ -70,7 +70,10 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
 
 		if (req->pub.connection == &con->pub) {
+			// ToDo: Might be unsafe to dequeue with potential IO on this req.
+			list_del(&req->next); // dequeue
 			req->pub.state |= PSCOM_REQ_STATE_ERROR;
+			_pscom_send_req_done(req); // done
 		}
 	}
 
