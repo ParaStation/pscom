@@ -611,6 +611,18 @@ void pscom_precon_reconnect(precon_t *pre)
 
 	pscom_precon_connect_terminate(pre);
 
+	if (pre->back_connect && pre->con
+	    && (pre->con->magic == MAGIC_CONNECTION)
+	    && (pre->con->pub.type != PSCOM_CON_TYPE_ONDEMAND)) {
+		// Back connect failed, but forward connect succeeded.
+		DPRINT(2, "precon(%p): stopping obsolete back-connect on con:%p type:%6s state:%8s",
+		       pre, pre->con,
+		       pscom_con_type_str(pre->con->pub.type),
+		       pscom_con_state_str(pre->con->pub.state));
+		pre->con = NULL; // do not touch the connected con anymore.
+		goto backconnect_obsolete;
+	}
+
 	if (pre->reconnect_cnt < pscom.env.retry) {
 		pre->reconnect_cnt++;
 		DPRINT(1, "precon(%p):pscom_precon_reconnect count %u",
@@ -627,6 +639,9 @@ void pscom_precon_reconnect(precon_t *pre)
 	return;
 	/* --- */
 	int error_code;
+backconnect_obsolete:
+	pscom_precon_handle_receive(pre, PSCOM_INFO_FD_EOF, NULL, 0);
+	return;
 error:
 	/* precon connect failed. */
 	error_code = errno;
@@ -899,7 +914,7 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 	unsigned long now = getusec();
 
 	if (pscom.env.debug >= PRECON_LL) {
-		if (now - pre->last_print_stat > 500 /* ms */ * 1000) {
+		if (now - pre->last_print_stat > 1500 /* ms */ * 1000) {
 			pre->stat_poll_cnt++;
 
 			pre->last_print_stat = now;

@@ -1,3 +1,11 @@
+2018-10-04  Jens Hauke  <hauke@par-tec.com>
+
+	* Enhancement: precon: stop obsolete back connects on established
+	connections.
+
+	* psm: Disallow libpsm2 to overwrite the cpu affinity (unless
+	HFI_NO_CPUAFFINITY=0 is set).
+
 2018-09-03  Jens Hauke  <hauke@par-tec.com>	-	5.2.6-1
 
 	* Fix: con: "pscom_con.c:208: _pscom_con_cleanup: Assertion `con->magic
