@@ -369,7 +369,7 @@ void pscom_plugins_sock_destroy(pscom_sock_t *sock)
 
 pscom_plugin_t *pscom_plugin_next(pscom_plugin_t *cur)
 {
-	if (!cur) return pscom_plugin_first();
+	if (!cur) return NULL;
 	if (&pscom_plugins == cur->next.next) return NULL;
 
 	return list_entry(cur->next.next, pscom_plugin_t, next);

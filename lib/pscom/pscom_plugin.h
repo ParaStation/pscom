@@ -46,7 +46,7 @@ pscom_plugin_t *pscom_plugin_by_archid(unsigned int arch_id);
 
 /* return first plugin or NULL */
 pscom_plugin_t *pscom_plugin_first(void);
-/* return cur's next plugin or NULL. If cur == NULL return first plugin */
+/* return cur's next plugin or NULL. If cur == NULL return NULL */
 pscom_plugin_t *pscom_plugin_next(pscom_plugin_t *cur);
 
 extern struct list_head pscom_plugins;

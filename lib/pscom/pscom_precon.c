@@ -272,15 +272,17 @@ err_socket:
 
 
 static
-void plugin_connect_next(pscom_con_t *con)
+void plugin_connect_next(pscom_con_t *con, int first)
 {
 	precon_t *pre = con->precon;
 	pscom_sock_t *sock = get_sock(con->pub.socket);
 	assert(pre->magic == MAGIC_PRECON);
 	assert(con->magic == MAGIC_CONNECTION);
+	assert(first ? !pre->plugin : 1); // if first, pre->plugin has to be NULL!
 
 	do {
-		pre->plugin = pscom_plugin_next(pre->plugin);
+		pre->plugin = first ? pscom_plugin_first() : pscom_plugin_next(pre->plugin);
+		first = 0;
 	} while (pre->plugin &&
 		 (!_pscom_con_type_mask_is_set(sock, PSCOM_ARCH2CON_TYPE(pre->plugin->arch_id)) ||
 		  pre->plugin->con_init(con)));
@@ -545,7 +547,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		break;
 	case PSCOM_INFO_ARCH_NEXT: {
 		if (pre->plugin && con) pre->plugin->con_handshake(con, type, data, size);
-		plugin_connect_next(con);
+		plugin_connect_next(con, 0);
 		break;
 	}
 	case PSCOM_INFO_EOF: {
@@ -998,7 +1000,7 @@ void pscom_precon_handshake(precon_t *pre)
 		}
 		pscom_precon_send_PSCOM_INFO_VERSION(pre);
 		pscom_precon_send_PSCOM_INFO_CON_INFO(pre, type);
-		plugin_connect_next(pre->con);
+		plugin_connect_next(pre->con, 1);
 	}
 }
 
