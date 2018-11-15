@@ -538,16 +538,31 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 	case PSCOM_INFO_ARCH_STEP4:
 		/* Handled by the current plugin. pre->plugin might be
 		 * null, in the case of an initialization error. */
-		if (pre->plugin && con) {
-			pre->plugin->con_handshake(con, type, data, size);
-			if (type == PSCOM_INFO_ARCH_OK) {
-				pscom_precon_close(pre);
+		if (con) {
+			if (pre->plugin) {
+				pre->plugin->con_handshake(con, type, data, size);
+				if (type == PSCOM_INFO_ARCH_OK) {
+					pscom_precon_close(pre);
+				}
+			} else {
+				// Failed locally before. Handle OK like an ARCH_NEXT
+				if (type == PSCOM_INFO_ARCH_OK) {
+					pscom_precon_handle_receive(pre, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+					return;
+				}
 			}
 		}
 		break;
 	case PSCOM_INFO_ARCH_NEXT: {
 		if (pre->plugin && con) pre->plugin->con_handshake(con, type, data, size);
-		plugin_connect_next(con, 0);
+		if (con &&
+		    (
+			    (con->pub.state == PSCOM_CON_STATE_CONNECTING) ||
+			    (con->pub.state == PSCOM_CON_STATE_CONNECTING_ONDEMAND)
+		    )
+		) {
+			plugin_connect_next(con, 0);
+		}
 		break;
 	}
 	case PSCOM_INFO_EOF: {
