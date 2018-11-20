@@ -19,6 +19,9 @@ void pscom_async_on_readable(int fd, async_cb_t *async_cb, void *priv);
 void pscom_async_off_readable(int fd, async_cb_t *async_cb, void *priv);
 
 void pscom_backlog_push(void (*call)(void *priv), void *priv);
+// Delete first backlog entry with equal call and priv.
+// return number of deleted entries (= 0 or 1)
+int pscom_backlog_del(void (*call)(void *priv), void *priv);
 void pscom_backlog_execute();
 static inline
 int pscom_backlog_empty(void) {

@@ -124,6 +124,26 @@ void pscom_backlog_push(void (*call)(void *priv), void *priv) {
 }
 
 
+int pscom_backlog_del(void (*call)(void *priv), void *priv) {
+	int ret = 0;
+	pthread_mutex_lock(&pscom.backlog_lock);{
+		struct list_head *pos, *next;
+
+		list_for_each_safe(pos, next, &pscom.backlog) {
+			pscom_backlog_t *bl = list_entry(pos, pscom_backlog_t, next);
+
+			if ((bl->call == call) && (bl->priv == priv)) {
+				list_del(pos);
+				free(bl);
+				ret = 1;
+				break;
+			}
+		}
+	} pthread_mutex_unlock(&pscom.backlog_lock);
+	return ret;
+}
+
+
 void pscom_backlog_execute() {
 	struct list_head backlog;
 	struct list_head *pos, *next;
