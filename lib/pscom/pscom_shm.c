@@ -72,20 +72,29 @@ struct shm_direct_header {
 	size_t	len;
 };
 
+
 static
-void shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
+int shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
 {
-	if (shmid == -1) {
+	if (shmid != -1) {
+		// Use direct shm.
+		void *buf = shmat(shmid, 0, SHM_RDONLY);
+		if ((buf == (void *)-1) || !buf) goto err_shmat;
+
+		shm->direct_base = buf;
+		shm->direct_offset = (char *)buf - (char *)remote_base;
+	} else {
+		// Unused direct shm.
 		shm->direct_offset = 0;
 		shm->direct_base = NULL;
-		return;
 	}
-	void *buf = shmat(shmid, 0, SHM_RDONLY);
-	assert(buf != (void *) -1 && buf);
 
-	shm->direct_base = buf;
-	shm->direct_offset = (char *)buf - (char *)remote_base;
+	return 0;
+err_shmat:
+	DPRINT(1, "shmat(%d, 0, %u) : %s", shmid, SHM_RDONLY, strerror(errno));
+	return -1;
 }
+
 
 static
 int shm_initrecv(shm_conn_t *shm)
@@ -124,7 +133,9 @@ int shm_initsend(shm_conn_t *shm, shm_info_msg_t *msg)
 	buf = shmat(rem_shmid, 0, 0);
 	if (((long)buf == -1) || !buf) goto err_shmat;
 
-	shm_init_direct(shm, msg->direct_shm_id, msg->direct_base);
+	if (shm_init_direct(shm, msg->direct_shm_id, msg->direct_base)) {
+		goto err_shm_init_direct;
+	}
 
 	shm->remote_id = rem_shmid;
 	shm->remote_com = buf;
@@ -132,6 +143,7 @@ int shm_initsend(shm_conn_t *shm, shm_info_msg_t *msg)
 	return 0;
 err_shmat:
 	DPRINT(1, "shmat(%d, 0, 0) : %s", rem_shmid, strerror(errno));
+err_shm_init_direct:
 	return -1;
 }
 
