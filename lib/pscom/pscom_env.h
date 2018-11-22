@@ -129,6 +129,8 @@
 /* Gateway */
 #define ENV_GW_SERVER "PSP_GW_SERVER"
 #define ENV_GW_MTU "PSP_GW_MTU"
+#define ENV_GW_TOKENS "PSP_GW_TOKENS" /* int: # Flow control tokens. 0=disable flow control */
+#define ENV_GW_PENDING_TOKENS "PSP_GW_PENDING_TOKENS" /* int: Max pending tokens */
 
 /* Allocate memory in a shared mem segment */
 /* "PSP_MALLOC*" settings have to be known already in the __malloc_initialize_hook() before we
