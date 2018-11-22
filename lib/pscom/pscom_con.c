@@ -279,8 +279,10 @@ static
 void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 {
 	pscom_con_t *con = priv_con;
+	assert(con->magic == MAGIC_CONNECTION);
 	pscom_lock(); {
 		_pscom_con_cleanup(con);
+		assert(con->magic == MAGIC_CONNECTION);
 		_pscom_con_ref_release(con);
 	} pscom_unlock();
 
@@ -290,6 +292,7 @@ void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 static
 void pscom_con_send_eof(pscom_con_t *con)
 {
+	assert(con->magic == MAGIC_CONNECTION);
 	_pscom_con_ref_hold(con);
 	_pscom_send_inplace(con, PSCOM_MSGTYPE_EOF,
 			    NULL, 0,
