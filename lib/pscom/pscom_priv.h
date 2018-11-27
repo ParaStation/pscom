@@ -320,6 +320,7 @@ struct PSCOM_con
 		unsigned	destroyed : 1;
 		unsigned	suspend_active : 1;
 		unsigned	con_cleanup : 1;
+		unsigned	internal_connection : 1;
 		unsigned	use_count : 3;
 	}			state;
 

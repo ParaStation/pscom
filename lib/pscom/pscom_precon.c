@@ -466,6 +466,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 			con = pscom_con_create(sock);
 			pre->con = con;
 			con->precon = pre;
+			con->state.internal_connection = 1; // until the use get a handle to con (con-on_accept)
 			con->pub.state = PSCOM_CON_STATE_ACCEPTING;
 			con->pub.remote_con_info = msg->con_info;
 			pscom_precon_send_PSCOM_INFO_VERSION(pre);

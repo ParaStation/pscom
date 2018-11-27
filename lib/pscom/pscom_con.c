@@ -261,7 +261,8 @@ void _pscom_con_cleanup(pscom_con_t *con)
 
 	con->state.con_cleanup = 0;
 
-	if (con->pub.state == PSCOM_CON_STATE_CLOSED && con->state.close_called) {
+	if (con->pub.state == PSCOM_CON_STATE_CLOSED &&
+	    (con->state.close_called || con->state.internal_connection)) {
 		_pscom_con_destroy(con);
 	}
 }
@@ -579,6 +580,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->state.destroyed = 0;
 	con->state.suspend_active = 0;
 	con->state.con_cleanup = 0;
+	con->state.internal_connection = 0;
 	con->state.use_count = 1; // until _pscom_con_destroy
 
 	return con;
@@ -722,7 +724,7 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
 void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 {
 	precon_t *pre = con->precon;
-
+	int call_cleanup = (con->pub.state == PSCOM_CON_STATE_ACCEPTING);
 	if (pre) {
 		pscom_precon_close(pre);
 		/* pre destroys itself in pscom_precon_check_end()
@@ -732,6 +734,11 @@ void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 
 	con->pub.state = PSCOM_CON_STATE_CLOSED;
 	pscom_con_error(con, PSCOM_OP_CONNECT, err);
+
+	if (call_cleanup) {
+		assert(con->state.internal_connection);
+		_pscom_con_cleanup(con);
+	}
 }
 
 
@@ -762,6 +769,7 @@ void pscom_con_setup_ok(pscom_con_t *con)
 		       pscom_con_str_reverse(&con->pub),
 		       pscom_con_type_str(con->pub.type));
 
+		con->state.internal_connection = 0; // Now the user has to call pscom_close_connection() on con.
 		if (sock->pub.ops.con_accept) {
 			// ToDo: Is it save to unlock here?
 			pscom_unlock(); {
