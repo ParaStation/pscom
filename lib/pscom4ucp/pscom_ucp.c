@@ -266,7 +266,7 @@ void pscom_ucp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
 	switch (type) {
 	case PSCOM_INFO_ARCH_REQ: {
-		psucp_info_msg_t msg;
+		psucp_info_msg_t *msg;
 		psucp_con_info_t *ci = psucp_con_create();
 
 		con->arch.ucp.ci = ci;
@@ -275,14 +275,17 @@ void pscom_ucp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 		if (psucp_con_init(ci, NULL, con)) goto error_con_init;
 
 		/* send my connection id's */
-		psucp_con_get_info_msg(ci, (unsigned long)con, &msg);
+		msg = psucp_con_get_info_msg(ci, (unsigned long)con);
 
-		pscom_precon_send(con->precon, PSCOM_INFO_UCP_ID, &msg, sizeof(msg));
+		pscom_precon_send(con->precon, PSCOM_INFO_UCP_ID, msg, psucp_info_msg_length(msg));
+		free(msg);
+
 		break; /* Next is PSCOM_INFO_UCP_ID or PSCOM_INFO_ARCH_NEXT */
 	}
 	case PSCOM_INFO_UCP_ID: {
 		psucp_info_msg_t *msg = data;
-		assert(sizeof(*msg) == size);
+		assert(sizeof(*msg) <= size);
+		assert(psucp_info_msg_length(msg) <= size);
 
 		if (psucp_con_connect(con->arch.ucp.ci, msg)) goto error_con_connect;
 

@@ -18,14 +18,12 @@
 typedef struct psucp_con_info psucp_con_info_t;
 typedef struct hca_info hca_info_t;
 
-#define X_UCP_MAX_ADDR 530
-
 // contact endpoint info
 typedef struct psucp_info_msg_s {
 	uint64_t	tag;
-	uint16_t	size;
-	char		addr[X_UCP_MAX_ADDR];
 	uint32_t	small_msg_len; /**< max length for small messages (= size of "xheader" receive request) */
+	uint16_t	ucp_addr_size;
+	char		ucp_addr[0]; // ucp_addr_size bytes after this struct
 } psucp_info_msg_t;
 
 
@@ -58,9 +56,14 @@ int	psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_p
 int	psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg);
 void	psucp_con_cleanup(psucp_con_info_t *con_info);
 
-void	psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
-			       unsigned long tag /* in */,
-			       psucp_info_msg_t *info /* out */);
+/* Caller has to call free() on result after usage. */
+psucp_info_msg_t *
+psucp_con_get_info_msg(psucp_con_info_t *con_info, unsigned long tag);
+
+static inline
+unsigned psucp_info_msg_length(psucp_info_msg_t *info_msg) {
+	return (unsigned)sizeof(*info_msg) + info_msg->ucp_addr_size;
+}
 
 
 /* returnvalue like write(), except on error errno is negative return

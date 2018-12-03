@@ -407,7 +407,7 @@ int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 
 	memset(&ep_params, 0, sizeof(ep_params));
 	ep_params.field_mask = UCP_EP_PARAM_FIELD_REMOTE_ADDRESS;
-	ep_params.address = (ucp_address_t *)info_msg->addr;
+	ep_params.address = (ucp_address_t *)info_msg->ucp_addr;
 
 	status = ucp_ep_create(hca_info->ucp_worker, &ep_params, &con_info->ucp_ep);
 	if (status != UCS_OK) goto err_ep_create;
@@ -435,22 +435,23 @@ void psucp_con_free(psucp_con_info_t *con_info)
 }
 
 
-void psucp_con_get_info_msg(psucp_con_info_t *con_info /* in */,
-			    unsigned long tag,
-			    psucp_info_msg_t *info_msg /* out */)
+psucp_info_msg_t *
+psucp_con_get_info_msg(psucp_con_info_t *con_info, unsigned long tag)
 {
 	int rc;
 	hca_info_t *hca_info = con_info->hca_info;
+	psucp_info_msg_t *info_msg = malloc(sizeof(*info_msg) + hca_info->my_ucp_address_size);
 
-	if (hca_info->my_ucp_address_size > sizeof(info_msg->addr)) {
-		printf("psucp_info_msg_t.addr to small! Should be at least %zu!\n", hca_info->my_ucp_address_size);
-		// ToDo: Error recovery
-	}
-	info_msg->size = (uint16_t)hca_info->my_ucp_address_size;
-	memcpy(info_msg->addr, hca_info->my_ucp_address, MIN(sizeof(info_msg->addr), info_msg->size));
+	assert(info_msg);
+	assert(hca_info->my_ucp_address_size <= 0xffff);
 
 	info_msg->tag = tag;
 	info_msg->small_msg_len = psucp_small_msg_len;
+
+	info_msg->ucp_addr_size = (uint16_t)hca_info->my_ucp_address_size;
+	memcpy(info_msg->ucp_addr, hca_info->my_ucp_address, info_msg->ucp_addr_size);
+
+	return info_msg;
 }
 
 
