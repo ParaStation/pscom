@@ -27,9 +27,6 @@
 
 
 static void _pscom_con_destroy(pscom_con_t *con);
-static void _pscom_con_ref_hold(pscom_con_t *con);
-static void _pscom_con_ref_release(pscom_con_t *con);
-static void pscom_con_ref_release(pscom_con_t *con);
 
 
 void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
@@ -119,7 +116,11 @@ void pscom_con_terminate_recvq(pscom_con_t *con)
 	}
 
 	// RecvAny Queue:
-	list_for_each_safe(pos, next, &get_sock(con->pub.socket)->recvq_any) {
+	pscom_sock_t *sock = get_sock(con->pub.socket);
+
+	assert(sock->magic == MAGIC_SOCKET);
+
+	list_for_each_safe(pos, next, &sock->recvq_any) {
 		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
 
 //		fprintf(stderr, "Test rm "RED"req %p  con %p == %p "NORM"\n", req, req->pub.connection, &con->pub);
@@ -263,7 +264,8 @@ void _pscom_con_cleanup(pscom_con_t *con)
 
 	con->state.con_cleanup = 0;
 
-	if (con->pub.state == PSCOM_CON_STATE_CLOSED && con->state.close_called) {
+	if (con->pub.state == PSCOM_CON_STATE_CLOSED &&
+	    (con->state.close_called || con->state.internal_connection)) {
 		_pscom_con_destroy(con);
 	}
 }
@@ -281,8 +283,10 @@ static
 void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 {
 	pscom_con_t *con = priv_con;
+	assert(con->magic == MAGIC_CONNECTION);
 	pscom_lock(); {
 		_pscom_con_cleanup(con);
+		assert(con->magic == MAGIC_CONNECTION);
 		_pscom_con_ref_release(con);
 	} pscom_unlock();
 
@@ -292,6 +296,7 @@ void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 static
 void pscom_con_send_eof(pscom_con_t *con)
 {
+	assert(con->magic == MAGIC_CONNECTION);
 	_pscom_con_ref_hold(con);
 	_pscom_send_inplace(con, PSCOM_MSGTYPE_EOF,
 			    NULL, 0,
@@ -305,7 +310,9 @@ void pscom_con_close(pscom_con_t *con)
 	int send_eof;
 	assert(con->magic == MAGIC_CONNECTION);
 
-	send_eof = ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W) && (con->pub.type != PSCOM_CON_TYPE_ONDEMAND);
+	send_eof = ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)
+		&& (con->pub.type != PSCOM_CON_TYPE_ONDEMAND)
+		&& (con->pub.type != PSCOM_CON_TYPE_PSM);
 
 	// ToDo: What to do, if (con->pub.state & PSCOM_CON_STATE_SUSPENDING) ?
 
@@ -355,6 +362,8 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 	pscom_req_t *req;
 	pscom_req_io_con_error_t *rdata;
 
+	assert(con->magic == MAGIC_CONNECTION);
+
 	if (con->state.close_called) {
 		// Close already called. Ignore further errors.
 		return;
@@ -369,8 +378,6 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 	req->pub.socket = con->pub.socket;
 	req->pub.connection = &con->pub;
 	req->pub.ops.io_done = pscom_con_error_io_done;
-
-	assert(con->magic == MAGIC_CONNECTION);
 
 	_pscom_con_ref_hold(con);
 
@@ -576,20 +583,13 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->state.destroyed = 0;
 	con->state.suspend_active = 0;
 	con->state.con_cleanup = 0;
+	con->state.internal_connection = 0;
 	con->state.use_count = 1; // until _pscom_con_destroy
 
 	return con;
 }
 
 
-static
-void _pscom_con_ref_hold(pscom_con_t *con) {
-	con->state.use_count++;
-	assert(con->state.use_count);
-}
-
-
-static
 void _pscom_con_ref_release(pscom_con_t *con) {
 	assert(con->magic == MAGIC_CONNECTION);
 	assert(con->state.use_count);
@@ -603,7 +603,6 @@ void _pscom_con_ref_release(pscom_con_t *con) {
 }
 
 
-static
 void pscom_con_ref_release(pscom_con_t *con) {
 	pscom_lock(); {
 		_pscom_con_ref_release(con);
@@ -728,7 +727,7 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
 void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 {
 	precon_t *pre = con->precon;
-
+	int call_cleanup = (con->pub.state == PSCOM_CON_STATE_ACCEPTING);
 	if (pre) {
 		pscom_precon_close(pre);
 		/* pre destroys itself in pscom_precon_check_end()
@@ -738,6 +737,11 @@ void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 
 	con->pub.state = PSCOM_CON_STATE_CLOSED;
 	pscom_con_error(con, PSCOM_OP_CONNECT, err);
+
+	if (call_cleanup) {
+		assert(con->state.internal_connection);
+		_pscom_con_cleanup(con);
+	}
 }
 
 
@@ -768,6 +772,7 @@ void pscom_con_setup_ok(pscom_con_t *con)
 		       pscom_con_str_reverse(&con->pub),
 		       pscom_con_type_str(con->pub.type));
 
+		con->state.internal_connection = 0; // Now the user has to call pscom_close_connection() on con.
 		if (sock->pub.ops.con_accept) {
 			// ToDo: Is it save to unlock here?
 			pscom_unlock(); {

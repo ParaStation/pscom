@@ -320,6 +320,7 @@ struct PSCOM_con
 		unsigned	destroyed : 1;
 		unsigned	suspend_active : 1;
 		unsigned	con_cleanup : 1;
+		unsigned	internal_connection : 1;
 		unsigned	use_count : 3;
 	}			state;
 
@@ -637,6 +638,15 @@ void pscom_listener_user_dec(struct pscom_listener *listener);
 /* active listening on fd */
 void pscom_listener_active_inc(struct pscom_listener *listener);
 void pscom_listener_active_dec(struct pscom_listener *listener);
+
+static inline
+void _pscom_con_ref_hold(pscom_con_t *con) {
+	con->state.use_count++;
+	assert(con->state.use_count);
+}
+
+void _pscom_con_ref_release(pscom_con_t *con);
+void pscom_con_ref_release(pscom_con_t *con);
 
 const char *pscom_con_str_reverse(pscom_connection_t *connection);
 

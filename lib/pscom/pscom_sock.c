@@ -26,6 +26,8 @@ void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 {
 	struct list_head *pos;
 
+	assert(sock->magic == MAGIC_SOCKET);
+
 	// Recvq's of all connections
 	list_for_each(pos, &sock->connections) {
 		pscom_con_t *con = list_entry(pos, pscom_con_t, next);

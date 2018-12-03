@@ -59,7 +59,8 @@ typedef struct precon {
 	unsigned	stat_poll_cnt;	// loops in poll
 
 	/* state information */
-	pscom_plugin_t	*plugin;	// Current plugin.
+	pscom_plugin_t	*plugin;	// The plugin handling the handshake messages (==plugin_cur or NULL)
+	pscom_plugin_t	*_plugin_cur;	// Current plugin iterator (used to loop through all plugins)
 } precon_t;
 
 

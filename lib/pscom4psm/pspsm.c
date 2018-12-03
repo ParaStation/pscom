@@ -68,6 +68,7 @@ typedef union {
 static const uint64_t PSPSM_MAGIC_IO = UINTMAX_C(1) << 48;
 static const uint64_t mask = (UINTMAX_C(1) << 48) - 1;
 
+#define PSPSM_CON_MAGIC  0xdeadbeefcafebabe
 #define PSM_CONTEXT_TYPE_MASK    7
 #define PSM_CONTEXT_TYPE_SENDREQ 0
 #define PSM_CONTEXT_TYPE_RECVREQ 1
@@ -313,7 +314,7 @@ int pspsm_con_init(pspsm_con_info_t *con_info, struct PSCOM_con *con)
 	con_info->con = con;
 
 	/* debug */
-	con_info->magic = UINTMAX_C(0xdeadbeefcafebabe);
+	con_info->magic = PSPSM_CON_MAGIC;
 
 	pspsm_dprint(2, "pspsm_con_init: OK");
 	return 0;
@@ -472,7 +473,7 @@ int pspsm_process(psm2_mq_status2_t *status)
 	pspsm_con_info_t *ci = (pspsm_con_info_t *)((uintptr_t)status->context & ~(uintptr_t)PSM_CONTEXT_TYPE_MASK);
 	struct PSCOM_con *con = ci->con;
 
-	assert(ci->magic == UINTMAX_C(0xdeadbeefcafebabe));
+	assert(ci->magic == PSPSM_CON_MAGIC);
 
 	switch (c) {
 	case PSM_CONTEXT_TYPE_SENDREQ:
@@ -551,6 +552,9 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 	unsigned int i=0;
 	psm2_error_t ret;
 	size_t len = iov[0].iov_len + iov[1].iov_len;
+
+	// assert(con_info->connected);
+	// assert(con_info->magic == PSPSM_CON_MAGIC);
 
 	if (len <= con_info->small_msg_len) {
 		pscom_memcpy_from_iov(sendbuf, iov, len);
@@ -678,6 +682,9 @@ pspsm_con_info_t *pspsm_con_create(void)
 static
 void pspsm_con_free(pspsm_con_info_t *con_info)
 {
+	assert(con_info->magic == PSPSM_CON_MAGIC);
+	con_info->magic = 0;
+
 	free(con_info);
 }
 
@@ -685,6 +692,8 @@ void pspsm_con_free(pspsm_con_info_t *con_info)
 static
 void pspsm_con_cleanup(pspsm_con_info_t *con_info)
 {
+	assert(con_info->magic == PSPSM_CON_MAGIC);
+	assert(con_info->sreqs_active_count == 0);
 #ifdef PSM2_EP_DISCONNECT_FORCE
 	psm2_error_t err;
 

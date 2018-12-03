@@ -64,20 +64,22 @@ const char *pscom_info_type_str(int type)
 }
 
 static
-void pscom_precon_info_dump(void *pre, char *op, int type, void *data, unsigned size)
+void pscom_precon_info_dump(precon_t *pre, char *op, int type, void *data, unsigned size)
 {
+	const char *plugin_name = pre->plugin ? pre->plugin->name : "";
+
 	switch (type) {
 	case PSCOM_INFO_FD_ERROR: {
 		int noerr = 0;
 		int *err = size == sizeof(int) && data ? data : &noerr;
-		DPRINT(PRECON_LL, "precon(%p):%s: %s\t%d(%s)", pre, op,
-		       pscom_info_type_str(type), *err, strerror(*err));
+		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\t%d(%s)", pre, op,
+		       plugin_name, pscom_info_type_str(type), *err, strerror(*err));
 		break;
 	}
 	case PSCOM_INFO_ARCH_REQ: {
 		pscom_info_arch_req_t *arch_req = data;
-		DPRINT(PRECON_LL, "precon(%p):%s: %s\tarch_id:%u (%s)", pre, op,
-		       pscom_info_type_str(type),
+		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\tarch_id:%u (%s)", pre, op,
+		       plugin_name, pscom_info_type_str(type),
 		       arch_req->arch_id,
 		       pscom_con_type_str(PSCOM_ARCH2CON_TYPE(arch_req->arch_id)));
 		break;
@@ -86,21 +88,21 @@ void pscom_precon_info_dump(void *pre, char *op, int type, void *data, unsigned 
 	case PSCOM_INFO_CON_INFO_DEMAND:
 	case PSCOM_INFO_CON_INFO: {
 		pscom_info_con_info_t *msg = data;
-		DPRINT(PRECON_LL, "precon(%p):%s: %s\tcon_info:%s", pre, op,
-		       pscom_info_type_str(type),
+		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\tcon_info:%s", pre, op,
+		       plugin_name, pscom_info_type_str(type),
 		       pscom_con_info_str(&msg->con_info));
 		break;
 	}
 	case PSCOM_INFO_VERSION: {
 		pscom_info_version_t *version = data;
-		DPRINT(PRECON_LL, "precon(%p):%s: %s\tver_from:%04x ver_to:%04x", pre, op,
-		       pscom_info_type_str(type),
+		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\tver_from:%04x ver_to:%04x", pre, op,
+		       plugin_name, pscom_info_type_str(type),
 		       version->ver_from, version->ver_to);
 		break;
 	}
 	default:
-		DPRINT(PRECON_LL, "precon(%p):%s: %s\t%p %u", pre, op,
-		       pscom_info_type_str(type), data, size);
+		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\t%p %u", pre, op,
+		       plugin_name, pscom_info_type_str(type), data, size);
 	}
 }
 
@@ -271,16 +273,32 @@ err_socket:
 }
 
 
+// Connecting or accepting peer?
 static
-void plugin_connect_next(pscom_con_t *con)
+int con_is_connecting_peer(pscom_con_t *con)
+{
+	return con && (
+		(con->pub.state == PSCOM_CON_STATE_CONNECTING) ||
+		(con->pub.state == PSCOM_CON_STATE_CONNECTING_ONDEMAND)
+	);
+}
+
+
+static
+void _plugin_connect_next(pscom_con_t *con, int first)
 {
 	precon_t *pre = con->precon;
 	pscom_sock_t *sock = get_sock(con->pub.socket);
 	assert(pre->magic == MAGIC_PRECON);
 	assert(con->magic == MAGIC_CONNECTION);
+	assert(first ? !pre->plugin : 1); // if first, pre->plugin has to be NULL!
+
+	if (!con_is_connecting_peer(con)) return; // Nothing to do.
 
 	do {
-		pre->plugin = pscom_plugin_next(pre->plugin);
+		pre->plugin = first ? pscom_plugin_first() : pscom_plugin_next(pre->_plugin_cur);
+		pre->_plugin_cur = pre->plugin;
+		first = 0;
 	} while (pre->plugin &&
 		 (!_pscom_con_type_mask_is_set(sock, PSCOM_ARCH2CON_TYPE(pre->plugin->arch_id)) ||
 		  pre->plugin->con_init(con)));
@@ -295,6 +313,21 @@ void plugin_connect_next(pscom_con_t *con)
 		pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_REQ, &pre->plugin->arch_id, sizeof(pre->plugin->arch_id));
 	}
 }
+
+
+static
+void plugin_connect_next(pscom_con_t *con)
+{
+	_plugin_connect_next(con, 0);
+}
+
+
+static
+void plugin_connect_first(pscom_con_t *con)
+{
+	_plugin_connect_next(con, 1);
+}
+
 
 
 static
@@ -385,7 +418,10 @@ static
 void pscom_precon_abort_plugin(precon_t *pre)
 {
 	pscom_con_t *con = pre->con;
-	if (pre->plugin && con) pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+	if (pre->plugin && con) {
+		DPRINT(PRECON_LL, "precon(%p):abort %s", pre, pre->plugin->name);
+		pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+	}
 	pre->plugin = NULL; // Do not use plugin anymore after PSCOM_INFO_ARCH_NEXT
 }
 
@@ -430,6 +466,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 			con = pscom_con_create(sock);
 			pre->con = con;
 			con->precon = pre;
+			con->state.internal_connection = 1; // until the use get a handle to con (con-on_accept)
 			con->pub.state = PSCOM_CON_STATE_ACCEPTING;
 			con->pub.remote_con_info = msg->con_info;
 			pscom_precon_send_PSCOM_INFO_VERSION(pre);
@@ -536,15 +573,22 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 	case PSCOM_INFO_ARCH_STEP4:
 		/* Handled by the current plugin. pre->plugin might be
 		 * null, in the case of an initialization error. */
-		if (pre->plugin && con) {
-			pre->plugin->con_handshake(con, type, data, size);
-			if (type == PSCOM_INFO_ARCH_OK) {
-				pscom_precon_close(pre);
+		if (con) {
+			if (pre->plugin) {
+				pre->plugin->con_handshake(con, type, data, size);
+				if (type == PSCOM_INFO_ARCH_OK) {
+					pscom_precon_close(pre);
+				}
+			} else {
+				// Failed locally before. Handle OK like an ARCH_NEXT
+				if (type == PSCOM_INFO_ARCH_OK) {
+					plugin_connect_next(con);
+				}
 			}
 		}
 		break;
 	case PSCOM_INFO_ARCH_NEXT: {
-		if (pre->plugin && con) pre->plugin->con_handshake(con, type, data, size);
+		pscom_precon_abort_plugin(pre);
 		plugin_connect_next(con);
 		break;
 	}
@@ -611,6 +655,18 @@ void pscom_precon_reconnect(precon_t *pre)
 
 	pscom_precon_connect_terminate(pre);
 
+	if (pre->back_connect && pre->con
+	    && (pre->con->magic == MAGIC_CONNECTION)
+	    && (pre->con->pub.type != PSCOM_CON_TYPE_ONDEMAND)) {
+		// Back connect failed, but forward connect succeeded.
+		DPRINT(2, "precon(%p): stopping obsolete back-connect on con:%p type:%6s state:%8s",
+		       pre, pre->con,
+		       pscom_con_type_str(pre->con->pub.type),
+		       pscom_con_state_str(pre->con->pub.state));
+		pre->con = NULL; // do not touch the connected con anymore.
+		goto backconnect_obsolete;
+	}
+
 	if (pre->reconnect_cnt < pscom.env.retry) {
 		pre->reconnect_cnt++;
 		DPRINT(1, "precon(%p):pscom_precon_reconnect count %u",
@@ -627,6 +683,9 @@ void pscom_precon_reconnect(precon_t *pre)
 	return;
 	/* --- */
 	int error_code;
+backconnect_obsolete:
+	pscom_precon_handle_receive(pre, PSCOM_INFO_FD_EOF, NULL, 0);
+	return;
 error:
 	/* precon connect failed. */
 	error_code = errno;
@@ -899,7 +958,7 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 	unsigned long now = getusec();
 
 	if (pscom.env.debug >= PRECON_LL) {
-		if (now - pre->last_print_stat > 500 /* ms */ * 1000) {
+		if (now - pre->last_print_stat > 1500 /* ms */ * 1000) {
 			pre->stat_poll_cnt++;
 
 			pre->last_print_stat = now;
@@ -983,7 +1042,7 @@ void pscom_precon_handshake(precon_t *pre)
 		}
 		pscom_precon_send_PSCOM_INFO_VERSION(pre);
 		pscom_precon_send_PSCOM_INFO_CON_INFO(pre, type);
-		plugin_connect_next(pre->con);
+		plugin_connect_first(pre->con);
 	}
 }
 
