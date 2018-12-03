@@ -156,9 +156,23 @@ void *psucp_small_msg_sendbuf_get_ownership(void)
 static
 void psucp_cleanup_hca(hca_info_t *hca_info)
 {
-	// ToDo: Implement cleanup
-	psucp_small_msg_sendbuf_free();
 
+	if (hca_info->ucp_worker) {
+		if (hca_info->my_ucp_address) {
+			ucp_worker_release_address(hca_info->ucp_worker, hca_info->my_ucp_address);
+			hca_info->my_ucp_address = NULL;
+		}
+
+		ucp_worker_destroy(hca_info->ucp_worker);
+		hca_info->ucp_worker = NULL;
+	}
+
+	if (hca_info->ucp_context) {
+		ucp_cleanup(hca_info->ucp_context);
+		hca_info->ucp_context = NULL;
+	}
+
+	psucp_small_msg_sendbuf_free();
 }
 
 
@@ -284,7 +298,7 @@ int psucp_init_hca(hca_info_t *hca_info)
 
 	status = ucp_worker_create(hca_info->ucp_context, &ucp_worker_params,
 				   &hca_info->ucp_worker);
-	if (status != UCS_OK) goto err_worker;
+	if (status != UCS_OK) goto err_worker_create;
 
 	status = ucp_worker_get_address(hca_info->ucp_worker,
 					&hca_info->my_ucp_address, &hca_info->my_ucp_address_size);
@@ -292,6 +306,8 @@ int psucp_init_hca(hca_info_t *hca_info)
 
 	return 0;
 	/* --- */
+err_worker_create:
+	hca_info->ucp_worker = NULL;
 err_worker:
 	psucp_cleanup_hca(hca_info);
 err_init:
