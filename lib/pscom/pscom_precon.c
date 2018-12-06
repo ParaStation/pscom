@@ -649,22 +649,39 @@ void pscom_precon_connect_terminate(precon_t *pre) {
 
 
 static
+int pscom_precon_is_obsolete_backconnect(precon_t *pre) {
+	// A back connect is obsolete when it's associated
+	// pscon_con_t con is not ONDEMAND anymore.
+	// Probably, forward connect succeeded or finally failed.
+	return (pre->back_connect && pre->con
+		&& (pre->con->magic == MAGIC_CONNECTION)
+		&& (pre->con->pub.type != PSCOM_CON_TYPE_ONDEMAND));
+}
+
+
+static
+void pscom_precon_terminate_backconnect(precon_t *pre) {
+	pscom_precon_connect_terminate(pre);
+	DPRINT(2, "precon(%p): stopping obsolete back-connect on con:%p type:%6s state:%8s",
+	       pre, pre->con,
+	       pscom_con_type_str(pre->con->pub.type),
+	       pscom_con_state_str(pre->con->pub.state));
+	pre->con = NULL; // do not touch the connected con anymore.
+
+	pscom_precon_handle_receive(pre, PSCOM_INFO_FD_EOF, NULL, 0);
+}
+
+
+static
 void pscom_precon_reconnect(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
 
 	pscom_precon_connect_terminate(pre);
 
-	if (pre->back_connect && pre->con
-	    && (pre->con->magic == MAGIC_CONNECTION)
-	    && (pre->con->pub.type != PSCOM_CON_TYPE_ONDEMAND)) {
-		// Back connect failed, but forward connect succeeded.
-		DPRINT(2, "precon(%p): stopping obsolete back-connect on con:%p type:%6s state:%8s",
-		       pre, pre->con,
-		       pscom_con_type_str(pre->con->pub.type),
-		       pscom_con_state_str(pre->con->pub.state));
-		pre->con = NULL; // do not touch the connected con anymore.
-		goto backconnect_obsolete;
+	if (pscom_precon_is_obsolete_backconnect(pre)) {
+		pscom_precon_terminate_backconnect(pre);
+		goto out;
 	}
 
 	if (pre->reconnect_cnt < pscom.env.retry) {
@@ -680,12 +697,10 @@ void pscom_precon_reconnect(precon_t *pre)
 		goto error;
 	}
 
+out:
 	return;
 	/* --- */
 	int error_code;
-backconnect_obsolete:
-	pscom_precon_handle_receive(pre, PSCOM_INFO_FD_EOF, NULL, 0);
-	return;
 error:
 	/* precon connect failed. */
 	error_code = errno;
@@ -966,7 +981,10 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 		}
 	}
 
-	if (now - pre->last_reconnect > pscom.env.precon_reconnect_timeout /* ms */ * 1000UL) {
+	if (pscom_precon_is_obsolete_backconnect(pre)) {
+		// Forward connect succeeded or failed finally.
+		pscom_precon_terminate_backconnect(pre);
+	} else if (now - pre->last_reconnect > pscom.env.precon_reconnect_timeout /* ms */ * 1000UL) {
 		pre->last_reconnect = now;
 
 		if (!pscom_precon_isconnected(pre) || (pre->stat_recv == 0)) {
