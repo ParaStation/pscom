@@ -76,37 +76,63 @@ void pscom_ucp_read_stop(pscom_con_t *con)
 
 
 static
+int recv_in_progress = 0;
+
+
+void pscom_psucp_read_done(void *con_priv, char *buf, size_t len)
+{
+	pscom_con_t *con = (pscom_con_t *)con_priv;
+	pscom_read_done_unlock(con, buf, len);
+
+	recv_in_progress--;
+}
+
+
+static
 int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 {
 	psucp_msg_t msg;
 	ssize_t rc;
 
+	// ToDo: Allow more than one receive at once.
+	if (recv_in_progress) {
+		psucp_progress();
+		return 0;
+	}
+
 	rc = psucp_probe(&msg);
 
 	if (rc > 0) {
 		pscom_con_t *con = (pscom_con_t *)msg.info_tag.sender_tag;
+		psucp_con_info_t *ci = con->arch.ucp.ci;
 		char *buf;
 		size_t len;
 		ssize_t rlen;
 
+		recv_in_progress++;
+
 		assert(con->magic == MAGIC_CONNECTION);
 
-		pscom_read_get_buf(con, &buf, &len);
+		pscom_read_get_buf_locked(con, &buf, &len);
 
-		rlen = psucp_recv(&msg, buf, len);
+		rlen = psucp_irecv(ci, &msg, buf, len);
+
+		if (rlen < 0) {
+			// error receive
+			errno = -(int)rlen;
+			pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_STDERROR);
+			return 1;
+		}
 
 //		printf("%s:%u:%s  recv len:%u rlen:%u buf:%s\n", __FILE__, __LINE__, __func__,
 //		       (unsigned)len, (unsigned)rlen, pscom_dumpstr(buf, rlen));
-		pscom_read_done(con, buf, rlen);
-	} else {
-		psucp_progress();
+//		pscom_read_done(con, buf, rlen);
 	}
 
 	return rc > 0;
 }
 
 
-__attribute__((visibility("hidden")))
 void pscom_psucp_sendv_done(void *req_priv)
 {
 	pscom_req_t *req = (pscom_req_t *)req_priv;
@@ -134,8 +160,7 @@ void pscom_ucp_do_write(pscom_con_t *con)
 
 		pscom_write_pending(con, req, len);
 
-		ssize_t rlen = psucp_sendv(ci, iov, len,
-				       pscom_psucp_sendv_done, req);
+		ssize_t rlen = psucp_sendv(ci, iov, req);
 
 		if (rlen >= 0) {
 			assert((size_t)rlen == len);
@@ -147,6 +172,7 @@ void pscom_ucp_do_write(pscom_con_t *con)
 			assert(0);
 		} else {
 			// Error
+			pscom_write_pending_error(con, req);
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
@@ -212,7 +238,7 @@ void pscom_ucp_init(void)
 	// pscom_env_get_uint(&psucp_recvq_size, ENV_UCP_RECVQ_SIZE);
 	// pscom_env_get_int(&psucp_global_sendq, ENV_UCP_GLOBAL_SENDQ);
 	// pscom_env_get_uint(&psucp_sendq_size, ENV_UCP_SENDQ_SIZE);
-
+	psucp_small_msg_len = pscom.env.readahead;
 
 	INIT_LIST_HEAD(&pscom_ucp.reader.next);
 	pscom_ucp.reader.do_read = pscom_ucp_do_read;
@@ -240,7 +266,7 @@ void pscom_ucp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
 	switch (type) {
 	case PSCOM_INFO_ARCH_REQ: {
-		psucp_info_msg_t msg;
+		psucp_info_msg_t *msg;
 		psucp_con_info_t *ci = psucp_con_create();
 
 		con->arch.ucp.ci = ci;
@@ -249,14 +275,17 @@ void pscom_ucp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 		if (psucp_con_init(ci, NULL, con)) goto error_con_init;
 
 		/* send my connection id's */
-		psucp_con_get_info_msg(ci, (unsigned long)con, &msg);
+		msg = psucp_con_get_info_msg(ci, (unsigned long)con);
 
-		pscom_precon_send(con->precon, PSCOM_INFO_UCP_ID, &msg, sizeof(msg));
+		pscom_precon_send(con->precon, PSCOM_INFO_UCP_ID, msg, psucp_info_msg_length(msg));
+		free(msg);
+
 		break; /* Next is PSCOM_INFO_UCP_ID or PSCOM_INFO_ARCH_NEXT */
 	}
 	case PSCOM_INFO_UCP_ID: {
 		psucp_info_msg_t *msg = data;
-		assert(sizeof(*msg) == size);
+		assert(sizeof(*msg) <= size);
+		assert(psucp_info_msg_length(msg) <= size);
 
 		if (psucp_con_connect(con->arch.ucp.ci, msg)) goto error_con_connect;
 
@@ -267,6 +296,9 @@ void pscom_ucp_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 		/* Something failed. Cleanup. */
 		pscom_ucp_con_cleanup(con);
 		break; /* Done. Ucp failed */
+	case PSCOM_INFO_ARCH_OK:
+		pscom_con_guard_start(con);
+		break;
 	case PSCOM_INFO_EOF:
 		pscom_ucp_init_con(con);
 		break; /* Done. Use Ucp */

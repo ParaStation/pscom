@@ -593,6 +593,9 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len);
 /* Asynchronous write on req done. */
 void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req);
 
+/* Asynchronous write on req failed. */
+void pscom_write_pending_error(pscom_con_t *con, pscom_req_t *req);
+
 
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error);
 void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info);

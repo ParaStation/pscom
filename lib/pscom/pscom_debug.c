@@ -316,6 +316,33 @@ char *pscom_debug_req_str(pscom_req_t *req)
 }
 
 
+char *pscom_debug_request_str(pscom_request_t *request)
+{
+	return pscom_debug_req_str(get_req(request));
+}
+
+
+/*
+ * Helpers to translate user structs into internal ones.
+ */
+pscom_req_t *pscom_get_req(pscom_request_t *request)
+{
+	return get_req(request);
+}
+
+
+pscom_con_t *pscom_get_con(pscom_connection_t *connection)
+{
+	return get_con(connection);
+}
+
+
+pscom_sock_t *pscom_get_sock(pscom_socket_t *socket)
+{
+	return get_sock(socket);
+}
+
+
 /* pscom_dump_str() is usefull in a gdb session:
  * (gdb) printf "%s\n", pscom_dump_str(10)
  */
