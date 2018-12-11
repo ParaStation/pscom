@@ -13428,8 +13428,6 @@ ac_config_files="$ac_config_files lib/pscom4psm/Makefile"
 
 ac_config_files="$ac_config_files lib/psmalloc/Makefile"
 
-ac_config_files="$ac_config_files lib/psport4/Makefile"
-
 ac_config_files="$ac_config_files scripts/Makefile"
 
 ac_config_links="$ac_config_links dist/Makefile:dist/Makefile"
@@ -14543,7 +14541,6 @@ do
     "lib/pscom4openib/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4openib/Makefile" ;;
     "lib/pscom4psm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4psm/Makefile" ;;
     "lib/psmalloc/Makefile") CONFIG_FILES="$CONFIG_FILES lib/psmalloc/Makefile" ;;
-    "lib/psport4/Makefile") CONFIG_FILES="$CONFIG_FILES lib/psport4/Makefile" ;;
     "scripts/Makefile") CONFIG_FILES="$CONFIG_FILES scripts/Makefile" ;;
     "dist/Makefile") CONFIG_LINKS="$CONFIG_LINKS dist/Makefile:dist/Makefile" ;;
 

@@ -363,7 +363,7 @@ configdir = $(prefix)/config
 #
 # Author:       Thomas Moschny <moschny@par-tec.com>
 #
-include_HEADERS = pscom.h psport4.h
+include_HEADERS = pscom.h
 
 # ---- vc_version.h ----
 #

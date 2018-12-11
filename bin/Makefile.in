@@ -104,39 +104,38 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-noinst_PROGRAMS = p4logd$(EXEEXT) porttest$(EXEEXT) \
-	psock_test$(EXEEXT) pscom_test$(EXEEXT) \
-	pscom_ondemand$(EXEEXT) pscom_bcast_test$(EXEEXT) \
-	pscom_request_create$(EXEEXT) pscom_bcast_pp$(EXEEXT) \
-	port_pp$(EXEEXT) pscom_maxcon$(EXEEXT) \
-	pscom_test_fault$(EXEEXT) $(am__EXEEXT_2) $(am__EXEEXT_3) \
-	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6) \
-	$(am__EXEEXT_7) $(am__EXEEXT_8) $(am__EXEEXT_9) \
-	$(am__EXEEXT_10) $(am__EXEEXT_11) $(am__EXEEXT_12) \
-	$(am__EXEEXT_13) $(am__EXEEXT_14)
+noinst_PROGRAMS = p4logd$(EXEEXT) psock_test$(EXEEXT) \
+	pscom_test$(EXEEXT) pscom_ondemand$(EXEEXT) \
+	pscom_bcast_test$(EXEEXT) pscom_request_create$(EXEEXT) \
+	pscom_bcast_pp$(EXEEXT) pscom_maxcon$(EXEEXT) \
+	pscom_test_fault$(EXEEXT) $(am__EXEEXT_1) $(am__EXEEXT_2) \
+	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
+	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8) \
+	$(am__EXEEXT_9) $(am__EXEEXT_10) $(am__EXEEXT_11) \
+	$(am__EXEEXT_12) $(am__EXEEXT_13)
 check_PROGRAMS = list_test$(EXEEXT)
 TESTS = list_test$(EXEEXT)
-bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) pspipe$(EXEEXT) \
-	p4tcp$(EXEEXT) psport4_pp$(EXEEXT) psock_pp$(EXEEXT) \
-	test_nodes$(EXEEXT) $(am__EXEEXT_1)
-@MELLANOX_ENABLED_TRUE@am__append_1 = ps4_ib ps4_ib_pp ps4_ib_pp_rdma psport4mvapi_pp
+bin_PROGRAMS = pscom_pp$(EXEEXT) p4stat$(EXEEXT) p4tcp$(EXEEXT) \
+	psock_pp$(EXEEXT) test_nodes$(EXEEXT)
+@MELLANOX_ENABLED_TRUE@am__append_1 = ps4_ib ps4_ib_pp ps4_ib_pp_rdma
 @GM_ENABLED_TRUE@am__append_2 = gm_pp
 @OPENIB_ENABLED_TRUE@am__append_3 = openib_pp openib_ud_pp
 @UCP_ENABLED_TRUE@am__append_4 = ucp_pp
 @PSM1_ENABLED_TRUE@am__append_5 = psm_pp
 @PSM2_ENABLED_TRUE@am__append_6 = psm2_pp pscom4psm_pp
-@PSMGMT_ENABLED_TRUE@am__append_7 = pscp
-@DAPL_ENABLED_TRUE@am__append_8 = dapl_pp dapl_pp_lowlevel
+
+#  bin_PROGRAMS += pscp
+@DAPL_ENABLED_TRUE@am__append_7 = dapl_pp dapl_pp_lowlevel
 
 # noinst_PROGRAMS += elan_pp
-@ELAN_ENABLED_TRUE@am__append_9 = elan_pp_lowlevel
-@EXTOLL_ENABLED_TRUE@am__append_10 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
-@MXM_ENABLED_TRUE@am__append_11 = mxm_pp
+@ELAN_ENABLED_TRUE@am__append_8 = elan_pp_lowlevel
+@EXTOLL_ENABLED_TRUE@am__append_9 = extoll_pp_lowlevel extoll_pp_velo extoll_one_message
+@MXM_ENABLED_TRUE@am__append_10 = mxm_pp
 
 # -- mem usage diagnostics --
-@OPENIB_ENABLED_TRUE@am__append_12 = pscom_memusage_openib
-@OFED_ENABLED_TRUE@am__append_13 = pscom_memusage_ofed
-@EXTOLL_ENABLED_TRUE@am__append_14 = pscom_memusage_extoll \
+@OPENIB_ENABLED_TRUE@am__append_11 = pscom_memusage_openib
+@OFED_ENABLED_TRUE@am__append_12 = pscom_memusage_ofed
+@EXTOLL_ENABLED_TRUE@am__append_13 = pscom_memusage_extoll \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo
 subdir = bin
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
@@ -152,30 +151,28 @@ DIST_COMMON = $(srcdir)/Makefile.am $(dist_config_DATA) \
 mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@PSMGMT_ENABLED_TRUE@am__EXEEXT_1 = pscp$(EXEEXT)
 am__installdirs = "$(DESTDIR)$(bindir)" "$(DESTDIR)$(bindir)" \
 	"$(DESTDIR)$(configdir)"
-@MELLANOX_ENABLED_TRUE@am__EXEEXT_2 = ps4_ib$(EXEEXT) \
+@MELLANOX_ENABLED_TRUE@am__EXEEXT_1 = ps4_ib$(EXEEXT) \
 @MELLANOX_ENABLED_TRUE@	ps4_ib_pp$(EXEEXT) \
-@MELLANOX_ENABLED_TRUE@	ps4_ib_pp_rdma$(EXEEXT) \
-@MELLANOX_ENABLED_TRUE@	psport4mvapi_pp$(EXEEXT)
-@GM_ENABLED_TRUE@am__EXEEXT_3 = gm_pp$(EXEEXT)
-@OPENIB_ENABLED_TRUE@am__EXEEXT_4 = openib_pp$(EXEEXT) \
+@MELLANOX_ENABLED_TRUE@	ps4_ib_pp_rdma$(EXEEXT)
+@GM_ENABLED_TRUE@am__EXEEXT_2 = gm_pp$(EXEEXT)
+@OPENIB_ENABLED_TRUE@am__EXEEXT_3 = openib_pp$(EXEEXT) \
 @OPENIB_ENABLED_TRUE@	openib_ud_pp$(EXEEXT)
-@UCP_ENABLED_TRUE@am__EXEEXT_5 = ucp_pp$(EXEEXT)
-@PSM1_ENABLED_TRUE@am__EXEEXT_6 = psm_pp$(EXEEXT)
-@PSM2_ENABLED_TRUE@am__EXEEXT_7 = psm2_pp$(EXEEXT) \
+@UCP_ENABLED_TRUE@am__EXEEXT_4 = ucp_pp$(EXEEXT)
+@PSM1_ENABLED_TRUE@am__EXEEXT_5 = psm_pp$(EXEEXT)
+@PSM2_ENABLED_TRUE@am__EXEEXT_6 = psm2_pp$(EXEEXT) \
 @PSM2_ENABLED_TRUE@	pscom4psm_pp$(EXEEXT)
-@DAPL_ENABLED_TRUE@am__EXEEXT_8 = dapl_pp$(EXEEXT) \
+@DAPL_ENABLED_TRUE@am__EXEEXT_7 = dapl_pp$(EXEEXT) \
 @DAPL_ENABLED_TRUE@	dapl_pp_lowlevel$(EXEEXT)
-@ELAN_ENABLED_TRUE@am__EXEEXT_9 = elan_pp_lowlevel$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_10 = extoll_pp_lowlevel$(EXEEXT) \
+@ELAN_ENABLED_TRUE@am__EXEEXT_8 = elan_pp_lowlevel$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_9 = extoll_pp_lowlevel$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_pp_velo$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	extoll_one_message$(EXEEXT)
-@MXM_ENABLED_TRUE@am__EXEEXT_11 = mxm_pp$(EXEEXT)
-@OPENIB_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_openib$(EXEEXT)
-@OFED_ENABLED_TRUE@am__EXEEXT_13 = pscom_memusage_ofed$(EXEEXT)
-@EXTOLL_ENABLED_TRUE@am__EXEEXT_14 = pscom_memusage_extoll$(EXEEXT) \
+@MXM_ENABLED_TRUE@am__EXEEXT_10 = mxm_pp$(EXEEXT)
+@OPENIB_ENABLED_TRUE@am__EXEEXT_11 = pscom_memusage_openib$(EXEEXT)
+@OFED_ENABLED_TRUE@am__EXEEXT_12 = pscom_memusage_ofed$(EXEEXT)
+@EXTOLL_ENABLED_TRUE@am__EXEEXT_13 = pscom_memusage_extoll$(EXEEXT) \
 @EXTOLL_ENABLED_TRUE@	pscom_memusage_velo$(EXEEXT)
 PROGRAMS = $(bin_PROGRAMS) $(noinst_PROGRAMS)
 am__dirstamp = $(am__leading_dot)dirstamp
@@ -269,12 +266,6 @@ p4stat_DEPENDENCIES =
 am_p4tcp_OBJECTS = p4tcp.$(OBJEXT)
 p4tcp_OBJECTS = $(am_p4tcp_OBJECTS)
 p4tcp_DEPENDENCIES =
-am_port_pp_OBJECTS = port_pp.$(OBJEXT)
-port_pp_OBJECTS = $(am_port_pp_OBJECTS)
-port_pp_DEPENDENCIES =
-am_porttest_OBJECTS = porttest.$(OBJEXT)
-porttest_OBJECTS = $(am_porttest_OBJECTS)
-porttest_DEPENDENCIES = $(libpsport4)
 am_ps4_ib_OBJECTS = mellanox/ps4_ib-ps4_ib.$(OBJEXT)
 ps4_ib_OBJECTS = $(am_ps4_ib_OBJECTS)
 am__DEPENDENCIES_2 =
@@ -358,12 +349,6 @@ pscom_test_DEPENDENCIES = $(libpscom)
 am_pscom_test_fault_OBJECTS = pscom_test_fault.$(OBJEXT)
 pscom_test_fault_OBJECTS = $(am_pscom_test_fault_OBJECTS)
 pscom_test_fault_DEPENDENCIES = $(libpscom)
-am_pscp_OBJECTS = pscp-pscp.$(OBJEXT) pscp-psport_util.$(OBJEXT)
-pscp_OBJECTS = $(am_pscp_OBJECTS)
-pscp_DEPENDENCIES = $(libpsport4)
-pscp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
-	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
-	$(pscp_LDFLAGS) $(LDFLAGS) -o $@
 am_psm2_pp_OBJECTS = psm/psm2_pp-psm2_pp.$(OBJEXT)
 psm2_pp_OBJECTS = $(am_psm2_pp_OBJECTS)
 psm2_pp_DEPENDENCIES =
@@ -382,20 +367,6 @@ psock_pp_DEPENDENCIES =
 am_psock_test_OBJECTS = psock_test.$(OBJEXT)
 psock_test_OBJECTS = $(am_psock_test_OBJECTS)
 psock_test_DEPENDENCIES =
-am_pspipe_OBJECTS = pspipe.$(OBJEXT) psport_util.$(OBJEXT)
-pspipe_OBJECTS = $(am_pspipe_OBJECTS)
-pspipe_DEPENDENCIES = $(libpsport4)
-am_psport4_pp_OBJECTS = psport4_pp.$(OBJEXT)
-psport4_pp_OBJECTS = $(am_psport4_pp_OBJECTS)
-psport4_pp_DEPENDENCIES = $(libpsport4)
-am_psport4mvapi_pp_OBJECTS = psport4mvapi_pp-psport4_pp.$(OBJEXT)
-psport4mvapi_pp_OBJECTS = $(am_psport4mvapi_pp_OBJECTS)
-psport4mvapi_pp_DEPENDENCIES = $(libpsport4mvapi) \
-	$(am__DEPENDENCIES_2)
-psport4mvapi_pp_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(psport4mvapi_pp_LDFLAGS) $(LDFLAGS) \
-	-o $@
 am_test_nodes_OBJECTS = test_nodes-test_nodes.$(OBJEXT)
 test_nodes_OBJECTS = $(am_test_nodes_OBJECTS)
 @PSMGMT_ENABLED_FALSE@test_nodes_DEPENDENCIES = $(libpscom)
@@ -476,39 +447,35 @@ SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
 	$(gm_pp_SOURCES) $(list_test_SOURCES) $(mxm_pp_SOURCES) \
 	$(openib_pp_SOURCES) $(openib_ud_pp_SOURCES) $(p4logd_SOURCES) \
-	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(port_pp_SOURCES) \
-	$(porttest_SOURCES) $(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
-	$(ps4_ib_pp_rdma_SOURCES) $(pscom4psm_pp_SOURCES) \
-	$(pscom_bcast_pp_SOURCES) $(pscom_bcast_test_SOURCES) \
-	$(pscom_maxcon_SOURCES) $(pscom_memusage_extoll_SOURCES) \
+	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(ps4_ib_SOURCES) \
+	$(ps4_ib_pp_SOURCES) $(ps4_ib_pp_rdma_SOURCES) \
+	$(pscom4psm_pp_SOURCES) $(pscom_bcast_pp_SOURCES) \
+	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
+	$(pscom_memusage_extoll_SOURCES) \
 	$(pscom_memusage_ofed_SOURCES) \
 	$(pscom_memusage_openib_SOURCES) \
 	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
 	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
-	$(pscp_SOURCES) $(psm2_pp_SOURCES) $(psm_pp_SOURCES) \
-	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
-	$(psport4_pp_SOURCES) $(psport4mvapi_pp_SOURCES) \
-	$(test_nodes_SOURCES) $(ucp_pp_SOURCES)
+	$(psm2_pp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
+	$(psock_test_SOURCES) $(test_nodes_SOURCES) $(ucp_pp_SOURCES)
 DIST_SOURCES = $(dapl_pp_SOURCES) $(dapl_pp_lowlevel_SOURCES) \
 	$(elan_pp_lowlevel_SOURCES) $(extoll_one_message_SOURCES) \
 	$(extoll_pp_lowlevel_SOURCES) $(extoll_pp_velo_SOURCES) \
 	$(gm_pp_SOURCES) $(list_test_SOURCES) $(mxm_pp_SOURCES) \
 	$(openib_pp_SOURCES) $(openib_ud_pp_SOURCES) $(p4logd_SOURCES) \
-	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(port_pp_SOURCES) \
-	$(porttest_SOURCES) $(ps4_ib_SOURCES) $(ps4_ib_pp_SOURCES) \
-	$(ps4_ib_pp_rdma_SOURCES) $(pscom4psm_pp_SOURCES) \
-	$(pscom_bcast_pp_SOURCES) $(pscom_bcast_test_SOURCES) \
-	$(pscom_maxcon_SOURCES) $(pscom_memusage_extoll_SOURCES) \
+	$(p4stat_SOURCES) $(p4tcp_SOURCES) $(ps4_ib_SOURCES) \
+	$(ps4_ib_pp_SOURCES) $(ps4_ib_pp_rdma_SOURCES) \
+	$(pscom4psm_pp_SOURCES) $(pscom_bcast_pp_SOURCES) \
+	$(pscom_bcast_test_SOURCES) $(pscom_maxcon_SOURCES) \
+	$(pscom_memusage_extoll_SOURCES) \
 	$(pscom_memusage_ofed_SOURCES) \
 	$(pscom_memusage_openib_SOURCES) \
 	$(pscom_memusage_velo_SOURCES) $(pscom_ondemand_SOURCES) \
 	$(pscom_pp_SOURCES) $(pscom_request_create_SOURCES) \
 	$(pscom_test_SOURCES) $(pscom_test_fault_SOURCES) \
-	$(pscp_SOURCES) $(psm2_pp_SOURCES) $(psm_pp_SOURCES) \
-	$(psock_pp_SOURCES) $(psock_test_SOURCES) $(pspipe_SOURCES) \
-	$(psport4_pp_SOURCES) $(psport4mvapi_pp_SOURCES) \
-	$(test_nodes_SOURCES) $(ucp_pp_SOURCES)
+	$(psm2_pp_SOURCES) $(psm_pp_SOURCES) $(psock_pp_SOURCES) \
+	$(psock_test_SOURCES) $(test_nodes_SOURCES) $(ucp_pp_SOURCES)
 RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
 	ctags-recursive dvi-recursive html-recursive info-recursive \
 	install-data-recursive install-dvi-recursive \
@@ -939,35 +906,26 @@ configdir = $(prefix)/config
 
 # -- file lists
 SUBDIRS = simul_p4sock examples
-noinst_HEADERS = dump.c psport_util.h mxm/mxm_util.c
+noinst_HEADERS = dump.c mxm/mxm_util.c
 EXTRA_DIST = gm/gm_sr.c gm/gm_test.c pscom_debug.sh
 bin_SCRIPTS = pscom_debug
 dist_config_DATA = pscom.gdb
 CLEANFILES = $(bin_SCRIPTS) list_test.ok
 
 # -- /file lists
-libpsport4 = $(top_builddir)/lib/psport4/libpsport4std.la
 libpscom = $(top_builddir)/lib/pscom/libpscom.la $(top_builddir)/lib/psmalloc/libpsmalloc.la
 
-# -- psport --
+# -- Tools --
 p4stat_SOURCES = p4stat.c
 p4stat_LDADD = -lpopt
 p4tcp_SOURCES = p4tcp.c
 p4tcp_LDADD = -lpopt
 p4logd_SOURCES = p4logd.c
 p4logd_LDADD = -lpopt
-porttest_SOURCES = porttest.c
-porttest_LDADD = $(libpsport4) -lpopt
 psock_pp_SOURCES = psock_pp.c
 psock_pp_LDADD = -lpopt
 psock_test_SOURCES = psock_test.c
 psock_test_LDADD = -lpopt
-psport4_pp_SOURCES = psport4_pp.c
-psport4_pp_LDADD = $(libpsport4) -lpopt
-pspipe_SOURCES = pspipe.c psport_util.c
-pspipe_LDADD = $(libpsport4) -lpopt
-port_pp_SOURCES = port_pp.c
-port_pp_LDADD = -lpopt
 
 # -- pscom --
 pscom_test_SOURCES = pscom_test.c
@@ -989,7 +947,6 @@ pscom_test_fault_SOURCES = pscom_test_fault.c
 pscom_test_fault_LDADD = $(libpscom) -lpopt
 
 # -- mellanox --
-libpsport4mvapi = $(top_builddir)/lib/psport4/libpsport4mvapi.la
 cppflags_mellanox = $(AM_CPPFLAGS) $(MELLANOX_CPPFLAGS) -D__LINUX__	\
 	-DMT_LITTLE_ENDIAN -pthread
 
@@ -1007,10 +964,6 @@ ps4_ib_pp_rdma_SOURCES = mellanox/ps4_ib_pp_rdma.c
 ps4_ib_pp_rdma_CPPFLAGS = $(cppflags_mellanox)
 ps4_ib_pp_rdma_LDFLAGS = $(ldflags_mellanox)
 ps4_ib_pp_rdma_LDADD = $(ldadd_mellanox) -lpopt
-psport4mvapi_pp_SOURCES = psport4_pp.c
-psport4mvapi_pp_CPPFLAGS = $(cppflags_mellanox)
-psport4mvapi_pp_LDFLAGS = $(ldflags_mellanox)
-psport4mvapi_pp_LDADD = $(libpsport4mvapi) $(ldadd_mellanox) -lpopt
 
 # -- gm --
 gm_pp_SOURCES = gm/gm_pp.c
@@ -1076,10 +1029,6 @@ test_nodes_SOURCES = test_nodes.c
 @PSMGMT_ENABLED_TRUE@test_nodes_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)
 @PSMGMT_ENABLED_FALSE@test_nodes_LDADD = $(libpscom) -lpopt
 @PSMGMT_ENABLED_TRUE@test_nodes_LDADD = $(libpscom) -lpse -lpsi  -lpopt
-pscp_SOURCES = pscp.c  psport_util.c
-pscp_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS)
-pscp_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)
-pscp_LDADD = $(libpsport4) -lpse -lpsi -lpopt
 
 # -- dapl --
 cppflags_dapl = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)			\
@@ -1364,14 +1313,6 @@ p4stat$(EXEEXT): $(p4stat_OBJECTS) $(p4stat_DEPENDENCIES) $(EXTRA_p4stat_DEPENDE
 p4tcp$(EXEEXT): $(p4tcp_OBJECTS) $(p4tcp_DEPENDENCIES) $(EXTRA_p4tcp_DEPENDENCIES) 
 	@rm -f p4tcp$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(p4tcp_OBJECTS) $(p4tcp_LDADD) $(LIBS)
-
-port_pp$(EXEEXT): $(port_pp_OBJECTS) $(port_pp_DEPENDENCIES) $(EXTRA_port_pp_DEPENDENCIES) 
-	@rm -f port_pp$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(port_pp_OBJECTS) $(port_pp_LDADD) $(LIBS)
-
-porttest$(EXEEXT): $(porttest_OBJECTS) $(porttest_DEPENDENCIES) $(EXTRA_porttest_DEPENDENCIES) 
-	@rm -f porttest$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(porttest_OBJECTS) $(porttest_LDADD) $(LIBS)
 mellanox/$(am__dirstamp):
 	@$(MKDIR_P) mellanox
 	@: > mellanox/$(am__dirstamp)
@@ -1456,10 +1397,6 @@ pscom_test$(EXEEXT): $(pscom_test_OBJECTS) $(pscom_test_DEPENDENCIES) $(EXTRA_ps
 pscom_test_fault$(EXEEXT): $(pscom_test_fault_OBJECTS) $(pscom_test_fault_DEPENDENCIES) $(EXTRA_pscom_test_fault_DEPENDENCIES) 
 	@rm -f pscom_test_fault$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(pscom_test_fault_OBJECTS) $(pscom_test_fault_LDADD) $(LIBS)
-
-pscp$(EXEEXT): $(pscp_OBJECTS) $(pscp_DEPENDENCIES) $(EXTRA_pscp_DEPENDENCIES) 
-	@rm -f pscp$(EXEEXT)
-	$(AM_V_CCLD)$(pscp_LINK) $(pscp_OBJECTS) $(pscp_LDADD) $(LIBS)
 psm/psm2_pp-psm2_pp.$(OBJEXT): psm/$(am__dirstamp) \
 	psm/$(DEPDIR)/$(am__dirstamp)
 
@@ -1480,18 +1417,6 @@ psock_pp$(EXEEXT): $(psock_pp_OBJECTS) $(psock_pp_DEPENDENCIES) $(EXTRA_psock_pp
 psock_test$(EXEEXT): $(psock_test_OBJECTS) $(psock_test_DEPENDENCIES) $(EXTRA_psock_test_DEPENDENCIES) 
 	@rm -f psock_test$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(psock_test_OBJECTS) $(psock_test_LDADD) $(LIBS)
-
-pspipe$(EXEEXT): $(pspipe_OBJECTS) $(pspipe_DEPENDENCIES) $(EXTRA_pspipe_DEPENDENCIES) 
-	@rm -f pspipe$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(pspipe_OBJECTS) $(pspipe_LDADD) $(LIBS)
-
-psport4_pp$(EXEEXT): $(psport4_pp_OBJECTS) $(psport4_pp_DEPENDENCIES) $(EXTRA_psport4_pp_DEPENDENCIES) 
-	@rm -f psport4_pp$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(psport4_pp_OBJECTS) $(psport4_pp_LDADD) $(LIBS)
-
-psport4mvapi_pp$(EXEEXT): $(psport4mvapi_pp_OBJECTS) $(psport4mvapi_pp_DEPENDENCIES) $(EXTRA_psport4mvapi_pp_DEPENDENCIES) 
-	@rm -f psport4mvapi_pp$(EXEEXT)
-	$(AM_V_CCLD)$(psport4mvapi_pp_LINK) $(psport4mvapi_pp_OBJECTS) $(psport4mvapi_pp_LDADD) $(LIBS)
 
 test_nodes$(EXEEXT): $(test_nodes_OBJECTS) $(test_nodes_DEPENDENCIES) $(EXTRA_test_nodes_DEPENDENCIES) 
 	@rm -f test_nodes$(EXEEXT)
@@ -1563,8 +1488,6 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/p4logd.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/p4stat.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/p4tcp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/port_pp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/porttest.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_bcast_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_bcast_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_maxcon.Po@am__quote@
@@ -1577,14 +1500,8 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_request_create.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_test.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_test_fault.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscp-pscp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscp-psport_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psock_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psock_test.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pspipe.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psport4_pp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psport4mvapi_pp-psport4_pp.Po@am__quote@
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psport_util.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_nodes-test_nodes.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@dapl/$(DEPDIR)/dapl_pp-dapl_pp.Po@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@dapl/$(DEPDIR)/dapl_pp_lowlevel-dapl_pp_lowlevel.Po@am__quote@
@@ -1880,34 +1797,6 @@ pscom_memusage_velo-pscom_memusage.obj: pscom_memusage.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_memusage_velo_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_memusage_velo-pscom_memusage.obj `if test -f 'pscom_memusage.c'; then $(CYGPATH_W) 'pscom_memusage.c'; else $(CYGPATH_W) '$(srcdir)/pscom_memusage.c'; fi`
 
-pscp-pscp.o: pscp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscp-pscp.o -MD -MP -MF $(DEPDIR)/pscp-pscp.Tpo -c -o pscp-pscp.o `test -f 'pscp.c' || echo '$(srcdir)/'`pscp.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscp-pscp.Tpo $(DEPDIR)/pscp-pscp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscp.c' object='pscp-pscp.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscp-pscp.o `test -f 'pscp.c' || echo '$(srcdir)/'`pscp.c
-
-pscp-pscp.obj: pscp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscp-pscp.obj -MD -MP -MF $(DEPDIR)/pscp-pscp.Tpo -c -o pscp-pscp.obj `if test -f 'pscp.c'; then $(CYGPATH_W) 'pscp.c'; else $(CYGPATH_W) '$(srcdir)/pscp.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscp-pscp.Tpo $(DEPDIR)/pscp-pscp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscp.c' object='pscp-pscp.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscp-pscp.obj `if test -f 'pscp.c'; then $(CYGPATH_W) 'pscp.c'; else $(CYGPATH_W) '$(srcdir)/pscp.c'; fi`
-
-pscp-psport_util.o: psport_util.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscp-psport_util.o -MD -MP -MF $(DEPDIR)/pscp-psport_util.Tpo -c -o pscp-psport_util.o `test -f 'psport_util.c' || echo '$(srcdir)/'`psport_util.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscp-psport_util.Tpo $(DEPDIR)/pscp-psport_util.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psport_util.c' object='pscp-psport_util.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscp-psport_util.o `test -f 'psport_util.c' || echo '$(srcdir)/'`psport_util.c
-
-pscp-psport_util.obj: psport_util.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscp-psport_util.obj -MD -MP -MF $(DEPDIR)/pscp-psport_util.Tpo -c -o pscp-psport_util.obj `if test -f 'psport_util.c'; then $(CYGPATH_W) 'psport_util.c'; else $(CYGPATH_W) '$(srcdir)/psport_util.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscp-psport_util.Tpo $(DEPDIR)/pscp-psport_util.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psport_util.c' object='pscp-psport_util.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscp-psport_util.obj `if test -f 'psport_util.c'; then $(CYGPATH_W) 'psport_util.c'; else $(CYGPATH_W) '$(srcdir)/psport_util.c'; fi`
-
 psm/psm2_pp-psm2_pp.o: psm/psm2_pp.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm2_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psm/psm2_pp-psm2_pp.o -MD -MP -MF psm/$(DEPDIR)/psm2_pp-psm2_pp.Tpo -c -o psm/psm2_pp-psm2_pp.o `test -f 'psm/psm2_pp.c' || echo '$(srcdir)/'`psm/psm2_pp.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) psm/$(DEPDIR)/psm2_pp-psm2_pp.Tpo psm/$(DEPDIR)/psm2_pp-psm2_pp.Po
@@ -1935,20 +1824,6 @@ psm/psm_pp-psm_pp.obj: psm/psm_pp.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psm/psm_pp.c' object='psm/psm_pp-psm_pp.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psm_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psm/psm_pp-psm_pp.obj `if test -f 'psm/psm_pp.c'; then $(CYGPATH_W) 'psm/psm_pp.c'; else $(CYGPATH_W) '$(srcdir)/psm/psm_pp.c'; fi`
-
-psport4mvapi_pp-psport4_pp.o: psport4_pp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psport4mvapi_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psport4mvapi_pp-psport4_pp.o -MD -MP -MF $(DEPDIR)/psport4mvapi_pp-psport4_pp.Tpo -c -o psport4mvapi_pp-psport4_pp.o `test -f 'psport4_pp.c' || echo '$(srcdir)/'`psport4_pp.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/psport4mvapi_pp-psport4_pp.Tpo $(DEPDIR)/psport4mvapi_pp-psport4_pp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psport4_pp.c' object='psport4mvapi_pp-psport4_pp.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psport4mvapi_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psport4mvapi_pp-psport4_pp.o `test -f 'psport4_pp.c' || echo '$(srcdir)/'`psport4_pp.c
-
-psport4mvapi_pp-psport4_pp.obj: psport4_pp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psport4mvapi_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT psport4mvapi_pp-psport4_pp.obj -MD -MP -MF $(DEPDIR)/psport4mvapi_pp-psport4_pp.Tpo -c -o psport4mvapi_pp-psport4_pp.obj `if test -f 'psport4_pp.c'; then $(CYGPATH_W) 'psport4_pp.c'; else $(CYGPATH_W) '$(srcdir)/psport4_pp.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/psport4mvapi_pp-psport4_pp.Tpo $(DEPDIR)/psport4mvapi_pp-psport4_pp.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psport4_pp.c' object='psport4mvapi_pp-psport4_pp.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(psport4mvapi_pp_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o psport4mvapi_pp-psport4_pp.obj `if test -f 'psport4_pp.c'; then $(CYGPATH_W) 'psport4_pp.c'; else $(CYGPATH_W) '$(srcdir)/psport4_pp.c'; fi`
 
 test_nodes-test_nodes.o: test_nodes.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(test_nodes_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT test_nodes-test_nodes.o -MD -MP -MF $(DEPDIR)/test_nodes-test_nodes.Tpo -c -o test_nodes-test_nodes.o `test -f 'test_nodes.c' || echo '$(srcdir)/'`test_nodes.c
