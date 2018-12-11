@@ -1,9 +1,13 @@
-2018-11-22  Jens Hauke  <hauke@par-tec.com>
+2018-12-11  Jens Hauke  <hauke@par-tec.com>
 
-	* Fix: Error handling after a plugin hanshake failure (precon).
+	* Fix: Error handling after a plugin handshake failure (precon).
 
 	* Enhancement: Handle a failing shmat() to "direct shared mem" of
 	a peer (Before it was an abort with "Assertion failed")
+
+	* Enhancement: UCP: pscom4ucp: non-blocking receives from libucp.
+
+	* Enhancement: UCP: performance improvements.
 
 2018-10-08  Jens Hauke  <hauke@par-tec.com>	-	5.2.7-1
 
