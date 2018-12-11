@@ -35,6 +35,7 @@
 #include "pscom_util.h"
 #include "perf.h"
 #include "psoib.h"
+#include "pscom_debug.h"
 
 /* Size of the send, receive and completion queue */
 #define _SIZE_SEND_QUEUE 16
@@ -300,7 +301,7 @@ void psoib_scan_hca_ports(struct ibv_device *ib_dev)
 	port_cnt = 2;
     }
 
-    psoib_dprint(10, "psoib_scan_hca_ports(\"%s\") port_cnt=%u", dev_name, port_cnt);
+    psoib_dprint(D_DBG_V, "psoib_scan_hca_ports(\"%s\") port_cnt=%u", dev_name, port_cnt);
 
     for (port = 1; port <= port_cnt; port++) {
 	struct ibv_port_attr port_attr;
@@ -321,7 +322,7 @@ void psoib_scan_hca_ports(struct ibv_device *ib_dev)
 	    marker = "*";
 	}
 
-	psoib_dprint(3, "IB port <%s:%u>: %s%s",
+	psoib_dprint(D_DBG_V, "IB port <%s:%u>: %s%s",
 		     dev_name, port, port_state_str(port_state), marker);
     }
 
@@ -340,7 +341,7 @@ void psoib_scan_all_ports(void)
     int dev_list_count;
     int i;
 
-    // psoib_dprint(3, "configured port <%s>", port_name(psoib_hca, psoib_port));
+    // psoib_dprint(D_DBG_V, "configured port <%s>", port_name(psoib_hca, psoib_port));
 
     dev_list = ibv_get_device_list(&dev_list_count);
     if (!dev_list) goto err_no_dev_list;
@@ -355,7 +356,7 @@ void psoib_scan_all_ports(void)
     ibv_free_device_list(dev_list);
 err_no_dev_list:
     if (!psoib_port) psoib_port = 1;
-    psoib_dprint(2, "using port <%s>", port_name(psoib_hca, psoib_port));
+    psoib_dprint(D_DBG, "using port <%s>", port_name(psoib_hca, psoib_port));
 }
 
 
@@ -375,7 +376,7 @@ struct ibv_device *psoib_get_dev_by_hca_name(const char *in_hca_name)
 
 	// tmp = ibv_get_device_name(ib_dev);
 
-	// psoib_dprint(2, "Got IB device \"%s\"", tmp);
+	// psoib_dprint(D_DBG, "Got IB device \"%s\"", tmp);
 
 	if (!ib_dev) goto err_no_dev2;
     } else {
@@ -385,7 +386,7 @@ struct ibv_device *psoib_get_dev_by_hca_name(const char *in_hca_name)
 	    if (!ib_dev) break;
 	    const char *tmp = ibv_get_device_name(ib_dev);
 	    if (!strcmp(tmp, in_hca_name)) {
-		// psoib_dprint(2, "Got IB device \"%s\"", tmp);
+		// psoib_dprint(D_DBG, "Got IB device \"%s\"", tmp);
 		break;
 	    }
 	    ib_dev = NULL;
@@ -491,14 +492,14 @@ void print_mlock_help(size_t size)
     called = 1;
 
     if (size) {
-	psoib_dprint(0, "OPENIB: memlock(%zu) failed.", size);
+	psoib_dprint(D_WARNONCE, "OPENIB: memlock(%zu) failed.", size);
     } else {
-	psoib_dprint(0, "OPENIB: memlock failed.");
+	psoib_dprint(D_WARNONCE, "OPENIB: memlock failed.");
     }
-    psoib_dprint(0, "(Check memlock limit in /etc/security/limits.conf or try 'ulimit -l')");
+    psoib_dprint(D_WARNONCE, "(Check memlock limit in /etc/security/limits.conf or try 'ulimit -l')");
 
     if (!getrlimit(RLIMIT_MEMLOCK, &rlim)) {
-	psoib_dprint(0, "Current RLIMIT_MEMLOCK: soft=%lu byte, hard=%lu byte", rlim.rlim_cur, rlim.rlim_max);
+	psoib_dprint(D_WARNONCE, "Current RLIMIT_MEMLOCK: soft=%lu byte, hard=%lu byte", rlim.rlim_cur, rlim.rlim_max);
     }
 }
 
@@ -727,7 +728,7 @@ int psoib_con_init(psoib_con_info_t *con_info, hca_info_t *hca_info, port_info_t
     goto return_1;
     /* --- */
  return_1:
-    psoib_dprint(1, "psoib_con_init failed : %s", psoib_err_str);
+    psoib_dprint(D_ERR, "psoib_con_init failed : %s", psoib_err_str);
     return -1;
 }
 
@@ -798,7 +799,7 @@ int psoib_init_hca(hca_info_t *hca_info)
     INIT_LIST_HEAD(&hca_info->list_con_info);
 
     if (psoib_pending_tokens > psoib_recvq_size) {
-	psoib_dprint(1, "warning: reset psoib_pending_tokens from %u to %u\n",
+	psoib_dprint(D_WARN, "warning: reset psoib_pending_tokens from %u to %u\n",
 		     psoib_pending_tokens, psoib_recvq_size);
 	psoib_pending_tokens = psoib_recvq_size;
     }
@@ -810,10 +811,10 @@ int psoib_init_hca(hca_info_t *hca_info)
 	if ((device_attr.max_cqe >= 4) &&
 	    ((unsigned)device_attr.max_cqe < psoib_compq_size)) {
 	    psoib_compq_size = device_attr.max_cqe;
-	    psoib_dprint(1, "reset psoib_compq_size to hca limit %u\n", psoib_compq_size);
+	    psoib_dprint(D_INFO, "reset psoib_compq_size to hca limit %u\n", psoib_compq_size);
 	}
     } else {
-	psoib_dprint(1, "ibv_query_device() : failed");
+	psoib_dprint(D_WARN, "ibv_query_device() : failed");
     }
 
     hca_info->cq = psoib_open_cq(hca_info->ctx, psoib_compq_size);
@@ -902,7 +903,7 @@ int psoib_init(void)
     psoib_cleanup_hca(&default_hca);
  err_hca:
     init_state = -1;
-    psoib_dprint(1, "OPENIB disabled : %s", psoib_err_str);
+    psoib_dprint(D_INFO, "OPENIB disabled : %s", psoib_err_str);
     return -1;
 }
 
@@ -1175,7 +1176,7 @@ int psoib_check_cq(hca_info_t *hca_info)
 //			   con->n_recv_toks, con->n_tosend_toks, con->n_send_toks);
 		    ;
 		} else {
-		    psoib_dprint(1, "Failed RDMA write request (status %d : %s). Connection broken!",
+		    psoib_dprint(D_ERR, "Failed RDMA write request (status %d : %s). Connection broken!",
 				 wc.status, ibv_wc_status_str(wc.status));
 		    con->con_broken = 1;
 		}
@@ -1186,7 +1187,7 @@ int psoib_check_cq(hca_info_t *hca_info)
 		int failed = wc.status != IBV_WC_SUCCESS;
 //		printf("RDMA write done...\n");
 		if (failed) {
-		    psoib_dprint(1, "Failed RDMA write request (status %d : %s). Connection broken!",
+		    psoib_dprint(D_ERR, "Failed RDMA write request (status %d : %s). Connection broken!",
 				 wc.status, ibv_wc_status_str(wc.status));
 		    dreq->ci->con_broken = 1;
 		}
@@ -1201,7 +1202,7 @@ int psoib_check_cq(hca_info_t *hca_info)
 		/* Dequeue and finish request: */
 		perf_add("openib_post_rma_get_done");
 		if (failed) {
-			psoib_dprint(1, "Failed RDMA READ request (status %d : %s). Connection broken!",
+			psoib_dprint(D_ERR, "Failed RDMA READ request (status %d : %s). Connection broken!",
 				     wc.status, ibv_wc_status_str(wc.status));
 			req->ci->con_broken = 1;
 		}
@@ -1222,7 +1223,7 @@ int psoib_check_cq(hca_info_t *hca_info)
 		con->n_send_toks += msg->tail.token;
 		con->n_recv_toks++;
 	    } else {
-		psoib_dprint(1, "Failed receive request (status %d : %s). Connection broken!",
+		psoib_dprint(D_ERR, "Failed receive request (status %d : %s). Connection broken!",
 			     wc.status, ibv_wc_status_str(wc.status));
 		con->con_broken = 1;
 	    }
@@ -1233,12 +1234,12 @@ int psoib_check_cq(hca_info_t *hca_info)
 //		printf("Send done... recv: %d tosend: %d send: %d\n",
 //		       con->n_recv_toks, con->n_tosend_toks, con->n_send_toks);
 	    } else {
-		psoib_dprint(1, "Failed send request (status %d : %s). Connection broken!",
+		psoib_dprint(D_ERR, "Failed send request (status %d : %s). Connection broken!",
 			     wc.status, ibv_wc_status_str(wc.status));
 		con->con_broken = 1;
 	    }
 	} else {
-	    psoib_dprint(psoib_ignore_wrong_opcodes ? 1 : 0,
+	    psoib_dprint(psoib_ignore_wrong_opcodes ? D_WARN : D_ERR,
 			 "ibv_poll_cq(): Infiniband returned the wrong Opcode %d", wc.opcode);
 	    if (!psoib_ignore_wrong_opcodes) {
 		openlog(NULL, LOG_PID, LOG_USER);

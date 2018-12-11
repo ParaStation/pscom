@@ -91,7 +91,7 @@ unsigned int pscom_plugin_uprio(const char *arch)
 				env_velo = env_extoll ? 0 : 1;
 			}
 			if (env_extoll && env_velo) {
-				DPRINT(1, "'" ENV_ARCH_PREFIX "VELO' and '"
+				DPRINT(D_WARN, "'" ENV_ARCH_PREFIX "VELO' and '"
 				       ENV_ARCH_PREFIX "EXTOLL' are mutually exclusive! Disabling '"
 				       ENV_ARCH_PREFIX "VELO'");
 				env_velo = 0;
@@ -113,25 +113,25 @@ static
 void pscom_plugin_register(pscom_plugin_t *plugin, unsigned int user_prio)
 {
 	if (!user_prio) {
-		DPRINT(2, "Arch %s is disabled", plugin->name);
+		DPRINT(D_DBG_V, "Arch %s is disabled", plugin->name);
 		return; // disabled arch
 	}
 	plugin->user_prio = user_prio;
 
 	if (pscom_plugin_by_name(plugin->name)) {
-		DPRINT(2, "Arch %s already registered", plugin->name);
+		DPRINT(D_DBG_V, "Arch %s already registered", plugin->name);
 		return; // disabled arch
 	}
 
 	pscom_plugin_t *tmpp = pscom_plugin_by_archid(plugin->arch_id);
 	if (tmpp) {
-		DPRINT(2, "Arch id %d already registered (registered:%s, disabled:%s)",
+		DPRINT(D_DBG_V, "Arch id %d already registered (registered:%s, disabled:%s)",
 		       plugin->arch_id, tmpp->name, plugin->name);
 		return; // disabled arch
 	}
 
 
-	DPRINT(2, "Register arch %s with priority %02d.%02d",
+	DPRINT(D_DBG_V, "Register arch %s with priority %02d.%02d",
 	       plugin->name, plugin->user_prio, plugin->priority);
 
 	struct list_head *pos, *inc;
@@ -170,18 +170,18 @@ pscom_plugin_t *load_plugin_lib(char *lib)
 
 		if (plugin) {
 			if (plugin->version == PSCOM_PLUGIN_VERSION) {
-				DPRINT(2, "Using   %s", lib);
+				DPRINT(D_DBG, "Using   %s", lib);
 				// OK
 				return plugin;
 			} else {
 				// Error
-				DPRINT(1,
+				DPRINT(D_ERR,
 				       "Loading %s failed : Version mismatch (0x%04x != expected 0x%04x)",
 				       lib, plugin->version, PSCOM_PLUGIN_VERSION);
 			}
 		} else {
 			// Error
-			DPRINT(1, "Loading %s failed : No symbol 'pscom_plugin'", lib);
+			DPRINT(D_ERR, "Loading %s failed : No symbol 'pscom_plugin'", lib);
 		}
 		// all errors
 		dlclose(libh);
@@ -190,7 +190,7 @@ pscom_plugin_t *load_plugin_lib(char *lib)
 	}
 
 	errstr = dlerror();
-	DPRINT(3, "Loading %s failed : %s", lib, errstr ? errstr : "unknown error");
+	DPRINT(D_DBG_V, "Loading %s failed : %s", lib, errstr ? errstr : "unknown error");
 
 	return NULL;
 }
@@ -220,7 +220,7 @@ void pscom_plugin_load(const char *arch)
 {
 	unsigned int uprio = pscom_plugin_uprio(arch);
 	if (!uprio) {
-		DPRINT(2, "Arch %s is disabled", arch);
+		DPRINT(D_DBG_V, "Arch %s is disabled", arch);
 		return; // disabled arch
 	}
 
@@ -253,7 +253,7 @@ void pscom_plugin_load(const char *arch)
 			break;
 		}
 	}
-	if (!cnt) DPRINT(3, "libpscom4%s.so not available", arch);
+	if (!cnt) DPRINT(D_DBG_V, "libpscom4%s.so not available", arch);
 }
 
 

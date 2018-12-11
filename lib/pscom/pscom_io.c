@@ -788,7 +788,7 @@ pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 			req = _pscom_get_gw_ctrl_receiver ? _pscom_get_gw_ctrl_receiver(con, nh) : NULL;
 			break;
 		default:
-			DPRINT(0, "Receive unknown msg_type %u", nh->msg_type);
+			DPRINT(D_BUG, "Receive unknown msg_type %u", nh->msg_type);
 			req = NULL;
 		}
 		if (req) pscom_req_prepare_recv(req, nh, &con->pub);

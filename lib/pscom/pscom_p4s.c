@@ -31,6 +31,7 @@ static char info_p4sock[] __attribute__(( unused )) =
 #include "pscom_precon.h"
 #include "pscom_con.h"
 #include "pscom_p4s.h"
+#include "pscom_debug.h"
 
 
 static
@@ -63,13 +64,13 @@ void p4s_unregister_conidx(p4s_sock_t *sock, pscom_con_t *con)
 	int conidx = con->arch.p4s.p4s_con;
 
 	if ((conidx < 0) || conidx >= sock->p4s_conidx_cnt) {
-		DPRINT(0, "%s: conidx %d out of range", __func__, conidx);
+		DPRINT(D_BUG, "%s: conidx %d out of range", __func__, conidx);
 		return;
 	}
 	if (sock->p4s_conidx[conidx] == con) {
 		sock->p4s_conidx[conidx] = NULL;
 	} else {
-		DPRINT(0, "%s: conidx %d not found", __func__, conidx);
+		DPRINT(D_BUG, "%s: conidx %d not found", __func__, conidx);
 	}
 }
 
@@ -205,7 +206,7 @@ int _p4s_do_read(p4s_sock_t *sock, int flags)
 				}
 			} else {
 				/* ignore unknown data */
-				DPRINT(1, "_p4s_do_read() Ignore %d bytes from %d", (int)rlen, from);
+				DPRINT(D_WARN, "_p4s_do_read() Ignore %d bytes from %d", (int)rlen, from);
 			}
 		} else if ((errno != EINTR) && (errno != EAGAIN)) {
 			con = NULL; /* Error from unknown connection */
@@ -485,7 +486,7 @@ void p4s_send_ack(p4s_sock_t *sock, int p4s_con)
 			if ((errno == EINTR) || (errno == EAGAIN))
 				continue;
 			else {
-				DPRINT(1, "p4s_send_ack() failed");
+				DPRINT(D_WARN, "p4s_send_ack() failed");
 				return;
 			}
 		} else
@@ -568,7 +569,7 @@ void p4s_close(pscom_con_t *con)
 
 		rc = ioctl(sock->ufd_info.fd, P4_CLOSE_CON, (long)con->arch.p4s.p4s_con);
 		if (rc) {
-			DPRINT(0, "Close connection to %s : %s",
+			DPRINT(D_WARN, "Close connection to %s : %s",
 			       pscom_con_info_str(&con->pub.remote_con_info),
 			       strerror(errno));
 		}
@@ -635,7 +636,7 @@ int pscom_p4s_open(p4s_sock_t *sock, pscom_con_t *con)
 
 	if (!p4s_available()) return -1;
 	if (p4s_inc_usecnt(sock) < 0) {
-		DPRINT(2, "p4s_open_socket() : %s", strerror(errno));
+		DPRINT(D_WARN, "p4s_open_socket() : %s", strerror(errno));
 		return -1;
 	}
 
@@ -700,7 +701,7 @@ void pscom_p4s_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 		int p4s_con = connect(sock->ufd_info.fd, (struct sockaddr *)&msg->p4s_sockaddr,
 				      sizeof(msg->p4s_sockaddr));
 		if (p4s_con < 0) {
-			DPRINT(2, "connect() failed : %s", strerror(errno));
+			DPRINT(D_ERR, "connect() failed : %s", strerror(errno));
 			goto error_connect;
 		}
 
@@ -722,7 +723,7 @@ void pscom_p4s_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 
 		if (p4s_con < 0) {
 			/* ToDo: Cleanup? */
-			DPRINT(0, "__func__(): %s", strerror(errno));
+			DPRINT(D_FATAL, "__func__(): %s", strerror(errno));
 		}
 
 		break; /* Next is INFO_EOF */

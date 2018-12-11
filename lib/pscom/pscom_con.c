@@ -241,12 +241,12 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
 
 		if (con->pub.state == PSCOM_CON_STATE_CLOSING) {
-			DPRINT(con->pub.type != PSCOM_CON_TYPE_ONDEMAND ? 2 : 5,
+			DPRINT(con->pub.type != PSCOM_CON_TYPE_ONDEMAND ? D_INFO : D_DBG,
 			       "DISCONNECT %s via %s",
 			       pscom_con_str(&con->pub),
 			       pscom_con_type_str(con->pub.type));
 		} else {
-			DPRINT(5, "cleanup %s via %s : %s",
+			DPRINT(D_DBG, "cleanup %s via %s : %s",
 			       pscom_con_str(&con->pub),
 			       pscom_con_type_str(con->pub.type),
 			       pscom_con_state_str(con->pub.state));
@@ -274,7 +274,7 @@ void _pscom_con_cleanup(pscom_con_t *con)
 static
 void _write_start_closing(pscom_con_t *con)
 {
-	DPRINT(1, "Writing to the closed connection %s (%s)",
+	DPRINT(D_DBG, "Writing to the closed connection %s (%s)",
 	       pscom_con_str(&con->pub), pscom_con_type_str(con->pub.type));
 }
 
@@ -389,7 +389,7 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 {
 	assert(con->magic == MAGIC_CONNECTION);
 
-	DPRINT(error != PSCOM_ERR_EOF ? 1 : 2,
+	DPRINT(error != PSCOM_ERR_EOF ? D_ERR : D_DBG,
 	       "connection to %s (type:%s,state:%s) : %s : %s",
 	       pscom_con_info_str(&con->pub.remote_con_info),
 	       pscom_con_type_str(con->pub.type),
@@ -491,7 +491,7 @@ void pscom_con_id_unregister(pscom_con_t *con) {
 	    (pscom_con_ids[con->id & pscom_con_ids_mask] != con)) {
 		pscom_con_t *con_reg = pscom_con_ids_mask ?
 			pscom_con_ids[con->id & pscom_con_ids_mask] : NULL;
-		DPRINT(1, "warning: pscom_con_id_unregister(con:%p [con_reg:%p]) called more than once!",
+		DPRINT(D_WARN, "warning: pscom_con_id_unregister(con:%p [con_reg:%p]) called more than once!",
 		       con, con_reg);
 		// assert(pscom_con_ids[con->id & pscom_con_ids_mask] == con);
 		return;
@@ -618,7 +618,7 @@ void _pscom_con_destroy(pscom_con_t *con)
 	con->state.destroyed = 1;
 
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
-		DPRINT(0, "pscom_con_destroy(con) : con state %s",
+		DPRINT(D_BUG, "pscom_con_destroy(con) : con state %s",
 		       pscom_con_state_str(con->pub.state));
 	}
 	assert(con->pub.state == PSCOM_CON_STATE_CLOSED);
@@ -711,7 +711,7 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
 		   is currently unhandled and cause a connection error! */
 
 		/* Send a rconnect request */
-		DPRINT(PRECON_LL, "precon(%p): send backcon %.8s to %.8s", pre,
+		DPRINT(D_PRECON_TRACE, "precon(%p): send backcon %.8s to %.8s", pre,
 		       con->pub.socket->local_con_info.name, con->pub.remote_con_info.name);
 		pscom_precon_send_PSCOM_INFO_CON_INFO(pre, PSCOM_INFO_BACK_CONNECT);
 
@@ -763,12 +763,12 @@ void pscom_con_setup_ok(pscom_con_t *con)
 
 	switch (con_state) {
 	case PSCOM_CON_STATE_CONNECTING:
-		DPRINT(1, "CONNECT %s via %s",
+		DPRINT(D_CONTYPE, "CONNECT %s via %s",
 		       pscom_con_str(&con->pub),
 		       pscom_con_type_str(con->pub.type));
 		break;
 	case PSCOM_CON_STATE_ACCEPTING:
-		DPRINT(1, "ACCEPT  %s via %s",
+		DPRINT(D_CONTYPE, "ACCEPT  %s via %s",
 		       pscom_con_str_reverse(&con->pub),
 		       pscom_con_type_str(con->pub.type));
 
@@ -781,17 +781,17 @@ void pscom_con_setup_ok(pscom_con_t *con)
 		}
 		break;
 	case PSCOM_CON_STATE_CONNECTING_ONDEMAND:
-		DPRINT(1, "CONNECT ONDEMAND %s via %s",
+		DPRINT(D_CONTYPE, "CONNECT ONDEMAND %s via %s",
 		       pscom_con_str(&con->pub),
 		       pscom_con_type_str(con->pub.type));
 		break;
 	case PSCOM_CON_STATE_ACCEPTING_ONDEMAND:
-		DPRINT(1, "ACCEPT  ONDEMAND %s via %s",
+		DPRINT(D_CONTYPE, "ACCEPT  ONDEMAND %s via %s",
 		       pscom_con_str_reverse(&con->pub),
 		       pscom_con_type_str(con->pub.type));
 		break;
 	default:
-		DPRINT(0, "pscom_con_setup_ok() : connection in wrong state : %s (%s)",
+		DPRINT(D_BUG, "pscom_con_setup_ok() : connection in wrong state : %s (%s)",
 		       pscom_con_state_str(con_state),
 		       pscom_con_type_str(con->pub.type));
 	}
@@ -880,7 +880,7 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 	con->write_start = loopback_write_start;
 //	con->rendezvous_size = (unsigned)~0; // disable rendezvous for loopback
 
-	DPRINT(1, "CONNECT %s via %s",
+	DPRINT(D_CONTYPE, "CONNECT %s via %s",
 	       pscom_con_str(&con->pub),
 	       pscom_con_type_str(con->pub.type));
 
@@ -944,7 +944,7 @@ void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info) {
 	error = (rc <= 0) || (msg != GUARD_BYE);
 
 	/* Callback called in the async thread!! */
-	DPRINT(error ? 1 : 2, "pscom guard con:%p %s", con, error ? "terminated" : "closed");
+	DPRINT(error ? D_ERR : D_DBG, "pscom guard con:%p %s", con, error ? "terminated" : "closed");
 
 	// Stop listening
 	ufd_event_clr(ufd, ufd_info, POLLIN);
@@ -968,7 +968,7 @@ void pscom_con_guard_start(pscom_con_t *con)
 	fd = pre->ufd_info.fd;
 	pre->closefd_on_cleanup = 0;
 	con->con_guard.fd = fd;
-	DPRINT(5, "precon(%p): Start guard on fd %d", pre, fd);
+	DPRINT(D_PRECON_TRACE, "precon(%p): Start guard on fd %d", pre, fd);
 	_pscom_con_ref_hold(con);
 	pscom_async_on_readable(fd, pscom_guard_readable, con);
 }
@@ -986,7 +986,7 @@ void pscom_con_guard_stop(pscom_con_t *con)
 		_pscom_con_ref_release(con);
 		close(fd);
 	}
-	DPRINT(5, "Stop guard on fd %d", fd);
+	DPRINT(D_DBG_V, "Stop guard on fd %d", fd);
 }
 
 

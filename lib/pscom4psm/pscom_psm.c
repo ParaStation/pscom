@@ -273,7 +273,7 @@ void pscom_psm_finalize(void){
 	if (pspsm_finalize_mq() == -1) goto err;
 	return;
  err:
-	pspsm_dprint(1, "pspsm_psm_finalize not successful");
+	pspsm_dprint(D_WARN, "pspsm_psm_finalize not successful");
 }
 
 

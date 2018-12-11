@@ -171,7 +171,7 @@ void tcp_init_con(pscom_con_t *con)
 
 	ret = fcntl(con_fd, F_SETFL, O_NONBLOCK);
 	if (ret == -1) {
-		DPRINT(1, "tcp_init_con(): fcntl(%d, F_SETFL, O_NONBLOCK) failed : %s",
+		DPRINT(D_WARN, "tcp_init_con(): fcntl(%d, F_SETFL, O_NONBLOCK) failed : %s",
 		       con_fd, strerror(errno));
 	}
 

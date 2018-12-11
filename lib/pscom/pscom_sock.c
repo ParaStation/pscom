@@ -230,7 +230,7 @@ void pscom_socket_set_name(pscom_socket_t *socket, const char *name)
 		pscom_sock_t *sock = get_sock(socket);
 		assert(sock->magic == MAGIC_SOCKET);
 		pscom_sock_set_name(sock, name);
-		DPRINT(1, "Socket name: %s", name);
+		DPRINT(D_INFO, "Socket name: %s", name);
 		pscom_debug_set_prefix(name);
 	} pscom_unlock();
 }
@@ -276,7 +276,7 @@ pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 			if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
 				// Yes, this happens on 64 core machines. bind() rarely assign the same portno twice.
 				retry_cnt++; // Print warning every 10th retry, or with PSP_DEBUG >= 1
-				DPRINT((retry_cnt % 10 == 0) ? 0 : 1,
+				DPRINT((retry_cnt % 10 == 0) ? D_ERR : D_WARN,
 				       "listen(port %d): Address already in use", (int)ntohs(sa.sin_port));
 				close(listen_fd);
 				sleep(1);
@@ -290,7 +290,7 @@ pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 	if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0)
 		goto err_getsockname;
 
-	DPRINT(PRECON_LL, "precon: listen(%d, %d) on port %u", listen_fd,
+	DPRINT(D_PRECON_TRACE, "precon: listen(%d, %d) on port %u", listen_fd,
 	       pscom.env.tcp_backlog, ntohs(sa.sin_port));
 
 	if (fcntl(listen_fd, F_SETFL, O_NONBLOCK) < 0)
@@ -305,19 +305,19 @@ pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 
 	/* error codes */
 err_nonblock:
-	DPRINT(1, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
+	DPRINT(D_ERR, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
 	goto err_stderror;
 err_listen:
-	DPRINT(1, "listen(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	DPRINT(D_ERR, "listen(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
 	goto err_stderror;
 err_getsockname:
-	DPRINT(1, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	DPRINT(D_ERR, "getsockname(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
 	goto err_stderror;
 err_bind:
-	DPRINT(1, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+	DPRINT(D_ERR, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
 	goto err_stderror;
 err_socket:
-	DPRINT(1, "socket(PF_INET, SOCK_STREAM, 0): %s", strerror(errno));
+	DPRINT(D_ERR, "socket(PF_INET, SOCK_STREAM, 0): %s", strerror(errno));
 	goto err_stderror;
 err_stderror:
 	ret = PSCOM_ERR_STDERROR;

@@ -328,7 +328,7 @@ int psucp_init(void)
 	/* --- */
 err_hca:
 	init_state = -1;
-	psucp_dprint(1, "UCP disabled : %s", psucp_err_str);
+	psucp_dprint(D_INFO, "UCP disabled : %s", psucp_err_str);
 	return -1;
 }
 
@@ -384,7 +384,7 @@ err_close:
 	{
 		ucs_status_t status = UCS_PTR_STATUS(request);
 		psucp_err_status("ucp_ep_close_nb()", status);
-		psucp_dprint(1, "failed psucp_con_cleanup() : %s", psucp_err_str);
+		psucp_dprint(D_WARN, "failed psucp_con_cleanup() : %s", psucp_err_str);
 	}
 }
 
@@ -404,7 +404,7 @@ int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_p
 	/* --- */
 err_alloc:
 	psucp_con_cleanup(con_info);
-	psucp_dprint(1, "psucp_con_init() : %s", psucp_err_str);
+	psucp_dprint(D_ERR, "psucp_con_init() : %s", psucp_err_str);
 	return -1;
 }
 
@@ -432,7 +432,7 @@ int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 	/* --- */
 err_ep_create:
 	psucp_err_status("ucp_ep_create()", status);
-	psucp_dprint(1, "psucp_con_connect() : %s", psucp_err_str);
+	psucp_dprint(D_ERR, "psucp_con_connect() : %s", psucp_err_str);
 	return -1;
 }
 
@@ -565,7 +565,7 @@ err_send:
 		ucs_status_t status = UCS_PTR_STATUS(request);
 
 		psucp_err_status("ucp_tag_send_nb()", status);
-		psucp_dprint(2, "psucp_sendv() : %s", psucp_err_str);
+		psucp_dprint(D_ERR, "psucp_sendv() : %s", psucp_err_str);
 	}
 	return -EPIPE;;
 }
@@ -658,7 +658,7 @@ err_recv:
 		ucs_status_t status = UCS_PTR_STATUS(request);
 
 		psucp_err_status("ucp_tag_msg_recv_nb()", status);
-		psucp_dprint(2, "psucp_recv() : %s", psucp_err_str);
+		psucp_dprint(D_ERR, "psucp_recv() : %s", psucp_err_str);
 	}
 	return -EPIPE;;
 }

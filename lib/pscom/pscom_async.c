@@ -163,7 +163,7 @@ static
 void pscom_async_msg_attach(pscom_async_ipc_t *ipc, int fd, async_cb_t async_cb, void *priv) {
 	pscom_async_guard_t *guard = malloc(sizeof(*guard));
 
-	DPRINT(10, "pscom_async_msg_attach fd:%d priv:%p", fd, priv);
+	DPRINT(D_TRACE, "pscom_async_msg_attach fd:%d priv:%p", fd, priv);
 
 	memset(guard, 0, sizeof(*guard));
 	guard->ufd_info.fd = fd;
@@ -180,7 +180,7 @@ void pscom_async_msg_detach(pscom_async_ipc_t *ipc, int fd, async_cb_t async_cb,
 	ufd_info_t *ufd_info;
 	pscom_async_guard_t *guard;
 
-	DPRINT(10, "pscom_async_msg_detach fd:%d priv:%p", fd, priv);
+	DPRINT(D_TRACE, "pscom_async_msg_detach fd:%d priv:%p", fd, priv);
 
 	ufd_info = ufd_info_find_fd(&ipc->ufd, fd);
 

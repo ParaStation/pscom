@@ -105,7 +105,7 @@ void pscom_info_connect(const char *url)
 
 	pslib.info = pslib.psinfo_connect(url);
 	if (!pslib.info) {
-		DPRINT(1, "psinfo_connect(\"%s\") : %s", url, strerror(errno));
+		DPRINT(D_DBG, "psinfo_connect(\"%s\") : %s", url, strerror(errno));
 	}
 
 	wordfree(&p);

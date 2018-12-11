@@ -62,7 +62,7 @@ void pscom_listener_user_dec(struct pscom_listener *listener)
 		if (fd >= 0) {
 			close(fd);
 		} else {
-			DPRINT(1, "warning: %s() fd already closed", __func__);
+			DPRINT(D_WARN, "warning: %s() fd already closed", __func__);
 		}
 		listener->ufd_info.fd = -1;
 	}

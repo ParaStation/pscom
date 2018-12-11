@@ -190,7 +190,7 @@ pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con,
 	/* --- */
 err_not_listening:
 	pscom_con_info(con, &con_info);
-	DPRINT(0, "CONNECT on demand %s to tcp:%s:%u FAILED : pscom_connect_ondemand() called without a prior pscom_listen()",
+	DPRINT(D_BUG_EXT, "CONNECT on demand %s to tcp:%s:%u FAILED : pscom_connect_ondemand() called without a prior pscom_listen()",
 	       pscom_con_info_str(&con_info),
 	       pscom_inetstr(nodeid),
 	       portno);

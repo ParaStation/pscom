@@ -291,7 +291,7 @@ void check_recv_accept(pscom_req_t *req)
 {
 	static int warned = 0;
 	if (req->pub.ops.recv_accept && !warned) {
-		DPRINT(0, "Warning: Bcast: request->ops.recv_accept not implemented!");
+		DPRINT(D_WARNONCE, "Warning: Bcast: request->ops.recv_accept not implemented!");
 		warned = 1;
 	}
 }
@@ -558,7 +558,7 @@ unknown_group:
 
 	return req_gen;
 err_illegal_root:
-	DPRINT(0, "receive broadcast with illegal root_rank group_id:%d from:'%s' grank:%d.",
+	DPRINT(D_FATAL, "receive broadcast with illegal root_rank group_id:%d from:'%s' grank:%d.",
 	       group_id, pscom_con_info_str(&con->pub.remote_con_info), bcast_root);
 	return NULL;
 }

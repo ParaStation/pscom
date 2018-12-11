@@ -10,6 +10,7 @@
 
 #include "pspsm.h"
 #include "pscom_util.h"
+#include "pscom_debug.h"
 #include <malloc.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -143,31 +144,31 @@ void pspsm_print_stats()
 	psm2_mq_get_stats(pspsm_mq, &stats);
 
 	/* Bytes received into a matched user buffer */
-	pspsm_dprint(0, "rx_user_bytes:   %8lu", (unsigned long)stats.rx_user_bytes);
+	pspsm_dprint(D_STATS, "rx_user_bytes:   %8lu", (unsigned long)stats.rx_user_bytes);
 	/* Messages received into a matched user buffer */
-	pspsm_dprint(0, "rx_user_num:     %8lu", (unsigned long)stats.rx_user_num);
+	pspsm_dprint(D_STATS, "rx_user_num:     %8lu", (unsigned long)stats.rx_user_num);
 	/* Bytes received into an unmatched system buffer */
-	pspsm_dprint(0, "rx_sys_bytes:    %8lu", (unsigned long)stats.rx_sys_bytes);
+	pspsm_dprint(D_STATS, "rx_sys_bytes:    %8lu", (unsigned long)stats.rx_sys_bytes);
 	/* Messages received into an unmatched system buffer */
-	pspsm_dprint(0, "rx_sys_num:      %8lu", (unsigned long)stats.rx_sys_num);
+	pspsm_dprint(D_STATS, "rx_sys_num:      %8lu", (unsigned long)stats.rx_sys_num);
 	/* Total Messages transmitted (shm and hfi) */
-	pspsm_dprint(0, "tx_num:          %8lu", (unsigned long)stats.tx_num);
+	pspsm_dprint(D_STATS, "tx_num:          %8lu", (unsigned long)stats.tx_num);
 	/* Messages transmitted eagerly */
-	pspsm_dprint(0, "tx_eager_num:    %8lu", (unsigned long)stats.tx_eager_num);
+	pspsm_dprint(D_STATS, "tx_eager_num:    %8lu", (unsigned long)stats.tx_eager_num);
 	/* Bytes transmitted eagerly */
-	pspsm_dprint(0, "tx_eager_bytes:  %8lu", (unsigned long)stats.tx_eager_bytes);
+	pspsm_dprint(D_STATS, "tx_eager_bytes:  %8lu", (unsigned long)stats.tx_eager_bytes);
 	/* Messages transmitted using expected TID mechanism */
-	pspsm_dprint(0, "tx_rndv_num:     %8lu", (unsigned long)stats.tx_rndv_num);
+	pspsm_dprint(D_STATS, "tx_rndv_num:     %8lu", (unsigned long)stats.tx_rndv_num);
 	/* Bytes transmitted using expected TID mechanism */
-	pspsm_dprint(0, "tx_rndv_bytes:   %8lu", (unsigned long)stats.tx_rndv_bytes);
+	pspsm_dprint(D_STATS, "tx_rndv_bytes:   %8lu", (unsigned long)stats.tx_rndv_bytes);
 	/* Messages transmitted (shm only) */
-	pspsm_dprint(0, "tx_shm_num:      %8lu", (unsigned long)stats.tx_shm_num);
+	pspsm_dprint(D_STATS, "tx_shm_num:      %8lu", (unsigned long)stats.tx_shm_num);
 	/* Messages received through shm */
-	pspsm_dprint(0, "rx_shm_num:      %8lu", (unsigned long)stats.rx_shm_num);
+	pspsm_dprint(D_STATS, "rx_shm_num:      %8lu", (unsigned long)stats.rx_shm_num);
 	/* Number of system buffers allocated  */
-	pspsm_dprint(0, "rx_sysbuf_num:   %8lu", (unsigned long)stats.rx_sysbuf_num);
+	pspsm_dprint(D_STATS, "rx_sysbuf_num:   %8lu", (unsigned long)stats.rx_sysbuf_num);
 	/* Bytes allcoated for system buffers */
-	pspsm_dprint(0, "rx_sysbuf_bytes: %8lu", (unsigned long)stats.rx_sysbuf_bytes);
+	pspsm_dprint(D_STATS, "rx_sysbuf_bytes: %8lu", (unsigned long)stats.rx_sysbuf_bytes);
 }
 
 
@@ -183,7 +184,7 @@ void pspsm_sendbuf_free(void) {
 static
 void pspsm_sendbuf_prepare(unsigned min_small_msg_len) {
 #ifdef PSPSM_TRACE
-	pspsm_dprint(0, "(send_buf_len: %u) pspsm_sendbuf_prepare(min_small_msg_len:%u)\n", min_small_msg_len, sendbuf_len);
+	pspsm_dprint(D_TRACE, "(send_buf_len: %u) pspsm_sendbuf_prepare(min_small_msg_len:%u)\n", min_small_msg_len, sendbuf_len);
 #endif
 	if (min_small_msg_len >= sendbuf_len) {
 		if (sendbuf) free(sendbuf);
@@ -213,13 +214,13 @@ int pspsm_open_endpoint(void)
 
 		pspsm_sendbuf_prepare(pspsm_small_msg_len);
 
-		pspsm_dprint(2, "pspsm_open_endpoint: OK");
+		pspsm_dprint(D_DBG_V, "pspsm_open_endpoint: OK");
 	}
 	return 0;
 
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_open_endpoint: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "pspsm_open_endpoint: %s", pspsm_err_str);
 	return -1;
 }
 
@@ -234,13 +235,13 @@ int pspsm_init_mq(void)
 				   &pspsm_mq);
 
 		if (ret != PSM2_OK) goto err;
-		pspsm_dprint(2, "pspsm_init_mq: OK");
+		pspsm_dprint(D_DBG_V, "pspsm_init_mq: OK");
 	}
 	return 0;
 
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_init_mq: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "pspsm_init_mq: %s", pspsm_err_str);
 	return -1;
 }
 
@@ -252,12 +253,12 @@ int pspsm_close_endpoint(void)
 	/* Hack: psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
 	   the cleanup always helps.
 	   (Seen with infinipath-libs-3.2-32129.1162_rhel6_qlc.x86_64) */
-	if (pspsm_debug >= 3) pspsm_print_stats();
+	if (pspsm_debug >= D_STATS) pspsm_print_stats();
 	return 0;
 #else
 	psm2_error_t ret;
 
-	if (pspsm_debug >= 3) pspsm_print_stats();
+	if (pspsm_debug >= D_STATS) pspsm_print_stats();
 
 	if (pspsm_ep){
 		ret = psm2_ep_close(pspsm_ep, PSM2_EP_CLOSE_GRACEFUL, 150000 /* nsec timeout*/);
@@ -266,13 +267,13 @@ int pspsm_close_endpoint(void)
 
 		pspsm_sendbuf_free();
 
-		pspsm_dprint(2, "pspsm_close_endpoint: OK");
+		pspsm_dprint(D_DBG, "pspsm_close_endpoint: OK");
 	}
 	return 0;
 
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_close_endpoint: %s", pspsm_err_str);
+	pspsm_dprint(D_WARN, "pspsm_close_endpoint: %s", pspsm_err_str);
 	return -1;
 #endif
 }
@@ -286,13 +287,13 @@ int pspsm_finalize_mq(void)
 		ret = psm2_mq_finalize(pspsm_mq);
 		pspsm_mq = 0;
 		if (ret != PSM2_OK) goto err;
-		pspsm_dprint(2, "pspsm_finalize_mq: OK");
+		pspsm_dprint(D_DBG_V, "pspsm_finalize_mq: OK");
 	}
 	return 0;
 
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_finalize_mq: %s", pspsm_err_str);
+	pspsm_dprint(D_WARN, "pspsm_finalize_mq: %s", pspsm_err_str);
 	return -1;
 }
 
@@ -316,7 +317,7 @@ int pspsm_con_init(pspsm_con_info_t *con_info, struct PSCOM_con *con)
 	/* debug */
 	con_info->magic = PSPSM_CON_MAGIC;
 
-	pspsm_dprint(2, "pspsm_con_init: OK");
+	pspsm_dprint(D_DBG_V, "pspsm_con_init: OK");
 	return 0;
 }
 
@@ -343,14 +344,14 @@ int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 
 	pspsm_sendbuf_prepare(con_info->small_msg_len);
 
-	pspsm_dprint(2, "pspsm_con_connect: OK");
-	pspsm_dprint(2, "sending with %"PRIx64", receiving %"PRIx64,
+	pspsm_dprint(D_DBG_V, "pspsm_con_connect: OK");
+	pspsm_dprint(D_DBG_V, "sending with %"PRIx64", receiving %"PRIx64,
 		     con_info->send_id, con_info->recv_id);
 	return 0;
 
  err_connect:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_con_connect: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "pspsm_con_connect: %s", pspsm_err_str);
 	return -1;
  err_protocol:
 	{
@@ -358,7 +359,7 @@ int pspsm_con_connect(pspsm_con_info_t *con_info, pspsm_info_msg_t *info_msg)
 		snprintf(str, sizeof(str), "protocol error : '%.8s' != '%.8s'",
 			 info_msg->protocol_version, PSPSM_PROTOCOL_VERSION);
 		pspsm_err(str);
-		pspsm_dprint(1, "pspsm_con_connect: %s", pspsm_err_str);
+		pspsm_dprint(D_ERR, "pspsm_con_connect: %s", pspsm_err_str);
 	}
 	return -1;
 }
@@ -410,13 +411,13 @@ int pspsm_init(void)
 		       sizeof(pspsm_uuid.as_uuid));
 
 		if (pscom.env.psm_uniq_id) {
-			pspsm_dprint(2, "seeding PSM UUID with %u", pscom.env.psm_uniq_id);
+			pspsm_dprint(D_DBG, "seeding PSM UUID with %u", pscom.env.psm_uniq_id);
 			pspsm_uuid.as_uint = pscom.env.psm_uniq_id;
 		}
 
 		pspsm_small_msg_len = pscom.env.readahead;
 #ifdef PSPSM_TRACE
-		pspsm_dprint(0, "pspsm_small_msg_length = %u\n", pspsm_small_msg_len);
+		pspsm_dprint(D_TRACE, "pspsm_small_msg_length = %u\n", pspsm_small_msg_len);
 #endif
 
 		/* Open the endpoint here in init with the hope that
@@ -431,16 +432,16 @@ int pspsm_init(void)
 		if (pspsm_open_endpoint()) goto err_ep;
 		if (pspsm_init_mq()) goto err_mq;
 
-		pspsm_dprint(2, "pspsm_init: OK");
+		pspsm_dprint(D_DBG_V, "pspsm_init: OK");
 		init_state = PSPSM_INIT_DONE;
 	}
 	return init_state; /* 0 = success, -1 = error */
 err_dev_ipath:
-	pspsm_dprint(2, "pspsm_init: No psm2 device found. Arch psm is disabled.");
+	pspsm_dprint(D_INFO, "pspsm_init: No psm2 device found. Arch psm is disabled.");
 	goto err_exit;
 err_init:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_init: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "pspsm_init: %s", pspsm_err_str);
 	// Fall through
  err_ep:
  err_mq:
@@ -456,7 +457,7 @@ void pspsm_iov_print(const struct iovec *iov, size_t len)
 {
 	while (len > 0) {
 		if (iov->iov_len) {
-			pspsm_dprint(2, "SENDV %p %zu", iov->iov_base, iov->iov_len);
+			pspsm_dprint(D_TRACE, "SENDV %p %zu", iov->iov_base, iov->iov_len);
 			len -= iov->iov_len;
 		}
 		iov++;
@@ -481,7 +482,7 @@ int pspsm_process(psm2_mq_status2_t *status)
 		poll_user_dec();
 		ci->sreqs_active_count--;
 #ifdef PSPSM_TRACE
-		pspsm_dprint(0, "psm send request done. active: %u, length:%u, pscom req length:%zu\n",
+		pspsm_dprint(D_TRACE, "psm send request done. active: %u, length:%u, pscom req length:%zu\n",
 			     ci->sreqs_active_count, status->msg_length, ci->sreq_len);
 #endif
 		if (!ci->sreqs_active_count) {
@@ -494,14 +495,14 @@ int pspsm_process(psm2_mq_status2_t *status)
 		assert(ci->rbuf);
 		if (status->msg_length != status->nbytes) {
 			// ToDo: Implement "message truncated", if user post a recv req smaller than the matching send.
-			pspsm_dprint(0, "fatal error: status->msg_length(%u) != status->nbytes(%u).\n",
+			pspsm_dprint(D_FATAL, "fatal error: status->msg_length(%u) != status->nbytes(%u).\n",
 				     status->msg_length, status->nbytes);
 			exit(1);
 		}
 
 		ci->rreq = PSM2_MQ_REQINVALID;
 #ifdef PSPSM_TRACE
-		pspsm_dprint(0, "psm read done %p len %u\n", ci->rbuf, status->msg_length);
+		pspsm_dprint(D_TRACE, "psm read done %p len %u\n", ci->rbuf, status->msg_length);
 #endif
 		pscom_read_done_unlock(con, ci->rbuf, status->msg_length);
 		ci->rbuf = NULL;
@@ -533,7 +534,7 @@ int _pspsm_send_buf(pspsm_con_info_t *con_info, char *buf, size_t len,
 
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "_pspsm_send_buf: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "_pspsm_send_buf: %s", pspsm_err_str);
 	return -EPIPE;
 }
 
@@ -587,7 +588,7 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 		if (send_iov[i].iov_len){
 			psm2_mq_req_t sreq = PSM2_MQ_REQINVALID;
 #ifdef PSPSM_TRACE
-			pspsm_dprint(0, "Send part[%d], %p len:%zu\n", i, iov[i].iov_base, iov[i].iov_len);
+			pspsm_dprint(D_TRACE, "Send part[%d], %p len:%zu\n", i, iov[i].iov_base, iov[i].iov_len);
 #endif
 			if (_pspsm_send_buf(con_info,
 					    send_iov[i].iov_base, send_iov[i].iov_len,
@@ -607,7 +608,7 @@ int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2], struct PSCOM_re
 
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "_pspsm_send_buf: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "_pspsm_send_buf: %s", pspsm_err_str);
 	return -EPIPE;
 }
 
@@ -631,7 +632,7 @@ int pspsm_recv_start(pspsm_con_info_t *con_info, char *rbuf, size_t rbuflen)
 
  out_err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_recvlook: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "pspsm_recvlook: %s", pspsm_err_str);
 	return -EPIPE;
 }
 
@@ -665,7 +666,7 @@ int pspsm_progress()
 	return read_progress;
  err:
 	pspsm_err(psm2_error_get_string(ret));
-	pspsm_dprint(1, "pspsm_peek: %s", pspsm_err_str);
+	pspsm_dprint(D_ERR, "pspsm_peek: %s", pspsm_err_str);
 	return read_progress;
 
 }

@@ -147,8 +147,21 @@
 /* Manage a list of all requests for debug dumps (decrease performance!) */
 #define ENV_DEBUG_REQ     "PSP_DEBUG_REQ"
 
-/* Print statistic at the end. (no need, if PSP_DEBUG >=2) */
+/* Show pscom version */
+#define ENV_DEBUG_VERSION "PSP_DEBUG_VERSION"
+
+/* Print statistic at the end. */
 #define ENV_DEBUG_STATS   "PSP_DEBUG_STATS"
+
+/* Show connection types */
+#define ENV_DEBUG_CONTYPE "PSP_DEBUG_CONTYPE"
+
+/* Show suspend/resume signals and messages */
+#define ENV_DEBUG_SUSPEND "PSP_DEBUG_SUSPEND"
+
+/* Trace precon calls */
+#define ENV_DEBUG_PRECON "PSP_DEBUG_PRECON"
+
 
 /* make progress every count itteration in iprobe */
 #define ENV_IPROBE_COUNT "PSP_IPROBE_COUNT"
@@ -159,7 +172,6 @@
 struct PSCOM_env {
 	int		debug;
 	int		debug_req;
-	int		debug_stats;
 	unsigned int	so_sndbuf;
 	unsigned int	so_rcvbuf;
 	int		tcp_nodelay;
@@ -188,13 +200,18 @@ struct PSCOM_env {
 	char		*network;
 	char		*info;
 	char		*plugindir;
+
+	int		debug_version;
+	int		debug_stats;
+	int		debug_contype;
+	int		debug_suspend;
+	int		debug_precon;
 };
 
 
 #define PSCOM_ENV_defaults {						\
-	.debug = 0,							\
+	.debug = -1, /* default D_ERR set in pscom_env_init()! */	\
 	.debug_req = 0,							\
-	.debug_stats = 0,						\
 									\
 	.so_sndbuf = 32768,						\
 	.so_rcvbuf = 32768,						\
@@ -225,6 +242,12 @@ struct PSCOM_env {
 	.network = NULL,						\
 	.info = NULL,							\
 	.plugindir = "",						\
+									\
+	.debug_version = 0,						\
+	.debug_stats = 0,						\
+	.debug_contype = 0,						\
+	.debug_suspend = 0,						\
+	.debug_precon = 0,						\
 }
 
 

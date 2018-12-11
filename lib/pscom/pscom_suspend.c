@@ -41,7 +41,7 @@ void _pscom_con_resume(pscom_con_t *con)
 
 	pscom_listener_active_dec(&sock->listen);
 
-	DPRINT(1, "RESUMED %s", pscom_con_str(&con->pub));
+	DPRINT(D_SUSPEND, "RESUMED %s", pscom_con_str(&con->pub));
 
 	// Move all send requests from suspend queue to sendq
 	list_for_each_safe(pos, next, &sock->sendq_suspending) {
@@ -55,7 +55,7 @@ void _pscom_con_resume(pscom_con_t *con)
 	}
 
 	if (sendq_empty && suspend_active) {
-		DPRINT(10, "send wakeup %s", pscom_con_str(&con->pub));
+		DPRINT(D_SUSPEND_DBG, "send wakeup %s", pscom_con_str(&con->pub));
 		_pscom_con_send_resume(con);
 	}
 }
@@ -136,7 +136,7 @@ void _pscom_con_check_suspended(pscom_con_t *con)
 	assert(list_empty(&con->poll_next_send));
 	assert(list_empty(&con->poll_reader.next));
 
-	DPRINT(1, "SUSPENDED %s", pscom_con_str(&con->pub));
+	DPRINT(D_SUSPEND, "SUSPENDED %s", pscom_con_str(&con->pub));
 	suspend_init_con(con);
 
 }
@@ -147,7 +147,7 @@ void io_done_send_suspend(pscom_req_state_t state, void *priv_con)
 {
 	pscom_con_t *con = priv_con;
 
-	DPRINT(2, "SUSPEND sent %s", pscom_con_str(&con->pub));
+	DPRINT(D_SUSPEND_DBG, "SUSPEND sent %s", pscom_con_str(&con->pub));
 	con->pub.state |= PSCOM_CON_STATE_SUSPEND_SENT;
 
 	_pscom_con_check_suspended(con);
@@ -213,7 +213,7 @@ void _pscom_con_suspend_received(pscom_con_t *con, void *xheader, size_t xheader
 	assert(xheaderlen == (unsigned)sizeof(portno));
 	portno = *(int*)xheader;
 
-	DPRINT(2, "SUSPEND received on %s, port %d", pscom_con_str(&con->pub), portno);
+	DPRINT(D_SUSPEND_DBG, "SUSPEND received on %s, port %d", pscom_con_str(&con->pub), portno);
 
 	con->suspend_on_demand_portno = portno;
 

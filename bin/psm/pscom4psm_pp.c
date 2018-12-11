@@ -35,15 +35,18 @@
 
 #define VERSION "PSCOM4PSM_PP1.0"
 
-struct {
+typedef struct PSCOM {
 	struct {
 		unsigned int readahead;
 		unsigned int psm_uniq_id;
+		int debug_stats;
 	} env;
-} pscom = {
+} pscom_t;
+pscom_t	pscom = {
 	.env = {
 		.readahead = 100,
-		.psm_uniq_id = 0
+		.psm_uniq_id = 0,
+		.debug_stats = 0
 	}
 };
 

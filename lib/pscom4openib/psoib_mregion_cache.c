@@ -206,7 +206,7 @@ void psoib_mregion_malloc_init(void)
 				static int warned = 0;
 				if (!warned) {
 					warned = 1;
-					psoib_dprint(1, "psoib: mregion cache disabled: Unknown __morecore hook");
+					psoib_dprint(D_WARNONCE, "psoib: mregion cache disabled: Unknown __morecore hook");
 				}
 			}
 		}
@@ -281,7 +281,7 @@ int psoib_acquire_rma_mreg(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib
 
 	return 0;
 err_register:
-	psoib_dprint(3, "psoib_get_mregion() failed");
+	psoib_dprint(D_WARN, "psoib_get_mregion() failed");
 	return -1;
 }
 

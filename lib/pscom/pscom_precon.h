@@ -102,6 +102,4 @@ void pscom_precon_close(precon_t *pre);
 
 void pscom_precon_handshake(precon_t *pre);
 
-#define PRECON_LL	6 /* precon debug log level */
-
 #endif /* _PSCOM_PRECON_H_ */

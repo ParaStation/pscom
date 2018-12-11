@@ -264,16 +264,16 @@ int pscom_progress(int timeout)
 static
 void pscom_cleanup(void)
 {
-	DPRINT(3,"pscom_cleanup()");
+	DPRINT(D_DBG_V, "pscom_cleanup()");
 	while (!list_empty(&pscom.sockets)) {
 		pscom_sock_t *sock = list_entry(pscom.sockets.next, pscom_sock_t, next);
 		pscom_close_socket(&sock->pub);
 	}
 	pscom_plugins_destroy();
 	pscom_pslib_cleanup();
-	if (pscom.env.debug_stats) pscom_dump_reqstat(pscom_debug_stream());
+	if (pscom.env.debug >= D_STATS) pscom_dump_reqstat(pscom_debug_stream());
 	perf_print();
-	DPRINT(1,"Byee.");
+	DPRINT(D_INFO, "Byee.");
 }
 
 
@@ -285,9 +285,9 @@ void _pscom_suspend_resume(void *dummy)
 	struct list_head *pos_con;
 
 	if (suspend) {
-		DPRINT(1, "SUSPEND signal received");
+		DPRINT(D_SUSPEND_DBG, "SUSPEND signal received");
 	} else {
-		DPRINT(1, "RESUME signal received");
+		DPRINT(D_SUSPEND_DBG, "RESUME signal received");
 	}
 	// ToDo: Use pscom_lock() and fix the race with this handler and the main thread.
 
@@ -337,7 +337,7 @@ pscom_err_t pscom_init(int pscom_version)
 	    (pscom_version > PSCOM_VERSION)) {
 		// different major number, or minor number bigger
 		// (new libs support old api, if major number is equal)
-		DPRINT(0, "Error: libpscom ABI version mismatch! Application requested V%u.%u but this is V%u.%u.",
+		DPRINT(D_FATAL, "Error: libpscom ABI version mismatch! Application requested V%u.%u but this is V%u.%u.",
 		       (pscom_version >> 8) & 0xff, pscom_version & 0xff,
 		       (PSCOM_VERSION >> 8) & 0xff, PSCOM_VERSION & 0xff
 		);

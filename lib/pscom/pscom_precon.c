@@ -72,13 +72,13 @@ void pscom_precon_info_dump(precon_t *pre, char *op, int type, void *data, unsig
 	case PSCOM_INFO_FD_ERROR: {
 		int noerr = 0;
 		int *err = size == sizeof(int) && data ? data : &noerr;
-		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\t%d(%s)", pre, op,
+		DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\t%d(%s)", pre, op,
 		       plugin_name, pscom_info_type_str(type), *err, strerror(*err));
 		break;
 	}
 	case PSCOM_INFO_ARCH_REQ: {
 		pscom_info_arch_req_t *arch_req = data;
-		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\tarch_id:%u (%s)", pre, op,
+		DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tarch_id:%u (%s)", pre, op,
 		       plugin_name, pscom_info_type_str(type),
 		       arch_req->arch_id,
 		       pscom_con_type_str(PSCOM_ARCH2CON_TYPE(arch_req->arch_id)));
@@ -88,20 +88,20 @@ void pscom_precon_info_dump(precon_t *pre, char *op, int type, void *data, unsig
 	case PSCOM_INFO_CON_INFO_DEMAND:
 	case PSCOM_INFO_CON_INFO: {
 		pscom_info_con_info_t *msg = data;
-		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\tcon_info:%s", pre, op,
+		DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tcon_info:%s", pre, op,
 		       plugin_name, pscom_info_type_str(type),
 		       pscom_con_info_str(&msg->con_info));
 		break;
 	}
 	case PSCOM_INFO_VERSION: {
 		pscom_info_version_t *version = data;
-		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\tver_from:%04x ver_to:%04x", pre, op,
+		DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tver_from:%04x ver_to:%04x", pre, op,
 		       plugin_name, pscom_info_type_str(type),
 		       version->ver_from, version->ver_to);
 		break;
 	}
 	default:
-		DPRINT(PRECON_LL, "precon(%p):%s:%s %s\t%p %u", pre, op,
+		DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\t%p %u", pre, op,
 		       plugin_name, pscom_info_type_str(type), data, size);
 	}
 }
@@ -124,7 +124,7 @@ void pscom_precon_print_stat(precon_t *pre)
 			strcpy(state, "no poll");
 		}
 	}
-	DPRINT(PRECON_LL, "precon(%p): #%u send:%zu recv:%zu to_send:%u recv:%s active:%u state:%s\n",
+	DPRINT(D_PRECON_TRACE, "precon(%p): #%u send:%zu recv:%zu to_send:%u recv:%s active:%u state:%s\n",
 	       pre, pre->stat_poll_cnt, pre->stat_send, pre->stat_recv,
 	       pre->send_len, pre->recv_done ? "no" : "yes", pscom_precon_count, state);
 }
@@ -162,13 +162,13 @@ int mtry_connect(int sockfd, const struct sockaddr *serv_addr,
 	struct sockaddr_in *sa = (struct sockaddr_in*)serv_addr;
 	for (i = 0; i < pscom.env.retry; i++) {
 		ret = connect(sockfd, serv_addr, addrlen);
-		DPRINT(PRECON_LL, "precon(%p): connect(%d,\"%s:%u\") = %d (%s)",
+		DPRINT(D_PRECON_TRACE, "precon(%p): connect(%d,\"%s:%u\") = %d (%s)",
 		       debug_id, sockfd, pscom_inetstr(ntohl(sa->sin_addr.s_addr)),
 		       ntohs(sa->sin_port), ret, ret ? strerror(errno) : "ok");
 		if (ret >= 0) break;
 		if (!retry_on_error(errno)) break;
 		sleep(1);
-		DPRINT(2, "Retry %d CONNECT to %s:%d",
+		DPRINT(D_INFO, "Retry %d CONNECT to %s:%d",
 		       i + 1,
 		       pscom_inetstr(ntohl(sa->sin_addr.s_addr)),
 		       ntohs(sa->sin_port));
@@ -186,41 +186,41 @@ void tcp_configure(int fd)
 	if (pscom.env.so_sndbuf) {
 		val = pscom.env.so_sndbuf;
 		ret = setsockopt(fd, SOL_SOCKET, SO_SNDBUF, &val, sizeof(val));
-		DPRINT(2, "setsockopt(%d, SOL_SOCKET, SO_SNDBUF, [%d], %ld) = %d : %s",
+		DPRINT(D_DBG_V, "setsockopt(%d, SOL_SOCKET, SO_SNDBUF, [%d], %ld) = %d : %s",
 		       fd, val, (long)sizeof(val), ret, ret ? strerror(errno) : "Success");
 	}
 	if (pscom.env.so_rcvbuf) {
 		val = pscom.env.so_rcvbuf;
 		ret = setsockopt(fd, SOL_SOCKET, SO_RCVBUF, &val, sizeof(val));
-		DPRINT(2, "setsockopt(%d, SOL_SOCKET, SO_RCVBUF, [%d], %ld) = %d : %s",
+		DPRINT(D_DBG_V, "setsockopt(%d, SOL_SOCKET, SO_RCVBUF, [%d], %ld) = %d : %s",
 		       fd, val, (long)sizeof(val), ret, ret ? strerror(errno) : "Success");
 	}
 	val = pscom.env.tcp_nodelay;
 	ret = setsockopt(fd, IPPROTO_TCP, TCP_NODELAY, &val, sizeof(val));
-	DPRINT(2, "setsockopt(%d, IPPROTO_TCP, TCP_NODELAY, [%d], %ld) = %d : %s",
+	DPRINT(D_DBG_V, "setsockopt(%d, IPPROTO_TCP, TCP_NODELAY, [%d], %ld) = %d : %s",
 	       fd, val, (long) sizeof(val), ret, ret ? strerror(errno) : "Success");
 
 	if (1) { // Set keep alive options.
 		val = 1;
 		ret = setsockopt(fd, SOL_SOCKET, SO_KEEPALIVE, &val, sizeof(val));
-		DPRINT(ret ? 2 : 5, "setsockopt(%d, SOL_SOCKET, SO_KEEPALIVE, [%d], %ld) = %d : %s",
+		DPRINT(ret ? D_DBG_V : D_TRACE, "setsockopt(%d, SOL_SOCKET, SO_KEEPALIVE, [%d], %ld) = %d : %s",
 		       fd, val, (long) sizeof(val), ret, ret ? strerror(errno) : "Success");
 
 		// Overwrite defaults from "/proc/sys/net/ipv4/tcp_keepalive*"
 
 		val = 20; /* Number of keepalives before death */
 		ret = setsockopt(fd, SOL_TCP, TCP_KEEPCNT, &val, sizeof(val));
-		DPRINT(ret ? 2 : 5, "setsockopt(%d, SOL_TCP, TCP_KEEPCNT, [%d], %ld) = %d : %s",
+		DPRINT(ret ? D_DBG_V : D_TRACE, "setsockopt(%d, SOL_TCP, TCP_KEEPCNT, [%d], %ld) = %d : %s",
 		       fd, val, (long) sizeof(val), ret, ret ? strerror(errno) : "Success");
 
 		val = 5; /* Start keeplives after this period */
 		ret = setsockopt(fd, SOL_TCP, TCP_KEEPIDLE, &val, sizeof(val));
-		DPRINT(ret ? 2 : 5, "setsockopt(%d, SOL_TCP, TCP_KEEPIDLE, [%d], %ld) = %d : %s",
+		DPRINT(ret ? D_DBG_V : D_TRACE, "setsockopt(%d, SOL_TCP, TCP_KEEPIDLE, [%d], %ld) = %d : %s",
 		       fd, val, (long) sizeof(val), ret, ret ? strerror(errno) : "Success");
 
 		val = 4; /* Interval between keepalives */
 		ret = setsockopt(fd, SOL_TCP, TCP_KEEPINTVL, &val, sizeof(val));
-		DPRINT(ret ? 2 : 5, "setsockopt(%d, SOL_TCP, TCP_KEEPINTVL, [%d], %ld) = %d : %s",
+		DPRINT(ret ? D_DBG_V : D_TRACE, "setsockopt(%d, SOL_TCP, TCP_KEEPINTVL, [%d], %ld) = %d : %s",
 		       fd, val, (long) sizeof(val), ret, ret ? strerror(errno) : "Success");
 	}
 
@@ -356,7 +356,7 @@ void pscom_precon_terminate(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
 
-	DPRINT(1, "precon(%p): terminated", pre);
+	DPRINT(D_DBG, "precon(%p): terminated", pre);
 	pscom_precon_recv_stop(pre);
 	// trow away the sendbuffer
 	if (pre->send) {
@@ -409,7 +409,7 @@ void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type)
 	/* Send connection information */
 	pscom_con_info(pre->con, &msg_con_info.con_info);
 
-	DPRINT(PRECON_LL, "precon(%p): con:%s", pre, pscom_con_str(&pre->con->pub));
+	DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", pre, pscom_con_str(&pre->con->pub));
 	pscom_precon_send(pre, type, &msg_con_info, sizeof(msg_con_info));
 }
 
@@ -419,7 +419,7 @@ void pscom_precon_abort_plugin(precon_t *pre)
 {
 	pscom_con_t *con = pre->con;
 	if (pre->plugin && con) {
-		DPRINT(PRECON_LL, "precon(%p):abort %s", pre, pre->plugin->name);
+		DPRINT(D_PRECON_TRACE, "precon(%p):abort %s", pre, pre->plugin->name);
 		pre->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL, 0);
 	}
 	pre->plugin = NULL; // Do not use plugin anymore after PSCOM_INFO_ARCH_NEXT
@@ -500,7 +500,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		} else {
 			/* No con found.
 			   Reject this connection! */
-			DPRINT(1, "Reject %s : unknown on demand connection", pscom_con_info_str(&msg->con_info));
+			DPRINT(D_WARN, "Reject %s : unknown on demand connection", pscom_con_info_str(&msg->con_info));
 			pscom_precon_terminate(pre);
 		}
 		break;
@@ -509,7 +509,7 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		pscom_info_version_t *ver = data;
 		assert(size >= sizeof(*ver)); /* with space for the future */
 		if ((VER_TO < ver->ver_from) || (ver->ver_to < VER_FROM)) {
-			DPRINT(0, "connection %s : Unsupported protocol version (mine:[%04x..%04x] remote:[%04x..%04x])",
+			DPRINT(D_ERR, "connection %s : Unsupported protocol version (mine:[%04x..%04x] remote:[%04x..%04x])",
 			       con ? pscom_con_str(&con->pub) : pscom_precon_str(pre),
 			       VER_FROM, VER_TO, ver->ver_from, ver->ver_to);
 			errno = EPROTO;
@@ -525,17 +525,17 @@ void pscom_precon_handle_receive(precon_t *pre, uint32_t type, void *data, unsig
 		assert(!con);
 		pscom_sock_t *sock = pre->sock;
 
-		DPRINT(PRECON_LL, "precon(%p): recv backcon %.8s to %.8s",
+		DPRINT(D_PRECON_TRACE, "precon(%p): recv backcon %.8s to %.8s",
 		       pre, con_info->name, sock->pub.local_con_info.name);
 		// Search for an existing matching connection
 		con = pscom_ondemand_find_con(sock, con_info->name);
 
 		if (con && con->pub.type == PSCOM_CON_TYPE_ONDEMAND) {
 			/* Trigger the back connect */
-			DPRINT(3, "RACCEPT %s", pscom_con_str(&con->pub));
+			DPRINT(D_DBG_V, "RACCEPT %s", pscom_con_str(&con->pub));
 			con->write_start(con);
 		} else {
-			DPRINT(3, "RACCEPT from %s skipped", pscom_con_info_str(con_info));
+			DPRINT(D_DBG_V, "RACCEPT from %s skipped", pscom_con_info_str(con_info));
 		}
 		pscom_precon_send(pre, PSCOM_INFO_BACK_ACK, NULL, 0);
 		pscom_precon_recv_stop(pre);
@@ -621,9 +621,9 @@ void pscom_precon_destroy(precon_t *pre)
 
 	if (pre->closefd_on_cleanup && fd != -1) {
 		int rc = close(fd);
-		if (!rc) DPRINT(PRECON_LL, "precon(%p): close(%d)", pre, fd);
-		else     DPRINT(1        , "precon(%p): close(%d) : %s", pre, fd, strerror(errno));
-	} else           DPRINT(PRECON_LL, "precon(%p): done", pre);
+		if (!rc) DPRINT(D_PRECON_TRACE, "precon(%p): close(%d)", pre, fd);
+		else     DPRINT(D_WARN, "precon(%p): close(%d) : %s", pre, fd, strerror(errno));
+	} else           DPRINT(D_PRECON_TRACE, "precon(%p): done", pre);
 
 	pre->magic = 0;
 	free(pre);
@@ -662,7 +662,7 @@ int pscom_precon_is_obsolete_backconnect(precon_t *pre) {
 static
 void pscom_precon_terminate_backconnect(precon_t *pre) {
 	pscom_precon_connect_terminate(pre);
-	DPRINT(2, "precon(%p): stopping obsolete back-connect on con:%p type:%6s state:%8s",
+	DPRINT(D_DBG_V, "precon(%p): stopping obsolete back-connect on con:%p type:%6s state:%8s",
 	       pre, pre->con,
 	       pscom_con_type_str(pre->con->pub.type),
 	       pscom_con_state_str(pre->con->pub.state));
@@ -686,7 +686,7 @@ void pscom_precon_reconnect(precon_t *pre)
 
 	if (pre->reconnect_cnt < pscom.env.retry) {
 		pre->reconnect_cnt++;
-		DPRINT(1, "precon(%p):pscom_precon_reconnect count %u",
+		DPRINT(D_DBG, "precon(%p):pscom_precon_reconnect count %u",
 		       pre, pre->reconnect_cnt);
 		int fd = _pscom_tcp_connect(pre->nodeid, pre->portno, pre);
 		if (fd < 0) goto error;
@@ -769,7 +769,7 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 				/* Unexpected error. Stop writing. Print diagnostics.
 				   The cleanup will be done in do_read, which will
 				   (hopefully) also fail in read(). */
-				DPRINT(1, "precon(%p): write(%d, %p, %u) : %s",
+				DPRINT(D_ERR, "precon(%p): write(%d, %p, %u) : %s",
 				       pre, pre->ufd_info.fd, pre->send, pre->send_len, strerror(errno));
 				ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
 				close(pre->ufd_info.fd);
@@ -790,7 +790,7 @@ void pscom_precon_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 	assert(!pre->con || pre->con->magic == MAGIC_CONNECTION);
 
 	if (pre->recv_done) {
-		DPRINT(1, "pscom_precon_do_read: softassert(!pre->recv_done) failed.");
+		DPRINT(D_ERR, "pscom_precon_do_read: softassert(!pre->recv_done) failed.");
 		pscom_precon_recv_stop(pre);
 		return;
 	}
@@ -863,7 +863,7 @@ check_read_error:
 		/* Try again later */
 		return;
 	} else if (retry_on_error(errno)) {
-		DPRINT(3, "precon(%p): read(%d,...) : %s", pre, fd, strerror(errno));
+		DPRINT(D_DBG, "precon(%p): read(%d,...) : %s", pre, fd, strerror(errno));
 		/* pscom_precon_reconnect(pre); */
 		/* Terminate this connection. Reconnect after pscom.env.precon_reconnect_timeout.*/
 		pscom_precon_connect_terminate(pre);
@@ -972,7 +972,7 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 	assert(pre->magic == MAGIC_PRECON);
 	unsigned long now = getusec();
 
-	if (pscom.env.debug >= PRECON_LL) {
+	if (pscom.env.debug >= D_PRECON_TRACE) {
 		if (now - pre->last_print_stat > 1500 /* ms */ * 1000) {
 			pre->stat_poll_cnt++;
 
@@ -993,7 +993,7 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 				   If the peer is just busy, we should wait further, but if
 				   this connection is broken we should reconnect. How to detect that
 				   the remote missed the accept event? */
-				DPRINT(3, "precon(%p): connection stalled", pre);
+				DPRINT(D_DBG, "precon(%p): connection stalled", pre);
 			} else {
 				pscom_precon_reconnect(pre);
 			}
@@ -1081,7 +1081,7 @@ void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 		/* Create a new precon */
 		pre = pscom_precon_create(NULL);
 		assert(pre);
-		DPRINT(PRECON_LL, "precon(%p): accept(%d,...) = %d", pre, listen_fd, fd);
+		DPRINT(D_PRECON_TRACE, "precon(%p): accept(%d,...) = %d", pre, listen_fd, fd);
 
 		pre->sock = sock;
 

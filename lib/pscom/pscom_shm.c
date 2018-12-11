@@ -91,7 +91,7 @@ int shm_init_direct(shm_conn_t *shm, int shmid, void *remote_base)
 
 	return 0;
 err_shmat:
-	DPRINT(1, "shmat(%d, 0, %u) : %s", shmid, SHM_RDONLY, strerror(errno));
+	DPRINT(D_ERR, "shmat(%d, 0, %u) : %s", shmid, SHM_RDONLY, strerror(errno));
 	return -1;
 }
 
@@ -117,10 +117,10 @@ int shm_initrecv(shm_conn_t *shm)
 	shm->recv_cur = 0;
 	return 0;
 err_shmat:
-	DPRINT(1, "shmat(%d, 0, 0) : %s", shmid, strerror(errno));
+	DPRINT(D_ERR, "shmat(%d, 0, 0) : %s", shmid, strerror(errno));
 	return -1;
 err:
-	DPRINT(1, "shmget(0, sizeof(shm_com_t), IPC_CREAT | 0777) : %s", strerror(errno));
+	DPRINT(D_ERR, "shmget(0, sizeof(shm_com_t), IPC_CREAT | 0777) : %s", strerror(errno));
 	return -1;
 }
 
@@ -142,7 +142,7 @@ int shm_initsend(shm_conn_t *shm, shm_info_msg_t *msg)
 	shm->send_cur = 0;
 	return 0;
 err_shmat:
-	DPRINT(1, "shmat(%d, 0, 0) : %s", rem_shmid, strerror(errno));
+	DPRINT(D_ERR, "shmat(%d, 0, 0) : %s", rem_shmid, strerror(errno));
 err_shm_init_direct:
 	return -1;
 }
@@ -608,7 +608,7 @@ void pscom_shm_sock_init(pscom_sock_t *sock)
 	if(!__malloc_initialize_hook) psshm_init();
 #endif
 	if (psshm_info.size) {
-		DPRINT(2, "PSP_MALLOC = 1 : size = %lu\n", psshm_info.size);
+		DPRINT(D_INFO, "PSP_MALLOC = 1 : size = %lu\n", psshm_info.size);
 		pscom_env_get_uint(&shm_direct, ENV_SHM_DIRECT);
 		pscom_env_get_uint(&shm_indirect, ENV_SHM_INDIRECT);
 		if ((shm_indirect > 0) && (shm_indirect != ~0U)) {
@@ -617,7 +617,7 @@ void pscom_shm_sock_init(pscom_sock_t *sock)
 			shm_indirect--;
 		}
 	} else {
-		DPRINT(2, "PSP_MALLOC disabled : %s\n", psshm_info.msg);
+		DPRINT(D_INFO, "PSP_MALLOC disabled : %s\n", psshm_info.msg);
 		shm_direct = (unsigned)~0;
 		shm_indirect = (unsigned)~0;
 	}

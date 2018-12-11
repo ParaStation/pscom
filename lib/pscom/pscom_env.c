@@ -27,9 +27,9 @@ void pscom_env_get_int(int *val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = atoi(aval);
-		DPRINT(1, "set %s = %d", name, *val);
+		DPRINT(D_DBG, "set %s = %d", name, *val);
 	} else {
-		DPRINT(2, "default %s = %d", name, *val);
+		DPRINT(D_DBG_V, "default %s = %d", name, *val);
 	}
 	pscom_info_set_int(name, *val);
 }
@@ -42,12 +42,12 @@ void pscom_env_get_uint(unsigned int *val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = atoi(aval);
-		DPRINT(1, "set %s = %u", name, *val);
+		DPRINT(D_DBG, "set %s = %u", name, *val);
 	} else {
 		if (*val != ENV_UINT_AUTO) {
-			DPRINT(2, "default %s = %u", name, *val);
+			DPRINT(D_DBG_V, "default %s = %u", name, *val);
 		} else {
-			DPRINT(2, "default %s = auto", name);
+			DPRINT(D_DBG_V, "default %s = auto", name);
 		}
 	}
 	pscom_info_set_uint(name, *val);
@@ -61,12 +61,12 @@ void pscom_env_get_size_t(size_t *val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = atoll(aval);
-		DPRINT(1, "set %s = %zu", name, *val);
+		DPRINT(D_DBG, "set %s = %zu", name, *val);
 	} else {
 		if (*val != ENV_SIZE_T_AUTO) {
-			DPRINT(2, "default %s = %zu", name, *val);
+			DPRINT(D_DBG_V, "default %s = %zu", name, *val);
 		} else {
-			DPRINT(2, "default %s = auto", name);
+			DPRINT(D_DBG_V, "default %s = auto", name);
 		}
 	}
 	pscom_info_set_size_t(name, *val);
@@ -80,9 +80,9 @@ void pscom_env_get_str(char **val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = aval;
-		DPRINT(1, "set %s = %s", name, *val);
+		DPRINT(D_DBG, "set %s = %s", name, *val);
 	} else {
-		DPRINT(2, "default %s = %s", name, *val ? *val : "<null>");
+		DPRINT(D_DBG_V, "default %s = %s", name, *val ? *val : "<null>");
 	}
 	pscom_info_set(name, *val);
 }
@@ -104,9 +104,9 @@ void pscom_env_get_dir(char **val, const char *name)
 			*val = strdup(aval);
 		}
 
-		DPRINT(1, "set %s = %s", name, *val);
+		DPRINT(D_DBG, "set %s = %s", name, *val);
 	} else {
-		DPRINT(2, "default %s = %s", name, *val ? *val : "<null>");
+		DPRINT(D_DBG_V, "default %s = %s", name, *val ? *val : "<null>");
 	}
 	pscom_info_set(name, *val);
 }
@@ -117,7 +117,8 @@ void pscom_env_init(void)
 	pscom_pslib_read_config(ENV_CONFIG_FILES);
 
 	pscom_debug_set_filename(pscom_env_get(ENV_DEBUG_OUT), 1);
-	if (!pscom.env.debug) { // only set debug once!
+	if (pscom.env.debug == -1) { // only set if pscom_set_debug() was not called before.
+		pscom.env.debug = D_ERR; // Default: show errors.
 		pscom_env_get_int(&pscom.env.debug, ENV_DEBUG);
 	}
 
@@ -125,8 +126,9 @@ void pscom_env_init(void)
 		pscom_env_get_str(&pscom.env.info, ENV_INFO);
 		if (pscom.env.info) pscom_info_connect(pscom.env.info);
 	}
+	pscom_env_get_int(&pscom.env.debug_version, ENV_DEBUG_VERSION);
 
-	DPRINT(1,"# Version(PSCOM): %s (%s)", __DATE__, VC_VERSION);
+	DPRINT(D_VERSION, "# Version(PSCOM): %s (%s)", __DATE__, VC_VERSION);
 	pscom_env_get_uint(&pscom.env.so_sndbuf, ENV_SO_SNDBUF);
 	pscom_env_get_uint(&pscom.env.so_rcvbuf, ENV_SO_RCVBUF);
 	pscom_env_get_int(&pscom.env.tcp_nodelay, ENV_TCP_NODELAY);
@@ -177,8 +179,10 @@ void pscom_env_init(void)
 	pscom_env_get_dir(&pscom.env.plugindir, ENV_PLUGINDIR);
 
 	pscom_env_get_int(&pscom.env.debug_req, ENV_DEBUG_REQ);
-
-	if (pscom.env.debug >= 2) pscom.env.debug_stats = 1;
 	pscom_env_get_int(&pscom.env.debug_stats, ENV_DEBUG_STATS);
+	pscom_env_get_int(&pscom.env.debug_contype, ENV_DEBUG_CONTYPE);
+	pscom_env_get_int(&pscom.env.debug_suspend, ENV_DEBUG_SUSPEND);
+	pscom_env_get_int(&pscom.env.debug_precon, ENV_DEBUG_PRECON);
+
 	pscom_env_get_uint(&pscom.env.iprobe_count, ENV_IPROBE_COUNT);
 }

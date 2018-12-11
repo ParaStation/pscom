@@ -219,9 +219,9 @@ pscom_err_t pscom_connect_socket_str(pscom_connection_t *connection, const char 
 	/* error code */
 err_parse:
 	if (socket_str) {
-		DPRINT(1, "CONNECT (%s) failed : %s", socket_str, pscom_err_str(res));
+		DPRINT(D_ERR, "CONNECT (%s) failed : %s", socket_str, pscom_err_str(res));
 	} else {
-		DPRINT(1, "CONNECT (<null>) failed : %s", pscom_err_str(res));
+		DPRINT(D_ERR, "CONNECT (<null>) failed : %s", pscom_err_str(res));
 	}
 	return res;
 }

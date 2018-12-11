@@ -186,12 +186,12 @@ void pscom_debug_set_filename(const char *filename, int expand)
 					// No error and only one result
 					strncpy(pscom_debug_filename, p.we_wordv[0], sizeof(pscom_debug_filename));
 				} else {
-					DPRINT(0, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %d words",
+					DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %d words",
 					       filename, (int)p.we_wordc);
 				}
 				wordfree(&p);
 			} else {
-				DPRINT(0, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %s",
+				DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %s",
 				       filename, __wordexp_error(rc));
 			}
 		}

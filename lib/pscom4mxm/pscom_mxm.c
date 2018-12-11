@@ -261,7 +261,7 @@ void pscom_mxm_finalize(void){
 	if (psmxm_close_endpoint() == -1) goto err;
 	return;
  err:
-	DPRINT(1, "psmxm_mxm_finalize not successful");
+	DPRINT(D_ERR, "psmxm_mxm_finalize not successful");
 }
 
 
