@@ -2,13 +2,6 @@
 #ifndef _PSPORT_UTIL_H_
 #define _PSPORT_UTIL_H_
 
-#include "psport4.h"
-
-/* return PSP_GetNodeID() and PSP_GetPortNo(porth) as a string */
-const char *PSP_local_name(PSP_PortH_t porth);
-
-/* call PSP_Connect() with a string */
-int PSP_Connect_name(PSP_PortH_t porth, const char *name);
 
 #define INET_ADDR_SPLIT(addr) ((addr) >> 24) & 0xff, ((addr) >> 16) & 0xff, ((addr) >>  8) & 0xff, (addr) & 0xff
 #define INET_ADDR_FORMAT "%u.%u.%u.%u"

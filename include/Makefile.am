@@ -11,7 +11,7 @@
 #
 include $(top_srcdir)/common.am
 
-include_HEADERS = pscom.h psport4.h
+include_HEADERS = pscom.h
 noinst_HEADERS = gm_compat.h p4io.h p4log.h p4sockets.h psockt.h	\
 	ps_perf.h
 

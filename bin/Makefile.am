@@ -15,18 +15,18 @@ include $(top_srcdir)/common.am
 
 SUBDIRS = simul_p4sock examples
 
-noinst_PROGRAMS = p4logd porttest psock_test pscom_test		\
+noinst_PROGRAMS = p4logd psock_test pscom_test		\
 	   pscom_ondemand pscom_bcast_test pscom_request_create	\
-	   pscom_bcast_pp port_pp pscom_maxcon \
+	   pscom_bcast_pp pscom_maxcon \
 	   pscom_test_fault
 
 check_PROGRAMS = list_test
 
 TESTS = list_test
 
-bin_PROGRAMS = pscom_pp p4stat pspipe p4tcp psport4_pp psock_pp
+bin_PROGRAMS = pscom_pp p4stat p4tcp psock_pp
 
-noinst_HEADERS = dump.c psport_util.h
+noinst_HEADERS = dump.c
 
 EXTRA_DIST = gm/gm_sr.c gm/gm_test.c
 
@@ -37,7 +37,7 @@ dist_config_DATA = pscom.gdb
 CLEANFILES = $(bin_SCRIPTS) list_test.ok
 
 if MELLANOX_ENABLED
-  noinst_PROGRAMS += ps4_ib ps4_ib_pp ps4_ib_pp_rdma psport4mvapi_pp
+  noinst_PROGRAMS += ps4_ib ps4_ib_pp ps4_ib_pp_rdma
 endif
 
 if GM_ENABLED
@@ -63,7 +63,7 @@ endif
 bin_PROGRAMS += test_nodes
 
 if PSMGMT_ENABLED
-  bin_PROGRAMS += pscp
+#  bin_PROGRAMS += pscp
 endif
 
 if DAPL_ENABLED
@@ -85,11 +85,9 @@ endif
 
 # -- /file lists
 
-libpsport4 = $(top_builddir)/lib/psport4/libpsport4std.la
 libpscom = $(top_builddir)/lib/pscom/libpscom.la $(top_builddir)/lib/psmalloc/libpsmalloc.la
 
-# -- psport --
-
+# -- Tools --
 p4stat_SOURCES = p4stat.c
 p4stat_LDADD = -lpopt
 
@@ -99,23 +97,12 @@ p4tcp_LDADD = -lpopt
 p4logd_SOURCES = p4logd.c
 p4logd_LDADD = -lpopt
 
-porttest_SOURCES = porttest.c
-porttest_LDADD = $(libpsport4) -lpopt
-
 psock_pp_SOURCES = psock_pp.c
 psock_pp_LDADD = -lpopt
 
 psock_test_SOURCES = psock_test.c
 psock_test_LDADD = -lpopt
 
-psport4_pp_SOURCES = psport4_pp.c
-psport4_pp_LDADD = $(libpsport4) -lpopt
-
-pspipe_SOURCES = pspipe.c psport_util.c
-pspipe_LDADD = $(libpsport4) -lpopt
-
-port_pp_SOURCES = port_pp.c
-port_pp_LDADD = -lpopt
 
 # -- pscom --
 
@@ -147,7 +134,6 @@ pscom_test_fault_LDADD = $(libpscom) -lpopt
 
 # -- mellanox --
 
-libpsport4mvapi = $(top_builddir)/lib/psport4/libpsport4mvapi.la
 cppflags_mellanox = $(AM_CPPFLAGS) $(MELLANOX_CPPFLAGS) -D__LINUX__	\
 	-DMT_LITTLE_ENDIAN -pthread
 ldflags_mellanox = $(AM_LDFLAGS) $(MELLANOX_LDFLAGS) -pthread
@@ -167,11 +153,6 @@ ps4_ib_pp_rdma_SOURCES = mellanox/ps4_ib_pp_rdma.c
 ps4_ib_pp_rdma_CPPFLAGS = $(cppflags_mellanox)
 ps4_ib_pp_rdma_LDFLAGS = $(ldflags_mellanox)
 ps4_ib_pp_rdma_LDADD = $(ldadd_mellanox) -lpopt
-
-psport4mvapi_pp_SOURCES = psport4_pp.c
-psport4mvapi_pp_CPPFLAGS = $(cppflags_mellanox)
-psport4mvapi_pp_LDFLAGS = $(ldflags_mellanox)
-psport4mvapi_pp_LDADD = $(libpsport4mvapi) $(ldadd_mellanox) -lpopt
 
 # -- gm --
 
@@ -251,11 +232,6 @@ else
 test_nodes_CPPFLAGS = $(AM_CPPFLAGS)
 test_nodes_LDADD = $(libpscom) -lpopt
 endif
-
-pscp_SOURCES = pscp.c  psport_util.c
-pscp_CPPFLAGS = $(AM_CPPFLAGS) $(PSMGMT_CPPFLAGS)
-pscp_LDFLAGS = $(AM_LDFLAGS) $(PSMGMT_LDFLAGS)
-pscp_LDADD = $(libpsport4) -lpse -lpsi -lpopt
 
 # -- dapl --
 

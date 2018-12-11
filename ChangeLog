@@ -9,6 +9,8 @@
 
 	* Enhancement: UCP: performance improvements.
 
+	* Deleted libpsport4. Delete obsolete and unused psport4 code.
+
 2018-10-08  Jens Hauke  <hauke@par-tec.com>	-	5.2.7-1
 
 	* Enhancement: precon: stop obsolete back connects on established

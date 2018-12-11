@@ -64,5 +64,4 @@ if PSM_ENABLED
     SUBDIRS += pscom4psm
 endif
 
-SUBDIRS += psport4
 SUBDIRS += p4tcp
