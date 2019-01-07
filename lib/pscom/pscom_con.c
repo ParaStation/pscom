@@ -388,8 +388,9 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 {
 	assert(con->magic == MAGIC_CONNECTION);
-
-	DPRINT(error != PSCOM_ERR_EOF ? D_ERR : D_DBG,
+	DPRINT((error != PSCOM_ERR_EOF) // EOF is mostly ok (D_DBG), except when receiving...
+	       || (con->pub.type == PSCOM_CON_TYPE_NONE) // ...EOF while still handshaking (No plugin choosen) is an D_ERR.
+	       ? D_ERR : D_DBG,
 	       "connection to %s (type:%s,state:%s) : %s : %s",
 	       pscom_con_info_str(&con->pub.remote_con_info),
 	       pscom_con_type_str(con->pub.type),
