@@ -832,7 +832,10 @@ pscom_err_t pscom_con_connect_via_tcp(pscom_con_t *con, int nodeid, int portno)
 	/* --- */
 //err_init_failed:
 err_connect:
-	pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
+	if (errno != ENOPROTOOPT) {
+		// if (errno == ENOPROTOOPT) _plugin_connect_next() already called pscom_con_setup_failed().
+		pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
+	}
 	return PSCOM_ERR_STDERROR;
 }
 
