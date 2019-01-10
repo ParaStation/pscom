@@ -13,6 +13,7 @@
 #ifndef _PSCOM_DEBUG_H_
 #define _PSCOM_DEBUG_H_
 
+#include "pscom_types.h"
 #include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -48,7 +49,6 @@ void pscom_debug_set_prefix(const char *prefix);
 const char *pscom_msgtype_str(uint8_t msg_type);
 
 // return an id string for the req and some state
-typedef struct PSCOM_req pscom_req_t;
 char *pscom_debug_req_str(pscom_req_t *req);
 
 #if 1
