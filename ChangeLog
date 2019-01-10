@@ -1,4 +1,4 @@
-2018-12-11  Jens Hauke  <hauke@par-tec.com>
+2019-01-10  Jens Hauke  <hauke@par-tec.com>	-	5.2.8-1
 
 	* Fix: Error handling after a plugin handshake failure (precon).
 
@@ -10,6 +10,12 @@
 	* Enhancement: UCP: performance improvements.
 
 	* Deleted libpsport4. Delete obsolete and unused psport4 code.
+
+	* Fix: plugin selection. (Incorrect looping from last plugin to
+	first plugin, if all plugins failed for a connection)
+
+	* Fix: shm handshake "live lock". (Incorrect error recovery from
+	failing shmat()/shmget())
 
 2018-10-08  Jens Hauke  <hauke@par-tec.com>	-	5.2.7-1
 
