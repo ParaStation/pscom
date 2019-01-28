@@ -37,7 +37,7 @@ int pscom_atoport(const char *service, const char *proto)
 	lport = strtol(service, &errpos, 0);
 	if (errpos && *errpos == 0) {
 		/* valid integer, or empty string */
-		return htons(lport);
+		return htons((uint16_t)lport);
 	}
 
 	if (!proto) {errno = EINVAL; return -1;}

@@ -21,6 +21,7 @@
 #include <errno.h>
 #include "pscom_debug.h"
 #include "pscom_priv.h"
+#include "pscom_util.h"
 
 static char __pscom_debug_linefmt[100] = "";
 FILE * __pscom_debug_stream = NULL;
@@ -47,14 +48,14 @@ char *_pscom_debug_linefmt(void)
 
 void pscom_debug_set_prefix(const char *prefix)
 {
-	char s[100];
+	char s[sizeof(__pscom_debug_linefmt) - 10];
 	char *t;
 
 	// Output to file? Dont change the prefix.
 	if (__pscom_debug_linefmt[0] == '%') return;
 
 	// replace all format characters of prefix
-	strncpy(s, prefix, sizeof(s));
+	pscom_strncpy0(s, prefix, sizeof(s));
 	for (t = s; *t; t++) if (*t == '%' || *t == '\\') *t = '/';
 
 	// Use new prefix
@@ -184,7 +185,7 @@ void pscom_debug_set_filename(const char *filename, int expand)
 			if (!rc) {
 				if (p.we_wordc == 1) {
 					// No error and only one result
-					strncpy(pscom_debug_filename, p.we_wordv[0], sizeof(pscom_debug_filename));
+					pscom_strncpy0(pscom_debug_filename, p.we_wordv[0], sizeof(pscom_debug_filename));
 				} else {
 					DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %d words",
 					       filename, (int)p.we_wordc);
@@ -198,7 +199,7 @@ void pscom_debug_set_filename(const char *filename, int expand)
 
 		if (!pscom_debug_filename[0]) {
 			// no expansion or expansion failed
-			strncpy(pscom_debug_filename, filename, sizeof(pscom_debug_filename));
+			pscom_strncpy0(pscom_debug_filename, filename, sizeof(pscom_debug_filename));
 		}
 	}
 }

@@ -102,7 +102,7 @@ static
 void pscom_sock_init_con_info(pscom_sock_t *sock)
 {
 	pscom_con_info_t *con_info = &sock->pub.local_con_info;
-	char name[20];
+	char name[sizeof(con_info->name) + 1];
 
 	con_info->node_id = pscom_get_nodeid();
 	con_info->pid = getpid();
@@ -266,7 +266,7 @@ pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
 		}
 
 		sa.sin_family = AF_INET;
-		sa.sin_port = (in_port_t)((portno == PSCOM_ANYPORT) ? 0 : htons(portno));
+		sa.sin_port = (in_port_t)((portno == PSCOM_ANYPORT) ? 0 : htons((uint16_t)portno));
 		sa.sin_addr.s_addr = INADDR_ANY;
 
 		if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0)

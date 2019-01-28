@@ -127,6 +127,16 @@ void pscom_memcpy_from_iov(char *data, const struct iovec *iov, size_t len)
 	}
 }
 
+/* strncpy with forced null-termination. Similar to strlcpy(), but with
+   additional filling of dest with null bytes from strncpy. */
+static inline
+char *pscom_strncpy0(char *dest, const char *src, size_t n)
+{
+    strncpy(dest, src, n - 1);
+    dest[n - 1] = 0;
+    return dest;
+}
+
 
 /* Somewhere in the middle of the GCC 2.96 development cycle, we implemented
    a mechanism by which the user can annotate likely branch directions and

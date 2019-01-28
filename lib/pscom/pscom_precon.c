@@ -232,7 +232,7 @@ void pscom_sockaddr_init(struct sockaddr_in *si, int nodeid, int portno)
 {
 	/* Setup si for TCP */
 	si->sin_family = PF_INET;
-	si->sin_port = htons(portno);
+	si->sin_port = htons((uint16_t)portno);
 	si->sin_addr.s_addr = htonl(nodeid);
 }
 

@@ -225,7 +225,9 @@ struct PSCOM_con_info
 	int	node_id;
 	int	pid;
 	void	*id;
-	char	name[8];
+	/* Be aware: name is not null-terminated! A printf format that fit is
+	   printf("%.8s", con_info->name); */
+	char	name[8] __attribute__ ((nonstring));
 };
 
 
