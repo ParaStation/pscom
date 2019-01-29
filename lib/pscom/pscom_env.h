@@ -219,10 +219,29 @@ struct PSCOM_env {
 	int		debug_precon;
 #ifdef PSCOM_CUDA_AWARENESS
 	int             cuda;
-#define PSCOM_ENV_CUDA .cuda = 0
+	unsigned int 	cuda_aware_plugins;
+	unsigned int 	cuda_aware_shm;
+	unsigned int 	cuda_aware_openib;
+	unsigned int 	cuda_aware_ucp;
+#define PSCOM_ENV_CUDA       \
+	.cuda               = 0, \
+	.cuda_aware_plugins = 1, \
+	.cuda_aware_shm     = 1, \
+	.cuda_aware_openib  = 1, \
+	.cuda_aware_ucp     = 1
 #define ENV_CUDA "PSP_CUDA"
+#define ENV_MEMCACHE "PSP_MEMCACHE"
+#define ENV_CUDA_AWARE_PLUGINS "PSP_CUDA_AWARE_PLUGINS"
+#define ENV_CUDA_AWARE_SHM "PSP_CUDA_AWARE_SHM"
+#define ENV_CUDA_AWARE_OPENIB "PSP_CUDA_AWARE_OPENIB"
+#define ENV_CUDA_AWARE_UCP "PSP_CUDA_AWARE_UCP"
 #else
 #define PSCOM_ENV_CUDA
+#define ENV_CUDA
+#define ENV_CUDA_AWARE_PLUGINS
+#define ENV_CUDA_AWARE_SHM
+#define ENV_CUDA_AWARE_OPENIB
+#define ENV_CUDA_AWARE_UCP
 #endif
 };
 

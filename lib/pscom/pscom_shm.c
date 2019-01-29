@@ -169,7 +169,7 @@ void shm_send(shm_conn_t *shm, char *buf, int len)
 	shm_buf_t *shmbuf = &shm->remote_com->buf[cur];
 
 	/* copy to sharedmem */
-	pscom_memcpy(SHM_DATA(shmbuf, len), buf, len);
+	_pscom_memcpy(SHM_DATA(shmbuf, len), buf, len);
 	shmbuf->header.len = len;
 
 	shm_mb();
@@ -508,7 +508,7 @@ void shm_do_write(pscom_con_t *con)
 				goto do_buffered_send; // Giving up. Fallback to buffered send.
 			}
 
-			pscom_memcpy(data, iov[1].iov_base, iov[1].iov_len);
+			_pscom_memcpy(data, iov[1].iov_base, iov[1].iov_len);
 			iov[1].iov_base = data;
 
 			msg = shm_iovsend_direct(&con->arch.shm, iov);
@@ -581,17 +581,8 @@ void shm_init_con(pscom_con_t *con)
 	con->pub.type = PSCOM_CON_TYPE_SHM;
 
 #ifdef PSCOM_CUDA_AWARENESS
-	if(pscom.env.cuda) {
-		DPRINT(2, "Arch shm is CUDA-aware");
-		con->pub.type += PSCOM_CON_TYPE_CUDA;
-	}
+	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_shm;
 #endif
-
-	/* TODO: ????
-	close(con_fd);
-
-	memcpy(&con->arch.shm, shm, sizeof(*shm));
-	*/
 
 	con->write_start = pscom_poll_write_start;
 	con->write_stop = pscom_poll_write_stop;

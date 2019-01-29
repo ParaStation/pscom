@@ -538,7 +538,10 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->pub.userdata_size = sock->pub.connection_userdata_size;
 	con->pub.state = PSCOM_CON_STATE_CLOSED;
 	con->pub.type = PSCOM_CON_TYPE_NONE;
-	con->pub.is_gpu_aware = 0;
+
+#ifdef PSCOM_CUDA_AWARENESS
+	con->is_gpu_aware = 0;
+#endif
 
 	con->recv_req_cnt = 0;
 	INIT_LIST_HEAD(&con->next);
@@ -766,14 +769,16 @@ void pscom_con_setup_ok(pscom_con_t *con)
 
 	switch (con_state) {
 	case PSCOM_CON_STATE_CONNECTING:
-		DPRINT(D_CONTYPE, "CONNECT %s via %s",
+		DPRINT(D_CONTYPE, "CONNECT %s via %s%s",
 		       pscom_con_str(&con->pub),
-		       pscom_con_type_str(con->pub.type));
+		       pscom_con_type_str(con->pub.type),
+		       PSCOM_IF_CUDA(con->is_gpu_aware) ? " (cuda)" : "");
 		break;
 	case PSCOM_CON_STATE_ACCEPTING:
-		DPRINT(D_CONTYPE, "ACCEPT  %s via %s",
+		DPRINT(D_CONTYPE, "ACCEPT  %s via %s%s",
 		       pscom_con_str_reverse(&con->pub),
-		       pscom_con_type_str(con->pub.type));
+		       pscom_con_type_str(con->pub.type),
+		       PSCOM_IF_CUDA(con->is_gpu_aware) ? " (cuda)" : "");
 
 		con->state.internal_connection = 0; // Now the user has to call pscom_close_connection() on con.
 		if (sock->pub.ops.con_accept) {
@@ -784,14 +789,16 @@ void pscom_con_setup_ok(pscom_con_t *con)
 		}
 		break;
 	case PSCOM_CON_STATE_CONNECTING_ONDEMAND:
-		DPRINT(D_CONTYPE, "CONNECT ONDEMAND %s via %s",
+		DPRINT(D_CONTYPE, "CONNECT ONDEMAND %s via %s%s",
 		       pscom_con_str(&con->pub),
-		       pscom_con_type_str(con->pub.type));
+		       pscom_con_type_str(con->pub.type),
+		       PSCOM_IF_CUDA(con->is_gpu_aware) ? " (cuda)" : "");
 		break;
 	case PSCOM_CON_STATE_ACCEPTING_ONDEMAND:
-		DPRINT(D_CONTYPE, "ACCEPT  ONDEMAND %s via %s",
+		DPRINT(D_CONTYPE, "ACCEPT  ONDEMAND %s via %s%s",
 		       pscom_con_str_reverse(&con->pub),
-		       pscom_con_type_str(con->pub.type));
+		       pscom_con_type_str(con->pub.type),
+		       PSCOM_IF_CUDA(con->is_gpu_aware) ? " (cuda)" : "");
 		break;
 	default:
 		DPRINT(D_BUG, "pscom_con_setup_ok() : connection in wrong state : %s (%s)",
@@ -883,12 +890,17 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 	con->pub.state = PSCOM_CON_STATE_RW;
 	con->pub.type = PSCOM_CON_TYPE_LOOP;
 
+#ifdef PSCOM_CUDA_AWARENESS
+	con->is_gpu_aware = pscom.env.cuda;
+#endif
+
 	con->write_start = loopback_write_start;
 //	con->rendezvous_size = (unsigned)~0; // disable rendezvous for loopback
 
-	DPRINT(D_CONTYPE, "CONNECT %s via %s",
+	DPRINT(D_CONTYPE, "CONNECT %s via %s%s",
 	       pscom_con_str(&con->pub),
-	       pscom_con_type_str(con->pub.type));
+	       pscom_con_type_str(con->pub.type),
+	       PSCOM_IF_CUDA(con->is_gpu_aware) ? " (cuda)" : "");
 
 	assert(list_empty(&con->next));
 	list_add_tail(&con->next, &sock->connections);

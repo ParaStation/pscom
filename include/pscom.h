@@ -34,6 +34,11 @@ extern "C" {
 
 #define PSCOM_VERSION 0x0300
 
+/* allow user applications to determine whether CUDA-awareness is supported */
+#ifdef PSCOM_CUDA_AWARENESS
+#define PSCOM_CUDA_AWARENESS_SUPPORT
+#endif
+
 typedef enum PSCOM_err {
 	PSCOM_SUCCESS = 0,		/* Success */
 	PSCOM_ERR_STDERROR = -1,	/* standard error. see errno */
@@ -86,9 +91,6 @@ typedef enum PSCOM_con_type {
 	PSCOM_CON_TYPE_SUSPENDED= 0x11,
 	PSCOM_CON_TYPE_UCP      = 0x12,
 	PSCOM_CON_TYPE_GW	= 0x13,
-#ifdef PSCOM_CUDA_AWARENESS
-	PSCOM_CON_TYPE_CUDA     = 0x80
-#endif
 } pscom_con_type_t;
 
 
@@ -272,7 +274,6 @@ struct PSCOM_connection
 	pscom_con_info_t remote_con_info;
 
 	size_t		userdata_size;
-	int is_gpu_aware;
 
 #ifdef PSCOM_CONNECTION_USERDATA_TYPE
 	PSCOM_CONNECTION_USERDATA_TYPE userdata;
@@ -280,13 +281,6 @@ struct PSCOM_connection
 	char		userdata[0];
 #endif
 };
-
-static inline
-int pscom_con_is_gpu_aware(struct PSCOM_connection* con)
-{
-	return con->is_gpu_aware;
-}
-
 
 /**
  * @brief Initialize the library.
@@ -546,6 +540,19 @@ int pscom_req_is_done(pscom_request_t *req)
 	return pscom_req_state_is_done(req->state);
 }
 
+/*
+ * Memory handling
+ */
+#ifdef PSCOM_CUDA_AWARENESS
+void pscom_memcpy(void* dst, const void* src, size_t len);
+int pscom_is_gpu_mem(const void* ptr);
+#else
+static inline
+void pscom_memcpy(void* dst, const void* src, size_t len)
+{
+	memcpy(dst, src, len);
+}
+#endif
 
 /*
  * Collective Operations/ Group handling

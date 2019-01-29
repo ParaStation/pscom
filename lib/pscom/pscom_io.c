@@ -901,7 +901,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 		_check_readahead(con, con->in.readahead.iov_len + len);
 		dest = ((char *)con->in.readahead.iov_base) + con->in.readahead.iov_len;
 		if (buf != dest) {
-			pscom_memcpy(dest, buf, len);
+			_pscom_memcpy(dest, buf, len);
 		}
 
 		con->in.readahead.iov_len += len;
@@ -1093,7 +1093,7 @@ void _pscom_send(pscom_con_t *con, pscom_msgtype_t msg_type,
 	req->pub.data = req->pub.user;
 
 	memcpy(&req->pub.xheader, xheader, xheader_len);
-	pscom_memcpy(req->pub.data, data, data_len);
+	_pscom_memcpy(req->pub.data, data, data_len);
 
 	req->pub.ops.io_done = pscom_request_free;
 
@@ -1277,7 +1277,7 @@ void _pscom_post_rma_read(pscom_req_t *req)
 
 			if(len_arch && con->rma_mem_deregister) {
 				req->rndv_data = pscom_malloc(sizeof(pscom_rendezvous_data_t));
-				memcpy(req->rndv_data, rd, sizeof(pscom_rendezvous_data_t));
+				memcpy(req->rndv_data, rd, sizeof(pscom_rendezvous_data_t)); // ToDo: _pscom_memcpy?
 			}
 		}
 
@@ -1382,6 +1382,8 @@ void pscom_post_recv(pscom_request_t *request)
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
+
+	_pscom_stage_buffer(req, 0);
 
 	pscom_lock(); {
 		pscom_req_t *genreq;
@@ -1606,7 +1608,7 @@ void pscom_post_send(pscom_request_t *request)
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 	assert(request->connection != NULL);
 
-//	printf("pscom_post_send: %d at %p via %s\n", req->pub.data_len, req->pub.data, pscom_con_type_str(con->pub.type));
+	_pscom_stage_buffer(req, 1);
 
 	if (req->pub.data_len < get_con(request->connection)->rendezvous_size) {
 		perf_add("reset_send_direct");

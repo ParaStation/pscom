@@ -25,6 +25,8 @@
 #include <netdb.h>
 #include <error.h>
 
+#undef PSCOM_CUDA_AWARENESS
+
 #include "pscom.h"
 #include "pscom_priv.h"
 #include "pscom_env.h"

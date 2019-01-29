@@ -10,8 +10,9 @@
  * Author:	Jens Hauke <hauke@par-tec.com>
  */
 
-#include "pscom_req.h"
 #include "pscom_cuda.h"
+#include "pscom_req.h"
+#include "pscom_util.h"
 
 #include <stdlib.h>
 
@@ -155,6 +156,10 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 	req->pub.data_len	= 0;
 	req->pub.data		= NULL;
 
+#ifdef PSCOM_CUDA_AWARENESS
+	req->stage_buf	= NULL;
+#endif
+
 	req->pub.connection	= NULL;
 	req->pub.socket		= NULL;
 
@@ -192,7 +197,7 @@ size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len)
 	// printf("req_write() %s\n", pscom_dumpstr(buf, pscom_min(len, 32)));
 	if (len <= req->cur_data.iov_len) {
 		if (req->cur_data.iov_base != buf) {
-			pscom_memcpy(req->cur_data.iov_base, buf, len);
+			_pscom_memcpy(req->cur_data.iov_base, buf, len);
 		}
 		req->cur_data.iov_base += len;
 		req->cur_data.iov_len -= len;
@@ -200,7 +205,7 @@ size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len)
 		size_t clen = req->cur_data.iov_len;
 		size_t left;
 		if (req->cur_data.iov_base != buf) {
-			pscom_memcpy(req->cur_data.iov_base, buf, clen);
+			_pscom_memcpy(req->cur_data.iov_base, buf, clen);
 		}
 		req->cur_data.iov_base += clen;
 		req->cur_data.iov_len = 0;
@@ -233,7 +238,7 @@ void pscom_req_append(pscom_req_t *req, char *buf, size_t len)
 	assert(len <= req->skip);
 
 	if (buf && buf != tail) {
-		pscom_memcpy(tail, buf, len);
+		_pscom_memcpy(tail, buf, len);
 	}
 	req->cur_data.iov_len += len;
 	req->skip -= len;

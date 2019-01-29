@@ -71,6 +71,11 @@ struct PSCOM_req
 	   - fw_send point to req_master
 	*/
 	pscom_req_t *partner_req;
+
+#ifdef PSCOM_CUDA_AWARENESS
+	void		*stage_buf; /* stage buf for non-CUDA-aware connections */
+#endif
+
 	struct pscom_rendezvous_data *rndv_data;
 
 	void (*write_hook)(pscom_req_t *req, char *buf, size_t len);
@@ -261,7 +266,9 @@ struct PSCOM_con
 
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection
-
+#ifdef PSCOM_CUDA_AWARENESS
+	unsigned int		is_gpu_aware; // we can safely pass pointers to GPU buffers to this connection
+#endif
 	int			suspend_on_demand_portno; // remote listening portno on suspended connections
 	pscom_con_id_t		id;		// Process local unique connection id
 
@@ -480,6 +487,11 @@ typedef uint8_t pscom_msgtype_t;
 #define PSCOM_MSGTYPE_GW_ENVELOPE	10
 #define PSCOM_MSGTYPE_GW_CTRL		11
 
+#ifdef PSCOM_CUDA_AWARENESS
+#define PSCOM_IF_CUDA(expr) expr
+#else
+#define PSCOM_IF_CUDA(expr) 0
+#endif
 
 extern int mt_locked;
 

@@ -144,6 +144,18 @@ void pscom_env_init(void)
 
 #ifdef PSCOM_CUDA_AWARENESS
 	pscom_env_get_int(&pscom.env.cuda, ENV_CUDA);
+
+	pscom_env_get_uint(&pscom.env.cuda_aware_shm, ENV_CUDA_AWARE_SHM);
+	pscom_env_get_uint(&pscom.env.cuda_aware_openib, ENV_CUDA_AWARE_OPENIB);
+	pscom_env_get_uint(&pscom.env.cuda_aware_ucp, ENV_CUDA_AWARE_UCP);
+
+	/* one environment variable disabling CUDA-awareness of all plugins */
+	pscom_env_get_uint(&pscom.env.cuda_aware_plugins, ENV_CUDA_AWARE_PLUGINS);
+	if (pscom.env.cuda_aware_plugins == 0) {
+		pscom.env.cuda_aware_shm    = 0;
+		pscom.env.cuda_aware_openib = 0;
+		pscom.env.cuda_aware_ucp    = 0;
+	}
 #endif
 
 	if (pscom.env.rendezvous_size != (unsigned)~0)

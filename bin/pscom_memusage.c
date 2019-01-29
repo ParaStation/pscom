@@ -21,12 +21,15 @@
 #include "pscom.h"
 #include "pscom_priv.h"
 
+#undef PSCOM_CUDA_AWARENESS
+
 #ifdef OPENIB
 #include "psoib.c"
 #endif
 
 #ifdef OFED
 #include "psofed.c"
+pscom_t pscom; // fake pscom
 #endif
 
 #if defined(EXTOLL) || defined(VELO)

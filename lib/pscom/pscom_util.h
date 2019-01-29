@@ -14,7 +14,8 @@
 #define _PSCOM_UTIL_H_
 
 #include <sys/uio.h>
-#include "pscom_cuda.h"
+
+#include "pscom_types.h"
 
 #ifndef pscom_min
 #define pscom_min(a,b)      (((a)<(b))?(a):(b))
@@ -37,6 +38,21 @@
 #define unlikely(x)	__builtin_expect((x),0)
 #endif
 
+void pscom_memcpy_gpu_safe(void* dst, const void* src, size_t len);
+
+static inline
+void _pscom_memcpy(void* dst, const void* src, size_t len)
+{
+#ifdef PSCOM_CUDA_AWARENESS
+	if(pscom.env.cuda) {
+		pscom_memcpy_gpu_safe(dst, src, len);
+	} else
+#endif
+	{
+		memcpy(dst, src, len);
+	}
+}
+
 /* iovlen : number of blocks in iov. return bytelen of iov */
 static inline
 size_t pscom_iovec_len(struct iovec *iov, size_t iovlen)
@@ -57,7 +73,7 @@ void pscom_read_from_iov(char *data, struct iovec *iov, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			pscom_memcpy(data, iov->iov_base, copy);
+			_pscom_memcpy(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
 			iov->iov_base += copy;
@@ -74,7 +90,7 @@ void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			pscom_memcpy(iov->iov_base, data, copy);
+			_pscom_memcpy(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
 			iov->iov_base += copy;
@@ -106,7 +122,7 @@ void pscom_memcpy_to_iov(const struct iovec *iov, char *data, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			pscom_memcpy(iov->iov_base, data, copy);
+			_pscom_memcpy(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
 		}
@@ -121,7 +137,7 @@ void pscom_memcpy_from_iov(char *data, const struct iovec *iov, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			pscom_memcpy(data, iov->iov_base, copy);
+			_pscom_memcpy(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
 		}
@@ -138,6 +154,5 @@ char *pscom_strncpy0(char *dest, const char *src, size_t n)
     dest[n - 1] = 0;
     return dest;
 }
-
 
 #endif /* _PSCOM_UTIL_H_ */

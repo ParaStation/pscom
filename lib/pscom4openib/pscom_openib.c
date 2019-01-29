@@ -183,7 +183,7 @@ unsigned int pscom_openib_rma_mem_register(pscom_con_t *con, pscom_rendezvous_da
 
 	rd->msg.arch.openib.padding_size = (IB_RNDV_PADDING_SIZE - ((long long int)rd->msg.data) % IB_RNDV_PADDING_SIZE) % IB_RNDV_PADDING_SIZE;
 
-	memcpy(rd->msg.arch.openib.padding_data, rd->msg.data, rd->msg.arch.openib.padding_size);
+	memcpy(rd->msg.arch.openib.padding_data, rd->msg.data, rd->msg.arch.openib.padding_size); // ToDo: _pscom_memcpy?
 
 	/* get mem region */
 	perf_add("openib_acquire_rma_mreg");
@@ -390,6 +390,10 @@ static
 void pscom_openib_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_OPENIB;
+
+#ifdef PSCOM_CUDA_AWARENESS
+	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_openib;
+#endif
 
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;

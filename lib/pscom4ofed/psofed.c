@@ -27,6 +27,7 @@
 /* #include <sysfs/libsysfs.h> */
 #include <infiniband/verbs.h>
 
+#include "pscom_priv.h"
 #include "pscom_util.h"
 #include "psofed.h"
 #include "list.h"

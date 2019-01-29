@@ -35,6 +35,8 @@
 #include "pscom_types.h"
 #define VERSION "PSCOM4PSM_PP1.0"
 
+#undef PSCOM_CUDA_AWARENESS
+
 struct PSCOM {
 	struct {
 		unsigned int readahead;

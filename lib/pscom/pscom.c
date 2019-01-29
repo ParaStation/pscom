@@ -41,6 +41,7 @@
 #include "pscom_ufd.h"
 #include "pscom_str_util.h"
 #include "pscom_con.h"
+#include "pscom_cuda.h"
 #include "pscom_env.h"
 #include "pslib.h"
 #include "pscom_async.h"
@@ -265,6 +266,7 @@ void pscom_cleanup(void)
 		pscom_sock_t *sock = list_entry(pscom.sockets.next, pscom_sock_t, next);
 		pscom_close_socket(&sock->pub);
 	}
+
 	pscom_plugins_destroy();
 	pscom_pslib_cleanup();
 	if (pscom.env.debug >= D_STATS) pscom_dump_reqstat(pscom_debug_stream());
@@ -367,6 +369,9 @@ pscom_err_t pscom_init(int pscom_version)
 	pscom_pslib_init();
 	pscom_env_init();
 	pscom_debug_init();
+#ifdef PSCOM_CUDA_AWARENESS
+	pscom_cuda_init();
+#endif
 
 	if (pscom.env.sigsuspend) {
 		signal(pscom.env.sigsuspend, _pscom_suspend_sighandler);

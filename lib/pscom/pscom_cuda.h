@@ -1,72 +1,84 @@
 #ifndef _PSCOM_CUDA_H_
 #define _PSCOM_CUDA_H_
 
+#include "pscom_priv.h"
+
 #ifdef PSCOM_CUDA_AWARENESS
+
 #include <cuda.h>
 #include <cuda_runtime.h>
 #include <cuda_runtime_api.h>
 #include <driver_types.h>
 
+#define MIN(a,b)      (((a)<(b))?(a):(b))
+
+int _pscom_is_gpu_mem(const void* ptr, size_t length);
+
 static inline
-int pscom_check_for_gpu_ptr(void* ptr)
+int _pscom_buffer_needs_staging(const void* ptr, pscom_con_t* con)
 {
-	int ret, type;
-	struct cudaPointerAttributes attr;
+	/* (No connection (=ANY recv) or not gpu aware con) and GPU mem */
+	return ((con == NULL) || !con->is_gpu_aware) && _pscom_is_gpu_mem(ptr, 1 /* length */);
+}
 
-	/* Try to check via CUDA driver API: */
-	ret = cuPointerGetAttribute(&type, CU_POINTER_ATTRIBUTE_MEMORY_TYPE, (CUdeviceptr)ptr);
+static inline
+void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
+{
+	pscom_con_t *con = req->pub.connection? get_con(req->pub.connection) : NULL;
 
-	if(ret == CUDA_SUCCESS) {
-		if(type == CU_MEMORYTYPE_DEVICE) {
-			return 1;
-		} else {
-			assert(type == CU_MEMORYTYPE_HOST);
-			return 0;
+	if (_pscom_buffer_needs_staging(req->pub.data, con)) {
+		req->stage_buf = req->pub.data;
+		req->pub.data = malloc(req->pub.data_len);
+
+		/* we only have to copy in case of send requests */
+		if (copy) {
+			cudaMemcpy(req->pub.data, req->stage_buf, req->pub.data_len, cudaMemcpyDeviceToHost);
 		}
 	}
+}
 
-	if(ret != CUDA_ERROR_INVALID_VALUE) {
+static inline
+void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
+{
+	if (req->stage_buf != NULL) {
 
-		/* Try to check via CUDA runtime API: */
-		ret = cudaPointerGetAttributes(&attr, ptr);
-
-		if(ret == cudaSuccess) {
-			if(attr.memoryType == cudaMemoryTypeDevice) {
-				return 1;
-			} else {
-				assert(attr.memoryType == cudaMemoryTypeDevice);
-				return 0;
-			}
+		/* we only have to copy in case of recv requests */
+		if (copy) {
+			size_t copy_len = MIN(req->pub.data_len, req->pub.header.data_len);
+			cudaMemcpy(req->stage_buf, req->pub.data, copy_len, cudaMemcpyHostToDevice);
 		}
 
-		assert(ret == cudaErrorInvalidValue);
+		free(req->pub.data);
+		req->pub.data = req->stage_buf;
+		req->stage_buf = NULL;
 	}
 }
 
 static inline
-void pscom_memcpy_gpu_safe(void* dst, void* src, size_t len)
+void pscom_cuda_init(void)
 {
-	cudaMemcpy(dst, src, len, cudaMemcpyDefault);
-}
+	struct cudaDeviceProp dev_props;
 
-static inline
-void pscom_memcpy(void* dst, void* src, size_t len)
-{
-	if(pscom.env.cuda) {
-		pscom_memcpy_gpu_safe(dst, src, len);
-	} else {
-		memcpy(dst, src, len);
+	if (pscom.env.cuda) {
+		/* check if the device shares a unifed address space with the host */
+		cudaGetDeviceProperties(&dev_props, 0);
+		assert(dev_props.unifiedAddressing);
 	}
 }
 
-#else
+#else /* PSCOM_CUDA_AWARENESS */
 
 static inline
-void pscom_memcpy(void* dst, void* src, size_t len)
+void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 {
-	memcpy(dst, src, len);
+	return;
 }
 
-#endif
+static inline
+void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
+{
+	return;
+}
 
-#endif
+#endif /* PSCOM_CUDA_AWARENESS */
+#endif /* _PSCOM_CUDA_H_ */

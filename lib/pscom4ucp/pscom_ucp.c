@@ -208,6 +208,10 @@ void pscom_ucp_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_UCP;
 
+#ifdef PSCOM_CUDA_AWARENESS
+	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_ucp;
+#endif
+
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
 	con->write_stop = pscom_poll_write_stop;
