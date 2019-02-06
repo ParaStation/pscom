@@ -96,6 +96,7 @@
 #define ENV_OPENIB_IGNORE_WRONG_OPCODES "PSP_OPENIB_IGNORE_WRONG_OPCODES" /* bool: ignore wrong cq opcodes */
 #define ENV_OPENIB_LID_OFFSET "PSP_OPENIB_LID_OFFSET" /* int: offset to base LID (adaptive routing) */
 #define ENV_OPENIB_MCACHE_SIZE "PSP_OPENIB_MCACHE_SIZE" /* uint: max #entries in the memory registration cache. 0:disable cache */
+#define ENV_OPENIB_MALLOC_OPTS "PSP_OPENIB_MALLOC_OPTS" /* bool: Set special options for malloc in favor of the registration cache  */
 #define ENV_OPENIB_RNDV_FALLBACKS "PSP_OPENIB_RNDV_FALLBACKS" /* bool: Use eager/sw-rndv if memory cannot be registered for rndv? default: 1(yes)*/
 
 

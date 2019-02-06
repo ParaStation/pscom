@@ -152,6 +152,7 @@ extern int psoib_event_count; /* bool. Be busy if outstanding_cq_entries is to h
 extern int psoib_ignore_wrong_opcodes; /* bool: ignore wrong cq opcodes */
 extern int psoib_lid_offset; /* int: offset to base LID (adaptive routing) */
 extern unsigned psoib_mregion_cache_max_size; /* uint: max #entries in the memory registration cache. 0:disable cache */
+extern int psoib_mregion_malloc_options; /* bool: Set special options for malloc in favor of the registration cache  */
 extern int psoib_rndv_fallbacks; /* bool: Use eager/sw-rndv if memory cannot be registered for rndv? default: 1(yes)*/
 /*
  * Information

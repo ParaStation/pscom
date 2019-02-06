@@ -170,7 +170,6 @@ int psoib_global_sendq = 0; /* bool. Use one sendqueue for all connections? */
 int psoib_event_count = 1; /* bool. Be busy if outstanding_cq_entries is to high? */
 int psoib_ignore_wrong_opcodes = 0; /* bool: ignore wrong cq opcodes */
 int psoib_lid_offset; /* int: offset to base LID (adaptive routing) */
-int psoib_use_mcache = 1; /* bool. Use the mcache. */
 int psoib_rndv_fallbacks = 1; /* bool: Use eager/sw-rndv if memory cannot be registered for rndv? */
 
 struct psoib_stat_s {

@@ -23,7 +23,7 @@ struct psoib_mregion_cache {
 	unsigned	use_cnt;
 } psoib_mregion_cache_t;
 
-
+int psoib_mregion_malloc_options = 1;
 unsigned psoib_mregion_cache_max_size = PSOIB_MREGION_CACHE_MAX_SIZE_DEFAULT;
 static unsigned psoib_mregion_cache_size = 0;
 static LIST_HEAD(psoib_mregion_cache);
@@ -182,14 +182,16 @@ void psoib_mregion_malloc_init(void)
 	} else if (psoib_mregion_cache_max_size) {
 		/* Rendezvous and mregion cache is enabled! */
 
-		/* We have to prevent free() from returning memory back to the OS: */
-		/* See 'man mallopt(3) / M_MMAP_MAX': Setting this parameter to 0
-		   disables the use of mmap(2) for servicing large allocation requests. */
-		mallopt(M_MMAP_MAX, 0);
+		if (psoib_mregion_malloc_options) {
+			/* We have to prevent free() from returning memory back to the OS: */
+			/* See 'man mallopt(3) / M_MMAP_MAX': Setting this parameter to 0
+			   disables the use of mmap(2) for servicing large allocation requests. */
+			mallopt(M_MMAP_MAX, 0);
 
-		/* See 'man mallopt(3) / M_TRIM_THRESHOLD': Setting M_TRIM_THRESHOLD to -1
-		   disables trimming completely. */
-		mallopt(M_TRIM_THRESHOLD, -1);
+			/* See 'man mallopt(3) / M_TRIM_THRESHOLD': Setting M_TRIM_THRESHOLD to -1
+			   disables trimming completely. */
+			mallopt(M_TRIM_THRESHOLD, -1);
+		}
 
 		if (__morecore == __default_morecore) {
 			psoib_safe_mreg_end = psoib_safe_mreg_start = __morecore(0);

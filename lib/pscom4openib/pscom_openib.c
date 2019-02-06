@@ -459,6 +459,7 @@ void pscom_openib_init(void)
 
 #if PSOIB_USE_MREGION_CACHE
 	pscom_env_get_uint(&psoib_mregion_cache_max_size, ENV_OPENIB_MCACHE_SIZE);
+	pscom_env_get_int (&psoib_mregion_malloc_options, ENV_OPENIB_MALLOC_OPTS);
 	psoib_mregion_cache_init();
 #endif
 	pscom_env_get_int(&psoib_rndv_fallbacks, ENV_OPENIB_RNDV_FALLBACKS);
