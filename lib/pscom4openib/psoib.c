@@ -832,9 +832,6 @@ int psoib_init_hca(hca_info_t *hca_info)
 #ifdef IB_USE_RNDV
     INIT_LIST_HEAD(&hca_info->rma_reqs);
     hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
-#if PSOIB_USE_MREGION_CACHE
-    psoib_mregion_cache_init();
-#endif /* PSOIB_USE_MREGION_CACHE */
 #endif /* IB_USE_RNDV */
 
     return 0;
