@@ -1289,6 +1289,7 @@ void _pscom_post_rma_read(pscom_req_t *req)
 	rd->msg.data_len = req->pub.xheader.rma_read.src_len;
 
 	req_rma->pub.xheader_len = pscom_rendezvous_msg_size(len_arch);
+	req_rma->pub.ops.io_done = pscom_request_free;
 	_pscom_post_send_direct(con, req_rma, PSCOM_MSGTYPE_RMA_READ);
 }
 
