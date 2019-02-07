@@ -118,6 +118,10 @@ typedef enum PSCOM_op {
 
 #define PSCOM_REQ_STATE_GRECV_MERGED		0x00004000
 
+#ifndef __attribute_nonstring__
+#define	__attribute_nonstring__
+#endif
+
 typedef unsigned int pscom_req_state_t;
 
 
@@ -227,7 +231,7 @@ struct PSCOM_con_info
 	void	*id;
 	/* Be aware: name is not null-terminated! A printf format that fit is
 	   printf("%.8s", con_info->name); */
-	char	name[8] __attribute__ ((nonstring));
+	char	name[8]  __attribute_nonstring__ ;
 };
 
 
