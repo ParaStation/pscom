@@ -32,16 +32,17 @@
 #include <error.h>
 #include <errno.h>
 #include <inttypes.h>
-
+#include "pscom_types.h"
 #define VERSION "PSCOM4PSM_PP1.0"
 
-typedef struct PSCOM {
+struct PSCOM {
 	struct {
 		unsigned int readahead;
 		unsigned int psm_uniq_id;
 		int debug_stats;
 	} env;
-} pscom_t;
+};
+
 pscom_t	pscom = {
 	.env = {
 		.readahead = 100,
