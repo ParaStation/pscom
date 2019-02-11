@@ -368,16 +368,20 @@ void psucp_con_cleanup(psucp_con_info_t *con_info)
 		}
 	}
 
-	request = ucp_ep_close_nb(con_info->ucp_ep,
-				  UCP_EP_CLOSE_MODE_FLUSH);
-//				  UCP_EP_CLOSE_MODE_FORCE);
-	if (UCS_PTR_IS_ERR(request)) goto err_close;
 
-	ucp_worker_progress(hca_info->ucp_worker);
+	if (con_info->ucp_ep) {
+		request = ucp_ep_close_nb(con_info->ucp_ep,
+					  UCP_EP_CLOSE_MODE_FLUSH);
+//					  UCP_EP_CLOSE_MODE_FORCE);
 
-	if (request) {
-		// ToDo: Is it safe to free the request without waiting for completion?
-		ucp_request_free(request);
+		if (UCS_PTR_IS_ERR(request)) goto err_close;
+
+		ucp_worker_progress(hca_info->ucp_worker);
+
+		if (request) {
+			// ToDo: Is it safe to free the request without waiting for completion?
+			ucp_request_free(request);
+		}
 	}
 	return;
 err_close:
@@ -431,6 +435,7 @@ int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 	return 0;
 	/* --- */
 err_ep_create:
+	con_info->ucp_ep = NULL;
 	psucp_err_status("ucp_ep_create()", status);
 	psucp_dprint(D_ERR, "psucp_con_connect() : %s", psucp_err_str);
 	return -1;
