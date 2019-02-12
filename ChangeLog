@@ -1,3 +1,18 @@
+2019-02-12  Jens Hauke  <hauke@par-tec.com>	-	5.2.9-1
+
+2019-02-11  Simon Pickartz <pickartz@par-tec.com>
+
+	* Fix: UCP: Connection cleanup after a failing connect
+	(e.g. UCX_TLS with unknown tls)
+
+2019-02-06  Carsten Clauss <clauss@par-tec.com>
+
+	* Fix memory leak in pscom4openib's RNDV protocol for the
+	RDMA_WRITE case
+
+	* Enhancement: env PSP_OPENIB_MALLOC_OPTS for explicitly disabling
+	the usage of mallopt() in the pscom4open RNDV case.
+
 2019-01-10  Jens Hauke  <hauke@par-tec.com>	-	5.2.8-1
 
 	* Fix: Error handling after a plugin handshake failure (precon).
