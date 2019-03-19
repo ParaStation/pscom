@@ -91,13 +91,6 @@ void psex_mregion_use_dec(psex_mregion_cache_t *mregc)
 
 
 static
-psex_mregion_cache_t *psex_mregion_get_oldest(void)
-{
-	return list_entry(psex_mregion_cache.prev, psex_mregion_cache_t, next);
-}
-
-
-static
 psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, psex_con_info_t *ci)
 {
 	psex_mregion_cache_t *mregc =
@@ -138,10 +131,13 @@ void psex_mregion_destroy(psex_mregion_cache_t *mregc)
 static
 void psex_mregion_gc(unsigned max_size)
 {
-	psex_mregion_cache_t *mregc;
-	while (psex_mregion_cache_size >= max_size) {
-		mregc = psex_mregion_get_oldest();
-		if (mregc->use_cnt) break;
+	struct list_head *pos, *prev;
+
+	list_for_each_prev_safe(pos, prev, &psex_mregion_cache) {
+		if (psex_mregion_cache_size < max_size) break;
+
+		psex_mregion_cache_t *mregc = list_entry(pos, psex_mregion_cache_t, next);
+		if (mregc->use_cnt) continue;
 
 		psex_mregion_deq(mregc);
 		psex_mregion_destroy(mregc);

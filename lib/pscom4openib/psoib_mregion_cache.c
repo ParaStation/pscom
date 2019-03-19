@@ -96,13 +96,6 @@ void psoib_mregion_use_dec(psoib_mregion_cache_t *mregc)
 
 
 static
-psoib_mregion_cache_t *psoib_mregion_get_oldest(void)
-{
-	return list_entry(psoib_mregion_cache.prev, psoib_mregion_cache_t, next);
-}
-
-
-static
 psoib_mregion_cache_t *psoib_mregion_create(void *buf, size_t size, psoib_con_info_t *ci)
 {
 	psoib_mregion_cache_t *mregc =
@@ -122,7 +115,7 @@ psoib_mregion_cache_t *psoib_mregion_create(void *buf, size_t size, psoib_con_in
 	size = (size + page_mask) & ~page_mask;
 	buf = (void*)((unsigned long) buf & ~page_mask);
 #endif
-	
+
 	mregc->buf = buf;
 	mregc->size = size;
 	mregc->ci = ci;
@@ -148,10 +141,13 @@ void psoib_mregion_destroy(psoib_mregion_cache_t *mregc)
 static
 void psoib_mregion_gc(unsigned max_size)
 {
-	psoib_mregion_cache_t *mregc;
-	while (psoib_mregion_cache_size >= max_size) {
-		mregc = psoib_mregion_get_oldest();
-		if (mregc->use_cnt) break;
+	struct list_head *pos, *prev;
+
+	list_for_each_prev_safe(pos, prev, &psoib_mregion_cache) {
+		if (psoib_mregion_cache_size < max_size) break;
+
+		psoib_mregion_cache_t *mregc = list_entry(pos, psoib_mregion_cache_t, next);
+		if (mregc->use_cnt) continue;
 
 		psoib_mregion_deq(mregc);
 		psoib_mregion_destroy(mregc);
