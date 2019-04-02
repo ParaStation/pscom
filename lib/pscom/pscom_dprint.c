@@ -19,6 +19,8 @@
 #include <string.h>
 #include <wordexp.h>
 #include <errno.h>
+#include <time.h>
+#include <sys/time.h>
 #include "pscom_debug.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
@@ -27,6 +29,8 @@ static char __pscom_debug_linefmt[100] = "";
 FILE * __pscom_debug_stream = NULL;
 FILE *pscom_debug_file = NULL; // Final output.
 char pscom_debug_filename[FILENAME_MAX] = "";
+struct timeval pscom_debug_time_start;
+enum { TIME_NONE, TIME_US, TIME_WALL, TIME_DATE, TIME_DELTA } pscom_debug_time_mode = TIME_NONE;
 
 static
 char *_pscom_debug_linefmt(void)
@@ -39,16 +43,105 @@ char *_pscom_debug_linefmt(void)
 		}
 
 		snprintf(__pscom_debug_linefmt, sizeof(__pscom_debug_linefmt),
-			 "<PSP:%s:%d:%%s>\n", hostname, getpid());
+			 "<PSP:%%s%s:%d:%%s>\n", hostname, getpid());
 	}
 
 	return __pscom_debug_linefmt;
 }
 
 
+static
+void pscom_gettimeofday(struct timeval *tv) {
+	if (gettimeofday(tv, NULL)) {
+		// Error
+		tv->tv_sec = tv->tv_usec = 0;
+	}
+}
+
+static
+char *pscom_dtimestr(void) {
+	static char timestr[30];
+	struct timeval time;
+	timestr[0] = '\0'; // Default
+
+	switch (pscom_debug_time_mode) {
+	case TIME_NONE:
+		break;
+	case TIME_WALL:
+		// Seconds.microseconds
+		pscom_gettimeofday(&time);
+		snprintf(timestr, sizeof(timestr), "%04lu.%06lu:",
+			 time.tv_sec, time.tv_usec);
+		break;
+	case TIME_DATE:
+		// YYYY-MM-DD_hh:mm:ss.uuuuuu
+		pscom_gettimeofday(&time);
+		char fmt[20];
+		strftime(fmt, sizeof(fmt), "%Y-%m-%d_%H:%M:%S", localtime(&time.tv_sec));
+		snprintf(timestr, sizeof(timestr), "%s.%06lu:",
+			 fmt, time.tv_usec);
+		break;
+	case TIME_DELTA:
+	case TIME_US:
+		// Seconds.microseconds since start or last call.
+		pscom_gettimeofday(&time);
+		if (time.tv_usec < pscom_debug_time_start.tv_usec) {
+			time.tv_usec += 1000000;
+			time.tv_sec -= 1;
+		}
+		time.tv_usec -= pscom_debug_time_start.tv_usec;
+		time.tv_sec -= pscom_debug_time_start.tv_sec;
+
+		snprintf(timestr, sizeof(timestr), "%04lu.%06lu:",
+			 time.tv_sec, time.tv_usec);
+		if (pscom_debug_time_mode == TIME_DELTA) {
+			pscom_gettimeofday(&pscom_debug_time_start);
+		}
+		break;
+	}
+	return timestr;
+}
+
+
+void pscom_dtime_init(void) {
+	const char *mode = pscom.env.debug_timing;
+
+	if (!mode || !mode[0] || (0 == strcmp(mode, "0"))) {
+		// unset, "" or "0"
+		pscom_debug_time_mode = TIME_NONE;
+	} else if ((0 == strcmp(mode, "wall"))) {
+		pscom_debug_time_mode = TIME_WALL;
+	} else if ((0 == strcmp(mode, "date"))) {
+		pscom_debug_time_mode = TIME_DATE;
+	} else if ((0 == strcmp(mode, "delta"))) {
+		pscom_debug_time_mode = TIME_DELTA;
+	} else if ((0 == strcmp(mode, "1")) ||
+		   (0 == strcmp(mode, "us"))) {
+		pscom_debug_time_mode = TIME_US;
+	} else {
+		DPRINT(D_WARN, "Unknown " ENV_DEBUG_TIMING ". Expecting '0', '1', 'us', 'date', 'wall' or 'delta'.");
+		pscom_debug_time_mode = TIME_US;
+	}
+
+	switch (pscom_debug_time_mode) {
+	case TIME_DELTA:
+	case TIME_US:
+		pscom_gettimeofday(&pscom_debug_time_start);
+		if (D_INFO <= pscom.env.debug) {
+			char start[20];
+			strftime(start, sizeof(start), "%Y-%m-%d %H:%M:%S", localtime(&pscom_debug_time_start.tv_sec));
+			DPRINT(D_INFO, "start %s.%06lu", start, pscom_debug_time_start.tv_usec);
+		}
+		break;
+	default:
+		break;
+	}
+}
+
+
 void pscom_debug_set_prefix(const char *prefix)
 {
-	char s[sizeof(__pscom_debug_linefmt) - 10];
+	char s[sizeof(__pscom_debug_linefmt) - 12];
 	char *t;
 
 	// Output to file? Dont change the prefix.
@@ -60,7 +153,7 @@ void pscom_debug_set_prefix(const char *prefix)
 
 	// Use new prefix
 	snprintf(__pscom_debug_linefmt, sizeof(__pscom_debug_linefmt),
-		 "<PSP:%s:%%s>\n", s);
+		 "<PSP:%%s%s:%%s>\n", s);
 }
 
 
@@ -72,7 +165,7 @@ FILE *_pscom_debug_file()
 
 	pscom_debug_file = fopen(pscom_debug_filename, "a");
 	if (pscom_debug_file) {
-		strcpy(__pscom_debug_linefmt, "%s\n");
+		strcpy(__pscom_debug_linefmt, "%s%s\n");
 	} else {
 		// Error. Use stderr;
 		pscom_debug_file = stderr;
@@ -94,7 +187,7 @@ int pscom_dwrite(const char *_msg, size_t len)
 
 	for (line = strtok_r(msg, "\n", &saveptr); line; line = strtok_r(NULL, "\n", &saveptr)) {
 		// foreach line do:
-		int rc = fprintf(out, _pscom_debug_linefmt(), line);
+		int rc = fprintf(out, _pscom_debug_linefmt(), pscom_dtimestr(), line);
 		if (rc < 0) { ret = rc; break; /* error */ }
 		ret += rc;
 	}

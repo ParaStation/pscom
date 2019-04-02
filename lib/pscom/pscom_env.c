@@ -122,6 +122,9 @@ void pscom_env_init(void)
 		pscom_env_get_int(&pscom.env.debug, ENV_DEBUG);
 	}
 
+	pscom_env_get_str(&pscom.env.debug_timing, ENV_DEBUG_TIMING);
+	pscom_dtime_init();
+
 	if (pscom_pslib_available) {
 		pscom_env_get_str(&pscom.env.info, ENV_INFO);
 		if (pscom.env.info) pscom_info_connect(pscom.env.info);

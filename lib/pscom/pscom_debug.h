@@ -59,6 +59,7 @@ char *pscom_debug_req_str(pscom_req_t *req);
 
 
 void pscom_debug_init(void);
+void pscom_dtime_init(void);
 
 /* Debug Level */
 #define D_FATAL	0

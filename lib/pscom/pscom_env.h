@@ -18,6 +18,15 @@
 #define ENV_DEBUG     "PSP_DEBUG"
 /* output filename */
 #define ENV_DEBUG_OUT "PSP_DEBUG_OUT"
+
+/* Add timing to debug output:
+   0		off (default),
+   1,"us"	"ssss.uuuuuu" seconds and microseconds since pscom_init
+   "date"	"YYYY-MM-DD_hh:mm:ss.uuuuuu" in localtime
+   "wall"	"ssss.uuuuuu" seconds and microseconds since the Epoch
+   "delta"	"ssss.uuuuuu" seconds and microseconds since last log
+*/
+#define ENV_DEBUG_TIMING "PSP_DEBUG_TIMING"
 #define ENV_INFO "PSP_INFO"
 
 #define ENV_CONFIG_FILES "/dev/environment:.parastation:$HOME/.parastation:/etc/pscom.conf"
@@ -202,6 +211,7 @@ struct PSCOM_env {
 	char		*info;
 	char		*plugindir;
 
+	char		*debug_timing;
 	int		debug_version;
 	int		debug_stats;
 	int		debug_contype;
@@ -244,6 +254,7 @@ struct PSCOM_env {
 	.info = NULL,							\
 	.plugindir = "",						\
 									\
+	.debug_timing = NULL,						\
 	.debug_version = 0,						\
 	.debug_stats = 0,						\
 	.debug_contype = 0,						\
