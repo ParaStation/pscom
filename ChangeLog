@@ -1,3 +1,18 @@
+2019-04-08  Jens Hauke  <hauke@par-tec.com>
+	* Enhancement:
+	Optional debug output with timing (PSP_DEBUG_TIMING)
+
+	PSP_DEBUG_TIMING:
+	0       off (default),
+	1,"us"  "ssss.uuuuuu" seconds and microseconds since pscom_init
+	"date"  "YYYY-MM-DD_hh:mm:ss.uuuuuu" in localtime
+	"wall"  "ssss.uuuuuu" seconds and microseconds since the Epoch
+	"delta" "ssss.uuuuuu" seconds and microseconds since last log
+
+2019-03-19  Simon Pickartz <pickartz@par-tec.com>
+
+	* Fix: pscom4velo (Extoll): registration caches
+
 2019-02-12  Jens Hauke  <hauke@par-tec.com>	-	5.2.9-1
 
 2019-02-11  Simon Pickartz <pickartz@par-tec.com>
