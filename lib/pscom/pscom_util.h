@@ -31,9 +31,10 @@
 #define __builtin_expect(x, expected_value) (x)
 #endif
 
+#ifndef likely
 #define likely(x)	__builtin_expect((x),1)
 #define unlikely(x)	__builtin_expect((x),0)
-
+#endif
 
 /* iovlen : number of blocks in iov. return bytelen of iov */
 static inline
@@ -136,18 +137,6 @@ char *pscom_strncpy0(char *dest, const char *src, size_t n)
     dest[n - 1] = 0;
     return dest;
 }
-
-
-/* Somewhere in the middle of the GCC 2.96 development cycle, we implemented
-   a mechanism by which the user can annotate likely branch directions and
-   expect the blocks to be reordered appropriately.  Define __builtin_expect
-   to nothing for earlier compilers.  */
-#if __GNUC__ == 2 && __GNUC_MINOR__ < 96
-#define __builtin_expect(x, expected_value) (x)
-#endif
-
-#define likely(x)	__builtin_expect((x),1)
-#define unlikely(x)	__builtin_expect((x),0)
 
 
 #endif /* _PSCOM_UTIL_H_ */
