@@ -10,12 +10,56 @@
  * Author:	Simon Pickartz <pickartz@par-tec.com>
  */
 
+#include <errno.h>
+
 #include "pscom_cuda.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
 
 
 #ifdef PSCOM_CUDA_AWARENESS
+
+pscom_err_t pscom_cuda_init(void)
+{
+	int ret = PSCOM_SUCCESS;
+	int device_count, i;
+	struct cudaDeviceProp dev_props;
+	cudaError_t cuda_err;
+
+	if (pscom.env.cuda) {
+		if (cudaGetDeviceCount(&device_count) != cudaSuccess) {
+			cuda_err = cudaGetLastError();
+			DPRINT(D_ERR, "Could not determine the number of CUDA devices [CUDA error code: '%s' (%d)]",
+					cudaGetErrorName(cuda_err), cuda_err);
+			errno = EFAULT;
+			goto err_out;
+		}
+
+		if (device_count == 0) {
+			DPRINT(D_WARN, "Could not find any CUDA devices");
+			goto out;
+		}
+
+		/* check if the devices share a unifed address space with the host */
+		for (i=0; i<device_count; ++i) {
+			cudaGetDeviceProperties(&dev_props, i);
+
+			if (dev_props.unifiedAddressing == 0) {
+				DPRINT(D_ERR, "CUDA is missing support for Unified Virtual Addressing (UVA)");
+				errno = ENOTSUP;
+				goto err_out;
+			}
+		}
+	}
+
+out:
+	return ret;
+
+err_out:
+	ret = PSCOM_ERR_STDERROR;
+	return ret;
+}
+
 /* simply map to internal _pscom_memcpy() */
 void pscom_memcpy(void* dst, const void* src, size_t len)
 {

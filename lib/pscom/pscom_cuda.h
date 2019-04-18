@@ -12,6 +12,7 @@
 
 #define MIN(a,b)      (((a)<(b))?(a):(b))
 
+pscom_err_t pscom_cuda_init(void);
 int _pscom_is_gpu_mem(const void* ptr, size_t length);
 
 static inline
@@ -51,18 +52,6 @@ void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
 		free(req->pub.data);
 		req->pub.data = req->stage_buf;
 		req->stage_buf = NULL;
-	}
-}
-
-static inline
-void pscom_cuda_init(void)
-{
-	struct cudaDeviceProp dev_props;
-
-	if (pscom.env.cuda) {
-		/* check if the device shares a unifed address space with the host */
-		cudaGetDeviceProperties(&dev_props, 0);
-		assert(dev_props.unifiedAddressing);
 	}
 }
 

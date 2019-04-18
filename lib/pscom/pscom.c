@@ -327,7 +327,7 @@ void pscom_set_debug(int level)
 __attribute__((visibility("default")))
 pscom_err_t pscom_init(int pscom_version)
 {
-	static int init=0;
+	static int init=1;
 
 	perf_add("init");
 
@@ -341,9 +341,9 @@ pscom_err_t pscom_init(int pscom_version)
 		);
 		return PSCOM_ERR_UNSUPPORTED_VERSION;
 	}
-	if (init)
-		return PSCOM_SUCCESS;
-	init = 1;
+
+	if (init <= 0) goto out;
+	init = PSCOM_SUCCESS;
 
 	{
 		int res_mutex_init;
@@ -369,8 +369,9 @@ pscom_err_t pscom_init(int pscom_version)
 	pscom_pslib_init();
 	pscom_env_init();
 	pscom_debug_init();
+
 #ifdef PSCOM_CUDA_AWARENESS
-	pscom_cuda_init();
+	if ((init = pscom_cuda_init()) != PSCOM_SUCCESS)  goto out;
 #endif
 
 	if (pscom.env.sigsuspend) {
@@ -378,7 +379,9 @@ pscom_err_t pscom_init(int pscom_version)
 	}
 
 	atexit(pscom_cleanup);
-	return PSCOM_SUCCESS;
+
+out:
+	return init;
 }
 
 
