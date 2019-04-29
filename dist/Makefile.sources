@@ -124,6 +124,8 @@ lib/pscom/pscom_async.c \
 lib/pscom/pscom_async.h \
 lib/pscom/pscom_con.c \
 lib/pscom/pscom_con.h \
+lib/pscom/pscom_cuda.c \
+lib/pscom/pscom_cuda.h \
 lib/pscom/pscom_debug.c \
 lib/pscom/pscom_debug.h \
 lib/pscom/pscom_dprint.c \
