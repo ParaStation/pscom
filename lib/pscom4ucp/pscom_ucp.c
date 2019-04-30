@@ -247,6 +247,9 @@ void pscom_ucp_init(void)
 	INIT_LIST_HEAD(&pscom_ucp.reader.next);
 	pscom_ucp.reader.do_read = pscom_ucp_do_read;
 	pscom_ucp.reader_user = 0;
+
+	/* ensure the initialization of the UCP memory cache */
+	psucp_init();
 }
 
 
