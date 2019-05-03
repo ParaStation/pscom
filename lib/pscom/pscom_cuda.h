@@ -18,8 +18,10 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length);
 static inline
 int _pscom_buffer_needs_staging(const void* ptr, pscom_con_t* con)
 {
-	/* (No connection (=ANY recv) or not gpu aware con) and GPU mem */
-	return ((con == NULL) || !con->is_gpu_aware) && _pscom_is_gpu_mem(ptr, 1 /* length */);
+	/* CUDA-awareness enabled AND
+	 * (No connection (=ANY recv) OR not gpu aware con) AND
+	 * GPU mem */
+	return pscom.env.cuda && ((con == NULL) || !con->is_gpu_aware) && _pscom_is_gpu_mem(ptr, 1 /* length */);
 }
 
 static inline
