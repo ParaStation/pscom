@@ -63,16 +63,50 @@ err_out:
 /* simply map to internal _pscom_memcpy() */
 void pscom_memcpy(void* dst, const void* src, size_t len)
 {
-	_pscom_memcpy(dst, src, len);
+	_pscom_memcpy_default(dst, src, len);
 }
 
-/* simply map to internal _pscom_check_for_gpu_ptr() */
+/* simply map to internal _pscom_is_gpu_ptr() */
 int pscom_is_gpu_mem(const void* ptr)
 {
 	return _pscom_is_gpu_mem(ptr, 1);
 }
 
-void pscom_memcpy_gpu_safe(void* dst, const void* src, size_t len)
+
+/**
+ * \brief GPU-safe memcpy from user to host memory
+ *
+ * For details see _pscom_memcpy_from_user().
+ */
+void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
+{
+	if (_pscom_is_gpu_mem(src, len)) {
+		cudaMemcpy(dst, src, len, cudaMemcpyDeviceToHost);
+	} else {
+		memcpy(dst, src, len);
+	}
+}
+
+/**
+ * \brief GPU-safe memcpy from host to user memory
+ *
+ * For details see _pscom_memcpy_from_user().
+ */
+void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
+{
+	if (_pscom_is_gpu_mem(dst, len)) {
+		cudaMemcpy(dst, src, len, cudaMemcpyHostToDevice);
+	} else {
+		memcpy(dst, src, len);
+	}
+}
+
+/**
+ * \brief GPU-safe memcpy
+ *
+ * For details see _pscom_memcpy_default().
+ */
+void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 {
 	if (_pscom_is_gpu_mem(dst, len) || _pscom_is_gpu_mem(src, len)) {
 		cudaMemcpy(dst, src, len, cudaMemcpyDefault);
@@ -80,6 +114,7 @@ void pscom_memcpy_gpu_safe(void* dst, const void* src, size_t len)
 		memcpy(dst, src, len);
 	}
 }
+
 
 int _pscom_is_gpu_mem(const void* ptr, size_t length)
 {

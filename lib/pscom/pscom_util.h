@@ -38,19 +38,69 @@
 #define unlikely(x)	__builtin_expect((x),0)
 #endif
 
-void pscom_memcpy_gpu_safe(void* dst, const void* src, size_t len);
+void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len);
+void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len);
+void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len);
 
+
+/* Define different memcpy() variants making assumptions about the the user
+ * buffer (which may be device memory). At this point, we map to their
+ * pscom_memcpy_gpu_safe_*() counterpart to avoid CUDA dependencies, e.g.,
+ * within the pscom plugins.
+ */
+
+/**
+ * \brief Default memcpy variant
+ *
+ * This variant does not make any assumptions on the source and destination
+ * buffers.
+ *
+ * \param [in] dst Pointer to the destination buffer.
+ * \param [in] src Pointer to the source buffer.
+ * \param [in] len Amount of bytes to be copied.
+ */
 static inline
-void _pscom_memcpy(void* dst, const void* src, size_t len)
+void _pscom_memcpy_default(void* dst, const void* src, size_t len)
 {
 #ifdef PSCOM_CUDA_AWARENESS
-	if(pscom.env.cuda) {
-		pscom_memcpy_gpu_safe(dst, src, len);
-	} else
+	pscom_memcpy_gpu_safe_default(dst, src, len);
+#else
+	memcpy(dst, src, len);
 #endif
-	{
-		memcpy(dst, src, len);
-	}
+}
+
+/**
+ * \brief Memcpy from user memory to host memory.
+ *
+ * \param [in] dst Pointer to the destination buffer (within host memory).
+ * \param [in] src Pointer to the source buffer.
+ * \param [in] len Amount of bytes to be copied.
+ */
+static inline
+void _pscom_memcpy_from_user(void* dst, const void* src, size_t len)
+{
+#ifdef PSCOM_CUDA_AWARENESS
+	pscom_memcpy_gpu_safe_from_user(dst, src, len);
+#else
+	memcpy(dst, src, len);
+#endif
+}
+
+/**
+ * \brief Memcpy from host memory to user memory.
+ *
+ * \param [in] dst Pointer to the destination buffer.
+ * \param [in] src Pointer to the source buffer (within host memory).
+ * \param [in] len Amount of bytes to be copied.
+ */
+static inline
+void _pscom_memcpy_to_user(void* dst, const void* src, size_t len)
+{
+#ifdef PSCOM_CUDA_AWARENESS
+	pscom_memcpy_gpu_safe_to_user(dst, src, len);
+#else
+	memcpy(dst, src, len);
+#endif
 }
 
 /* iovlen : number of blocks in iov. return bytelen of iov */
@@ -73,7 +123,7 @@ void pscom_read_from_iov(char *data, struct iovec *iov, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy(data, iov->iov_base, copy);
+			_pscom_memcpy_from_user(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
 			iov->iov_base += copy;
@@ -90,7 +140,7 @@ void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy(iov->iov_base, data, copy);
+			_pscom_memcpy_to_user(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
 			iov->iov_base += copy;
@@ -122,7 +172,7 @@ void pscom_memcpy_to_iov(const struct iovec *iov, char *data, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy(iov->iov_base, data, copy);
+			_pscom_memcpy_to_user(iov->iov_base, data, copy);
 			len -= copy;
 			data += copy;
 		}
@@ -137,7 +187,7 @@ void pscom_memcpy_from_iov(char *data, const struct iovec *iov, size_t len)
 	while (len > 0) {
 		if (iov->iov_len) {
 			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy(data, iov->iov_base, copy);
+			_pscom_memcpy_from_user(data, iov->iov_base, copy);
 			len -= copy;
 			data += copy;
 		}

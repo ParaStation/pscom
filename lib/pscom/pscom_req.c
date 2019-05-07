@@ -197,7 +197,7 @@ size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len)
 	// printf("req_write() %s\n", pscom_dumpstr(buf, pscom_min(len, 32)));
 	if (len <= req->cur_data.iov_len) {
 		if (req->cur_data.iov_base != buf) {
-			_pscom_memcpy(req->cur_data.iov_base, buf, len);
+			_pscom_memcpy_to_user(req->cur_data.iov_base, buf, len);
 		}
 		req->cur_data.iov_base += len;
 		req->cur_data.iov_len -= len;
@@ -205,7 +205,7 @@ size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len)
 		size_t clen = req->cur_data.iov_len;
 		size_t left;
 		if (req->cur_data.iov_base != buf) {
-			_pscom_memcpy(req->cur_data.iov_base, buf, clen);
+			_pscom_memcpy_to_user(req->cur_data.iov_base, buf, clen);
 		}
 		req->cur_data.iov_base += clen;
 		req->cur_data.iov_len = 0;
@@ -238,7 +238,7 @@ void pscom_req_append(pscom_req_t *req, char *buf, size_t len)
 	assert(len <= req->skip);
 
 	if (buf && buf != tail) {
-		_pscom_memcpy(tail, buf, len);
+		_pscom_memcpy_default(tail, buf, len);
 	}
 	req->cur_data.iov_len += len;
 	req->skip -= len;

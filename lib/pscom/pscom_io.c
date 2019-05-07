@@ -901,7 +901,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 		_check_readahead(con, con->in.readahead.iov_len + len);
 		dest = ((char *)con->in.readahead.iov_base) + con->in.readahead.iov_len;
 		if (buf != dest) {
-			_pscom_memcpy(dest, buf, len);
+			_pscom_memcpy_default(dest, buf, len);
 		}
 
 		con->in.readahead.iov_len += len;
@@ -1093,7 +1093,7 @@ void _pscom_send(pscom_con_t *con, pscom_msgtype_t msg_type,
 	req->pub.data = req->pub.user;
 
 	memcpy(&req->pub.xheader, xheader, xheader_len);
-	_pscom_memcpy(req->pub.data, data, data_len);
+	_pscom_memcpy_from_user(req->pub.data, data, data_len);
 
 	req->pub.ops.io_done = pscom_request_free;
 
