@@ -330,14 +330,17 @@ pscom_err_t pscom_init(int pscom_version)
 	static int init=1;
 
 	perf_add("init");
-
-	if (((pscom_version & 0xff00) != (PSCOM_VERSION & 0xff00)) ||
-	    (pscom_version > PSCOM_VERSION)) {
+	if (!(PSCOM_VERSION & 0x8000) && (pscom_version & 0x8000)) {
+		DPRINT(D_FATAL, "Error: libpscom: Application defined PSCOM_CUDA_AWARENESS, but this libpscom is build without.");
+		return PSCOM_ERR_UNSUPPORTED_VERSION;
+	}
+	if (((pscom_version & 0x7f00) != (PSCOM_VERSION & 0x7f00)) ||
+	    ((pscom_version & 0xff) > (PSCOM_VERSION & 0xff))) {
 		// different major number, or minor number bigger
 		// (new libs support old api, if major number is equal)
-		DPRINT(D_FATAL, "Error: libpscom ABI version mismatch! Application requested V%u.%u but this is V%u.%u.",
-		       (pscom_version >> 8) & 0xff, pscom_version & 0xff,
-		       (PSCOM_VERSION >> 8) & 0xff, PSCOM_VERSION & 0xff
+		DPRINT(D_FATAL, "Error: libpscom ABI version mismatch! Application requested V%u.%u but libpscom is V%u.%u.",
+		       (pscom_version >> 8) & 0x7f, pscom_version & 0xff,
+		       (PSCOM_VERSION >> 8) & 0x7f, PSCOM_VERSION & 0xff
 		);
 		return PSCOM_ERR_UNSUPPORTED_VERSION;
 	}

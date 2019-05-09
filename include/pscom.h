@@ -32,10 +32,12 @@ extern "C" {
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-#define PSCOM_VERSION 0x0300
 
+#ifndef PSCOM_CUDA_AWARENESS
+#define PSCOM_VERSION 0x0300
+#else
+#define PSCOM_VERSION 0x8300
 /* allow user applications to determine whether CUDA-awareness is supported */
-#ifdef PSCOM_CUDA_AWARENESS
 #define PSCOM_CUDA_AWARENESS_SUPPORT
 #endif
 
