@@ -84,8 +84,6 @@ void _pscom_send_req_done(pscom_req_t *req)
 static inline
 void _pscom_grecv_req_done(pscom_req_t *req)
 {
-	_pscom_unstage_buffer(req, 1);
-
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
 		    pscom_debug_req_str(req)));
 	// assert(!genreq->rendezvous_req);

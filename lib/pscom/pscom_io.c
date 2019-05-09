@@ -901,7 +901,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 		_check_readahead(con, con->in.readahead.iov_len + len);
 		dest = ((char *)con->in.readahead.iov_base) + con->in.readahead.iov_len;
 		if (buf != dest) {
-			_pscom_memcpy_default(dest, buf, len);
+			memcpy(dest, buf, len);
 		}
 
 		con->in.readahead.iov_len += len;
@@ -1603,7 +1603,6 @@ void pscom_probe(pscom_request_t *request)
 void pscom_post_send(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
-	pscom_con_t *con = get_con(req->pub.connection);
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 	assert(request->connection != NULL);
