@@ -131,7 +131,8 @@ void pscom_env_init(void)
 	}
 	pscom_env_get_int(&pscom.env.debug_version, ENV_DEBUG_VERSION);
 
-	DPRINT(D_VERSION, "# Version(PSCOM): %s (%s)", __DATE__, VC_VERSION);
+	DPRINT(D_VERSION, "# Version(PSCOM): %s (%s)" PSCOM_IF_CUDA("+cuda", ""),
+	       __DATE__, VC_VERSION);
 	pscom_env_get_uint(&pscom.env.so_sndbuf, ENV_SO_SNDBUF);
 	pscom_env_get_uint(&pscom.env.so_rcvbuf, ENV_SO_RCVBUF);
 	pscom_env_get_int(&pscom.env.tcp_nodelay, ENV_TCP_NODELAY);

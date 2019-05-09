@@ -488,9 +488,9 @@ typedef uint8_t pscom_msgtype_t;
 #define PSCOM_MSGTYPE_GW_CTRL		11
 
 #ifdef PSCOM_CUDA_AWARENESS
-#define PSCOM_IF_CUDA(expr) expr
+#define PSCOM_IF_CUDA(yes, no) yes
 #else
-#define PSCOM_IF_CUDA(expr) 0
+#define PSCOM_IF_CUDA(yes, no) no
 #endif
 
 extern int mt_locked;

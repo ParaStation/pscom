@@ -154,6 +154,14 @@
 #define ENV_SHM_DIRECT "PSP_SHM_DIRECT" /* min message size to use shm direct */
 #define ENV_SHM_INDIRECT "PSP_SHM_INDIRECT" /* min message size for indirect shm (when direct shm fails) */
 
+/* CUDA */
+#define ENV_CUDA "PSP_CUDA"
+#define ENV_MEMCACHE "PSP_MEMCACHE"
+#define ENV_CUDA_AWARE_PLUGINS "PSP_CUDA_AWARE_PLUGINS"
+#define ENV_CUDA_AWARE_SHM "PSP_CUDA_AWARE_SHM"
+#define ENV_CUDA_AWARE_OPENIB "PSP_CUDA_AWARE_OPENIB"
+#define ENV_CUDA_AWARE_UCP "PSP_CUDA_AWARE_UCP"
+
 /* Manage a list of all requests for debug dumps (decrease performance!) */
 #define ENV_DEBUG_REQ     "PSP_DEBUG_REQ"
 
@@ -223,27 +231,20 @@ struct PSCOM_env {
 	unsigned int 	cuda_aware_shm;
 	unsigned int 	cuda_aware_openib;
 	unsigned int 	cuda_aware_ucp;
-#define PSCOM_ENV_CUDA       \
+#endif
+};
+
+
+#ifdef PSCOM_CUDA_AWARENESS
+#define PSCOM_ENV_CUDA		 \
 	.cuda               = 0, \
 	.cuda_aware_plugins = 1, \
 	.cuda_aware_shm     = 1, \
 	.cuda_aware_openib  = 1, \
 	.cuda_aware_ucp     = 1
-#define ENV_CUDA "PSP_CUDA"
-#define ENV_MEMCACHE "PSP_MEMCACHE"
-#define ENV_CUDA_AWARE_PLUGINS "PSP_CUDA_AWARE_PLUGINS"
-#define ENV_CUDA_AWARE_SHM "PSP_CUDA_AWARE_SHM"
-#define ENV_CUDA_AWARE_OPENIB "PSP_CUDA_AWARE_OPENIB"
-#define ENV_CUDA_AWARE_UCP "PSP_CUDA_AWARE_UCP"
 #else
 #define PSCOM_ENV_CUDA
-#define ENV_CUDA
-#define ENV_CUDA_AWARE_PLUGINS
-#define ENV_CUDA_AWARE_SHM
-#define ENV_CUDA_AWARE_OPENIB
-#define ENV_CUDA_AWARE_UCP
 #endif
-};
 
 
 #define PSCOM_ENV_defaults {						\
