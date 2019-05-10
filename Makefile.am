@@ -14,13 +14,30 @@ include $(top_srcdir)/common.am
 
 ACLOCAL_AMFLAGS = -I m4
 
-SUBDIRS = include lib bin doc scripts
+SUBDIRS = include lib bin doc scripts test
 
 EXTRA_DIST = .gitignore lib/bcast
 EXTRA_DIST += dist/.gitignore dist/Makefile dist/Makefile.sources	\
          dist/pscom.spec.templ
 
 dist_doc_DATA = LICENSE.QPL ChangeLog
+
+# ---- Target for unit testing ----
+.PHONY: utest
+if UTEST_ENABLED
+utest: all
+	@make -C test utest
+endif
+
+
+# ---- Target for code coverage analysis ----
+.PHONY: coverage
+if COVERAGE_ENABLED
+TEST_NAME=pscom_utest
+coverage:
+	lcov -t "${TEST_NAME}" -o ${TEST_NAME}.info -c -d $(top_builddir)/test -d $(top_builddir)/lib
+	genhtml -o pscom_coverage ${TEST_NAME}.info
+endif
 
 # ---- VERSION.pscom ----
 #

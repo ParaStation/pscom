@@ -209,15 +209,72 @@ AS_IF([test "x$have_cuda" = xno -a "x$enable_cuda" = xyes],
 AM_CONDITIONAL([CUDA_ENABLED],
 	       [test "x$enable_cuda" != xno -a "x$have_cuda" = xyes])
 
-# ----------
+# -- Unit Tests --
+
+AC_ARG_ENABLE([utest],
+			  [AS_HELP_STRING([--enable-utest],
+							  [enable unit tests (Default is disabled.)])],
+			  [enable_static=yes; enable_utest=yes],
+			  [enable_utest=no])
+
+if test "$enable_utest" == "yes" ; then
+	have_cmocka=no
+		AC_MSG_CHECKING(cmocka.h)
+		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
+]], [[int i = 3;]])],
+			[AC_MSG_RESULT(yes)
+			AC_CHECK_LIB([cmocka], [_cmocka_run_group_tests], [
+				have_cmocka=yes
+			])
+		])
+
+	AS_IF([test "x$have_cmocka" = xno -a "x$enable_utest" = xyes],
+	      [AC_MSG_ERROR([unit tests enabled but cmocka could not be found])])
+fi
+
+AM_CONDITIONAL([UTEST_ENABLED],
+	       [test "x$enable_utest" != xno -a "x$have_cmocka" = xyes])
+
+# -- Code coverage --
+
+AC_ARG_ENABLE([coverage],
+              [AS_HELP_STRING([--enable-coverage],
+                              [enable code coverage analysis (Default is disabled.)])],
+              [enable_coverage=yes],
+              [enable_coverage=no])
+
+if test "$enable_coverage" == "yes" ; then
+AC_CHECK_PROG([HAVE_LCOV],[lcov],[yes],[no])
+AC_CHECK_PROG([HAVE_GENHTML],[genhtml],[yes],[no])
+fi
+AM_CONDITIONAL([COVERAGE_ENABLED],
+	       [test "$enable_coverage" == "yes" -a x"$HAVE_LCOV" == x"yes" -a x"$HAVE_GENHTML" == x"yes"])
+
+# -- Optimizations --
+
+# Disable optimizations for code coverage analysis and testing
+AM_CONDITIONAL([TESTING_ENABLED],
+	       [test -z "$COVERAGE_ENABLED_TRUE" -o -z "$UTEST_ENABLED_TRUE" ])
+
 AC_ARG_ENABLE([optimizations],[AS_HELP_STRING([--disable-optimizations],
 	      [compile using the -O0 flag])])
+
+AS_IF([test \( "x$enable_utest" == "xyes" -o "x$enable_coverage" == "xyes" \) -a "x$enable_optimizations" == "xyes"],[
+	AC_MSG_ERROR([The --enable-optimization option is mutually exclusive with --enable-utest *and* --enable-coverage respectively. Abort!])
+	])
+
 AM_CONDITIONAL([OPTIMIZATIONS_ENABLED],
-	       [test "x$enable_optimizations" != xno])
+	       [test "x$enable_optimizations" != xno -a -z "$TESTING_ENABLED_FALSE"])
+
 AM_COND_IF([OPTIMIZATIONS_ENABLED],
            [AX_CHECK_COMPILE_FLAG([-O3],[AM_CFLAGS="$AM_CFLAGS -O3"])],
            [AX_CHECK_COMPILE_FLAG([-O0],[AM_CFLAGS="$AM_CFLAGS -O0"])])
 
+# ----------
 # -Wsign-conversion
 AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter],
   [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"])
@@ -247,6 +304,7 @@ AC_CONFIG_FILES(lib/pscom4openib/Makefile)
 AC_CONFIG_FILES(lib/pscom4psm/Makefile)
 AC_CONFIG_FILES(lib/psmalloc/Makefile)
 AC_CONFIG_FILES(scripts/Makefile)
+AC_CONFIG_FILES(test/Makefile)
 AC_CONFIG_LINKS(dist/Makefile:dist/Makefile)
 
 
@@ -289,13 +347,19 @@ AM_COND_IF([EXTOLL_ENABLED],
 AM_COND_IF([MXM_ENABLED],
   [AC_MSG_NOTICE([MXM_ENABLED:           yes])],
   [AC_MSG_NOTICE([MXM_ENABLED:           no])])
-AM_COND_IF([CUDA_ENABLED],
-  [AC_MSG_NOTICE([CUDA_ENABLED:          yes])],
-  [AC_MSG_NOTICE([CUDA_ENABLED:          no])])
 AC_MSG_NOTICE([---------------------])
 AM_COND_IF([OPTIMIZATIONS_ENABLED],
   [AC_MSG_NOTICE([OPTIMIZATIONS_ENABLED: yes])],
   [AC_MSG_NOTICE([OPTIMIZATIONS_ENABLED: no])])
+AM_COND_IF([CUDA_ENABLED],
+  [AC_MSG_NOTICE([CUDA_ENABLED:          yes])],
+  [AC_MSG_NOTICE([CUDA_ENABLED:          no])])
+AM_COND_IF([UTEST_ENABLED],
+  [AC_MSG_NOTICE([UTEST_ENABLED:         yes])],
+  [AC_MSG_NOTICE([UTEST_ENABLED:         no])])
+AM_COND_IF([COVERAGE_ENABLED],
+  [AC_MSG_NOTICE([COVERAGE_ENABLED:      yes])],
+  [AC_MSG_NOTICE([COVERAGE_ENABLED:      no])])
 AC_MSG_NOTICE([=====================])
 
 # Local Variables:

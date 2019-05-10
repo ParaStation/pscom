@@ -54,6 +54,12 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 # FIXME: non-standard
 configdir = $(prefix)/config
 
+
+if COVERAGE_ENABLED
+AM_CFLAGS += --coverage
+AM_LDFLAGS += --coverage
+endif
+
 if CUDA_ENABLED
 AM_CPPFLAGS += -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
 endif
