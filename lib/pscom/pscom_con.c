@@ -316,8 +316,7 @@ void pscom_con_close(pscom_con_t *con)
 	assert(con->magic == MAGIC_CONNECTION);
 
 	send_eof = ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)
-		&& (con->pub.type != PSCOM_CON_TYPE_ONDEMAND)
-		&& (con->pub.type != PSCOM_CON_TYPE_PSM);
+		&& (con->pub.type != PSCOM_CON_TYPE_ONDEMAND);
 
 	// ToDo: What to do, if (con->pub.state & PSCOM_CON_STATE_SUSPENDING) ?
 
