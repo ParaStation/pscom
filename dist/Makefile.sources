@@ -262,4 +262,11 @@ scripts/tcpdump.awk \
 scripts/tcpdumpp4 \
 scripts/test-driver \
 scripts/txt2man \
-scripts/vcversion
+scripts/vcversion \
+test/Makefile.am \
+test/Makefile.in \
+test/pscom/test_cuda.c \
+test/pscom/test_cuda.h \
+test/pscom/test_io.c \
+test/pscom/test_io.h \
+test/pscom_utest.c
