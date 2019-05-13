@@ -700,6 +700,10 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 static
 pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 {
+	DPRINT(D_DBG_V, "EOF recv   %s via %s",
+	       pscom_con_str(&con->pub),
+	       pscom_con_type_str(con->pub.type));
+
 	con->state.eof_received = 1;
 	pscom_con_error(con, PSCOM_OP_READ, PSCOM_ERR_EOF);
 	return NULL;

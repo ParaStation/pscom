@@ -298,6 +298,10 @@ static
 void pscom_con_send_eof(pscom_con_t *con)
 {
 	assert(con->magic == MAGIC_CONNECTION);
+	DPRINT(D_DBG_V, "EOF send   %s via %s",
+	       pscom_con_str(&con->pub),
+	       pscom_con_type_str(con->pub.type));
+
 	_pscom_con_ref_hold(con);
 	_pscom_send_inplace(con, PSCOM_MSGTYPE_EOF,
 			    NULL, 0,
