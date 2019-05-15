@@ -200,7 +200,6 @@ AC_ARG_ENABLE([cuda],[AS_HELP_STRING([--disable-cuda],
 
 if test "$enable_cuda" != "no" ; then
 	pscom_have_cuda=no
-	pscom_have_cudart=no
 	AC_CHECK_HEADERS([cuda.h], [
 		AC_MSG_CHECKING(if CUDA_VERSION >= 4000)
 		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
@@ -216,28 +215,13 @@ if test "$enable_cuda" != "no" ; then
 			])
 		])
 	])
-	AC_CHECK_HEADERS([cuda_runtime_api.h], [
-		AC_MSG_CHECKING(if CUDART_VERSION >= 4000)
-		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <cuda_runtime_api.h>
-#ifndef CUDART_VERSION
-#error CUDART_VERSION undefined
-#elif CUDART_VERSION < 4000
-#error CUDART_VERSION too old
-#endif]], [[int i = 3;]])],
-			[AC_MSG_RESULT(yes)
-			AC_CHECK_LIB([cudart], [cudaGetDeviceProperties], [
-				pscom_have_cudart=yes
-			])
-		])
-	])
 
-	AS_IF([test "$enable_cuda" = "yes" -a \( "$pscom_have_cudart" = "no" -o "$pscom_have_cuda" = "no" \) ],
+	AS_IF([test "$enable_cuda" = "yes" -a "$pscom_have_cuda" = "no"],
 		  [AC_MSG_ERROR([CUDA support requested but not found])])
 fi
 
 AM_CONDITIONAL([CUDA_ENABLED],
-	       [test "$enable_cuda" != "no" -a "$pscom_have_cudart" = "yes" -a "$pscom_have_cuda" = "yes" ])
+	       [test "$enable_cuda" != "no" -a "$pscom_have_cuda" = "yes" ])
 
 # ----------
 
