@@ -22,15 +22,23 @@
 pscom_err_t pscom_cuda_init(void)
 {
 	int ret = PSCOM_SUCCESS;
-	int device_count, i;
-	struct cudaDeviceProp dev_props;
-	cudaError_t cuda_err;
+	int device_count, i, uva_support;
+	const char *err_name;
+	CUresult cuda_res;
 
 	if (pscom.env.cuda) {
-		if (cudaGetDeviceCount(&device_count) != cudaSuccess) {
-			cuda_err = cudaGetLastError();
+		if ((cuda_res = cuInit(0)) != CUDA_SUCCESS) {
+			cuGetErrorName(cuda_res, &err_name);
+			DPRINT(D_ERR, "Could not initialize the CUDA driver API [CUDA error code: '%s' (%d)]",
+					err_name, cuda_res);
+			errno = EFAULT;
+			goto err_out;
+		}
+
+		if ((cuda_res = cuDeviceGetCount(&device_count)) != CUDA_SUCCESS) {
+			cuGetErrorName(cuda_res, &err_name);
 			DPRINT(D_ERR, "Could not determine the number of CUDA devices [CUDA error code: '%s' (%d)]",
-					cudaGetErrorName(cuda_err), cuda_err);
+					err_name, cuda_res);
 			errno = EFAULT;
 			goto err_out;
 		}
@@ -42,9 +50,15 @@ pscom_err_t pscom_cuda_init(void)
 
 		/* check if the devices share a unifed address space with the host */
 		for (i=0; i<device_count; ++i) {
-			cudaGetDeviceProperties(&dev_props, i);
+			if ((cuda_res = cuDeviceGetAttribute(&uva_support, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING, i)) != CUDA_SUCCESS) {
+				cuGetErrorName(cuda_res, &err_name);
+				DPRINT(D_ERR, "Could not query UVA support for device %d the number of CUDA devices [CUDA error code: '%s' (%d)]",
+						i, err_name, cuda_res);
+				errno = EFAULT;
+				goto err_out;
+			}
 
-			if (dev_props.unifiedAddressing == 0) {
+			if (uva_support == 0) {
 				DPRINT(D_ERR, "CUDA is missing support for Unified Virtual Addressing (UVA)");
 				errno = ENOTSUP;
 				goto err_out;
@@ -81,7 +95,7 @@ int pscom_is_gpu_mem(const void* ptr)
 void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 {
 	if (_pscom_is_gpu_mem(src, len)) {
-		cudaMemcpy(dst, src, len, cudaMemcpyDeviceToHost);
+		cuMemcpyDtoH(dst, (CUdeviceptr)src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -95,7 +109,7 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 {
 	if (_pscom_is_gpu_mem(dst, len)) {
-		cudaMemcpy(dst, src, len, cudaMemcpyHostToDevice);
+		cuMemcpyHtoD((CUdeviceptr)dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -109,7 +123,7 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 {
 	if (_pscom_is_gpu_mem(dst, len) || _pscom_is_gpu_mem(src, len)) {
-		cudaMemcpy(dst, src, len, cudaMemcpyDefault);
+		cuMemcpy((CUdeviceptr)dst, (CUdeviceptr)src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -138,23 +152,7 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 		return (!is_managed && (mem_type == CU_MEMORYTYPE_DEVICE));
 	}
 
-	/* now, try to query the CUDA runtime API */
-	struct cudaPointerAttributes rt_attrs;
-	ret = cudaPointerGetAttributes(&rt_attrs, ptr);
-
-	/* managed memory does not have to be specially treated */
-	if (ret == cudaSuccess) {
-#ifndef CUDART_VERSION
-#error CUDART_VERSION Undefined!
-#elif (CUDART_VERSION > 9020)
-		return (!(rt_attrs.type == cudaMemoryTypeManaged) &&
-			(rt_attrs.type == cudaMemoryTypeDevice));
-#else
-		return (!rt_attrs.isManaged &&
-			(rt_attrs.memoryType == cudaMemoryTypeDevice));
-#endif
-	}
-
+	// TODO: error handling
 	return 0;
 }
 #endif /* PSCOM_CUDA_AWARENESS */

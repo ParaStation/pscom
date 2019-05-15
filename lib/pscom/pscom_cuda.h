@@ -6,8 +6,6 @@
 #ifdef PSCOM_CUDA_AWARENESS
 
 #include <cuda.h>
-#include <cuda_runtime.h>
-#include <cuda_runtime_api.h>
 #include <driver_types.h>
 
 #define MIN(a,b)      (((a)<(b))?(a):(b))
@@ -35,7 +33,7 @@ void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 
 		/* we only have to copy in case of send requests */
 		if (copy) {
-			cudaMemcpy(req->pub.data, req->stage_buf, req->pub.data_len, cudaMemcpyDeviceToHost);
+			cuMemcpyDtoH(req->pub.data, (CUdeviceptr)req->stage_buf, req->pub.data_len);
 		}
 	}
 }
@@ -48,7 +46,7 @@ void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
 		/* we only have to copy in case of recv requests */
 		if (copy) {
 			size_t copy_len = MIN(req->pub.data_len, req->pub.header.data_len);
-			cudaMemcpy(req->stage_buf, req->pub.data, copy_len, cudaMemcpyHostToDevice);
+			cuMemcpyHtoD((CUdeviceptr)req->stage_buf, req->pub.data, copy_len);
 		}
 
 		free(req->pub.data);
