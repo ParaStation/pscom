@@ -195,33 +195,19 @@ AM_CONDITIONAL([MXM_ENABLED],
 
 # -- CUDA --
 
+# fixme: brute force current standard search path
+CUDA_CPPFLAGS="${CUDA_CPPFLAGS-"-I/usr/local/cuda/include"}"
+CUDA_LDFLAGS="${CUDA_LDFLAGS-"-L/usr/local/cuda/lib64"}"
+
 AC_ARG_ENABLE([cuda],[AS_HELP_STRING([--disable-cuda],
 	      [disable CUDA support])])
-
-if test "$enable_cuda" != "no" ; then
-	pscom_have_cuda=no
-	AC_CHECK_HEADERS([cuda.h], [
-		AC_MSG_CHECKING(if CUDA_VERSION >= 4000)
-		AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
-#include <cuda.h>
-#ifndef CUDA_VERSION
-#error CUDA_VERSION undefined
-#elif CUDA_VERSION < 4000
-#error CUDA_VERSION too old
-#endif]], [[int i = 3;]])],
-			[AC_MSG_RESULT(yes)
-			AC_CHECK_LIB([cuda], [cuInit], [
-				pscom_have_cuda=yes
-			])
-		])
-	])
-
-	AS_IF([test "$enable_cuda" = "yes" -a "$pscom_have_cuda" = "no"],
-		  [AC_MSG_ERROR([CUDA support requested but not found])])
-fi
-
+AS_IF([test "x$enable_cuda" != xno],
+      [AX_CHECK_LIBRARY([CUDA], [cuda.h], [cuda],
+      [have_cuda=yes], [have_cuda=no])])
+AS_IF([test "x$have_cuda" = xno -a "x$enable_cuda" = xyes],
+      [AC_MSG_ERROR([CUDA support requested but not found])])
 AM_CONDITIONAL([CUDA_ENABLED],
-	       [test "$enable_cuda" != "no" -a "$pscom_have_cuda" = "yes" ])
+	       [test "x$enable_cuda" != xno -a "x$have_cuda" = xyes])
 
 # ----------
 

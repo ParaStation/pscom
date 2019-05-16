@@ -55,8 +55,5 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 configdir = $(prefix)/config
 
 if CUDA_ENABLED
-AM_CFLAGS += -DPSCOM_CUDA_AWARENESS
-AM_CPPFLAGS += -I/usr/local/cuda/include
-AM_LDFLAGS += -L/usr/local/cuda/lib
-AM_LDFLAGS += -L/usr/local/cuda/lib64
+AM_CPPFLAGS += -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
 endif

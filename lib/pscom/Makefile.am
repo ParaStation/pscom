@@ -37,7 +37,7 @@ libpscom_la_LIBADD = -ldl
 libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
 
 if CUDA_ENABLED
-libpscom_la_LIBADD += -lcuda
+libpscom_la_LIBADD += $(CUDA_LDFLAGS) -lcuda
 endif
 
 # intermediate libs needed elsewhere, in bin
@@ -48,7 +48,7 @@ libpscom_dprint_la_SOURCES = pscom_dprint.c
 libperf_la_SOURCES = perf.c perf.h
 
 if CUDA_ENABLED
-libpslib_la_LIBADD += -lcuda
+libpslib_la_LIBADD += $(CUDA_LDFLAGS) -lcuda
 endif
 
 
