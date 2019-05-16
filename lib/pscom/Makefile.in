@@ -102,12 +102,9 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@CUDA_ENABLED_TRUE@am__append_1 = -DPSCOM_CUDA_AWARENESS
-@CUDA_ENABLED_TRUE@am__append_2 = -I/usr/local/cuda/include
-@CUDA_ENABLED_TRUE@am__append_3 = -L/usr/local/cuda/lib \
-@CUDA_ENABLED_TRUE@	-L/usr/local/cuda/lib64
-@CUDA_ENABLED_TRUE@am__append_4 = -lcuda -lcudart
-@CUDA_ENABLED_TRUE@am__append_5 = -lcuda -lcudart
+@CUDA_ENABLED_TRUE@am__append_1 = -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
+@CUDA_ENABLED_TRUE@am__append_2 = $(CUDA_LDFLAGS) -lcuda
+@CUDA_ENABLED_TRUE@am__append_3 = $(CUDA_LDFLAGS) -lcuda
 subdir = lib/pscom
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -159,7 +156,8 @@ am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
 am__DEPENDENCIES_1 =
-libpscom_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+@CUDA_ENABLED_TRUE@am__DEPENDENCIES_2 = $(am__DEPENDENCIES_1)
+libpscom_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_libpscom_la_OBJECTS = libpscom_la-pscom.lo libpscom_la-pscom_con.lo \
 	libpscom_la-pscom_debug.lo libpscom_la-pscom_dprint.lo \
 	libpscom_la-pscom_env.lo libpscom_la-pscom_group.lo \
@@ -183,7 +181,7 @@ libpscom_dprint_la_OBJECTS = $(am_libpscom_dprint_la_OBJECTS)
 libpscom_env_la_LIBADD =
 am_libpscom_env_la_OBJECTS = pscom_env.lo
 libpscom_env_la_OBJECTS = $(am_libpscom_env_la_OBJECTS)
-libpslib_la_DEPENDENCIES = $(am__DEPENDENCIES_1)
+libpslib_la_DEPENDENCIES = $(am__DEPENDENCIES_2)
 am_libpslib_la_OBJECTS = pslib.lo
 libpslib_la_OBJECTS = $(am_libpslib_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
@@ -256,7 +254,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/common.am \
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
-AM_CFLAGS = @AM_CFLAGS@ $(am__append_1)
+AM_CFLAGS = @AM_CFLAGS@
 
 #
 # ParaStation
@@ -269,10 +267,10 @@ AM_CFLAGS = @AM_CFLAGS@ $(am__append_1)
 #
 # Author:       Thomas Moschny <moschny@par-tec.com>
 #
-AM_CPPFLAGS = -I$(top_srcdir)/include $(am__append_2) \
+AM_CPPFLAGS = -I$(top_srcdir)/include $(am__append_1) \
 	-DLIBDIR=\"$(libdir)\" -I$(top_builddir)/include
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
-AM_LDFLAGS = @AM_LDFLAGS@ $(am__append_3)
+AM_LDFLAGS = @AM_LDFLAGS@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -283,6 +281,8 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CUDA_CPPFLAGS = @CUDA_CPPFLAGS@
+CUDA_LDFLAGS = @CUDA_LDFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DAPL_CPPFLAGS = @DAPL_CPPFLAGS@
 DAPL_LDFLAGS = @DAPL_LDFLAGS@
@@ -452,12 +452,12 @@ noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 	pscom_types.h pscom_ufd.h pscom_util.h psshmalloc.h pscom_cuda.h
 
 libpscom_la_LDFLAGS = -version-info 2:0:0
-libpscom_la_LIBADD = -ldl $(am__append_4)
+libpscom_la_LIBADD = -ldl $(am__append_2)
 libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
 
 # intermediate libs needed elsewhere, in bin
 libpslib_la_SOURCES = pslib.c pslib.h
-libpslib_la_LIBADD = -ldl $(am__append_5)
+libpslib_la_LIBADD = -ldl $(am__append_3)
 libpscom_env_la_SOURCES = pscom_env.c pscom_env.h
 libpscom_dprint_la_SOURCES = pscom_dprint.c
 libperf_la_SOURCES = perf.c perf.h

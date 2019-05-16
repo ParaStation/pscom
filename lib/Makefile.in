@@ -112,37 +112,34 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 target_triplet = @target@
-@CUDA_ENABLED_TRUE@am__append_1 = -DPSCOM_CUDA_AWARENESS
-@CUDA_ENABLED_TRUE@am__append_2 = -I/usr/local/cuda/include
-@CUDA_ENABLED_TRUE@am__append_3 = -L/usr/local/cuda/lib \
-@CUDA_ENABLED_TRUE@	-L/usr/local/cuda/lib64
+@CUDA_ENABLED_TRUE@am__append_1 = -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
 
 # - dapl -
-@DAPL_ENABLED_TRUE@am__append_4 = pscom4dapl
+@DAPL_ENABLED_TRUE@am__append_2 = pscom4dapl
 
 # -- elan --
-@ELAN_ENABLED_TRUE@am__append_5 = pscom4elan
+@ELAN_ENABLED_TRUE@am__append_3 = pscom4elan
 
 # -- extoll --
-@EXTOLL_ENABLED_TRUE@am__append_6 = pscom4extoll pscom4velo
+@EXTOLL_ENABLED_TRUE@am__append_4 = pscom4extoll pscom4velo
 
 # - gm -
-@GM_ENABLED_TRUE@am__append_7 = pscom4gm
+@GM_ENABLED_TRUE@am__append_5 = pscom4gm
 
 # -- mxm --
-@MXM_ENABLED_TRUE@am__append_8 = pscom4mxm
+@MXM_ENABLED_TRUE@am__append_6 = pscom4mxm
 
 # -- ucp --
-@UCP_ENABLED_TRUE@am__append_9 = pscom4ucp
+@UCP_ENABLED_TRUE@am__append_7 = pscom4ucp
 
 # -- ofed --
-@OFED_ENABLED_TRUE@am__append_10 = pscom4ofed
+@OFED_ENABLED_TRUE@am__append_8 = pscom4ofed
 
 # -- openib --
-@OPENIB_ENABLED_TRUE@am__append_11 = pscom4openib
+@OPENIB_ENABLED_TRUE@am__append_9 = pscom4openib
 
 # -- psm --
-@PSM_ENABLED_TRUE@am__append_12 = pscom4psm
+@PSM_ENABLED_TRUE@am__append_10 = pscom4psm
 subdir = lib
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
@@ -242,10 +239,10 @@ am__relativize = \
   reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
-AM_CFLAGS = @AM_CFLAGS@ $(am__append_1)
-AM_CPPFLAGS = -I$(top_srcdir)/include $(am__append_2)
+AM_CFLAGS = @AM_CFLAGS@
+AM_CPPFLAGS = -I$(top_srcdir)/include $(am__append_1)
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
-AM_LDFLAGS = @AM_LDFLAGS@ $(am__append_3)
+AM_LDFLAGS = @AM_LDFLAGS@
 AR = @AR@
 AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
@@ -256,6 +253,8 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
+CUDA_CPPFLAGS = @CUDA_CPPFLAGS@
+CUDA_LDFLAGS = @CUDA_LDFLAGS@
 CYGPATH_W = @CYGPATH_W@
 DAPL_CPPFLAGS = @DAPL_CPPFLAGS@
 DAPL_LDFLAGS = @DAPL_LDFLAGS@
@@ -408,10 +407,10 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 # FIXME: non-standard
 configdir = $(prefix)/config
 ACLOCAL_AMFLAGS = -I m4
-SUBDIRS = pscom psmalloc $(am__append_4) $(am__append_5) \
-	$(am__append_6) $(am__append_7) $(am__append_8) \
-	$(am__append_9) $(am__append_10) $(am__append_11) \
-	$(am__append_12) p4tcp
+SUBDIRS = pscom psmalloc $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_5) $(am__append_6) \
+	$(am__append_7) $(am__append_8) $(am__append_9) \
+	$(am__append_10) p4tcp
 all: all-recursive
 
 .SUFFIXES:
