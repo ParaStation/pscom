@@ -21,41 +21,34 @@
 
 pscom_err_t pscom_cuda_init(void)
 {
-	int ret = PSCOM_SUCCESS;
-	int device_count, i, uva_support;
+	CUresult ret;
+	int dev_cnt, i, uva_support;
 	const char *err_name;
 	CUresult cuda_res;
 
 	if (pscom.env.cuda) {
-		if ((cuda_res = cuInit(0)) != CUDA_SUCCESS) {
-			cuGetErrorName(cuda_res, &err_name);
-			DPRINT(D_ERR, "Could not initialize the CUDA driver API [CUDA error code: '%s' (%d)]",
-					err_name, cuda_res);
-			errno = EFAULT;
-			goto err_out;
+		/* initialize the CUDA driver API */
+		ret = cuInit(0);
+		if (ret != CUDA_SUCCESS) {
+			pscom_cuda_err_str("cuInit()", ret);
+			goto err_init;
 		}
 
-		if ((cuda_res = cuDeviceGetCount(&device_count)) != CUDA_SUCCESS) {
-			cuGetErrorName(cuda_res, &err_name);
-			DPRINT(D_ERR, "Could not determine the number of CUDA devices [CUDA error code: '%s' (%d)]",
-					err_name, cuda_res);
-			errno = EFAULT;
-			goto err_out;
+		/* determine the number of  CUDA devices */
+		ret = cuDeviceGetCount(&dev_cnt);
+		if (ret != CUDA_SUCCESS) {
+			pscom_cuda_err_str("cuDeviceGetCount()", ret);
+			goto err_init;
 		}
 
-		if (device_count == 0) {
-			DPRINT(D_WARN, "Could not find any CUDA devices");
-			goto out;
-		}
+		if (dev_cnt == 0) DPRINT(D_INFO, "Could not find any CUDA devices");
 
 		/* check if the devices share a unifed address space with the host */
-		for (i=0; i<device_count; ++i) {
-			if ((cuda_res = cuDeviceGetAttribute(&uva_support, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING, i)) != CUDA_SUCCESS) {
-				cuGetErrorName(cuda_res, &err_name);
-				DPRINT(D_ERR, "Could not query UVA support for device %d the number of CUDA devices [CUDA error code: '%s' (%d)]",
-						i, err_name, cuda_res);
-				errno = EFAULT;
-				goto err_out;
+		for (i=0; i<dev_cnt; ++i) {
+			ret = cuDeviceGetAttribute(&uva_support, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING, i);
+			if (ret != CUDA_SUCCESS) {
+				pscom_cuda_err_str("cuDeviceGetAttribute()", ret);
+				goto err_init;
 			}
 
 			if (uva_support == 0) {
@@ -66,9 +59,11 @@ pscom_err_t pscom_cuda_init(void)
 		}
 	}
 
-out:
 	return ret;
-
+	/* --- */
+err_init:
+	errno = EFAULT;
+	/* --- */
 err_out:
 	ret = PSCOM_ERR_STDERROR;
 	return ret;
@@ -94,8 +89,11 @@ int pscom_is_gpu_mem(const void* ptr)
  */
 void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 {
+	CUresult ret;
+
 	if (_pscom_is_gpu_mem(src, len)) {
-		cuMemcpyDtoH(dst, (CUdeviceptr)src, len);
+		ret = cuMemcpyDtoH(dst, (CUdeviceptr)src, len);
+		assert(ret == CUDA_SUCCESS);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -108,8 +106,11 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
  */
 void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 {
+	CUresult ret;
+
 	if (_pscom_is_gpu_mem(dst, len)) {
-		cuMemcpyHtoD((CUdeviceptr)dst, src, len);
+		ret = cuMemcpyHtoD((CUdeviceptr)dst, src, len);
+		assert(ret == CUDA_SUCCESS);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -122,8 +123,11 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
  */
 void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 {
+	CUresult ret;
+
 	if (_pscom_is_gpu_mem(dst, len) || _pscom_is_gpu_mem(src, len)) {
-		cuMemcpy((CUdeviceptr)dst, (CUdeviceptr)src, len);
+		ret = cuMemcpy((CUdeviceptr)dst, (CUdeviceptr)src, len);
+		assert(ret == CUDA_SUCCESS);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -132,7 +136,7 @@ void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 
 int _pscom_is_gpu_mem(const void* ptr, size_t length)
 {
-	int ret;
+	CUresult ret;
 
 	if (!pscom.env.cuda || (ptr == NULL)) {
 		return 0;
@@ -146,13 +150,15 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 					    CU_POINTER_ATTRIBUTE_IS_MANAGED};
 
 	ret = cuPointerGetAttributes(2, drv_attrs, drv_attr_data, (CUdeviceptr)ptr);
+	if (ret != CUDA_SUCCESS) {
+		pscom_cuda_err_str("cuPointerGetAttributes()", ret);
 
-	/* managed memory does not have to be specially treated */
-	if (ret == CUDA_SUCCESS) {
-		return (!is_managed && (mem_type == CU_MEMORYTYPE_DEVICE));
+		DPRINT(D_WARN, "Assuming GPU memory to be on the safe side!");
+		return 1;
 	}
 
-	// TODO: error handling
-	return 0;
+	/* managed memory does not have to be specially treated */
+	return (!is_managed && (mem_type == CU_MEMORYTYPE_DEVICE));
+
 }
 #endif /* PSCOM_CUDA_AWARENESS */

@@ -8,6 +8,27 @@
 #include <cuda.h>
 #include <driver_types.h>
 
+/**
+ * \brief Translates a CUresult to a diagnostic string
+ *
+ * This function can be used to retrieve a diagnostic string from a
+ * CUresult != CUDA_SUCCESS.
+ *
+ * \param [in] func The CUDA driver API call that failed
+ * \param [in] err The CUDA error code
+ */
+static inline
+void pscom_cuda_err_str(const char *func, CUresult err)
+{
+	const char *cuda_err_str;
+	cuGetErrorName(err, &cuda_err_str);
+	DPRINT(D_ERR, "CUDA driver call '%s' failed "
+				  "[CUDA error code: '%s' (%d)]",
+				  func, cuda_err_str, err);
+
+	return;
+}
+
 #define MIN(a,b)      (((a)<(b))?(a):(b))
 
 pscom_err_t pscom_cuda_init(void);
@@ -25,6 +46,7 @@ int _pscom_buffer_needs_staging(const void* ptr, pscom_con_t* con)
 static inline
 void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 {
+	CUresult ret;
 	pscom_con_t *con = req->pub.connection? get_con(req->pub.connection) : NULL;
 
 	if (_pscom_buffer_needs_staging(req->pub.data, con)) {
@@ -33,7 +55,8 @@ void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 
 		/* we only have to copy in case of send requests */
 		if (copy) {
-			cuMemcpyDtoH(req->pub.data, (CUdeviceptr)req->stage_buf, req->pub.data_len);
+			ret = cuMemcpyDtoH(req->pub.data, (CUdeviceptr)req->stage_buf, req->pub.data_len);
+			assert(ret == CUDA_SUCCESS);
 		}
 	}
 }
@@ -41,12 +64,15 @@ void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 static inline
 void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
 {
+	CUresult ret;
+
 	if (req->stage_buf != NULL) {
 
 		/* we only have to copy in case of recv requests */
 		if (copy) {
 			size_t copy_len = MIN(req->pub.data_len, req->pub.header.data_len);
-			cuMemcpyHtoD((CUdeviceptr)req->stage_buf, req->pub.data, copy_len);
+			ret = cuMemcpyHtoD((CUdeviceptr)req->stage_buf, req->pub.data, copy_len);
+			assert(ret == CUDA_SUCCESS);
 		}
 
 		free(req->pub.data);
