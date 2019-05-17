@@ -24,7 +24,6 @@ pscom_err_t pscom_cuda_init(void)
 	CUresult ret;
 	int dev_cnt, i, uva_support;
 	const char *err_name;
-	CUresult cuda_res;
 
 	if (pscom.env.cuda) {
 		/* initialize the CUDA driver API */
@@ -59,14 +58,13 @@ pscom_err_t pscom_cuda_init(void)
 		}
 	}
 
-	return ret;
+	return PSCOM_SUCCESS;
 	/* --- */
 err_init:
 	errno = EFAULT;
 	/* --- */
 err_out:
-	ret = PSCOM_ERR_STDERROR;
-	return ret;
+	return PSCOM_ERR_STDERROR;
 }
 
 /* simply map to internal _pscom_memcpy() */
