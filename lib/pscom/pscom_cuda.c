@@ -131,7 +131,17 @@ void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 	}
 }
 
-
+/**
+ * \brief Check for device memory and set memop synchronization if necessary
+ *
+ * \param [in] ptr The pointer to be checked
+ * \param [in] length The length of the memory region (deprecated)
+ *
+ * This function checks if ptr resides on device memory and sets the CUDA
+ * CU_POINTER_ATTRIBUTE_SYNC_MEMOPS attribute accordingly (if not already set).
+ * This behavior can be influenced by using the environmen variable
+ * PSP_CUDA_SYNC_MEMOPS (default: 1).
+ */
 int _pscom_is_gpu_mem(const void* ptr, size_t length)
 {
 	CUresult ret;
