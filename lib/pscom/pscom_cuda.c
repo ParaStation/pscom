@@ -143,11 +143,20 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 	/* try to check via the CUDA driver API first */
 	CUmemorytype mem_type = 0;
 	unsigned int is_managed = 0;
-	void *drv_attr_data[] = {(void*)&mem_type, (void*)&is_managed};
-	CUpointer_attribute drv_attrs[2] = {CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
-					    CU_POINTER_ATTRIBUTE_IS_MANAGED};
+	unsigned int is_gpu_mem = 0;
+	unsigned int sync_memops = 0;
+	void *drv_attr_data[] = {
+		(void*)&mem_type,
+		(void*)&is_managed,
+		(void*)&sync_memops,
+	};
+	CUpointer_attribute drv_attrs[3] = {
+		CU_POINTER_ATTRIBUTE_MEMORY_TYPE,
+		CU_POINTER_ATTRIBUTE_IS_MANAGED,
+		CU_POINTER_ATTRIBUTE_SYNC_MEMOPS
+	};
 
-	ret = cuPointerGetAttributes(2, drv_attrs, drv_attr_data, (CUdeviceptr)ptr);
+	ret = cuPointerGetAttributes(3, drv_attrs, drv_attr_data, (CUdeviceptr)ptr);
 	if (ret != CUDA_SUCCESS) {
 		pscom_cuda_err_str("cuPointerGetAttributes()", ret);
 
@@ -156,7 +165,16 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 	}
 
 	/* managed memory does not have to be specially treated */
-	return (!is_managed && (mem_type == CU_MEMORYTYPE_DEVICE));
+	is_gpu_mem = (!is_managed && (mem_type == CU_MEMORYTYPE_DEVICE));
 
+	/* synchronize memory operations on the device buffer; this can be
+	 * necessary, e.g., when combining  cudaMemcpy() operations with
+	 * GPUDirect TODO: what about managed memory? */
+	if (pscom.env.cuda_sync_memops && is_gpu_mem && !sync_memops) {
+		ret = cuPointerSetAttribute(&is_gpu_mem, CU_POINTER_ATTRIBUTE_SYNC_MEMOPS, (CUdeviceptr)ptr);
+		if (ret != CUDA_SUCCESS) pscom_cuda_err_str("cuPointerSetAttribute()", ret);
+	}
+
+	return is_gpu_mem;
 }
 #endif /* PSCOM_CUDA_AWARENESS */

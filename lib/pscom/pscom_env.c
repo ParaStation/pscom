@@ -146,6 +146,8 @@ void pscom_env_init(void)
 #ifdef PSCOM_CUDA_AWARENESS
 	pscom_env_get_int(&pscom.env.cuda, ENV_CUDA);
 
+	pscom_env_get_uint(&pscom.env.cuda_sync_memops, ENV_CUDA_SYNC_MEMOPS);
+
 	pscom_env_get_uint(&pscom.env.cuda_aware_shm, ENV_CUDA_AWARE_SHM);
 	pscom_env_get_uint(&pscom.env.cuda_aware_openib, ENV_CUDA_AWARE_OPENIB);
 	pscom_env_get_uint(&pscom.env.cuda_aware_ucp, ENV_CUDA_AWARE_UCP);
