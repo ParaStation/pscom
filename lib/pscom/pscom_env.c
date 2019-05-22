@@ -153,8 +153,8 @@ void pscom_env_init(void)
 	pscom_env_get_uint(&pscom.env.cuda_aware_ucp, ENV_CUDA_AWARE_UCP);
 
 	/* one environment variable disabling CUDA-awareness of all plugins */
-	pscom_env_get_uint(&pscom.env.cuda_aware_plugins, ENV_CUDA_AWARE_PLUGINS);
-	if (pscom.env.cuda_aware_plugins == 0) {
+	pscom_env_get_uint(&pscom.env.cuda_enforce_staging, ENV_CUDA_ENFORCE_STAGING);
+	if (pscom.env.cuda_enforce_staging == 1) {
 		pscom.env.cuda_aware_shm    = 0;
 		pscom.env.cuda_aware_openib = 0;
 		pscom.env.cuda_aware_ucp    = 0;
