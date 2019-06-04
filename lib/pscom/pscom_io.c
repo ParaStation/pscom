@@ -63,7 +63,6 @@ void                       pscom_read_done(pscom_con_t *con, char *buf, size_t l
 
 
 pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
-pscom_req_t *(*_pscom_get_gw_ctrl_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
 
 void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, pscom_connection_t *connection)
 {
@@ -788,9 +787,6 @@ pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 			break;
 		case PSCOM_MSGTYPE_GW_ENVELOPE:
 			req = _pscom_get_gw_envelope_receiver ? _pscom_get_gw_envelope_receiver(con, nh) : NULL;
-			break;
-		case PSCOM_MSGTYPE_GW_CTRL:
-			req = _pscom_get_gw_ctrl_receiver ? _pscom_get_gw_ctrl_receiver(con, nh) : NULL;
 			break;
 		default:
 			DPRINT(D_BUG, "Receive unknown msg_type %u", nh->msg_type);

@@ -488,7 +488,6 @@ typedef uint8_t pscom_msgtype_t;
 #define PSCOM_MSGTYPE_EOF	8
 #define PSCOM_MSGTYPE_SUSPEND	9
 #define PSCOM_MSGTYPE_GW_ENVELOPE	10
-#define PSCOM_MSGTYPE_GW_CTRL		11
 
 #ifdef PSCOM_CUDA_AWARENESS
 #define PSCOM_IF_CUDA(yes, no) yes

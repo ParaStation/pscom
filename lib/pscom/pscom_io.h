@@ -136,8 +136,4 @@ void pscom_post_recv_ctrl(pscom_req_t *req); /* must not hold pscom_lock() */
 extern
 pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
 
-// receiver for PSCOM_MSGTYPE_GW_CTRL, set by pscom4gateway.
-extern
-pscom_req_t *(*_pscom_get_gw_ctrl_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
-
 #endif /* _PSCOM_IO_H_ */
