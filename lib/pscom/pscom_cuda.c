@@ -170,8 +170,8 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 	if (ret != CUDA_SUCCESS) {
 		pscom_cuda_err_str("cuPointerGetAttributes()", ret);
 
-		DPRINT(D_WARN, "Assuming GPU memory to be on the safe side!");
-		return 1;
+		DPRINT(D_WARN, "Cannot determine memory type. Assuming host memory!");
+		return 0;
 	}
 
 	/* managed memory does not have to be specially treated */
