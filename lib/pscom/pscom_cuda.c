@@ -168,9 +168,7 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 
 	ret = cuPointerGetAttributes(3, drv_attrs, drv_attr_data, (CUdeviceptr)ptr);
 	if (ret != CUDA_SUCCESS) {
-		pscom_cuda_err_str("cuPointerGetAttributes()", ret);
-
-		DPRINT(D_WARN, "Cannot determine memory type. Assuming host memory!");
+		DPRINT(D_TRACE, "Cannot determine memory type. Assuming host memory!");
 		return 0;
 	}
 
