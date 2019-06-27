@@ -387,12 +387,12 @@ void pscom_con_closing(pscom_con_t *con)
 
 			// Fall through to PSCOM_CON_STATE_R
 		case PSCOM_CON_STATE_R:
+		case PSCOM_CON_STATE_NO_RW:
 
 			con->pub.state = PSCOM_CON_STATE_CLOSE_WAIT;
 
 			// Fall through to PSCOM_CON_STATE_CLOSE_WAIT
 		case PSCOM_CON_STATE_CLOSE_WAIT:
-		case PSCOM_CON_STATE_NO_RW:
 			pscom_con_recv_eof_stop_check(con);
 
 			if (con->state.eof_received || con->state.read_failed) {
