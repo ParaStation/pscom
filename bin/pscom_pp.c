@@ -416,6 +416,7 @@ int main(int argc, char **argv)
 			run_pp_server(con);
 			pscom_close_connection(con);
 
+			if (arg_run_once) pscom_close_socket(socket);
 			if (arg_verbose) pscom_dump_info(stdout);
 		} while (!arg_run_once);
 	} else {
@@ -426,6 +427,7 @@ int main(int argc, char **argv)
 
 		do_pp_client(con);
 		pscom_close_connection(con);
+		pscom_close_socket(socket);
 		if (arg_verbose) pscom_dump_info(stdout);
 	}
 
