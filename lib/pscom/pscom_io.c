@@ -84,10 +84,10 @@ void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, psco
 		req->pub.state |= PSCOM_REQ_STATE_TRUNCATED;
 	}
 
-	D_TR(printf("%s:%u:%s(%s) hlen=%u dlen=%zu dlen_req=%u dlen_net=%u skip=%u\n",
+	D_TR(printf("%s:%u:%s(%s) hlen=%zu dlen=%zu dlen_req=%zu dlen_net=%zu skip=%zu\n",
 		    __FILE__, __LINE__, __func__,
 		    pscom_debug_req_str(req), copy_header, req->cur_data.iov_len,
-		    req->pub.data_len, nh->data_len, req->skip));
+		    req->pub.data_len, (size_t)nh->data_len, req->skip));
 
 	assert(connection);
 	req->pub.connection = connection;
@@ -224,7 +224,7 @@ pscom_req_t *_pscom_generate_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 	req->pub.xheader_len = nh->xheader_len;
 	req->partner_req = NULL;
 
-	D_TR(printf("%s:%u:%s(). %s xheaderlen=%d\n", __FILE__, __LINE__, __func__,
+	D_TR(printf("%s:%u:%s(). %s xheaderlen=%zu\n", __FILE__, __LINE__, __func__,
 		    pscom_debug_req_str(req), req->pub.xheader_len));
 
 	return req;
@@ -395,7 +395,7 @@ pscom_req_t *pscom_get_rma_write_receiver(pscom_con_t *con, pscom_header_net_t *
 	req->pub.xheader_len = 0;
 	req->pub.ops.io_done = pscom_request_free;
 
-	D_TR(printf("%s:%u:%s() %s dest=%p, len=%d\n", __FILE__, __LINE__, __func__,
+	D_TR(printf("%s:%u:%s() %s dest=%p, len=%zu\n", __FILE__, __LINE__, __func__,
 		    pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
 
 	return req;
