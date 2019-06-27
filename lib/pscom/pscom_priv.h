@@ -321,7 +321,9 @@ struct PSCOM_con
 	}			arch;
 
 	struct {
+		unsigned	eof_expect : 1;
 		unsigned	eof_received : 1;
+		unsigned	read_failed : 1;
 		unsigned	close_called : 1;
 		unsigned	destroyed : 1;
 		unsigned	suspend_active : 1;

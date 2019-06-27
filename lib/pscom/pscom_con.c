@@ -193,10 +193,23 @@ void pscom_con_end_write(pscom_con_t *con)
 
 
 static
+void pscom_con_close_write(pscom_con_t *con)
+{
+	con->pub.state &= ~PSCOM_CON_STATE_W; // clear W
+	// con->write_start = _pscom_con_reject_send_req;
+}
+
+
+static
 void pscom_con_error_read_failed(pscom_con_t *con, pscom_err_t error)
 {
 	pscom_con_end_read(con);
 	pscom_con_info_set(con, "state", pscom_con_state_str(con->pub.state));
+	if (error == PSCOM_ERR_EOF) {
+		con->state.eof_received = 1;
+	} else {
+		con->state.read_failed = 1;
+	}
 }
 
 
@@ -224,7 +237,7 @@ void _pscom_con_cleanup(pscom_con_t *con)
 
 		_pscom_con_terminate_net_queues(con);
 
-		assert(con->pub.state == PSCOM_CON_STATE_CLOSING);
+		assert(con->pub.state == PSCOM_CON_STATE_CLOSE_WAIT);
 		assert(list_empty(&con->sendq));
 		assert(list_empty(&con->recvq_user));
 		assert(list_empty(&con->net_recvq_user));
@@ -241,13 +254,13 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		    // !list_empty(&con->net_recvq_bcast) ||
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
 
-		if (con->pub.state == PSCOM_CON_STATE_CLOSING) {
+		if (con->pub.state == PSCOM_CON_STATE_CLOSE_WAIT) {
 			DPRINT(con->pub.type != PSCOM_CON_TYPE_ONDEMAND ? D_INFO : D_DBG,
 			       "DISCONNECT %s via %s",
 			       pscom_con_str(&con->pub),
 			       pscom_con_type_str(con->pub.type));
 		} else {
-			DPRINT(D_DBG, "cleanup %s via %s : %s",
+			DPRINT(D_DBG, "cleanup    %s via %s : %s",
 			       pscom_con_str(&con->pub),
 			       pscom_con_type_str(con->pub.type),
 			       pscom_con_state_str(con->pub.state));
@@ -266,17 +279,9 @@ void _pscom_con_cleanup(pscom_con_t *con)
 	con->state.con_cleanup = 0;
 
 	if (con->pub.state == PSCOM_CON_STATE_CLOSED &&
-	    (con->state.close_called || con->state.internal_connection)) {
+	    (con->state.close_called)) {
 		_pscom_con_destroy(con);
 	}
-}
-
-
-static
-void _write_start_closing(pscom_con_t *con)
-{
-	DPRINT(D_DBG, "Writing to the closed connection %s (%s)",
-	       pscom_con_str(&con->pub), pscom_con_type_str(con->pub.type));
 }
 
 
@@ -286,7 +291,10 @@ void io_done_send_eof(pscom_req_state_t state, void *priv_con)
 	pscom_con_t *con = priv_con;
 	assert(con->magic == MAGIC_CONNECTION);
 	pscom_lock(); {
-		_pscom_con_cleanup(con);
+		if (con->pub.state == PSCOM_CON_STATE_CLOSING) {
+			con->pub.state = PSCOM_CON_STATE_CLOSE_WAIT;
+			pscom_con_closing(con);
+		}
 		assert(con->magic == MAGIC_CONNECTION);
 		_pscom_con_ref_release(con);
 	} pscom_unlock();
@@ -310,26 +318,100 @@ void pscom_con_send_eof(pscom_con_t *con)
 }
 
 
-void pscom_con_close(pscom_con_t *con)
+static
+void pscom_con_recv_eof_start_check(pscom_con_t *con)
+{
+	if (!con->state.eof_expect) {
+		if ((!con->state.eof_received) &&
+		    ((con->pub.state & PSCOM_CON_STATE_R) == PSCOM_CON_STATE_R)) {
+			// start reading from this connection, expecting an EOF
+			con->state.eof_expect = 1;
+			_pscom_recv_req_cnt_inc(con);
+		}
+	}
+}
+
+
+static
+void pscom_con_recv_eof_stop_check(pscom_con_t *con)
+{
+	if (con->state.eof_expect) {
+		if (con->state.eof_received || con->state.read_failed) {
+			con->state.eof_expect = 0;
+			_pscom_recv_req_cnt_dec(con);
+		}
+	}
+}
+
+
+void pscom_con_closing(pscom_con_t *con)
 {
 	int send_eof;
 	assert(con->magic == MAGIC_CONNECTION);
 
-	send_eof = ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)
-		&& (con->pub.type != PSCOM_CON_TYPE_ONDEMAND);
+	DPRINT(D_DBG_V, "...closing %s via %s %s :%s%s%s%s",
+	       pscom_con_str(&con->pub),
+	       pscom_con_type_str(con->pub.type),
+	       pscom_con_state_str(con->pub.state),
+	       con->state.close_called ? " usr_closed" : "",
+	       con->state.eof_expect ? " exp_eof" : "",
+	       con->state.eof_received ? " r_eof" : "",
+	       con->state.read_failed  ? " r_fail" : "");
 
 	// ToDo: What to do, if (con->pub.state & PSCOM_CON_STATE_SUSPENDING) ?
 
-	if (send_eof) {
+	pscom_con_recv_eof_start_check(con);
+
+	if (((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)
+	    && (con->pub.type != PSCOM_CON_TYPE_ONDEMAND)) {
+		// send_eof if con can write AND is not a on demand connection:
+
 		pscom_con_send_eof(con);
-		con->write_start = _write_start_closing; // No further writes
-	}
+		pscom_con_close_write(con); // No further pscom_post_send
 
-	con->pub.state = PSCOM_CON_STATE_CLOSING;
+		con->pub.state = PSCOM_CON_STATE_CLOSING;
+	} else {
+		switch (con->pub.state) {
+		case PSCOM_CON_STATE_CLOSING:
+			// waiting for a io_done call of the pscom_con_send_eof()
+			break;
+		default:
+			DPRINT(D_WARN, "pscom_con_closing() : unexpected connection state : %s (%s)",
+			       pscom_con_state_str(con->pub.state),
+			       pscom_con_type_str(con->pub.type));
 
-	if (!send_eof) {
-		_pscom_con_cleanup(con);
+			// Fall through to PSCOM_CON_STATE_RW
+		case PSCOM_CON_STATE_RW:
+
+			pscom_con_end_write(con);
+
+			// Fall through to PSCOM_CON_STATE_R
+		case PSCOM_CON_STATE_R:
+
+			con->pub.state = PSCOM_CON_STATE_CLOSE_WAIT;
+
+			// Fall through to PSCOM_CON_STATE_CLOSE_WAIT
+		case PSCOM_CON_STATE_CLOSE_WAIT:
+		case PSCOM_CON_STATE_NO_RW:
+			pscom_con_recv_eof_stop_check(con);
+
+			if (con->state.eof_received || con->state.read_failed) {
+				_pscom_con_cleanup(con);
+				con = NULL; // Do not use con after _pscom_con_cleanup
+			}
+			break;
+		case PSCOM_CON_STATE_CLOSED:
+			break;
+		}
 	}
+}
+
+
+void pscom_con_close(pscom_con_t *con)
+{
+	int close_called = con->state.close_called;
+	con->state.close_called = 1;
+	if (!close_called) pscom_con_closing(con);
 }
 
 
@@ -349,14 +431,21 @@ void pscom_con_error_io_done(pscom_request_t *request)
 
 	assert(con->magic == MAGIC_CONNECTION);
 
-	if (request->socket->ops.con_error) {
-		// Call socket->ops.con_error hook
+	if (request->socket->ops.con_error &&
+	    !con->state.close_called) {
+		// Call socket->ops.con_error hook if pscom_close_connection() is not yet called.
 		request->socket->ops.con_error(
 			request->connection, rdata->operation, rdata->error
 		);
 	}
-	pscom_request_free(request);
-	pscom_con_ref_release(con);
+
+	pscom_lock(); {
+		pscom_req_free(req);
+
+		// Proceed with CLOSE_WAIT:
+		pscom_con_closing(con);
+		_pscom_con_ref_release(con);
+	} pscom_unlock();
 }
 
 
@@ -367,11 +456,6 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 	pscom_req_io_con_error_t *rdata;
 
 	assert(con->magic == MAGIC_CONNECTION);
-
-	if (con->state.close_called) {
-		// Close already called. Ignore further errors.
-		return;
-	}
 
 	req = pscom_req_create(0, sizeof(pscom_req_io_con_error_t));
 	rdata = (pscom_req_io_con_error_t *)req->pub.user;
@@ -419,10 +503,8 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 	}
 	assert(con->magic == MAGIC_CONNECTION);
 
-	if (con->pub.socket->ops.con_error) {
-		pscom_con_error_deferred(con, operation, error);
-		// con->pub.socket->ops.con_error(&con->pub, operation, error);
-	}
+	pscom_con_error_deferred(con, operation, error);
+	// con->pub.socket->ops.con_error(&con->pub, operation, error);
 }
 
 
@@ -587,7 +669,9 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->rendezvous_size = pscom.env.rendezvous_size;
 
 	/* State */
+	con->state.eof_expect = 0;
 	con->state.eof_received = 0;
+	con->state.read_failed = 0;
 	con->state.close_called = 0;
 	con->state.destroyed = 0;
 	con->state.suspend_active = 0;
@@ -1062,7 +1146,6 @@ void pscom_close_connection(pscom_connection_t *connection)
 	pscom_lock(); {
 		pscom_con_t *con = get_con(connection);
 		assert(con->magic == MAGIC_CONNECTION);
-		con->state.close_called = 1;
 		pscom_con_close(con);
 	} pscom_unlock();
 }

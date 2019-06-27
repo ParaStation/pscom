@@ -64,14 +64,35 @@ void pscom_sock_stop_listen(pscom_sock_t *sock)
 static
 void pscom_sock_close(pscom_sock_t *sock)
 {
+	struct list_head *pos, *next;
+	int retry_cnt = 0;
+retry:
 	assert(sock->magic == MAGIC_SOCKET);
 
-retry:
+	// Call close on every connections
+	list_for_each_safe(pos, next, &sock->connections) {
+		pscom_con_t *con = list_entry(pos, pscom_con_t, next);
+		pscom_con_close(con);
+	}
+
 	pscom_sock_stop_listen(sock);
 
-	while (!list_empty(&sock->connections)) {
-		pscom_con_t *con = list_entry(sock->connections.next, pscom_con_t, next);
-		pscom_con_close(con);
+	while (1) {
+		int all_closed = 1;
+		list_for_each_safe(pos, next, &sock->connections) {
+			pscom_con_t *con = list_entry(pos, pscom_con_t, next);
+			assert(con->magic == MAGIC_CONNECTION);
+			if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
+				all_closed = 0;
+				break;
+			}
+		}
+
+		if (all_closed) break;
+
+		// Proceed
+		pscom_call_io_done();
+		pscom_progress(0);
 	}
 
 	_pscom_sock_terminate_all_recvs(sock);
@@ -80,8 +101,17 @@ retry:
 
 	if (!list_empty(&sock->connections) ||
 	    !list_empty(&sock->recvq_any) ||
-	    sock->pub.listen_portno != -1)
-		goto retry; // in the case the io_doneq callbacks post more work
+	    sock->pub.listen_portno != -1) {
+		retry_cnt++;
+
+		DPRINT(retry_cnt < 10 ? D_DBG : D_ERR, "pscom_sock_close() retry loop (cnt=%u)!", retry_cnt);
+
+		if (retry_cnt >= 10) sleep(1);
+
+		if (retry_cnt < 20) {
+			goto retry; // in the case the io_doneq callbacks post more work
+		}
+	}
 
 	if (!list_empty(&sock->next)) {
 		list_del_init(&sock->next);
