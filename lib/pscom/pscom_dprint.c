@@ -11,6 +11,7 @@
  */
 
 #define _GNU_SOURCE
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdarg.h>
@@ -24,6 +25,11 @@
 #include "pscom_debug.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
+
+#define PSCOM_BACKTRACE 1
+#ifdef PSCOM_BACKTRACE
+#include <execinfo.h>
+#endif
 
 static char __pscom_debug_linefmt[100] = "";
 FILE * __pscom_debug_stream = NULL;
@@ -296,3 +302,66 @@ void pscom_debug_set_filename(const char *filename, int expand)
 		}
 	}
 }
+
+
+#ifdef PSCOM_BACKTRACE
+void pscom_backtrace_dump(int sig)
+{
+	void *array[20];
+	int size;
+	char **strings;
+	int i;
+
+	size = backtrace (array, 20);
+	strings = backtrace_symbols (array, size);
+
+	DPRINT(D_FATAL, "Backtrace%s:", sig == SIGSEGV ? " after SIGSEGV (Invalid memory reference)" : "");
+
+	for (i = 0; i < size; i++) {
+		DPRINT(D_FATAL, "#%2u: %s", i, strings[i]);
+	}
+	/* backtrace_symbols_fd (array, size, 1); */
+	free (strings);
+	if (sig == SIGSEGV) _exit(1);
+}
+
+
+static
+int pscom_sigsegv_enabled = 0;
+static
+sighandler_t pscom_sigsegv_old_handler;
+
+void pscom_backtrace_onsigsegv_enable(void)
+{
+	if (!pscom_sigsegv_enabled++) {
+		pscom_sigsegv_old_handler = signal(SIGSEGV, pscom_backtrace_dump);
+	}
+}
+
+
+void pscom_backtrace_onsigsegv_disable(void)
+{
+	if (!--pscom_sigsegv_enabled) {
+		sighandler_t old = signal(SIGSEGV, pscom_sigsegv_old_handler);
+		if (old != pscom_backtrace_dump) {
+			DPRINT(D_WARN, "pscom_backtrace_onsigsegv_disable() expected pscom_backtrace_dump(%p) but got %p",
+			       pscom_backtrace_dump, old);
+			// reregister old handler
+			signal(SIGSEGV, old);
+		}
+	}
+}
+#else
+void pscom_backtrace_dump(void)
+{
+}
+
+void pscom_backtrace_onsigsegv_enable(void)
+{
+}
+
+
+void pscom_backtrace_onsigsegv_disable(void)
+{
+}
+#endif

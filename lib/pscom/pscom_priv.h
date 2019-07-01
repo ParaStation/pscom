@@ -666,4 +666,8 @@ const char *pscom_con_str_reverse(pscom_connection_t *connection);
 /* Translate name into an IPv4 address. Accept IPs in dotted notation or hostnames. */
 in_addr_t pscom_hostip(char *name);
 
+void pscom_backtrace_dump(int sig);
+void pscom_backtrace_onsigsegv_enable(void);
+void pscom_backtrace_onsigsegv_disable(void);
+
 #endif /* _PSCOM_PRIV_H_ */
