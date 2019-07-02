@@ -378,6 +378,9 @@ pscom_err_t pscom_init(int pscom_version)
 	if ((init = pscom_cuda_init()) != PSCOM_SUCCESS)  goto out;
 #endif
 
+	if (pscom.env.sigsegv) {
+		pscom_backtrace_onsigsegv_enable();
+	}
 	if (pscom.env.sigsuspend) {
 		signal(pscom.env.sigsuspend, _pscom_suspend_sighandler);
 	}

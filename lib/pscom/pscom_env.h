@@ -70,6 +70,8 @@
 #define ENV_SIGQUIT "PSP_SIGQUIT"
 /* signal number to listen on for connection suspend */
 #define ENV_SIGSUSPEND "PSP_SIGSUSPEND"
+/* Dump stack backtrace on SIGSEGV */
+#define ENV_SIGSEGV "PSP_SIGSEGV"
 #define ENV_READAHEAD "PSP_READAHEAD"
 #define ENV_RETRY "PSP_RETRY"
 
@@ -212,6 +214,7 @@ struct PSCOM_env {
 	unsigned int	psm_close_delay;
 	int		sigquit;
 	int		sigsuspend;
+	int		sigsegv;
 	unsigned int	readahead;
 	unsigned int	retry;
 	unsigned int	guard;
@@ -277,6 +280,7 @@ struct PSCOM_env {
 	.psm_close_delay = 1000,					\
 	.sigquit = 0,							\
 	.sigsuspend = 0,						\
+	.sigsegv = 1,							\
 	.readahead = 350,						\
 	.skipblocksize = 8192,						\
 	.retry = 10,							\
