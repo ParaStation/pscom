@@ -20,6 +20,7 @@
 #include <assert.h>
 #include "pscom_async.h"
 #include "pscom_debug.h"
+#include "pscom_io.h"
 #include "pscom_priv.h"
 
 typedef struct pscom_async_ipc_s pscom_async_ipc_t;
@@ -178,6 +179,7 @@ void pscom_backlog_execute() {
 	list_for_each_safe(pos, next, &backlog) {
 		pscom_backlog_t *bl = list_entry(pos, pscom_backlog_t, next);
 
+		_pscom_step();
 		bl->call(bl->priv);
 		free(bl);
 	}
