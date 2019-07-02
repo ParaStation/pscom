@@ -361,6 +361,7 @@ pscom_err_t pscom_init(int pscom_version)
 	ufd_init(&pscom.ufd);
 	INIT_LIST_HEAD(&pscom.sockets);
 	INIT_LIST_HEAD(&pscom.requests);
+	pscom.ufd_timeout = -1;
 	INIT_LIST_HEAD(&pscom.io_doneq);
 
 	INIT_LIST_HEAD(&pscom.recvq_any_global);

@@ -387,6 +387,7 @@ struct PSCOM
 	ufd_t			ufd;
 	struct list_head	sockets; // List of pscom_sock_t.next
 	struct list_head	requests; // List of pscom_req_t.all_req_next
+	int			ufd_timeout; // next timeout or -1
 
 	struct list_head	recvq_any_global;
 	unsigned int            recv_req_cnt_any_global;

@@ -1351,7 +1351,7 @@ void _pscom_wait_any(void)
 {
 	if (pscom.stat.progresscounter ==
 	    pscom.stat.progresscounter_check) {
-		pscom_progress(-1);
+		pscom_progress(pscom.ufd_timeout); // Wait
 	} else {
 		pscom_progress(0);
 		pscom.stat.progresscounter_check = pscom.stat.progresscounter;

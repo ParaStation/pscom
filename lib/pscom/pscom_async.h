@@ -14,9 +14,11 @@
 #include "pscom_priv.h"
 
 typedef void async_cb_t(ufd_t *ufd, ufd_info_t *ufd_info);
+typedef void pscom_timer_cb_t(void *priv);
 
 void pscom_async_on_readable(int fd, async_cb_t *async_cb, void *priv);
 void pscom_async_off_readable(int fd, async_cb_t *async_cb, void *priv);
+void pscom_timer(unsigned msec, pscom_timer_cb_t *timer_cb, void *priv);
 
 void pscom_backlog_push(void (*call)(void *priv), void *priv);
 // Delete first backlog entry with equal call and priv.
