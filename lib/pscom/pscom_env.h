@@ -60,6 +60,7 @@
 #define ENV_PSM_UNIQ_ID "PSP_PSM_UNIQ_ID"
 #define ENV_PSM_DEVCHECK "PSP_PSM_DEVCHECK"
 #define ENV_PSM_FASTINIT "PSP_PSM_FASTINIT"
+#define ENV_PSM_CLOSE_DELAY "PSP_PSM_CLOSE_DELAY"
 #define ENV_PMI_ID "PMI_ID"
 
 /* MXM */
@@ -208,6 +209,7 @@ struct PSCOM_env {
 	unsigned int	rendezvous_size_ucp;
 	unsigned int	psm_uniq_id;
 	unsigned int	psm_fastinit;
+	unsigned int	psm_close_delay;
 	int		sigquit;
 	int		sigsuspend;
 	unsigned int	readahead;
@@ -272,6 +274,7 @@ struct PSCOM_env {
 	.rendezvous_size_ucp = ~0U, /* default rendezvous_size for ucp */ \
 	.psm_uniq_id = 0,						\
 	.psm_fastinit = 1,						\
+	.psm_close_delay = 1000,					\
 	.sigquit = 0,							\
 	.sigsuspend = 0,						\
 	.readahead = 350,						\

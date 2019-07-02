@@ -16,6 +16,7 @@
 #include "pscom_psm.h"
 #include "pscom_con.h"
 #include "pscom_precon.h"
+#include "pscom_async.h"
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <unistd.h>
@@ -150,13 +151,33 @@ void pscom_psm_do_write(pscom_con_t *con)
 
 
 static
+volatile unsigned cleanup_wait_count = 0;
+
+static
+void pscom_psm_con_cleanup_delayed(void *ci_priv)
+{
+	pspsm_con_info_t *ci = ci_priv;
+	pspsm_progress();
+	pspsm_con_cleanup(ci);
+	pspsm_con_free(ci);
+	cleanup_wait_count--;
+}
+
+
+static
 void pscom_psm_con_cleanup(pscom_con_t *con)
 {
 	pspsm_con_info_t *ci = con->arch.psm.ci;
 	if (!ci) return;
 
-	pspsm_con_cleanup(ci);
-	pspsm_con_free(ci);
+	cleanup_wait_count++;
+
+	if (pscom.env.psm_close_delay) {
+		pspsm_progress();
+		pscom_timer(pscom.env.psm_close_delay, pscom_psm_con_cleanup_delayed, ci);
+	} else {
+		pscom_psm_con_cleanup_delayed(ci);
+	}
 
 	con->arch.psm.ci = NULL;
 }
@@ -209,6 +230,8 @@ void pscom_psm_init(void)
 
 	pscom_env_get_uint(&pscom.env.psm_fastinit, ENV_PSM_FASTINIT);
 	if (pscom.env.psm_fastinit) pspsm_init();
+
+	pscom_env_get_uint(&pscom.env.psm_close_delay, ENV_PSM_CLOSE_DELAY);
 }
 
 
@@ -269,6 +292,12 @@ error_con_init:
 
 static
 void pscom_psm_finalize(void){
+	pspsm_dprint(D_DBG_V, "pspsm_psm_finalize wait for close (%u)", cleanup_wait_count);
+	while (cleanup_wait_count) {
+		pscom_progress(pscom.ufd_timeout);
+	}
+	pspsm_dprint(D_DBG_V, "pspsm_psm_finalize done");
+
 	if (pspsm_close_endpoint() == -1) goto err;
 	if (pspsm_finalize_mq() == -1) goto err;
 	return;
