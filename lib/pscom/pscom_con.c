@@ -360,12 +360,17 @@ void pscom_con_closing(pscom_con_t *con)
 
 	// ToDo: What to do, if (con->pub.state & PSCOM_CON_STATE_SUSPENDING) ?
 
+	if ((con->pub.type == PSCOM_CON_TYPE_ONDEMAND) &&
+	    ((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)) {
+		// on demand connection and could write: emulate a received EOF
+		con->state.eof_received = 1;
+		pscom_con_close_write(con); // No more writes
+	}
+
 	pscom_con_recv_eof_start_check(con);
 
-	if (((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)
-	    && (con->pub.type != PSCOM_CON_TYPE_ONDEMAND)) {
-		// send_eof if con can write AND is not a on demand connection:
-
+	if (((con->pub.state & PSCOM_CON_STATE_W) == PSCOM_CON_STATE_W)) {
+		// We can write: send_eof
 		pscom_con_send_eof(con);
 		pscom_con_close_write(con); // No further pscom_post_send
 
@@ -379,9 +384,6 @@ void pscom_con_closing(pscom_con_t *con)
 			DPRINT(D_WARN, "pscom_con_closing() : unexpected connection state : %s (%s)",
 			       pscom_con_state_str(con->pub.state),
 			       pscom_con_type_str(con->pub.type));
-
-			// Fall through to PSCOM_CON_STATE_RW
-		case PSCOM_CON_STATE_RW:
 
 			pscom_con_end_write(con);
 
