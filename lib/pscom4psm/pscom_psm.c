@@ -294,7 +294,7 @@ static
 void pscom_psm_finalize(void){
 	pspsm_dprint(D_DBG_V, "pspsm_psm_finalize wait for close (%u)", cleanup_wait_count);
 	while (cleanup_wait_count) {
-		pscom_progress(pscom.ufd_timeout);
+		pscom_progress(pscom.ufd_timeout != -1 ? pscom.ufd_timeout : 100);
 	}
 	pspsm_dprint(D_DBG_V, "pspsm_psm_finalize done");
 
