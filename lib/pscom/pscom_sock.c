@@ -119,7 +119,6 @@ retry:
 }
 
 
-static
 void pscom_sock_set_name(pscom_sock_t *sock, const char *name)
 {
 	memset(sock->pub.local_con_info.name, 0, sizeof(sock->pub.local_con_info.name));

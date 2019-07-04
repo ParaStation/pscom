@@ -556,6 +556,9 @@ pscom_sock_t *get_sock(pscom_socket_t *socket)
 }
 
 
+void pscom_sock_set_name(pscom_sock_t *sock, const char *name);
+
+
 static inline
 pscom_req_t *get_req(pscom_request_t *request)
 {
