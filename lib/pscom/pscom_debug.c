@@ -181,6 +181,13 @@ void pscom_dump_con(FILE *out, pscom_con_t *con)
 		pscom_con_info_str(&con->pub.remote_con_info),
 		con->recv_req_cnt);
 
+	if (con->pub.state == PSCOM_CON_STATE_CLOSE_WAIT) {
+		if (con->state.close_called) fprintf(out, " usr_closed");
+		if (con->state.eof_expect) fprintf(out, " exp_eof");
+		if (con->state.eof_received) fprintf(out, " r_eof");
+		if (con->state.read_failed) fprintf(out, " r_fail");
+	}
+
 	if ((cnt = list_count(&con->sendq))) {
 		fprintf(out, " sreqs:%5d", cnt);
 	}
