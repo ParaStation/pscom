@@ -1,3 +1,23 @@
+2019-07-09  Jens Hauke  <hauke@par-tec.com>	-	5.3.1-1
+
+	* Enhancement:
+	Synchronized connection shutdown with inline EOF messages. This
+	improves "close connection" detection in cases where the
+	connection guards can't be used.
+
+	* Enhancement:
+	Dump a stack backtrace after SIGSEGV (PSP_SIGSEGV=1)
+
+	* Workaround: PSM2: Segfaults in psm2_ep_disconnect() and
+	psm2_mq_ipeek(): Wait at least PSP_PSM_CLOSE_DELAY milliseconds
+	after the last call to psm2_mq_send() before calling
+	psm2_ep_disconnect().
+
+2019-03-19  Simon Pickartz <pickartz@par-tec.com>
+
+	* Enhancement:
+	Add optional CUDA awareness (compile time option)
+
 2019-04-08  Jens Hauke  <hauke@par-tec.com>	-	5.3.0-1
 
 	* Enhancement:
