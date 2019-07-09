@@ -387,13 +387,13 @@ void pscom_con_closing(pscom_con_t *con)
 
 			pscom_con_end_write(con);
 
-			// Fall through to PSCOM_CON_STATE_R
+			/* fall through */
 		case PSCOM_CON_STATE_R:
 		case PSCOM_CON_STATE_NO_RW:
 
 			con->pub.state = PSCOM_CON_STATE_CLOSE_WAIT;
 
-			// Fall through to PSCOM_CON_STATE_CLOSE_WAIT
+			/* fall through */
 		case PSCOM_CON_STATE_CLOSE_WAIT:
 			pscom_con_recv_eof_stop_check(con);
 
