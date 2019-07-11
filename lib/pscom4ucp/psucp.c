@@ -504,7 +504,9 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2], void *req_p
 	len = iov[0].iov_len + iov[1].iov_len;
 #if 1
 	// Copy small messages into one continuous buffer.
-	if (len <= con_info->small_msg_len) {
+	if (len <= con_info->small_msg_len &&
+	    PSCOM_IF_CUDA(!pscom.env.cuda, 1) && /* do not copy if iov[1] could point to gpu mem */
+	    iov[1].iov_len /* has two fragments? */) {
 		pscom_memcpy_from_iov(psucp_small_msg_sendbuf, iov, len);
 
 		request = ucp_tag_send_nb(con_info->ucp_ep,
