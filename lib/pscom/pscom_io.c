@@ -934,9 +934,13 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 
 		if (req) {
 			req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
-			l = pscom_req_write(req, buf, len);
-			buf += l;
-			len -= l;
+
+			/* only write to the request (memcpy) if len > 0 */
+			if (len) {
+				l = pscom_req_write(req, buf, len);
+				buf += l;
+				len -= l;
+			}
 		} else if (len) {
 			/* Skip message */
 			size_t skip = pscom_min(header->data_len, len);
