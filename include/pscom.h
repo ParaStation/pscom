@@ -544,7 +544,7 @@ int pscom_req_is_done(pscom_request_t *req)
 }
 
 /*
- * Memory handling
+ * Memory handling and CUDA support
  */
 #ifdef PSCOM_CUDA_AWARENESS
 void pscom_memcpy(void* dst, const void* src, size_t len);
@@ -556,6 +556,13 @@ void pscom_memcpy(void* dst, const void* src, size_t len)
 	memcpy(dst, src, len);
 }
 #endif
+
+/**
+ * @brief Query if CUDA-support is enabled
+ *
+ * @return boolean
+ */
+int pscom_is_cuda_enabled(void);
 
 /*
  * Collective Operations/ Group handling

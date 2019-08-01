@@ -16,6 +16,10 @@
 #include "pscom_priv.h"
 #include "pscom_util.h"
 
+int pscom_is_cuda_enabled(void)
+{
+	return PSCOM_IF_CUDA(pscom.env.cuda, 0);
+}
 
 #ifdef PSCOM_CUDA_AWARENESS
 
