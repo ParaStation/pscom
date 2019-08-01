@@ -14,9 +14,9 @@ struct psex_mregion_cache {
 	struct list_head next;
 	RMA2_NLA	rma2_nla;
 	RMA2_Region	rma2_region;
+	RMA2_Port	rma2_port;
 	void		*buf;
 	size_t		size;
-	psex_con_info_t *ci;
 	unsigned	use_cnt;
 };
 
@@ -91,7 +91,7 @@ void psex_mregion_use_dec(psex_mregion_cache_t *mregc)
 
 
 static
-psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, psex_con_info_t *ci)
+psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, RMA2_Port rma2_port)
 {
 	psex_mregion_cache_t *mregc =
 		(psex_mregion_cache_t *)malloc(sizeof(psex_mregion_cache_t));
@@ -105,12 +105,12 @@ psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, psex_con_info_
 	size = (size + page_mask) & ~page_mask;
 	buf = (void*)((unsigned long) buf & ~page_mask);
 
-	err = psex_mregion_register(&mregc->rma2_region, &mregc->rma2_nla, ci->rma2_port, buf, size);
+	err = psex_mregion_register(&mregc->rma2_region, &mregc->rma2_nla, rma2_port, buf, size);
 	if (err) goto err_register;
 
 	mregc->buf = buf;
 	mregc->size = size;
-	mregc->ci = ci;
+	mregc->rma2_port = rma2_port;
 
 	return mregc;
 err_register:
@@ -123,7 +123,7 @@ static
 void psex_mregion_destroy(psex_mregion_cache_t *mregc)
 {
 	assert(!mregc->use_cnt);
-	psex_mregion_deregister(&mregc->rma2_region, mregc->ci->rma2_port);
+	psex_mregion_deregister(&mregc->rma2_region, mregc->rma2_port);
 	free(mregc);
 }
 
@@ -160,7 +160,7 @@ int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info
 		psex_mregion_gc(psex_mregion_cache_max_size);
 
 		// create new mregion
-		mregc = psex_mregion_create(buf, size, ci);
+		mregc = psex_mregion_create(buf, size, ci->rma2_port);
 		if (!mregc) goto err_register;
 
 		psex_mregion_enq(mregc);
