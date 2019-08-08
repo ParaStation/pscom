@@ -210,9 +210,14 @@ AM_CONDITIONAL([CUDA_ENABLED],
 	       [test "x$enable_cuda" != xno -a "x$have_cuda" = xyes])
 
 # ----------
+AC_ARG_ENABLE([optimizations],[AS_HELP_STRING([--disable-optimizations],
+	      [compile using the -O0 flag])])
+AM_CONDITIONAL([OPTIMIZATIONS_ENABLED],
+	       [test "x$enable_optimizations" != xno])
+AM_COND_IF([OPTIMIZATIONS_ENABLED],
+           [AX_CHECK_COMPILE_FLAG([-O3],[AM_CFLAGS="$AM_CFLAGS -O3"])],
+           [AX_CHECK_COMPILE_FLAG([-O0],[AM_CFLAGS="$AM_CFLAGS -O0"])])
 
-AX_CHECK_COMPILE_FLAG([-O3],
-  [AM_CFLAGS="$AM_CFLAGS -O3"])
 # -Wsign-conversion
 AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter],
   [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"])
@@ -249,44 +254,48 @@ AC_OUTPUT
 
 AC_MSG_NOTICE([=====================])
 AM_COND_IF([PSMGMT_ENABLED],
-  [AC_MSG_NOTICE([PSMGMT_ENABLED:   yes])],
-  [AC_MSG_NOTICE([PSMGMT_ENABLED:   no])])
+  [AC_MSG_NOTICE([PSMGMT_ENABLED:        yes])],
+  [AC_MSG_NOTICE([PSMGMT_ENABLED:        no])])
 AM_COND_IF([PSM_ENABLED],
-  [AC_MSG_NOTICE([PSM_ENABLED:      yes])
+  [AC_MSG_NOTICE([PSM_ENABLED:           yes])
   AM_COND_IF([PSM2_ENABLED],
-    [AC_MSG_NOTICE([           using psm2])],
-    [AC_MSG_NOTICE([           using psm1])])],
-  [AC_MSG_NOTICE([PSM_ENABLED:      no])])
+    [AC_MSG_NOTICE([               using psm2])],
+    [AC_MSG_NOTICE([               using psm1])])],
+  [AC_MSG_NOTICE([PSM_ENABLED:           no])])
 AM_COND_IF([GM_ENABLED],
-  [AC_MSG_NOTICE([GM_ENABLED:       yes])],
-  [AC_MSG_NOTICE([GM_ENABLED:       no])])
+  [AC_MSG_NOTICE([GM_ENABLED:            yes])],
+  [AC_MSG_NOTICE([GM_ENABLED:            no])])
 AM_COND_IF([MELLANOX_ENABLED],
-  [AC_MSG_NOTICE([MELLANOX_ENABLED: yes])],
-  [AC_MSG_NOTICE([MELLANOX_ENABLED: no])])
+  [AC_MSG_NOTICE([MELLANOX_ENABLED:      yes])],
+  [AC_MSG_NOTICE([MELLANOX_ENABLED:      no])])
 AM_COND_IF([OPENIB_ENABLED],
-  [AC_MSG_NOTICE([OPENIB_ENABLED:   yes])],
-  [AC_MSG_NOTICE([OPENIB_ENABLED:   no])])
+  [AC_MSG_NOTICE([OPENIB_ENABLED:        yes])],
+  [AC_MSG_NOTICE([OPENIB_ENABLED:        no])])
 AM_COND_IF([OFED_ENABLED],
-  [AC_MSG_NOTICE([OFED_ENABLED:     yes])],
-  [AC_MSG_NOTICE([OFED_ENABLED:     no])])
+  [AC_MSG_NOTICE([OFED_ENABLED:          yes])],
+  [AC_MSG_NOTICE([OFED_ENABLED:          no])])
 AM_COND_IF([UCP_ENABLED],
-  [AC_MSG_NOTICE([UCP_ENABLED:      yes])],
-  [AC_MSG_NOTICE([UCP_ENABLED:      no])])
+  [AC_MSG_NOTICE([UCP_ENABLED:           yes])],
+  [AC_MSG_NOTICE([UCP_ENABLED:           no])])
 AM_COND_IF([DAPL_ENABLED],
-  [AC_MSG_NOTICE([DAPL_ENABLED:     yes])],
-  [AC_MSG_NOTICE([DAPL_ENABLED:     no])])
+  [AC_MSG_NOTICE([DAPL_ENABLED:          yes])],
+  [AC_MSG_NOTICE([DAPL_ENABLED:          no])])
 AM_COND_IF([ELAN_ENABLED],
-  [AC_MSG_NOTICE([ELAN_ENABLED:     yes])],
-  [AC_MSG_NOTICE([ELAN_ENABLED:     no])])
+  [AC_MSG_NOTICE([ELAN_ENABLED:          yes])],
+  [AC_MSG_NOTICE([ELAN_ENABLED:          no])])
 AM_COND_IF([EXTOLL_ENABLED],
-  [AC_MSG_NOTICE([EXTOLL_ENABLED:   yes])],
-  [AC_MSG_NOTICE([EXTOLL_ENABLED:   no])])
+  [AC_MSG_NOTICE([EXTOLL_ENABLED:        yes])],
+  [AC_MSG_NOTICE([EXTOLL_ENABLED:        no])])
 AM_COND_IF([MXM_ENABLED],
-  [AC_MSG_NOTICE([MXM_ENABLED:      yes])],
-  [AC_MSG_NOTICE([MXM_ENABLED:      no])])
+  [AC_MSG_NOTICE([MXM_ENABLED:           yes])],
+  [AC_MSG_NOTICE([MXM_ENABLED:           no])])
 AM_COND_IF([CUDA_ENABLED],
-  [AC_MSG_NOTICE([CUDA_ENABLED:     yes])],
-  [AC_MSG_NOTICE([CUDA_ENABLED:     no])])
+  [AC_MSG_NOTICE([CUDA_ENABLED:          yes])],
+  [AC_MSG_NOTICE([CUDA_ENABLED:          no])])
+AC_MSG_NOTICE([---------------------])
+AM_COND_IF([OPTIMIZATIONS_ENABLED],
+  [AC_MSG_NOTICE([OPTIMIZATIONS_ENABLED: yes])],
+  [AC_MSG_NOTICE([OPTIMIZATIONS_ENABLED: no])])
 AC_MSG_NOTICE([=====================])
 
 # Local Variables:
