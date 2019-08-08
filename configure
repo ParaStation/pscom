@@ -640,6 +640,8 @@ LIBOBJS
 AM_LDFLAGS
 AM_CFLAGS
 AM_CPPFLAGS
+OPTIMIZATIONS_ENABLED_FALSE
+OPTIMIZATIONS_ENABLED_TRUE
 CUDA_ENABLED_FALSE
 CUDA_ENABLED_TRUE
 CUDA_LDFLAGS
@@ -839,6 +841,7 @@ enable_elan
 enable_extoll
 enable_mxm
 enable_cuda
+enable_optimizations
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1520,6 +1523,7 @@ Optional Features:
   --disable-extoll        disable EXTOLL support
   --disable-mxm           disable MXM support
   --disable-cuda          disable CUDA support
+  --disable-optimizations compile using the -O0 flag
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -11166,9 +11170,6 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
-  # Add ABI-specific directories to the system library path.
-  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
-
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -11177,7 +11178,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -13466,8 +13467,21 @@ fi
 
 
 # ----------
+# Check whether --enable-optimizations was given.
+if test "${enable_optimizations+set}" = set; then :
+  enableval=$enable_optimizations;
+fi
 
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -O3" >&5
+ if test "x$enable_optimizations" != xno; then
+  OPTIMIZATIONS_ENABLED_TRUE=
+  OPTIMIZATIONS_ENABLED_FALSE='#'
+else
+  OPTIMIZATIONS_ENABLED_TRUE='#'
+  OPTIMIZATIONS_ENABLED_FALSE=
+fi
+
+if test -z "$OPTIMIZATIONS_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -O3" >&5
 $as_echo_n "checking whether C compiler accepts -O3... " >&6; }
 if ${ax_cv_check_cflags___O3+:} false; then :
   $as_echo_n "(cached) " >&6
@@ -13500,6 +13514,44 @@ if test "x$ax_cv_check_cflags___O3" = xyes; then :
   AM_CFLAGS="$AM_CFLAGS -O3"
 else
   :
+fi
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -O0" >&5
+$as_echo_n "checking whether C compiler accepts -O0... " >&6; }
+if ${ax_cv_check_cflags___O0+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$CFLAGS
+  CFLAGS="$CFLAGS  -O0"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  ax_cv_check_cflags___O0=yes
+else
+  ax_cv_check_cflags___O0=no
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+  CFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___O0" >&5
+$as_echo "$ax_cv_check_cflags___O0" >&6; }
+if test "x$ax_cv_check_cflags___O0" = xyes; then :
+  AM_CFLAGS="$AM_CFLAGS -O0"
+else
+  :
+fi
+
 fi
 
 # -Wsign-conversion
@@ -13816,6 +13868,10 @@ Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 if test -z "${CUDA_ENABLED_TRUE}" && test -z "${CUDA_ENABLED_FALSE}"; then
   as_fn_error $? "conditional \"CUDA_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${OPTIMIZATIONS_ENABLED_TRUE}" && test -z "${OPTIMIZATIONS_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"OPTIMIZATIONS_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -15272,7 +15328,6 @@ See \`config.log' for more details" "$LINENO" 5; }
     cat <<_LT_EOF >> "$cfgfile"
 #! $SHELL
 # Generated automatically by $as_me ($PACKAGE) $VERSION
-# Libtool was configured on host `(hostname || uname -n) 2>/dev/null | sed 1q`:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 
 # Provide generalized library-building support services.
@@ -15842,95 +15897,104 @@ fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: =====================" >&5
 $as_echo "$as_me: =====================" >&6;}
 if test -z "$PSMGMT_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: PSMGMT_ENABLED:   yes" >&5
-$as_echo "$as_me: PSMGMT_ENABLED:   yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: PSMGMT_ENABLED:        yes" >&5
+$as_echo "$as_me: PSMGMT_ENABLED:        yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: PSMGMT_ENABLED:   no" >&5
-$as_echo "$as_me: PSMGMT_ENABLED:   no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: PSMGMT_ENABLED:        no" >&5
+$as_echo "$as_me: PSMGMT_ENABLED:        no" >&6;}
 fi
 if test -z "$PSM_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: PSM_ENABLED:      yes" >&5
-$as_echo "$as_me: PSM_ENABLED:      yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: PSM_ENABLED:           yes" >&5
+$as_echo "$as_me: PSM_ENABLED:           yes" >&6;}
   if test -z "$PSM2_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}:            using psm2" >&5
-$as_echo "$as_me:            using psm2" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:                using psm2" >&5
+$as_echo "$as_me:                using psm2" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}:            using psm1" >&5
-$as_echo "$as_me:            using psm1" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}:                using psm1" >&5
+$as_echo "$as_me:                using psm1" >&6;}
 fi
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: PSM_ENABLED:      no" >&5
-$as_echo "$as_me: PSM_ENABLED:      no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: PSM_ENABLED:           no" >&5
+$as_echo "$as_me: PSM_ENABLED:           no" >&6;}
 fi
 if test -z "$GM_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: GM_ENABLED:       yes" >&5
-$as_echo "$as_me: GM_ENABLED:       yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: GM_ENABLED:            yes" >&5
+$as_echo "$as_me: GM_ENABLED:            yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: GM_ENABLED:       no" >&5
-$as_echo "$as_me: GM_ENABLED:       no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: GM_ENABLED:            no" >&5
+$as_echo "$as_me: GM_ENABLED:            no" >&6;}
 fi
 if test -z "$MELLANOX_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: MELLANOX_ENABLED: yes" >&5
-$as_echo "$as_me: MELLANOX_ENABLED: yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MELLANOX_ENABLED:      yes" >&5
+$as_echo "$as_me: MELLANOX_ENABLED:      yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: MELLANOX_ENABLED: no" >&5
-$as_echo "$as_me: MELLANOX_ENABLED: no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MELLANOX_ENABLED:      no" >&5
+$as_echo "$as_me: MELLANOX_ENABLED:      no" >&6;}
 fi
 if test -z "$OPENIB_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: OPENIB_ENABLED:   yes" >&5
-$as_echo "$as_me: OPENIB_ENABLED:   yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: OPENIB_ENABLED:        yes" >&5
+$as_echo "$as_me: OPENIB_ENABLED:        yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: OPENIB_ENABLED:   no" >&5
-$as_echo "$as_me: OPENIB_ENABLED:   no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: OPENIB_ENABLED:        no" >&5
+$as_echo "$as_me: OPENIB_ENABLED:        no" >&6;}
 fi
 if test -z "$OFED_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: OFED_ENABLED:     yes" >&5
-$as_echo "$as_me: OFED_ENABLED:     yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: OFED_ENABLED:          yes" >&5
+$as_echo "$as_me: OFED_ENABLED:          yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: OFED_ENABLED:     no" >&5
-$as_echo "$as_me: OFED_ENABLED:     no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: OFED_ENABLED:          no" >&5
+$as_echo "$as_me: OFED_ENABLED:          no" >&6;}
 fi
 if test -z "$UCP_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: UCP_ENABLED:      yes" >&5
-$as_echo "$as_me: UCP_ENABLED:      yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: UCP_ENABLED:           yes" >&5
+$as_echo "$as_me: UCP_ENABLED:           yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: UCP_ENABLED:      no" >&5
-$as_echo "$as_me: UCP_ENABLED:      no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: UCP_ENABLED:           no" >&5
+$as_echo "$as_me: UCP_ENABLED:           no" >&6;}
 fi
 if test -z "$DAPL_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: DAPL_ENABLED:     yes" >&5
-$as_echo "$as_me: DAPL_ENABLED:     yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: DAPL_ENABLED:          yes" >&5
+$as_echo "$as_me: DAPL_ENABLED:          yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: DAPL_ENABLED:     no" >&5
-$as_echo "$as_me: DAPL_ENABLED:     no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: DAPL_ENABLED:          no" >&5
+$as_echo "$as_me: DAPL_ENABLED:          no" >&6;}
 fi
 if test -z "$ELAN_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: ELAN_ENABLED:     yes" >&5
-$as_echo "$as_me: ELAN_ENABLED:     yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: ELAN_ENABLED:          yes" >&5
+$as_echo "$as_me: ELAN_ENABLED:          yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: ELAN_ENABLED:     no" >&5
-$as_echo "$as_me: ELAN_ENABLED:     no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: ELAN_ENABLED:          no" >&5
+$as_echo "$as_me: ELAN_ENABLED:          no" >&6;}
 fi
 if test -z "$EXTOLL_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: EXTOLL_ENABLED:   yes" >&5
-$as_echo "$as_me: EXTOLL_ENABLED:   yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: EXTOLL_ENABLED:        yes" >&5
+$as_echo "$as_me: EXTOLL_ENABLED:        yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: EXTOLL_ENABLED:   no" >&5
-$as_echo "$as_me: EXTOLL_ENABLED:   no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: EXTOLL_ENABLED:        no" >&5
+$as_echo "$as_me: EXTOLL_ENABLED:        no" >&6;}
 fi
 if test -z "$MXM_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:      yes" >&5
-$as_echo "$as_me: MXM_ENABLED:      yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:           yes" >&5
+$as_echo "$as_me: MXM_ENABLED:           yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:      no" >&5
-$as_echo "$as_me: MXM_ENABLED:      no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:           no" >&5
+$as_echo "$as_me: MXM_ENABLED:           no" >&6;}
 fi
 if test -z "$CUDA_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:     yes" >&5
-$as_echo "$as_me: CUDA_ENABLED:     yes" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:          yes" >&5
+$as_echo "$as_me: CUDA_ENABLED:          yes" >&6;}
 else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:     no" >&5
-$as_echo "$as_me: CUDA_ENABLED:     no" >&6;}
+  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:          no" >&5
+$as_echo "$as_me: CUDA_ENABLED:          no" >&6;}
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: ---------------------" >&5
+$as_echo "$as_me: ---------------------" >&6;}
+if test -z "$OPTIMIZATIONS_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: OPTIMIZATIONS_ENABLED: yes" >&5
+$as_echo "$as_me: OPTIMIZATIONS_ENABLED: yes" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: OPTIMIZATIONS_ENABLED: no" >&5
+$as_echo "$as_me: OPTIMIZATIONS_ENABLED: no" >&6;}
 fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: =====================" >&5
 $as_echo "$as_me: =====================" >&6;}
