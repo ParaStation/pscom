@@ -50,7 +50,7 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len);
  */
 
 /**
- * \brief Default memcpy variant
+ * \brief Default synchronous memcpy variant
  *
  * This variant does not make any assumptions on the source and destination
  * buffers.
@@ -70,7 +70,7 @@ void _pscom_memcpy_default(void* dst, const void* src, size_t len)
 }
 
 /**
- * \brief Memcpy from user memory to host memory.
+ * \brief Synchronous memcpy from user memory to host memory.
  *
  * \param [in] dst Pointer to the destination buffer (within host memory).
  * \param [in] src Pointer to the source buffer.
@@ -87,7 +87,7 @@ void _pscom_memcpy_from_user(void* dst, const void* src, size_t len)
 }
 
 /**
- * \brief Memcpy from host memory to user memory.
+ * \brief Synchronous memcpy from host memory to user memory.
  *
  * \param [in] dst Pointer to the destination buffer.
  * \param [in] src Pointer to the source buffer (within host memory).

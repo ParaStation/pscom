@@ -187,6 +187,49 @@ err_out:
 }
 
 
+static inline
+void pscom_memcpy_any_dir(void* dst, const void* src, size_t len)
+{
+	CUresult ret;
+
+	CUstream copy_stream = pscom_cuda_stream_get_or_create(PSCOM_COPY_ANY_DIR);
+
+	ret = cuMemcpyAsync((CUdeviceptr)dst, (CUdeviceptr)src, len,
+			    copy_stream);
+	assert(ret == CUDA_SUCCESS);
+	ret = cuStreamSynchronize(copy_stream);
+	assert(ret == CUDA_SUCCESS);
+}
+
+
+void pscom_memcpy_device2host(void* dst, const void* src, size_t len)
+{
+	CUresult ret;
+
+	CUstream copy_stream = pscom_cuda_stream_get_or_create(PSCOM_COPY_DEVICE2HOST);
+
+	ret = cuMemcpyDtoHAsync(dst, (CUdeviceptr)src, len,
+				copy_stream);
+	assert(ret == CUDA_SUCCESS);
+	ret = cuStreamSynchronize(copy_stream);
+	assert(ret == CUDA_SUCCESS);
+}
+
+
+void pscom_memcpy_host2device(void* dst, const void* src, size_t len)
+{
+	CUresult ret;
+
+	CUstream copy_stream = pscom_cuda_stream_get_or_create(PSCOM_COPY_HOST2DEVICE);
+
+	ret = cuMemcpyHtoDAsync((CUdeviceptr)dst, src, len,
+				copy_stream);
+	assert(ret == CUDA_SUCCESS);
+	ret = cuStreamSynchronize(copy_stream);
+	assert(ret == CUDA_SUCCESS);
+}
+
+
 pscom_err_t pscom_cuda_init(void)
 {
 	CUresult ret;
@@ -262,6 +305,8 @@ int pscom_is_gpu_mem(const void* ptr)
  * \brief GPU-safe memcpy from user to host memory
  *
  * For details see _pscom_memcpy_from_user().
+ *
+ * \remark This is a synchronous memcpy!
  */
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
@@ -269,8 +314,7 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 	CUresult ret;
 
 	if (_pscom_is_gpu_mem(src, len)) {
-		ret = cuMemcpyDtoH(dst, (CUdeviceptr)src, len);
-		assert(ret == CUDA_SUCCESS);
+		pscom_memcpy_device2host(dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -281,6 +325,8 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
  * \brief GPU-safe memcpy from host to user memory
  *
  * For details see _pscom_memcpy_from_user().
+ *
+ * \remark This is a synchronous memcpy!
  */
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
@@ -288,8 +334,7 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 	CUresult ret;
 
 	if (_pscom_is_gpu_mem(dst, len)) {
-		ret = cuMemcpyHtoD((CUdeviceptr)dst, src, len);
-		assert(ret == CUDA_SUCCESS);
+		pscom_memcpy_host2device(dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
@@ -300,6 +345,8 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
  * \brief GPU-safe memcpy
  *
  * For details see _pscom_memcpy_default().
+ *
+ * \remark This is a synchronous memcpy!
  */
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
@@ -307,8 +354,7 @@ void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 	CUresult ret;
 
 	if (_pscom_is_gpu_mem(dst, len) || _pscom_is_gpu_mem(src, len)) {
-		ret = cuMemcpy((CUdeviceptr)dst, (CUdeviceptr)src, len);
-		assert(ret == CUDA_SUCCESS);
+		pscom_memcpy_any_dir(dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}

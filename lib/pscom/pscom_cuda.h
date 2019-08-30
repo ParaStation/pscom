@@ -23,6 +23,34 @@ pscom_err_t pscom_cuda_cleanup(void);
 int _pscom_is_gpu_mem(const void* ptr, size_t length);
 
 
+/**
+ * @brief Synchronous device to host memcpy operation
+ *
+ * This operation utilizes the appropriate, pscom-internal CUDA stream
+ * and performs basic error checking. The stream is created lazily if
+ * approprate.
+ *
+ * @param [in] dst destination buffer
+ * @param [in] src source buffer
+ * @param [in] len bytes to be copied
+ */
+void pscom_memcpy_device2host(void* dst, const void* src, size_t len);
+
+
+/**
+ * @brief Synchronous host to device memcpy operation
+ *
+ * This operation utilizes the appropriate, pscom-internal CUDA stream
+ * and performs basic error checking. The stream is created lazily if
+ * approprate.
+ *
+ * @param [in] dst destination buffer
+ * @param [in] src source buffer
+ * @param [in] len bytes to be copied
+ */
+void pscom_memcpy_host2device(void* dst, const void* src, size_t len);
+
+
 static inline
 int _pscom_buffer_needs_staging(const void* ptr, pscom_con_t* con)
 {
