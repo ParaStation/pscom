@@ -10,8 +10,18 @@
 
 #define MIN(a,b)      (((a)<(b))?(a):(b))
 
+typedef enum PSCOM_copy_dir {
+	PSCOM_COPY_ANY_DIR = 0,
+	PSCOM_COPY_DEVICE2HOST,
+	PSCOM_COPY_HOST2DEVICE,
+	PSCOM_COPY_DIR_COUNT
+} pscom_copy_dir_t;
+
+
 pscom_err_t pscom_cuda_init(void);
+pscom_err_t pscom_cuda_cleanup(void);
 int _pscom_is_gpu_mem(const void* ptr, size_t length);
+
 
 static inline
 int _pscom_buffer_needs_staging(const void* ptr, pscom_con_t* con)
