@@ -1,3 +1,11 @@
+2019-09-19    Jens Hauke  <hauke@par-tec.com>	-	5.4.0-1
+
+	* Fix rendezvous message order: In rare cases small messages had
+	overtaken large ones with the same MPI TAG.
+
+	* New: pscom_is_cuda_enabled(void) to query for CUDA support at
+	runtime.
+
 2019-07-09  Jens Hauke  <hauke@par-tec.com>	-	5.3.1-1
 
 	* Enhancement:
