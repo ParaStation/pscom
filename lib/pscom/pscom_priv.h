@@ -166,6 +166,33 @@ typedef struct user_conn {
 
 
 /* rendezvous message for RMA requests. */
+
+/*
+  Net layout of a PSCOM_MSGTYPE_RENDEZVOUS_REQ message:
+
+  header (pscom_header_net_t):
+      xheader_len: calculated
+      msg_type:    PSCOM_MSGTYPE_RENDEZVOUS_REQ
+      data_len:    0
+  xheader:
+      user_header (pscom_header_net_t):
+	  xheader_len: user_req->pub.xheader_len
+	  msg_type:    PSCOM_MSGTYPE_USER
+	  data_len:    user_req->pub.data_len
+      user_xheader:
+	  char user_xheader[user_req->pub.xheader_len]
+
+      rendezvous_msg (pscom_rendezvous_msg_t):
+	  common data: id and data pointer
+	  arch dependent. Size is calculated. sizeof(rendezvous_msg) <= sizeof(pscom_rendezvous_msg_t)
+  data: // no data
+ */
+typedef struct pscom_rendezvous_xheader {
+	pscom_header_net_t	user_header_net;
+	char			user_xheader[0 /* user_req->pub.xheader_len */];
+	/* after user_header: (pscom_rendezvous_data_t) &user_xheader[user_header_net.xheader_len] */
+} pscom_rendezvous_xheader_t;
+
 typedef struct pscom_rendezvous_msg {
 	void		*id; /* == pscom_req_t *user_req; from sending side */
 	void		*data;
@@ -188,10 +215,28 @@ typedef struct pscom_rendezvous_msg {
 	}	arch;
 } pscom_rendezvous_msg_t;
 
+
 static inline
-size_t pscom_rendezvous_msg_size(size_t arch_size) {
-	return sizeof(pscom_rendezvous_msg_t) - sizeof(((pscom_rendezvous_msg_t*)0)->arch) + arch_size;
+size_t pscom_rendezvous_msg_len(size_t arch_len) {
+	return sizeof(pscom_rendezvous_msg_t) - sizeof(((pscom_rendezvous_msg_t*)0)->arch) +
+		arch_len;
 }
+
+
+static inline
+size_t pscom_rendezvous_xheader_len(size_t arch_len, size_t user_xheader_len) {
+	return sizeof(pscom_rendezvous_xheader_t) +
+		pscom_rendezvous_msg_len(arch_len) +
+		user_xheader_len;
+}
+
+
+// Inverted pscom_rendezvous_xheader_len(). return arch_len;
+static inline
+size_t pscom_rendezvous_arch_len(size_t xheader_len, size_t user_xheader_len) {
+	return xheader_len - pscom_rendezvous_xheader_len(0, user_xheader_len);
+}
+
 
 typedef struct pscom_rendezvous_data_shm {
 } pscom_rendezvous_data_shm_t;
@@ -215,7 +260,7 @@ typedef struct _pscom_rendezvous_data_openib {
 
 typedef struct pscom_rendezvous_data {
 	pscom_rendezvous_msg_t	msg;
-	int	use_arch_read;
+	size_t			msg_arch_len;
 	union {
 		pscom_rendezvous_data_shm_t	shm;
 		_pscom_rendezvous_data_dapl_t	dapl;
