@@ -299,5 +299,5 @@ AM_COND_IF([OPTIMIZATIONS_ENABLED],
 AC_MSG_NOTICE([=====================])
 
 # Local Variables:
-#  compile-command: "module load automake-1.15.1 && autoreconf -vif"
+#  compile-command: "module load automake-1.16.1 && autoreconf -vif"
 # End:

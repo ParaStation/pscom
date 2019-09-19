@@ -87,6 +87,7 @@ doc/Makefile.in \
 doc/README_any_source_receives.txt \
 doc/Verbindungsaufbau.txt \
 doc/bcast.txt \
+doc/connection_states_closing.drawio \
 doc/p4stat.txt \
 doc/p4tcp.txt \
 include/Makefile.am \
