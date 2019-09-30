@@ -74,6 +74,10 @@
 #define ENV_SIGSEGV "PSP_SIGSEGV"
 #define ENV_READAHEAD "PSP_READAHEAD"
 #define ENV_RETRY "PSP_RETRY"
+/* reconnect a precon after a connect() error after PSP_RECONNECT_TIMEOUT [ms] */
+#define ENV_RECONNECT_TIMEOUT	"PSP_RECONNECT_TIMEOUT"
+/* Declare after (PSP_CONNECT_STALLED * PSP_RECONNECT_TIMEOUT)[ms] without any received bytes the connect() as failed. Retry. */
+#define ENV_CONNECT_STALLED_MAX	"PSP_CONNECT_STALLED"
 
 /* Enable/Disable the connection guard */
 #define ENV_GUARD "PSP_GUARD"
@@ -199,6 +203,7 @@ struct PSCOM_env {
 	int		tcp_nodelay;
 	unsigned int	tcp_backlog;
 	unsigned int	precon_reconnect_timeout;
+	unsigned int	precon_connect_stalled_max;
 	int		unexpected_receives;
 	int		sched_yield;
 	unsigned int	rendezvous_size;
@@ -217,6 +222,7 @@ struct PSCOM_env {
 	int		sigsegv;
 	unsigned int	readahead;
 	unsigned int	retry;
+	unsigned int	connect_timeout;
 	unsigned int	guard;
 	unsigned int	skipblocksize;
 	unsigned int	iprobe_count;
@@ -264,6 +270,7 @@ struct PSCOM_env {
 	.tcp_nodelay = 1,						\
 	.tcp_backlog = 262144 /*SOMAXCONN = 128 */,			\
 	.precon_reconnect_timeout = 2000, /* try reconnect in [ms] */	\
+	.precon_connect_stalled_max = 6,				\
 									\
 	.unexpected_receives = 0,					\
 	.sched_yield = 0,						\

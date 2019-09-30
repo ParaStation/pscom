@@ -1,3 +1,13 @@
+2019-09-30    Jens Hauke  <hauke@par-tec.com>
+
+	* Workaround: TCP reconnect, if a call to connect() do not progress.
+	New environment variables:
+	PSP_RECONNECT_TIMEOUT	timeout in ms before reconnecting after an
+				error
+	PSP_CONNECT_STALLED	max number of reconnect timeouts before
+				reconnecting even without an error on the
+				connection.
+
 2019-09-19    Jens Hauke  <hauke@par-tec.com>	-	5.4.0-1
 
 	* Fix rendezvous message order: In rare cases small messages had

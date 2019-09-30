@@ -676,6 +676,7 @@ static
 void pscom_precon_reconnect(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
+	assert(pre->connect);
 
 	pscom_precon_connect_terminate(pre);
 
@@ -755,7 +756,7 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 			ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
 		}
 	} else {
-		if (retry_on_error(errno)) {
+		if (pre->connect && retry_on_error(errno)) {
 			/* Nonblocking connect() failed e.g. on ECONNREFUSED */
 			pscom_precon_reconnect(pre);
 			pre = NULL; // pscom_precon_reconnect() might close pre. Don't use pre afterwards.
@@ -953,6 +954,7 @@ int pscom_precon_tcp_connect(precon_t *pre, int nodeid, int portno)
 
 	pre->nodeid = nodeid;
 	pre->portno = portno;
+	pre->connect = 1;
 
 	fd = _pscom_tcp_connect(nodeid, portno, pre);
 	if (fd >= 0) {
@@ -981,25 +983,40 @@ int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
 		}
 	}
 
-	if (pscom_precon_is_obsolete_backconnect(pre)) {
-		// Forward connect succeeded or failed finally.
+	if (!pre->connect) {
+		// Not the connecting side of the precon.
+		// The accepting side does nothing here.
+	} else if (pscom_precon_is_obsolete_backconnect(pre)) {
+		// pre is a backconnect and the forward connect succeeded or failed finally.
 		pscom_precon_terminate_backconnect(pre);
 	} else if (now - pre->last_reconnect > pscom.env.precon_reconnect_timeout /* ms */ * 1000UL) {
+		// reconnect timeout happened
+
 		pre->last_reconnect = now;
 
-		if (!pscom_precon_isconnected(pre) || (pre->stat_recv == 0)) {
-			if (pscom_precon_isconnected(pre) && (pre->stat_recv == 0) &&
-			    (pre->stalled_cnt < 4 /* ToDo: Configure option! */)) {
+		if (!pscom_precon_isconnected(pre)) {
+			// reconnect after failure followed by the precon_reconnect_timeout:
+			pscom_precon_reconnect(pre);
+		} else if ((pre->stat_recv == 0) && (pre->stat_send == 0)) {
+			// precon stalled
+			pre->stalled_cnt++;
+
+			if (pre->stalled_cnt < pscom.env.precon_connect_stalled_max) {
+				/* Wait */
+				DPRINT(D_DBG, "precon(%p): connect(%s:%u) stalled %u/%u",
+				       pre, pscom_inetstr(pre->nodeid), pre->portno,
+				       pre->stalled_cnt, pscom.env.precon_connect_stalled_max);
+			} else {
+				DPRINT(D_ERR, "precon(%p): connect(%s:%u) stalled - reconnecting",
+				       pre, pscom_inetstr(pre->nodeid), pre->portno);
+
 				/* ToDo:
 				   If the peer is just busy, we should wait further, but if
 				   this connection is broken we should reconnect. How to detect that
-				   the remote missed the accept event? */
-				DPRINT(D_DBG, "precon(%p): connection stalled %u/4", pre, pre->stalled_cnt);
-				pre->stalled_cnt++;
-			} else {
-				if (pre->stalled_cnt) {
-					DPRINT(1, "precon(%p): connection stalled to long - reconnecting", pre);
-				}
+				   the remote missed the accept event? Here is a race: The remote might
+				   have started already a handshake on this precon while we terminate
+				   the connection and retry.
+				*/
 				pre->stalled_cnt = 0;
 				pscom_precon_reconnect(pre);
 			}
@@ -1024,6 +1041,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 	pre->recv_done = 1;	// No recv
 	pre->closefd_on_cleanup = 1; // Default: Close fd on cleanup. Only PSCOM_CON_TYPE_TCP will overwrite this.
 	pre->back_connect = 0;	// Not a back connect
+	pre->connect = 0;
 	pre->stalled_cnt = 0;
 
 	pre->ufd_info.fd = -1;

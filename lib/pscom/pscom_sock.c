@@ -104,13 +104,15 @@ retry:
 	    sock->pub.listen_portno != -1) {
 		retry_cnt++;
 
-		DPRINT(retry_cnt < 10 ? D_DBG : D_ERR, "pscom_sock_close() retry loop (cnt=%u)!", retry_cnt);
+		DPRINT(D_DBG, "pscom_sock_close() retry loop (cnt=%u)!", retry_cnt);
 
 		if (retry_cnt >= 10) sleep(1);
 
 		if (retry_cnt < 20) {
 			goto retry; // in the case the io_doneq callbacks post more work
 		}
+		DPRINT(D_ERR, "pscom_sock_close() forced closing of all connections failed.");
+
 	}
 
 	if (!list_empty(&sock->next)) {

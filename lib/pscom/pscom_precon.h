@@ -43,6 +43,7 @@ typedef struct precon {
 	unsigned	recv_done : 1;
 	unsigned	closefd_on_cleanup : 1; // Call close(fd) on cleanup?
 	unsigned	back_connect : 1;	// Is this a back connect precon?
+	unsigned	connect : 1;		// Bool: fd used with connect()?
 	unsigned	stalled_cnt : 8;	// Stalled connection counter
 
 	int		nodeid, portno; // Retry connect to nodeid:portno on ECONNREFUSED

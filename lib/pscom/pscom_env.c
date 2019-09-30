@@ -194,6 +194,9 @@ void pscom_env_init(void)
 	pscom_env_get_int(&pscom.env.sigsegv, ENV_SIGSEGV);
 	pscom_env_get_uint(&pscom.env.readahead, ENV_READAHEAD);
 	pscom_env_get_uint(&pscom.env.retry, ENV_RETRY);
+	pscom_env_get_uint(&pscom.env.precon_reconnect_timeout, ENV_RECONNECT_TIMEOUT);
+	pscom_env_get_uint(&pscom.env.precon_connect_stalled_max, ENV_CONNECT_STALLED_MAX);
+
 	pscom.env.readahead = pscom_max(pscom.env.readahead, (unsigned)sizeof(pscom_header_net_t));
 
 	pscom_env_get_uint(&pscom.env.guard, ENV_GUARD);
