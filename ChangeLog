@@ -1,4 +1,4 @@
-2019-09-30    Jens Hauke  <hauke@par-tec.com>
+2019-10-08    Jens Hauke  <hauke@par-tec.com>	-	5.4.1-1
 
 	* Workaround: TCP reconnect, if a call to connect() do not progress.
 	New environment variables:
