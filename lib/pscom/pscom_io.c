@@ -1200,7 +1200,7 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 
 	pscom.stat.rendezvous_reqs++;
 
-	rndv_req = pscom_req_create(sizeof(pscom_rendezvous_xheader_t) + sizeof(pscom_rendezvous_msg_t) + user_xheader_len, 0);
+	rndv_req = pscom_req_create(sizeof(pscom_rendezvous_xheader_t) + sizeof(pscom_rendezvous_data_t) + user_xheader_len, 0);
 
 	/* user header and user xheader */
 	rx = (pscom_rendezvous_xheader_t *)(void*)&rndv_req->pub.xheader;
