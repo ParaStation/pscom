@@ -1,3 +1,7 @@
+2019-10-16  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.2-1
+
+	* Fix: Preparation of the rendezvous request message
+
 2019-10-08    Jens Hauke  <hauke@par-tec.com>	-	5.4.1-1
 
 	* Workaround: TCP reconnect, if a call to connect() do not progress.
