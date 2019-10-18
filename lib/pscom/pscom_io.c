@@ -54,7 +54,7 @@ static        int          _pscom_cancel_send(pscom_req_t *req);
 static        int          _pscom_cancel_recv(pscom_req_t *req);
 static inline void         pscom_post_send_direct_inline(pscom_req_t *req, pscom_msgtype_t msg_type);
 static inline void         _pscom_post_send_direct_inline(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type);
-static inline void         pscom_post_send_rendezvous(pscom_req_t *user_req);
+static inline void         pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type);
 static inline void         _pscom_post_rma_read(pscom_req_t *req);
 
 int                        pscom_read_is_at_message_start(pscom_con_t *con);
@@ -642,8 +642,8 @@ pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t 
 	rndv_req->pub.connection = &con->pub;
 	rndv_req->pub.state = PSCOM_REQ_STATE_RMA_READ_REQUEST;
 
-	/* Find a user request or genereate a request for the data */
-	pscom_req_t *user_req = _pscom_get_user_receiver(con, &rx->user_header_net);
+	/* find a matching request or genereate one as appropriate */
+	pscom_req_t *user_req = _pscom_get_recv_req(con, &rx->user_header_net);
 
 	pscom_req_prepare_recv(user_req, &rx->user_header_net, &con->pub);
 
@@ -678,7 +678,7 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 		con->rma_mem_deregister(con, rd);
 	}
 
-	_pscom_recv_req_cnt_dec(con); // inc in pscom_post_send_rendezvous()
+	_pscom_recv_req_cnt_dec(con); // inc in pscom_post_send_rendezvous_inline()
 	pscom_request_free(&req->pub);
 
 	perf_add("rndv_send_done");
@@ -1188,7 +1188,7 @@ int _pscom_cancel_recv(pscom_req_t *req)
 
 
 static inline
-void pscom_post_send_rendezvous(pscom_req_t *user_req)
+void pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
 {
 
 	pscom_req_t *rndv_req;
@@ -1205,7 +1205,7 @@ void pscom_post_send_rendezvous(pscom_req_t *user_req)
 	/* user header and user xheader */
 	rx = (pscom_rendezvous_xheader_t *)(void*)&rndv_req->pub.xheader;
 
-	pscom_header_net_prepare(&rx->user_header_net, PSCOM_MSGTYPE_USER,
+	pscom_header_net_prepare(&rx->user_header_net, msg_type,
 				 user_xheader_len, user_req->pub.data_len);
 
 	memcpy(rx->user_xheader, &user_req->pub.xheader, user_xheader_len);
@@ -1608,7 +1608,7 @@ void pscom_probe(pscom_request_t *request)
 }
 
 
-void pscom_post_send(pscom_request_t *request)
+void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
 {
 	pscom_req_t *req = get_req(request);
 	assert(req->magic == MAGIC_REQUEST);
@@ -1622,8 +1622,13 @@ void pscom_post_send(pscom_request_t *request)
 		pscom_post_send_direct_inline(req, PSCOM_MSGTYPE_USER);
 	} else {
 		perf_add("reset_send_rndv");
-		pscom_post_send_rendezvous(req);
+		pscom_post_send_rendezvous_inline(req, msg_type);
 	}
+}
+
+void pscom_post_send(pscom_request_t *request)
+{
+	pscom_post_send_msgtype(request, PSCOM_MSGTYPE_USER);
 }
 
 
