@@ -1187,8 +1187,15 @@ int _pscom_cancel_recv(pscom_req_t *req)
 }
 
 
+/*
+ * Prepares a rendezvous request by generating a message with the network layout
+ * as defined in pscom_priv.h.
+ *
+ * This function is used for both the locked and the unlocked version of
+ * pscom_post_send_rendezvous_inline().
+ */
 static inline
-void pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
+pscom_req_t *pscom_prepare_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
 {
 
 	pscom_req_t *rndv_req;
@@ -1244,17 +1251,50 @@ void pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t ms
 	user_req->pub.state = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
 		PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
 
-	pscom_lock(); {
-		_pscom_post_send_direct_inline(con, rndv_req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
-		_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
-	} pscom_unlock();
-
-	return;
+	return rndv_req;
 
 fallback_to_eager:
 	pscom_req_free(rndv_req);
 	pscom.stat.fallback_to_eager++;
-	pscom_post_send_direct_inline(user_req, PSCOM_MSGTYPE_USER);
+
+	return NULL;
+}
+
+/* Posts a rendezvous request with arbitrary message type */
+static inline
+void pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
+{
+	pscom_con_t *con = get_con(user_req->pub.connection);
+	pscom_req_t *rndv_req = pscom_prepare_send_rendezvous_inline(user_req, msg_type);
+
+	if (!rndv_req) {
+		pscom_post_send_direct_inline(user_req, msg_type);
+	} else {
+		pscom_lock(); {
+			_pscom_post_send_direct_inline(con, rndv_req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
+			_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
+		} pscom_unlock();
+	}
+
+	return;
+}
+
+
+/* The unlocked variant of pscom_post_send_rendezvous_inline() */
+static inline
+void _pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
+{
+	pscom_con_t *con = get_con(user_req->pub.connection);
+	pscom_req_t *req = pscom_prepare_send_rendezvous_inline(user_req, msg_type);
+
+	if (!req) {
+		_pscom_post_send_direct_inline(con, user_req, msg_type);
+	} else {
+		_pscom_post_send_direct_inline(con, req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
+		_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
+	}
+
+	return;
 }
 
 
@@ -1607,23 +1647,31 @@ void pscom_probe(pscom_request_t *request)
 	}
 }
 
-
-void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
+void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
 {
 	pscom_req_t *req = get_req(request);
+	pscom_con_t *con = get_con(request->connection);
+
 	assert(req->magic == MAGIC_REQUEST);
 	assert(request->state & PSCOM_REQ_STATE_DONE);
 	assert(request->connection != NULL);
 
 	_pscom_stage_buffer(req, 1);
 
-	if (req->pub.data_len < get_con(request->connection)->rendezvous_size) {
+	if (req->pub.data_len < con->rendezvous_size) {
 		perf_add("reset_send_direct");
-		pscom_post_send_direct_inline(req, PSCOM_MSGTYPE_USER);
+		_pscom_post_send_direct_inline(con, req, msg_type);
 	} else {
 		perf_add("reset_send_rndv");
-		pscom_post_send_rendezvous_inline(req, msg_type);
+		_pscom_post_send_rendezvous_inline(req,  msg_type);
 	}
+}
+
+void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
+{
+	pscom_lock(); {
+		_pscom_post_send_msgtype(request, msg_type);
+	} pscom_unlock();
 }
 
 void pscom_post_send(pscom_request_t *request)
