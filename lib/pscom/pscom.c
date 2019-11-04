@@ -193,7 +193,6 @@ void pscom_poll_read_start(pscom_con_t *con)
 	pscom_poll_reader_t *reader = &con->poll_reader;
 	if (list_empty(&reader->next)) {
 		list_add_tail(&reader->next, &pscom.poll_reader);
-		reader->do_read(reader);
 	}
 }
 
