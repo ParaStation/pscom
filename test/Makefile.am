@@ -21,18 +21,32 @@ pscom_utest_LDADD = \
 	$(top_builddir)/lib/pscom/libpscom.la
 
 pscom_utest_CPPFLAGS = \
+	-I./pscom \
 	-I$(top_srcdir)/include \
 	-I$(top_srcdir)/lib/pscom
 
-pscom_utest_LDFLAGS= \
+pscom_utest_LDFLAGS = \
 	-static \
-	-lcmocka \
-	-lcuda -lcudart
+	-lcmocka
 
 pscom_utest_SOURCES = \
-	pscom_utest.c \
-	\
-	pscom/test_cuda.c
+	pscom_utest.c
+
+# CUDA-related configuration
+if CUDA_ENABLED
+pscom_utest_CPPFLAGS += -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
+pscom_utest_SOURCES  += pscom/test_cuda.c
+pscom_utest_LDFLAGS  += $(CUDA_LDFLAGS) -lcuda \
+						-Wl,--wrap=memcpy \
+						-Wl,--wrap=cuInit \
+						-Wl,--wrap=cuDeviceGetCount \
+						-Wl,--wrap=cuDeviceGetAttribute \
+						-Wl,--wrap=cuPointerSetAttribute \
+						-Wl,--wrap=cuPointerGetAttributes \
+						-Wl,--wrap=cuMemcpy \
+						-Wl,--wrap=cuMemcpyDtoH_v2 \
+						-Wl,--wrap=cuMemcpyHtoD_v2
+endif #CUDA_ENABLED
 
 
 utest: pscom_utest

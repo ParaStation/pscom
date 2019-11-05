@@ -1,6 +1,971 @@
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
 
-/* A test case that does nothing and succeeds. */
-void null_test_success(void **state)
+#include <errno.h>
+
+#include "pscom_priv.h"
+#include "pscom_cuda.h"
+#include "pscom_util.h"
+#include "pscom_req.h"
+
+////////////////////////////////////////////////////////////////////////////////
+/// Other wrappers
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Mocking function for memcpy()
+ */
+void *__real_memcpy(void *restrict dst, const void *restrict src, size_t nbytes);
+void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
 {
-    (void) state; /* unused */
+	function_called();
+	check_expected(dst);
+	check_expected(src);
+	check_expected(nbytes);
+
+	return __real_memcpy(dst, src, nbytes);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// CUDA wrappers
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Mocking function for cuInit()
+ */
+CUresult __wrap_cuInit(unsigned int flags)
+{
+	/* currently flags have to be 0 (see CUDA documentation) */
+	assert_int_equal(flags, 0);
+
+	return mock_type(CUresult);
+}
+/**
+ * \brief Mocking function for cuDeviceGetCount()
+ */
+CUresult __wrap_cuDeviceGetCount(int* count)
+{
+	*count = mock_type(int);
+	return mock_type(CUresult);
+}
+
+/**
+ * \brief Mocking function for cuDeviceGetAttribute()
+ */
+CUresult __wrap_cuDeviceGetAttribute(int* pi, CUdevice_attribute attrib,
+		CUdevice dev)
+{
+	check_expected(attrib);
+	check_expected(dev);
+
+	*pi = mock_type(int);
+	return mock_type(CUresult);
+}
+
+/**
+ * \brief Mocking function for cuPointerGetAttributes()
+ */
+CUresult __wrap_cuPointerGetAttributes(unsigned int  numAttributes,
+		CUpointer_attribute* attributes, void** data, CUdeviceptr ptr)
+{
+	check_expected(numAttributes);
+	check_expected_ptr(ptr);
+
+	*(CUmemorytype*)data[0] = mock_type(CUmemorytype);
+	*(unsigned int*)data[1] = mock_type(unsigned int);
+	*(unsigned int*)data[2] = mock_type(unsigned int);
+
+	return mock_type(CUresult);
+}
+
+/**
+ * \brief Mocking function for cuPointerSetAttribute()
+ */
+CUresult __wrap_cuPointerSetAttribute(const void* value,
+		CUpointer_attribute attribute, CUdeviceptr ptr)
+{
+	function_called();
+	check_expected(value);
+	check_expected_ptr(ptr);
+
+	return mock_type(CUresult);
+}
+
+
+/**
+ * \brief Generic mocking function for cuMemcpy derivates
+ */
+static inline
+CUresult cuMemcpy_generic(void* dst, CUdeviceptr src, size_t nbytes)
+{
+	function_called();
+	check_expected_ptr(src);
+	check_expected_ptr(dst);
+	check_expected(nbytes);
+
+	/* call standard memcpy() for verification */
+	__real_memcpy(dst, (void*)src, nbytes);
+
+	return mock_type(CUresult);
+}
+
+/**
+ * \brief Mocking function for cuMemcpyDtoH_v2()
+ */
+CUresult __wrap_cuMemcpyDtoH_v2(void* dst, CUdeviceptr src, size_t nbytes)
+{
+	return cuMemcpy_generic(dst, src, nbytes);
+}
+
+/**
+ * \brief Mocking function for cuMemcpyHtoD_v2()
+ */
+CUresult __wrap_cuMemcpyHtoD_v2(void* dst, CUdeviceptr src, size_t nbytes)
+{
+	return cuMemcpy_generic(dst, src, nbytes);
+}
+
+/**
+ * \brief Mocking function for cuMemcpy()
+ */
+CUresult __wrap_cuMemcpy(void* dst, CUdeviceptr src, size_t nbytes)
+{
+	return cuMemcpy_generic(dst, src, nbytes);
+}
+////////////////////////////////////////////////////////////////////////////////
+/// Some test setup functions
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Setup cuInit() with CUDA_SUCCESS
+ */
+static inline
+void setup_enable_cuda_and_initialize(void)
+{
+	pscom.env.cuda = 1;
+	will_return(__wrap_cuInit, CUDA_SUCCESS);
+}
+
+/**
+ * \brief Setup cuPointerGetAttributes_device_ptr() returning dev pointer
+ */
+static inline
+void setup_cuPointerGetAttributes(const void *dev_ptr, CUmemorytype mem_type,
+		unsigned int is_managed, unsigned int sync_memops, CUresult ret_val)
+{
+	expect_value(__wrap_cuPointerGetAttributes, numAttributes, 3);
+	expect_value(__wrap_cuPointerGetAttributes, ptr, dev_ptr);
+	will_return(__wrap_cuPointerGetAttributes, mem_type);
+	will_return(__wrap_cuPointerGetAttributes, is_managed);
+	will_return(__wrap_cuPointerGetAttributes, sync_memops);
+	will_return(__wrap_cuPointerGetAttributes, ret_val);
+}
+
+/**
+ * \brief Setup UVA tests
+ */
+static inline
+void setup_uva_tests(void)
+{
+	/* cuDeviceGetCount() shall return CUDA_SUCCESS and 1 */
+	will_return(__wrap_cuDeviceGetCount, 1);
+	will_return(__wrap_cuDeviceGetCount, CUDA_SUCCESS);
+
+	/* cuDeviceGetAttribute() expectes CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING
+	 * and device 0 as arguments
+	 */
+	expect_value(__wrap_cuDeviceGetAttribute, attrib, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING);
+	expect_value(__wrap_cuDeviceGetAttribute, dev, 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_is_cuda_enabled()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_is_cuda_enabled() for disabled CUDA-awareness
+ *
+ * Given: CUDA-awareness is disabled
+ * When: pscom_is_cuda_enabled() is called
+ * Then: it returns 0
+ */
+void test_is_cuda_enabled_returns_zero_if_disabled(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 0;
+
+	assert_int_equal(pscom_is_cuda_enabled(), 0);
+}
+
+/**
+ * \brief Test pscom_is_cuda_enabled() for disabled CUDA-awareness
+ *
+ * Given: CUDA-awareness is enabled
+ * When: pscom_is_cuda_enabled() is called
+ * Then: it returns 1
+ */
+void test_is_cuda_enabled_returns_one_if_enabled(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 1;
+
+	assert_int_equal(pscom_is_cuda_enabled(), 1);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_cuda_init()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_cuda_init() for disabled CUDA-awareness
+ *
+ * Given: CUDA-awareness is disabled
+ * When: pscom_cuda_init() is called
+ * Then: it returns PSCOM_SUCCESS
+ */
+void test_cuda_init_returns_success_if_disabled(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 0;
+
+	assert_int_equal(pscom_cuda_init(), PSCOM_SUCCESS);
+}
+
+/**
+ * \brief Test pscom_cuda_init() for cuInit() error
+ *
+ * Given: CUDA-awareness is enabled
+ * When: cuInit() does not return CUDA_SUCCESS
+ * Then: pscom_cuda_init() returns PSCOM_ERR_STDERROR/EFAULT
+ */
+void test_cuda_init_cuInit_error(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	will_return(__wrap_cuInit, CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE);
+	assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
+/**
+ * \brief Test pscom_cuda_init() for cuDeviceGetCount() error
+ *
+ * Given: CUDA-awareness is enabled
+ * When: cuDeviceGetCount() does not return CUDA_SUCCESS
+ * Then: pscom_cuda_init() returns PSCOM_ERR_STDERROR/EFAULT
+ */
+void test_cuda_init_device_count_error(void **state)
+{
+	(void) state;
+
+	setup_enable_cuda_and_initialize();
+
+	/* cuDeviceGetCount() shall return CUDA_ERROR_NOT_INITIALIZED */
+	will_return(__wrap_cuDeviceGetCount, 0x42);
+	will_return(__wrap_cuDeviceGetCount, CUDA_ERROR_NOT_INITIALIZED);
+
+	assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
+/**
+ * \brief Test pscom_cuda_init() for zero CUDA devices
+ *
+ * Given: CUDA-awareness is enabled
+ * When: no CUDA device is present
+ * Then: pscom_cuda_init() returns PSCOM_SUCCESS
+ */
+void test_cuda_init_device_count_zero(void **state)
+{
+	(void) state;
+
+	setup_enable_cuda_and_initialize();
+
+	/* cuDeviceGetCount() shall return CUDA_SUCCESS but 0 devices */
+	will_return(__wrap_cuDeviceGetCount, 0);
+	will_return(__wrap_cuDeviceGetCount, CUDA_SUCCESS);
+
+	assert_int_equal(pscom_cuda_init(), PSCOM_SUCCESS);
+}
+
+/**
+ * \brief Test pscom_cuda_init() for failing UVA check
+ *
+ * Given: CUDA-awareness is enabled
+ * When: UVA check fails
+ * Then: pscom_cuda_init() returns PSCOM_ERR_STDERROR/ENOTSUP
+ */
+void test_cuda_init_uva_check_fails(void **state)
+{
+	(void) state;
+
+	setup_enable_cuda_and_initialize();
+	setup_uva_tests();
+
+	/* cuDeviceGetAttribute() fails */
+	will_return(__wrap_cuDeviceGetAttribute, 0);
+	will_return(__wrap_cuDeviceGetAttribute, CUDA_ERROR_INVALID_VALUE);
+
+	assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
+/**
+ * \brief Test pscom_cuda_init() for missing UVA support
+ *
+ * Given: CUDA-awareness is enabled
+ * When: UVA is not supported
+ * Then: pscom_cuda_init() returns PSCOM_ERR_STDERROR/ENOTSUP
+ */
+void test_cuda_init_no_uva_support(void **state)
+{
+	(void) state;
+
+	setup_enable_cuda_and_initialize();
+	setup_uva_tests();
+
+	/* cuDeviceGetAttribute() shall return CUDA_SUCCES but no UVA support */
+	will_return(__wrap_cuDeviceGetAttribute, 0);
+	will_return(__wrap_cuDeviceGetAttribute, CUDA_SUCCESS);
+
+	assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, ENOTSUP);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// _pscom_buffer_needs_staging()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_buffer_needs_staging() for disabled CUDA-awareness
+ *
+ * Given: CUDA-awareness is disabled
+ * When: _pscom_buffer_needs_staging() is called
+ * Then: it returns 0 for any given input.
+ */
+void test_buffer_needs_staging_if_cuda_disabled(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 0;
+
+	pscom_con_t *null_con = NULL;
+	pscom_con_t *any_con = (void*)0x42;
+	void *any_ptr = (void*)0x42;
+	assert_int_equal(_pscom_buffer_needs_staging(NULL, null_con), 0);
+	assert_int_equal(_pscom_buffer_needs_staging(NULL, any_con), 0);
+	assert_int_equal(_pscom_buffer_needs_staging(any_ptr, null_con), 0);
+	assert_int_equal(_pscom_buffer_needs_staging(any_ptr, any_con), 0);
+}
+
+/**
+ * \brief Test _pscom_buffer_needs_staging() for non-CUDA-aware connection
+ *
+ * Given: CUDA-awareness is enabled
+ * When: con is not CUDA-aware or not specified
+ * Then: _pscom_buffer_needs_staging() returns 1 for any device pointer
+ */
+void test_buffer_needs_staging_con_not_cuda_aware(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support and create non-CUDA-aware connection*/
+	pscom.env.cuda = 1;
+	pscom_con_t test_con = { .is_gpu_aware = 0 };
+
+	/* test non-CUDA-aware connection */
+	const void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+	assert_int_equal(_pscom_buffer_needs_staging(test_addr, &test_con), 1);
+
+	/* connection not specified */
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+	assert_int_equal(_pscom_buffer_needs_staging(test_addr, NULL), 1);
+}
+
+/**
+ * \brief Test _pscom_buffer_needs_staging() for CUDA-aware connection
+ *
+ * Given: CUDA-awareness is enabled
+ * When: con is CUDA-aware
+ * Then: _pscom_buffer_needs_staging() returns 0 for any pointer
+ */
+void test_buffer_needs_staging_con_cuda_aware(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support and create non-CUDA-aware connection*/
+	pscom.env.cuda = 1;
+	pscom_con_t test_con = { .is_gpu_aware = 1 };
+
+	/* test any pointer */
+	assert_int_equal(_pscom_buffer_needs_staging((void*)0x42, &test_con), 0);
+	assert_int_equal(_pscom_buffer_needs_staging(NULL, &test_con), 0);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// _pscom_is_gpu_mem()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_is_gpu_mem() for disabled CUDA-awareness
+ *
+ * Given: CUDA-awareness is disabled
+ * When: _pscom_is_gpu_mem() is called
+ * Then: it returns 0 for any given input.
+ */
+void test_is_gpu_mem_if_cuda_disabled(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 0;
+
+	void *any_ptr = (void*)0x42;
+	assert_int_equal(_pscom_is_gpu_mem(NULL, 0), 0);
+	assert_int_equal(_pscom_is_gpu_mem(any_ptr, 0), 0);
+	assert_int_equal(_pscom_is_gpu_mem(NULL, 42), 0);
+	assert_int_equal(_pscom_is_gpu_mem(any_ptr, 42), 0);
+}
+
+/**
+ * \brief Test _pscom_is_gpu_mem() for failing cuPointerGetAttributes()
+ *
+ * Given: CUDA-awareness is enabled
+ * When: cuPointerGetAttributes() fails
+ * Then: _pscom_is_gpu_mem() returns 0 for any ptr
+ */
+void test_is_gpu_mem_get_attributes_fails(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_ERROR_INVALID_VALUE);
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 0), 0);
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_ERROR_INVALID_VALUE);
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 42), 0);
+}
+
+/**
+ * \brief Test _pscom_is_gpu_mem() for managed memory
+ *
+ * Given: CUDA-awareness is enabled
+ * When: pointer belongs to CUDA managed memory
+ * Then: _pscom_is_gpu_mem() returns 0 for any ptr
+ */
+void test_is_gpu_mem_managed_memory(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 1, 1, CUDA_SUCCESS);
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 0);
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_HOST, 1, 1, CUDA_SUCCESS);
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 0);
+}
+
+/**
+ * \brief Test _pscom_is_gpu_mem() for device memory
+ *
+ * Given: CUDA-awareness is enabled
+ * When: pointer is a CUDA device pointer
+ * Then: _pscom_is_gpu_mem() returns 1
+ */
+void test_is_gpu_mem_device_memory(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 1);
+}
+
+/**
+ * \brief Test pscom_is_gpu_mem() for device memory
+ *
+ * This test is similar to test_is_gpu_mem_device_memory but uses the wrapper
+ * for exeternal libraries.
+ *
+ * Given: CUDA-awareness is enabled
+ * When: pointer is a CUDA device pointer
+ * Then: pscom_is_gpu_mem() returns 1
+ */
+void test_is_gpu_mem_wrapper_device_memory(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+	assert_int_equal(pscom_is_gpu_mem(test_addr), 1);
+}
+
+/**
+ * \brief Test _pscom_is_gpu_mem() for disabled memop synchronization
+ *
+ * Given: CUDA-awareness is enabled
+ * When: pointer is a CUDA device pointer and memop synchornization is not set
+ * Then: _pscom_is_gpu_mem() calls cuDeviceSetAttribute() accordingly
+ */
+void test_is_gpu_mem_sync_memop_disabled(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 0, CUDA_SUCCESS);
+
+	int val = 1;
+	expect_memory(__wrap_cuPointerSetAttribute, value, &val, sizeof(val));
+	expect_value(__wrap_cuPointerSetAttribute, ptr, test_addr);
+	will_return(__wrap_cuPointerSetAttribute, CUDA_SUCCESS);
+	expect_function_calls(__wrap_cuPointerSetAttribute, 1);
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 1);
+
+}
+
+/**
+ * \brief Test _pscom_is_gpu_mem() for enabled memop synchronization
+ *
+ * Given: CUDA-awareness is enabled
+ * When: pointer is a CUDA device pointer and memop synchornization is set
+ * Then: _pscom_is_gpu_mem() does not call cuDeviceSetAttribute()
+ */
+void test_is_gpu_mem_sync_memop_enabled(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	void *test_addr = (void*)0x42;
+	setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+
+	assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 1);
+
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_memcpy_gpu_safe_from_user()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_from_user() for host memory
+ *
+ * Given: src and dst point to host memory
+ * When: _pscom_memcpy_gpu_safe_from_user() ist called
+ * Then: it invokes the standard memcpy() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_from_user_host_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	/* cuPointerGetAttributes() is only called for src */
+	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(__wrap_memcpy, 1);
+	expect_value(__wrap_memcpy, dst, &dst);
+	expect_value(__wrap_memcpy, src, &src);
+	expect_value(__wrap_memcpy, nbytes, sizeof(int));
+
+	pscom_memcpy_gpu_safe_from_user(&dst, &src, sizeof(int));
+	assert_int_equal(dst, src);
+}
+
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_from_user() for device memory
+ *
+ * Given: src points to device memory
+ * When: _pscom_memcpy_gpu_safe_from_user() ist called
+ * Then: it invokes the standard cuMemcpyDtoH() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_from_user_device_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	/* cuPointerGetAttributes() is only called for src */
+	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(cuMemcpy_generic, 1);
+	expect_value(cuMemcpy_generic, dst, &dst);
+	expect_value(cuMemcpy_generic, src, &src);
+	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
+	will_return(cuMemcpy_generic, CUDA_SUCCESS);
+
+	pscom_memcpy_gpu_safe_from_user(&dst, &src, sizeof(int));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_memcpy_gpu_safe_to_user()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_to_user() for host memory
+ *
+ * Given: src and dst point to host memory
+ * When: _pscom_memcpy_gpu_safe_to_user() ist called
+ * Then: it invokes the standard memcpy() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_to_user_host_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	/* cuPointerGetAttributes() is only called for src */
+	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(__wrap_memcpy, 1);
+	expect_value(__wrap_memcpy, dst, &dst);
+	expect_value(__wrap_memcpy, src, &src);
+	expect_value(__wrap_memcpy, nbytes, sizeof(int));
+
+	pscom_memcpy_gpu_safe_to_user(&dst, &src, sizeof(int));
+	assert_int_equal(dst, src);
+}
+
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_to_user() for device memory
+ *
+ * Given: src points to device memory
+ * When: _pscom_memcpy_gpu_safe_to_user() ist called
+ * Then: it invokes the standard cuMemcpyHtoD() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_to_user_device_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	/* cuPointerGetAttributes() is only called for dst */
+	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(cuMemcpy_generic, 1);
+	expect_value(cuMemcpy_generic, dst, &dst);
+	expect_value(cuMemcpy_generic, src, &src);
+	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
+	will_return(cuMemcpy_generic, CUDA_SUCCESS);
+
+	pscom_memcpy_gpu_safe_to_user(&dst, &src, sizeof(int));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_memcpy_gpu_safe_default()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_default() for host memory
+ *
+ * Given: src and dst point to host memory
+ * When: _pscom_memcpy_gpu_safe_default() ist called
+ * Then: it invokes the standard memcpy() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_default_host_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(__wrap_memcpy, 1);
+	expect_value(__wrap_memcpy, dst, &dst);
+	expect_value(__wrap_memcpy, src, &src);
+	expect_value(__wrap_memcpy, nbytes, sizeof(int));
+
+	pscom_memcpy_gpu_safe_default(&dst, &src, sizeof(int));
+	assert_int_equal(dst, src);
+}
+
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_default() for device memory
+ *
+ * Given: src and dst point to device memory
+ * When: _pscom_memcpy_gpu_safe_default() ist called
+ * Then: it invokes the standard cuMemcpy() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_default_device_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	/* cuPointerGetAttributes() is only called for src */
+	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(cuMemcpy_generic, 1);
+	expect_value(cuMemcpy_generic, dst, &dst);
+	expect_value(cuMemcpy_generic, src, &src);
+	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
+	will_return(cuMemcpy_generic, CUDA_SUCCESS);
+
+	pscom_memcpy_gpu_safe_default(&dst, &src, sizeof(int));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_memcpy()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_memcpy() for host memory
+ *
+ * Given: src and dst point to host memory
+ * When: pscom_memcpy() ist called
+ * Then: it invokes the standard memcpy() with according parameters
+ */
+void test_pscom_memcpy_host_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(__wrap_memcpy, 1);
+	expect_value(__wrap_memcpy, dst, &dst);
+	expect_value(__wrap_memcpy, src, &src);
+	expect_value(__wrap_memcpy, nbytes, sizeof(int));
+
+	pscom_memcpy(&dst, &src, sizeof(int));
+	assert_int_equal(dst, src);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// _pscom_stage_buffer()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_stage_buffer() for device memory
+ *
+ * Given: a memory buffer within the device memory
+ * When: no connection is specified within the pscom_req_t
+ * Then: _pscom_stage_buffer() stages the buffer within the host memory
+ */
+void test_pscom_stage_buffer_dev_mem_no_con(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* create a pscom request */
+	pscom_req_t *req = pscom_req_create(0, 0);
+	int buffer = 42;
+	req->pub.connection = NULL;
+	req->pub.data = (void*)&buffer;
+	req->pub.data_len = sizeof(buffer);
+
+	/* prepare mocking functions */
+	setup_cuPointerGetAttributes(&buffer, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+	expect_function_calls(cuMemcpy_generic, 1);
+	expect_value(cuMemcpy_generic, src, &buffer);
+	expect_any(cuMemcpy_generic, dst);
+	expect_value(cuMemcpy_generic, nbytes, sizeof(buffer));
+	will_return(cuMemcpy_generic, CUDA_SUCCESS);
+
+	assert_true(req->stage_buf == NULL);
+	_pscom_stage_buffer(req, 1);
+	assert_true(req->stage_buf != NULL);
+	assert_int_equal(*(int*)req->stage_buf, buffer);
+
+	/* free the request */
+	pscom_req_free(req);
+}
+
+/**
+ * \brief Test _pscom_stage_buffer() for host memory
+ *
+ * Given: a memory buffer within the host memory
+ * When: _pscom_stage_buffer() is called
+ * Then: req->stage_buf remains NULL
+ */
+void test_pscom_stage_buffer_host_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* create a pscom request */
+	pscom_req_t *req = pscom_req_create(0, 0);
+	int buffer = 42;
+	req->pub.connection = NULL;
+	req->pub.data = (void*)&buffer;
+	req->pub.data_len = sizeof(buffer);
+
+	setup_cuPointerGetAttributes(&buffer, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+
+	_pscom_stage_buffer(req, 1);
+	assert_true(req->stage_buf == NULL);
+
+	setup_cuPointerGetAttributes(&buffer, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
+
+	_pscom_stage_buffer(req, 0);
+	assert_true(req->stage_buf == NULL);
+
+	/* free the request */
+	pscom_req_free(req);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// _pscom_unstage_buffer()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test _pscom_unstage_buffer() for device memory
+ *
+ * Given: a request with stage_buf != NULL
+ * When: _pscom_unstage_buffer() is called with copy = 1
+ * Then: the data is unstaged to req->pub.data
+ */
+void test_pscom_unstage_buffer_dev_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* create a pscom request */
+	pscom_req_t *req = pscom_req_create(0, 0);
+	int buffer = -1;
+	int *stage_buffer = (int*)malloc(sizeof(int));
+	*stage_buffer = 0xdeadbeef;
+	req->pub.connection = NULL;
+	req->pub.data = (void*)stage_buffer;
+	req->pub.data_len = sizeof(buffer);
+	req->pub.header.data_len = sizeof(buffer);
+	req->stage_buf = (void*)&buffer;
+
+	/* prepare mocking functions */
+	expect_function_calls(cuMemcpy_generic, 1);
+	expect_value(cuMemcpy_generic, src, stage_buffer);
+	expect_value(cuMemcpy_generic, dst, &buffer);
+	expect_value(cuMemcpy_generic, nbytes, sizeof(buffer));
+	will_return(cuMemcpy_generic, CUDA_SUCCESS);
+
+	_pscom_unstage_buffer(req, 1);
+	assert_true(req->stage_buf == NULL);
+	assert_int_equal(req->pub.data, &buffer);
+	int testval = 0xdeadbeef;
+	assert_memory_equal(&buffer, &testval, 4);
+
+	/* free the request */
+	pscom_req_free(req);
+}
+
+/**
+ * \brief Test _pscom_unstage_buffer() for device memory
+ *
+ * Given: a request with stage_buf != NULL
+ * When: _pscom_unstage_buffer() is called with copy = 0
+ * Then: req->pub.data remains unchanged
+ */
+void test_pscom_unstage_buffer_dev_mem_no_copy(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* create a pscom request */
+	pscom_req_t *req = pscom_req_create(0, 0);
+	int buffer = 0xdeadbeef;
+	int *stage_buffer = (int*)malloc(sizeof(int));
+	*stage_buffer = 42;
+	req->pub.connection = NULL;
+	req->pub.data = (void*)stage_buffer;
+	req->pub.data_len = sizeof(buffer);
+	req->pub.header.data_len = sizeof(buffer);
+	req->stage_buf = (void*)&buffer;
+
+	_pscom_unstage_buffer(req, 0);
+	assert_true(req->stage_buf == NULL);
+	assert_int_equal(req->pub.data, &buffer);
+	int testval = 0xdeadbeef;
+	assert_memory_equal(&buffer, &testval, 4);
+
+	/* free the request */
+	pscom_req_free(req);
+}
+/**
+ * \brief Test _pscom_unstage_buffer() for host memory
+ *
+ * Given: a request with stage_buf == NULL
+ * When: _pscom_unstage_buffer() is called
+ * Then: req->pub.data remains untouched
+ */
+void test_pscom_unstage_buffer_host_mem(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* create a pscom request */
+	pscom_req_t *req = pscom_req_create(0, 0);
+	int buffer = 42;
+	req->pub.connection = NULL;
+	req->pub.data = (void*)&buffer;
+	req->pub.data_len = sizeof(buffer);
+	req->pub.header.data_len = sizeof(buffer);
+	req->stage_buf = NULL;
+
+	_pscom_unstage_buffer(req, 1);
+	assert_true(req->stage_buf == NULL);
+	assert_int_equal(req->pub.data, &buffer);
+	assert_int_equal(buffer, 42);
+
+	_pscom_unstage_buffer(req, 0);
+	assert_true(req->stage_buf == NULL);
+	assert_int_equal(req->pub.data, &buffer);
+	assert_int_equal(buffer, 42);
+
+	/* free the request */
+	pscom_req_free(req);
 }
