@@ -1,4 +1,5 @@
 #include <stdarg.h>
+#include <stdio.h>
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
@@ -6,12 +7,25 @@
 #include "pscom/test_cuda.h"
 #include "pscom/test_io.h"
 
+
+#define TEST_GROUP_SIZE(test_group) (sizeof(test_group)/sizeof(struct CMUnitTest))
+
 int main(void)
 {
-	const struct CMUnitTest pscom_tests[] = {
+	size_t failed_tests = 0;
+	size_t total_tests = 0;
+
+	/* pscom_io tests */
+	const struct CMUnitTest pscom_io_tests[] = {
 		cmocka_unit_test(test_req_prepare_send_pending_valid_send_request),
 		cmocka_unit_test(test_req_prepare_send_pending_truncate_data_len),
+	};
+	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
+	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
+
 #ifdef PSCOM_CUDA_AWARENESS
+	/* CUDA-related tests */
+	const struct CMUnitTest pscom_cuda_tests[] = {
 		cmocka_unit_test(test_is_cuda_enabled_returns_zero_if_disabled),
 		cmocka_unit_test(test_is_cuda_enabled_returns_one_if_enabled),
 		cmocka_unit_test(test_cuda_init_cuInit_error),
@@ -42,7 +56,16 @@ int main(void)
 		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem),
 		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem_no_copy),
 		cmocka_unit_test(test_pscom_unstage_buffer_host_mem),
-#endif
 	};
-	return cmocka_run_group_tests(pscom_tests, NULL, NULL);
+	total_tests += TEST_GROUP_SIZE(pscom_cuda_tests);
+	failed_tests += cmocka_run_group_tests(pscom_cuda_tests, NULL, NULL);
+#endif
+
+	printf("\n\n");
+	printf("Total tests      : %lu\n", total_tests);
+	printf("Succeeding tests : %lu\n", total_tests-failed_tests);
+	printf("Failing tests    : %lu\n", failed_tests);
+	printf("\n\n");
+
+	return (int)failed_tests;
 }
