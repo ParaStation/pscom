@@ -30,7 +30,8 @@ pscom_utest_LDFLAGS = \
 	-lcmocka
 
 pscom_utest_SOURCES = \
-	pscom_utest.c
+	pscom_utest.c \
+	pscom/test_io.c
 
 # CUDA-related configuration
 if CUDA_ENABLED

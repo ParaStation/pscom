@@ -4,10 +4,13 @@
 #include <cmocka.h>
 
 #include "pscom/test_cuda.h"
+#include "pscom/test_io.h"
 
 int main(void)
 {
 	const struct CMUnitTest pscom_tests[] = {
+		cmocka_unit_test(test_req_prepare_send_pending_valid_send_request),
+		cmocka_unit_test(test_req_prepare_send_pending_truncate_data_len),
 #ifdef PSCOM_CUDA_AWARENESS
 		cmocka_unit_test(test_is_cuda_enabled_returns_zero_if_disabled),
 		cmocka_unit_test(test_is_cuda_enabled_returns_one_if_enabled),
