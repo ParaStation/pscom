@@ -103,7 +103,7 @@ struct nw_dev_list_s *psp_get_dev_list(void)
     unsigned int i;
 
 #define IFREQCNT (list_n - 1)
-#define IFREQSIZE    (sizeof(struct ifreq) * IFREQCNT)
+#define IFREQSIZE    ((unsigned)sizeof(struct ifreq) * IFREQCNT)
     ifc.ifc_ifcu.ifcu_req = malloc(IFREQSIZE);
     ifc.ifc_len = IFREQSIZE;
 
