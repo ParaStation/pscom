@@ -71,6 +71,7 @@ struct PSCOM_req
 	   - fw_send point to req_master
 	*/
 	pscom_req_t *partner_req;
+	pscom_req_t *pending_io_req;
 
 #ifdef PSCOM_CUDA_AWARENESS
 	void		*stage_buf; /* stage buf for non-CUDA-aware connections */

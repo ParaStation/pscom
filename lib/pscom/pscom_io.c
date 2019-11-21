@@ -31,7 +31,6 @@ static        void         pscom_req_prepare_rma_write(pscom_req_t *req);
 static        void         _check_readahead(pscom_con_t *con, size_t len);
 static        void         _pscom_update_in_recv_req(pscom_con_t *con);
 static inline void         _pscom_req_bcast_done(pscom_req_t *req);
-static        void         genreq_merge_header(pscom_req_t *newreq, pscom_req_t *genreq);
 static        void         _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq);
 static        pscom_req_t *pscom_get_default_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
 static inline pscom_req_t *_pscom_get_user_receiver(pscom_con_t *con, pscom_header_net_t *nh);
@@ -229,6 +228,7 @@ pscom_req_t *_pscom_generate_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 	req->pub.data_len = nh->data_len;
 	req->pub.xheader_len = nh->xheader_len;
 	req->partner_req = NULL;
+	req->pending_io_req = NULL;
 
 	D_TR(printf("%s:%u:%s(). %s xheaderlen=%zu\n", __FILE__, __LINE__, __func__,
 		    pscom_debug_req_str(req), req->pub.xheader_len));
@@ -237,10 +237,43 @@ pscom_req_t *_pscom_generate_recv_req(pscom_con_t *con, pscom_header_net_t *nh)
 }
 
 
+/* return number of data bytes already received or prepared to be received (pending_io > 0). */
 static
-void genreq_merge_header(pscom_req_t *newreq, pscom_req_t *genreq)
+size_t get_req_received_len(pscom_req_t *req)
 {
-	pscom_req_prepare_recv(newreq, &genreq->pub.header, genreq->pub.connection);
+	return (char*)req->cur_data.iov_base - (char *)req->pub.data;
+}
+
+
+static
+void genreq_copy_header(pscom_req_t *ureq, pscom_req_t *greq)
+{
+	pscom_req_prepare_recv(ureq, &greq->pub.header, greq->pub.connection);
+}
+
+
+static
+void genreq_copy_data_prepare(pscom_req_t *ureq, pscom_req_t *greq)
+{
+	pscom_req_forward(ureq, get_req_received_len(greq));
+}
+
+
+static
+void genreq_copy_data_done(pscom_req_t *ureq, pscom_req_t *greq)
+{
+	size_t len = get_req_received_len(greq);
+	size_t maxlen = get_req_received_len(ureq);
+	if (len > maxlen) len = maxlen; // Do not copy more than maxlen (truncate message?)
+
+	_pscom_memcpy_to_user(ureq->pub.data, greq->pub.data, len);
+}
+
+
+static
+void genreq_copy_data(pscom_req_t *ureq, pscom_req_t *greq)
+{
+	pscom_req_write(ureq, greq->pub.data, get_req_received_len(greq));
 }
 
 
@@ -255,6 +288,25 @@ void pscom_greq_check_free(pscom_con_t *con, pscom_req_t *greq)
 
 
 static
+void genreq_pending_io_done(pscom_req_t *greq)
+{
+	assert(greq->pending_io == 0);
+	if (greq->pending_io_req) {
+		pscom_req_t *ureq = greq->pending_io_req;
+
+		genreq_copy_data_done(ureq, greq);
+
+		greq->pending_io_req = NULL;
+		ureq->pending_io--;
+
+		_pscom_update_recv_req(ureq);
+		_pscom_grecv_req_done(greq);
+	}
+	pscom_greq_check_free(get_con(greq->pub.connection), greq);
+}
+
+
+static
 void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 {
 	pscom_con_t *con = get_con(genreq->pub.connection);
@@ -263,13 +315,23 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 	D_TR(printf("%s:%u:%s(gen: %s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(genreq)));
 	assert(genreq->magic == MAGIC_REQUEST);
 
-	genreq_merge_header(newreq, genreq);
+	pscom.stat.gen_reqs_used++;
 
-	/* copy already received data: */
-
-	pscom_req_write(newreq, genreq->pub.data, (char*)genreq->cur_data.iov_base - (char *)genreq->pub.data);
+	genreq_copy_header(newreq, genreq);
 
 	newreq->pub.state |= genreq->pub.state;
+
+	if (genreq->pending_io) {
+		genreq_copy_data_prepare(newreq, genreq);
+		genreq->pending_io_req = newreq;
+		newreq->pending_io++;
+		/* genreq_copy_data_done() in genreq_pending_io_done() */
+	} else {
+		/* copy already received data: */
+		genreq_copy_data(newreq, genreq);
+		_pscom_update_recv_req(newreq);
+		_pscom_grecv_req_done(genreq);
+	}
 
 	if (con->in.req == genreq) {
 		// replace existing genreq by newreq;
@@ -282,23 +344,18 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 		// Continue receive on this connection (Maybe duplicate start)
 		_pscom_recv_req_cnt_check_start(con);
-	} else if (genreq->partner_req) {
+	}
+
+	if (genreq->partner_req) {
+		/* genreq from rendezvous. Now request the data: */
 		assert(genreq->partner_req->magic == MAGIC_REQUEST);
 
-		/* genreq from rendezvous. Now request the data: */
 		// ToDo: check: will _pscom_rendezvous_read_data() be called, in case of con->in.req == genreq?
 
 		_pscom_rendezvous_read_data(newreq, genreq->partner_req);
 		genreq->partner_req = NULL;
-	} else {
-		/* request done. */
-		assert(genreq->pub.state & (PSCOM_REQ_STATE_IO_DONE));
-		_pscom_recv_req_done(newreq);
 	}
 
-	pscom.stat.gen_reqs_used++;
-
-	_pscom_grecv_req_done(genreq);
 	pscom_greq_check_free(con, genreq);
 }
 
@@ -856,6 +913,46 @@ pscom_read_done_unlock(pscom_con_t *con, char *buf, size_t len)
 		con->in.req_locked = NULL;
 		pscom_greq_check_free(con, req);
 	}
+}
+
+
+void
+pscom_read_pending_done(pscom_con_t *con, pscom_req_t *req)
+{
+	if (req) {
+		assert(req->magic == MAGIC_REQUEST);
+
+		assert(!(req->pub.state & PSCOM_REQ_STATE_IO_DONE));
+		assert(req->pending_io != 0);
+
+		if (!--req->pending_io) {
+			_pscom_pendingio_deq(con, req);
+			_pscom_update_recv_req(req);
+			if (req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST) {
+				genreq_pending_io_done(req);
+			}
+		}
+	}
+}
+
+
+pscom_req_t *
+pscom_read_pending(pscom_con_t *con, size_t len)
+{
+	// Like pscom_read_done(), but without a buffer to copy.
+	pscom_req_t *req = con->in.req;
+
+	if (req) {
+		size_t _len;
+
+		_len = pscom_req_forward(req, len);
+		assert(_len == len);
+
+		req->pending_io++;
+		_pscom_pendingio_enq(con, req);
+		_pscom_update_in_recv_req(con, req);
+	}
+	return req;
 }
 
 
@@ -1471,7 +1568,7 @@ int _pscom_iprobe(pscom_req_t *req)
 		res = 0;
 	} else {
 		res = 1;
-		genreq_merge_header(req, genreq);
+		genreq_copy_header(req, genreq);
 	}
 	req->pub.state |= PSCOM_REQ_STATE_DONE;
 
