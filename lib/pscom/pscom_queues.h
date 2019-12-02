@@ -28,8 +28,11 @@ void _pscom_sendq_steal(pscom_con_t *con, pscom_req_t *req);
  * Pending io queue
  */
 
-void _pscom_pendingio_enq(pscom_con_t *con, pscom_req_t *req);
-void _pscom_pendingio_deq(pscom_con_t *con, pscom_req_t *req);
+void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req);
+/* return 1, if cnt dropped to 0. */
+int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req);
+
+void _pscom_pendingio_abort(pscom_con_t *con, pscom_req_t *req);
 
 /*************
  * Sendq for suspending connections

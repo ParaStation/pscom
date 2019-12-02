@@ -329,7 +329,6 @@ void pscom_plugins_init(void)
 		"dapl",
 		"mxm",
 		"ucp",
-		"gateway",
 		NULL };
 	char **tmp;
 

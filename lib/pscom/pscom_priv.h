@@ -51,6 +51,7 @@ struct PSCOM_req
 					   - list pscom_bcast_req_t.fw_send_requests
 					   - list pscom_group_mem_t.recvq
 					   - list pscom_group_mem_t.genrecvq
+					   - list pscom_con_t.sendq_gw_fw
 					*/
 	struct list_head all_req_next; // used by list struct PSCOM.requests
 
@@ -334,6 +335,8 @@ struct PSCOM_con
 	pscom_poll_reader_t	poll_reader;
 	struct list_head	poll_next_send; // used by pscom.poll_sender
 
+	struct list_head	sendq_gw_fw;	// List of pscom_req_t.next_alt
+
 	struct con_guard	con_guard; // connection guard
 
 	struct {
@@ -404,8 +407,6 @@ struct PSCOM_sock
 	} listen;
 
 	unsigned int		recv_req_cnt_any; // count all ANY_SOURCE receive requests on this socket
-
-	struct list_head	pendingioq;	// List of pscom_req_t.next, requests with pending io
 
 	struct list_head	sendq_suspending;// List of pscom_req_t.next, requests from suspending connections
 
@@ -634,6 +635,13 @@ pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
 void
 pscom_read_done(pscom_con_t *con, char *buf, size_t len);
 
+pscom_req_t *
+pscom_read_pending(pscom_con_t *con, size_t len);
+
+void
+pscom_read_pending_done(pscom_con_t *con, pscom_req_t *req);
+
+
 /* Get a buffer usable for asynchronous RMA operations. Caller has also to
  * call pscom_read_done_unlock() after usage. */
 void pscom_read_get_buf_locked(pscom_con_t *con, char **buf, size_t *len);
@@ -719,4 +727,6 @@ void pscom_backtrace_dump(int sig);
 void pscom_backtrace_onsigsegv_enable(void);
 void pscom_backtrace_onsigsegv_disable(void);
 
+void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type);
+void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type);
 #endif /* _PSCOM_PRIV_H_ */

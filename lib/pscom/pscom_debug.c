@@ -98,6 +98,7 @@ const char *pscom_msgtype_str(pscom_msgtype_t msg_type)
 	case PSCOM_MSGTYPE_BARRIER:		return "BARRI";
 	case PSCOM_MSGTYPE_EOF:			return "EOF__";
 	case PSCOM_MSGTYPE_SUSPEND:		return "SUSPE";
+	case PSCOM_MSGTYPE_GW_ENVELOPE:		return "GWENV";
 	default:				return "UNKNW";
 	}
 }

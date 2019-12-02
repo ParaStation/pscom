@@ -13,7 +13,7 @@
 #ifndef _PSCOM_PLUGIN_H_
 #define _PSCOM_PLUGIN_H_
 
-#define PSCOM_PLUGIN_VERSION 0x0201
+#define PSCOM_PLUGIN_VERSION 0x0202
 
 typedef struct pscom_plugin {
 	char	name[8];

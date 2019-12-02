@@ -46,6 +46,8 @@ void _pscom_req_done(pscom_req_t *req)
 
 	if (req->pub.ops.io_done) {
 		req->pub.state |= PSCOM_REQ_STATE_IO_DONE;
+		D_TR(printf("%s:%u:%s req:%s add to pscom.io_doneq\n", __FILE__, __LINE__, __func__,
+			    pscom_debug_req_str(req)));
 		list_add_tail(&req->next, &pscom.io_doneq);
 	} else {
 		req->pub.state |= PSCOM_REQ_STATE_IO_DONE | PSCOM_REQ_STATE_DONE;

@@ -63,15 +63,12 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 		_pscom_send_req_done(req); // done
 	}
 
-	// PendingIO queue
-	list_for_each_safe(pos, next, &sock->pendingioq) {
-		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
+	// PendingIO ob some requests?
+	list_for_each_safe(pos, next, &pscom.requests) {
+		pscom_req_t *req = list_entry(pos, pscom_req_t, all_req_next);
 
 		if (req->pub.connection == &con->pub) {
-			// ToDo: Might be unsafe to dequeue with potential IO on this req.
-			list_del(&req->next); // dequeue
-			req->pub.state |= PSCOM_REQ_STATE_ERROR;
-			_pscom_send_req_done(req); // done
+			_pscom_pendingio_abort(con, req);
 		}
 	}
 
@@ -641,6 +638,8 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 
 	INIT_LIST_HEAD(&con->poll_reader.next);
 	INIT_LIST_HEAD(&con->poll_next_send);
+
+	INIT_LIST_HEAD(&con->sendq_gw_fw);
 
 	pscom_con_id_register(con);
 

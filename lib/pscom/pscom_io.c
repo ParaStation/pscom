@@ -29,7 +29,6 @@ static        void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvou
 static        void         pscom_req_prepare_send(pscom_req_t *req, pscom_msgtype_t msg_type);
 static        void         pscom_req_prepare_rma_write(pscom_req_t *req);
 static        void         _check_readahead(pscom_con_t *con, size_t len);
-static        void         _pscom_update_in_recv_req(pscom_con_t *con);
 static inline void         _pscom_req_bcast_done(pscom_req_t *req);
 static        void         _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq);
 static        pscom_req_t *pscom_get_default_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
@@ -53,7 +52,6 @@ static        int          _pscom_cancel_send(pscom_req_t *req);
 static        int          _pscom_cancel_recv(pscom_req_t *req);
 static inline void         pscom_post_send_direct_inline(pscom_req_t *req, pscom_msgtype_t msg_type);
 static inline void         _pscom_post_send_direct_inline(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type);
-static inline void         pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type);
 static inline void         _pscom_post_rma_read(pscom_req_t *req);
 
 int                        pscom_read_is_at_message_start(pscom_con_t *con);
@@ -181,7 +179,7 @@ void _check_readahead(pscom_con_t *con, size_t len)
 int _pscom_update_recv_req(pscom_req_t *req)
 {
 	if (is_recv_req_done(req)) {
-		_pscom_recv_req_done(req);
+		if (!req->pending_io) _pscom_recv_req_done(req);
 		return 1;
 	}
 	return 0;
@@ -189,14 +187,13 @@ int _pscom_update_recv_req(pscom_req_t *req)
 
 
 static
-void _pscom_update_in_recv_req(pscom_con_t *con)
+void _pscom_update_in_recv_req(pscom_con_t *con, pscom_req_t *req)
 {
-	pscom_req_t *req = con->in.req;
 	if (req && is_recv_req_done(req)) {
 		con->in.skip = req->skip;
 		con->in.req = NULL;
 
-		_pscom_recv_req_done(req);
+		if (!req->pending_io) _pscom_recv_req_done(req);
 		_pscom_recv_req_cnt_check_stop(con);
 	}
 }
@@ -290,19 +287,22 @@ void pscom_greq_check_free(pscom_con_t *con, pscom_req_t *greq)
 static
 void genreq_pending_io_done(pscom_req_t *greq)
 {
+	pscom_con_t *con = get_con(greq->pub.connection);
+
 	assert(greq->pending_io == 0);
+
 	if (greq->pending_io_req) {
 		pscom_req_t *ureq = greq->pending_io_req;
 
 		genreq_copy_data_done(ureq, greq);
 
 		greq->pending_io_req = NULL;
-		ureq->pending_io--;
+		_pscom_pendingio_cnt_dec(con, ureq);
 
 		_pscom_update_recv_req(ureq);
 		_pscom_grecv_req_done(greq);
 	}
-	pscom_greq_check_free(get_con(greq->pub.connection), greq);
+	pscom_greq_check_free(con, greq);
 }
 
 
@@ -321,11 +321,22 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 	newreq->pub.state |= genreq->pub.state;
 
+	if (con->in.req == genreq) {
+		// replace existing genreq with newreq;
+		// Receiving should be started (PSCOM_REQ_STATE_IO_STARTED),
+		// but not done (!PSCOM_REQ_STATE_IO_DONE, because (con->in.req == genreq))
+		assert((genreq->pub.state & (PSCOM_REQ_STATE_IO_STARTED | PSCOM_REQ_STATE_IO_DONE))
+		       == PSCOM_REQ_STATE_IO_STARTED);
+
+		// from now receive into newreq
+		con->in.req = newreq;
+	}
+
 	if (genreq->pending_io) {
 		genreq_copy_data_prepare(newreq, genreq);
-		genreq->pending_io_req = newreq;
-		newreq->pending_io++;
 		/* genreq_copy_data_done() in genreq_pending_io_done() */
+		genreq->pending_io_req = newreq;
+		_pscom_pendingio_cnt_inc(con, newreq);
 	} else {
 		/* copy already received data: */
 		genreq_copy_data(newreq, genreq);
@@ -333,24 +344,9 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 		_pscom_grecv_req_done(genreq);
 	}
 
-	if (con->in.req == genreq) {
-		// replace existing genreq by newreq;
-		// Receiving started, but not done.
-		assert((genreq->pub.state & (PSCOM_REQ_STATE_IO_STARTED | PSCOM_REQ_STATE_IO_DONE))
-			== PSCOM_REQ_STATE_IO_STARTED);
-
-		// further receives to newreq
-		con->in.req = newreq;
-
-		// Continue receive on this connection (Maybe duplicate start)
-		_pscom_recv_req_cnt_check_start(con);
-	}
-
 	if (genreq->partner_req) {
 		/* genreq from rendezvous. Now request the data: */
 		assert(genreq->partner_req->magic == MAGIC_REQUEST);
-
-		// ToDo: check: will _pscom_rendezvous_read_data() be called, in case of con->in.req == genreq?
 
 		_pscom_rendezvous_read_data(newreq, genreq->partner_req);
 		genreq->partner_req = NULL;
@@ -887,6 +883,8 @@ pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
 }
 
 
+// ToDo: Use pscom_read_get_buf()/pscom_read_pending()/pscom_read_pending_done() instead of
+//           pscom_read_get_buf_locked()/pscom_read_done_unlock()
 void
 pscom_read_get_buf_locked(pscom_con_t *con, char **buf, size_t *len)
 {
@@ -925,8 +923,7 @@ pscom_read_pending_done(pscom_con_t *con, pscom_req_t *req)
 		assert(!(req->pub.state & PSCOM_REQ_STATE_IO_DONE));
 		assert(req->pending_io != 0);
 
-		if (!--req->pending_io) {
-			_pscom_pendingio_deq(con, req);
+		if (_pscom_pendingio_cnt_dec(con, req)) {
 			_pscom_update_recv_req(req);
 			if (req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST) {
 				genreq_pending_io_done(req);
@@ -948,8 +945,7 @@ pscom_read_pending(pscom_con_t *con, size_t len)
 		_len = pscom_req_forward(req, len);
 		assert(_len == len);
 
-		req->pending_io++;
-		_pscom_pendingio_enq(con, req);
+		_pscom_pendingio_cnt_inc(con, req);
 		_pscom_update_in_recv_req(con, req);
 	}
 	return req;
@@ -973,7 +969,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 		len -= _len;
 		buf += _len;
 
-		_pscom_update_in_recv_req(con);
+		_pscom_update_in_recv_req(con, req);
 
 		assert(!con->in.readahead.iov_len);
 
@@ -1039,7 +1035,7 @@ pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 			con->in.skip = header->data_len - skip;
 		}
 
-		_pscom_update_in_recv_req(con);
+		_pscom_update_in_recv_req(con, req);
 		assert(!con->in.skip || !len);
 	}
 
@@ -1088,11 +1084,18 @@ pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2])
 }
 
 
+static
+int send_req_all_io_started(pscom_req_t *req)
+{
+	return !req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip;
+}
+
+
 void pscom_write_done(pscom_con_t *con, pscom_req_t *req, size_t len)
 {
 	pscom_forward_iov(&req->cur_header, len);
 
-	if (!req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+	if (send_req_all_io_started(req)) {
 		_pscom_sendq_deq(con, req);
 		if (!req->pending_io) _pscom_send_req_done(req); // done
 	}
@@ -1103,20 +1106,20 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 {
 	pscom_forward_iov(&req->cur_header, len);
 
-	req->pending_io++;
-	if (!req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip) {
+	_pscom_pendingio_cnt_inc(con, req);
+
+	if (send_req_all_io_started(req)) {
+		// Remove req from sendq. The req is still not done yet (has pending io)!
 		_pscom_sendq_deq(con, req);
-		_pscom_pendingio_enq(con, req);
 	}
 }
 
 
 void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 {
-	req->pending_io--;
-	if (!req->pending_io && !req->cur_data.iov_len && !req->cur_header.iov_len && !req->skip &&
+	if (_pscom_pendingio_cnt_dec(con, req) &&
+	    send_req_all_io_started(req) &&
 	    !(req->pub.state & PSCOM_REQ_STATE_IO_DONE)) {
-		_pscom_pendingio_deq(con, req);
 		_pscom_send_req_done(req); // done
 	}
 }
@@ -1347,6 +1350,7 @@ pscom_req_t *pscom_prepare_send_rendezvous_inline(pscom_req_t *user_req, pscom_m
 	user_req->partner_req = rndv_req;
 	user_req->pub.state = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
 		PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
+	user_req->pub.header.msg_type = msg_type;
 
 	return rndv_req;
 
@@ -1357,27 +1361,11 @@ fallback_to_eager:
 	return NULL;
 }
 
-/* Posts a rendezvous request with arbitrary message type */
-static inline
-void pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
-{
-	pscom_con_t *con = get_con(user_req->pub.connection);
-	pscom_req_t *rndv_req = pscom_prepare_send_rendezvous_inline(user_req, msg_type);
-
-	if (!rndv_req) {
-		pscom_post_send_direct_inline(user_req, msg_type);
-	} else {
-		pscom_lock(); {
-			_pscom_post_send_direct_inline(con, rndv_req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
-			_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
-		} pscom_unlock();
-	}
-
-	return;
-}
-
-
-/* The unlocked variant of pscom_post_send_rendezvous_inline() */
+/*
+ * Posts a rendezvous request with arbitrary message type
+ *
+ * The caller needs to use locks!
+ */
 static inline
 void _pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t msg_type)
 {
@@ -1535,7 +1523,7 @@ void pscom_post_recv(pscom_request_t *request)
 		perf_add("pscom_post_recv");
 
 		req->pub.state = PSCOM_REQ_STATE_RECV_REQUEST | PSCOM_REQ_STATE_POSTED;
-
+		req->pending_io = 0;
 		genreq = _pscom_net_recvq_user_find(req);
 
 		if (!genreq) {

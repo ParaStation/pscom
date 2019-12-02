@@ -20,6 +20,7 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size);
 void pscom_req_free(pscom_req_t *req);
 
 size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len);
+size_t pscom_req_forward(pscom_req_t *req, size_t len);
 
 /* append data on req. used for partial send requests with pending data. */
 void pscom_req_append(pscom_req_t *req, char *buf, size_t len);

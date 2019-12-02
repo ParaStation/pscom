@@ -84,17 +84,58 @@ void _pscom_sendq_steal(pscom_con_t *con, pscom_req_t *req)
  * Pending io queue
  */
 
+static
 void _pscom_pendingio_enq(pscom_con_t *con, pscom_req_t *req)
 {
-	pscom_sock_t *sock = get_sock(con->pub.socket);
-	list_add_tail(&req->next, &sock->pendingioq);
+	if (pscom.env.debug_req) return;
+	/* all_req_next is shared with announce_new_req and announce_free_req! */
+
+	list_add_tail(&req->all_req_next, &pscom.requests);
 }
 
 
+static
 void _pscom_pendingio_deq(pscom_con_t *con, pscom_req_t *req)
 {
-	pscom_sock_t *sock = get_sock(con->pub.socket);
-	list_del(&req->next); // dequeue
+	if (pscom.env.debug_req) return;
+	/* all_req_next is shared with announce_new_req and announce_free_req! */
+
+	list_del_init(&req->all_req_next); // dequeue
+}
+
+
+void _pscom_pendingio_abort(pscom_con_t *con, pscom_req_t *req)
+{
+	assert(req->magic == MAGIC_REQUEST);
+
+	if (!req->pending_io) return; // nothing to abort.
+
+	// ToDo: Somehow abort RDMA requests?
+
+	req->pub.state |= PSCOM_REQ_STATE_ERROR;
+
+	/* pscom_read_pending_done() or pscom_write_pending_done()
+	   will call _pscom_send_req_done() or _pscom_recv_req_done(req)
+	   after the pending io is done. */
+}
+
+
+void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
+{
+	if (!req->pending_io++) {
+		_pscom_pendingio_enq(con, req);
+	}
+}
+
+
+/* return 1, if cnt dropped to 0. */
+int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
+{
+	int done = !(--req->pending_io);
+	if (done) {
+		_pscom_pendingio_deq(con, req);
+	}
+	return done;
 }
 
 
@@ -268,6 +309,8 @@ void _pscom_recvq_user_deq_con(pscom_con_t *con, pscom_req_t *req)
 static
 void _pscom_recvq_user_enq_any(pscom_sock_t *sock, pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s req:%s add to sock->recvq_any:%p\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req), &sock->recvq_any));
+
 	list_add_tail(&req->next, &sock->recvq_any);
 	pscom.stat.recvq_any++;
 
@@ -450,6 +493,7 @@ void _pscom_recvq_any_cleanup(pscom_sock_t *sock)
 
 void _pscom_recvq_ctrl_enq(pscom_con_t *con, pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s req:%s add to con(%p)->recvq_ctrl\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req), con));
 	req->pub.connection = &con->pub;
 	req->pub.socket = con->pub.socket;
 
@@ -547,6 +591,8 @@ void _pscom_net_recvq_user_enq(pscom_con_t *con, pscom_req_t *req)
 {
 	pscom_sock_t *sock = get_sock(con->pub.socket);
 
+	D_TR(printf("%s:%u:%s req:%s add to con(%p)->net_recvq_user and sock->genrecvq_any\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req), con));
+
 	list_add_tail(&req->next, &con->net_recvq_user);
 	list_add_tail(&req->next_alt, &sock->genrecvq_any);
 }
@@ -554,6 +600,8 @@ void _pscom_net_recvq_user_enq(pscom_con_t *con, pscom_req_t *req)
 
 void _pscom_net_recvq_user_deq(pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s req:%s del req->next and req->next_alt\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
+
 	list_del(&req->next);
 	list_del(&req->next_alt);
 }
@@ -583,6 +631,7 @@ pscom_req_t *_pscom_net_recvq_user_find(pscom_req_t *req)
 /* enqueue a network generated ctrl request */
 void _pscom_net_recvq_ctrl_enq(pscom_con_t *con, pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s req:%s add to con(%p)->net_recvq_ctrl\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req), con));
 	list_add_tail(&req->next, &con->net_recvq_ctrl);
 }
 
@@ -620,6 +669,7 @@ pscom_req_t *_pscom_net_recvq_ctrl_find(pscom_req_t *req)
 
 void _pscom_recvq_rma_enq(pscom_con_t *con, pscom_req_t *req)
 {
+	D_TR(printf("%s:%u:%s req:%s add to con(%p)->recvq_rma\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req), con));
 	list_add_tail(&req->next, &con->recvq_rma);
 	_pscom_recv_req_cnt_inc(con);
 }

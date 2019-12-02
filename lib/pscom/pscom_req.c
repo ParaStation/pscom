@@ -26,6 +26,7 @@ void announce_new_req(pscom_req_t *req)
 {
 	if (!pscom.env.debug_req) return;
 	pthread_mutex_lock(&pscom.lock_requests);
+	/* all_req_next is shared with _pscom_pendingio_enq and  _pscom_pendingio_enq! */
 	list_add_tail(&req->all_req_next, &pscom.requests);
 	pthread_mutex_unlock(&pscom.lock_requests);
 }
@@ -36,7 +37,8 @@ void announce_free_req(pscom_req_t *req)
 {
 	if (!pscom.env.debug_req) return;
 	pthread_mutex_lock(&pscom.lock_requests);
-	list_del(&req->all_req_next);
+	/* all_req_next is shared with _pscom_pendingio_enq and _pscom_pendingio_enq! */
+	list_del_init(&req->all_req_next);
 	pthread_mutex_unlock(&pscom.lock_requests);
 }
 #else /* ENABLE_REQUEST_MONITORING */
@@ -148,6 +150,7 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 	req->magic		= MAGIC_REQUEST;
 	req->write_hook		= NULL;
 
+	req->pending_io		= 0;
 	req->req_no = ++pscom.stat.reqs; // ToDo: disable debug?
 
 	req->pub.state		= PSCOM_REQ_STATE_DONE;
@@ -221,6 +224,26 @@ size_t pscom_req_write(pscom_req_t *req, char *buf, size_t len)
 	}
 
 	if (req->write_hook) req->write_hook(req, buf, len);
+
+	return len;
+}
+
+
+size_t pscom_req_forward(pscom_req_t *req, size_t len)
+{
+	// Backup req->write_hook
+	void (*write_hook)(pscom_req_t *req, char *buf, size_t len) = req->write_hook;
+	if (unlikely(write_hook != NULL)) {
+		req->write_hook = NULL;
+	}
+
+	// pscom_req_write() without _pscom_memcpy_to_user (buf == req->cur_data.iov_base)
+	len = pscom_req_write(req, req->cur_data.iov_base, len);
+
+	if (unlikely(write_hook != NULL)) {
+		// Restore req->write_hook
+		req->write_hook = write_hook;
+	}
 
 	return len;
 }
