@@ -104,8 +104,23 @@ target_triplet = @target@
 @COVERAGE_ENABLED_TRUE@am__append_1 = --coverage
 @COVERAGE_ENABLED_TRUE@am__append_2 = --coverage
 @CUDA_ENABLED_TRUE@am__append_3 = -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
-noinst_PROGRAMS = pscom_dispatch$(EXEEXT)
-subdir = bin/examples
+@UTEST_ENABLED_TRUE@noinst_PROGRAMS = pscom_utest$(EXEEXT)
+
+# CUDA-related configuration
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_4 = -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_5 = pscom/test_cuda.c
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_6 = $(CUDA_LDFLAGS) -lcuda \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=memcpy \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuInit \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuDeviceGetCount \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuDeviceGetAttribute \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuPointerSetAttribute \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuPointerGetAttributes \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuMemcpy \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuMemcpyDtoH_v2 \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuMemcpyHtoD_v2
+
+subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
 am__aclocal_m4_deps = $(top_srcdir)/m4/ax_check_compile_flag.m4 \
 	$(top_srcdir)/m4/ax_check_library.m4 \
@@ -119,13 +134,24 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am_pscom_dispatch_OBJECTS = pscom_dispatch.$(OBJEXT)
-pscom_dispatch_OBJECTS = $(am_pscom_dispatch_OBJECTS)
-pscom_dispatch_DEPENDENCIES = $(LIBPSCOM)
+am__pscom_utest_SOURCES_DIST = pscom_utest.c pscom/test_io.c \
+	pscom/test_cuda.c
+am__dirstamp = $(am__leading_dot)dirstamp
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__objects_1 = pscom/utest-test_cuda.$(OBJEXT)
+@UTEST_ENABLED_TRUE@am_pscom_utest_OBJECTS =  \
+@UTEST_ENABLED_TRUE@	pscom_utest-pscom_utest.$(OBJEXT) \
+@UTEST_ENABLED_TRUE@	pscom/utest-test_io.$(OBJEXT) \
+@UTEST_ENABLED_TRUE@	$(am__objects_1)
+pscom_utest_OBJECTS = $(am_pscom_utest_OBJECTS)
+@UTEST_ENABLED_TRUE@pscom_utest_DEPENDENCIES =  \
+@UTEST_ENABLED_TRUE@	$(top_builddir)/lib/pscom/libpscom.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
 am__v_lt_1 = 
+pscom_utest_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
+	$(pscom_utest_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -141,7 +167,9 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/scripts/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/pscom_dispatch.Po
+am__depfiles_remade = ./$(DEPDIR)/pscom_utest-pscom_utest.Po \
+	pscom/$(DEPDIR)/utest-test_cuda.Po \
+	pscom/$(DEPDIR)/utest-test_io.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -161,8 +189,8 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(pscom_dispatch_SOURCES)
-DIST_SOURCES = $(pscom_dispatch_SOURCES)
+SOURCES = $(pscom_utest_SOURCES)
+DIST_SOURCES = $(am__pscom_utest_SOURCES_DIST)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -365,17 +393,25 @@ configdir = $(prefix)/config
 #
 # ParaStation
 #
-# Copyright (C) 2012 ParTec Cluster Competence Center GmbH, Munich
+# Copyright (C) 2019 ParTec Cluster Competence Center GmbH, Munich
 #
 # This file may be distributed under the terms of the Q Public License
 # as defined in the file LICENSE.QPL included in the packaging of this
 # file.
 #
-# Author:       Thomas Moschny <moschny@par-tec.com>
+# Author:       Simon Pickartz <pickartz@par-tec.com>
 #
-LIBPSCOM = $(top_builddir)/lib/pscom/libpscom.la
-pscom_dispatch_SOURCES = pscom_dispatch.c
-pscom_dispatch_LDADD = $(LIBPSCOM) -lpopt
+@UTEST_ENABLED_TRUE@ACLOCAL_AMFLAGS = -I m4
+@UTEST_ENABLED_TRUE@pscom_utest_LDADD = \
+@UTEST_ENABLED_TRUE@	$(top_builddir)/lib/pscom/libpscom.la
+
+@UTEST_ENABLED_TRUE@pscom_utest_CPPFLAGS = -I./pscom \
+@UTEST_ENABLED_TRUE@	-I$(top_srcdir)/include \
+@UTEST_ENABLED_TRUE@	-I$(top_srcdir)/lib/pscom $(am__append_4)
+@UTEST_ENABLED_TRUE@pscom_utest_LDFLAGS = -static -lcmocka \
+@UTEST_ENABLED_TRUE@	$(am__append_6)
+@UTEST_ENABLED_TRUE@pscom_utest_SOURCES = pscom_utest.c \
+@UTEST_ENABLED_TRUE@	pscom/test_io.c $(am__append_5)
 all: all-am
 
 .SUFFIXES:
@@ -389,9 +425,9 @@ $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am $(top_srcdir
 	      exit 1;; \
 	  esac; \
 	done; \
-	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign bin/examples/Makefile'; \
+	echo ' cd $(top_srcdir) && $(AUTOMAKE) --foreign test/Makefile'; \
 	$(am__cd) $(top_srcdir) && \
-	  $(AUTOMAKE) --foreign bin/examples/Makefile
+	  $(AUTOMAKE) --foreign test/Makefile
 Makefile: $(srcdir)/Makefile.in $(top_builddir)/config.status
 	@case '$?' in \
 	  *config.status*) \
@@ -419,18 +455,31 @@ clean-noinstPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+pscom/$(am__dirstamp):
+	@$(MKDIR_P) pscom
+	@: > pscom/$(am__dirstamp)
+pscom/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) pscom/$(DEPDIR)
+	@: > pscom/$(DEPDIR)/$(am__dirstamp)
+pscom/utest-test_io.$(OBJEXT): pscom/$(am__dirstamp) \
+	pscom/$(DEPDIR)/$(am__dirstamp)
+pscom/utest-test_cuda.$(OBJEXT): pscom/$(am__dirstamp) \
+	pscom/$(DEPDIR)/$(am__dirstamp)
 
-pscom_dispatch$(EXEEXT): $(pscom_dispatch_OBJECTS) $(pscom_dispatch_DEPENDENCIES) $(EXTRA_pscom_dispatch_DEPENDENCIES) 
-	@rm -f pscom_dispatch$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(pscom_dispatch_OBJECTS) $(pscom_dispatch_LDADD) $(LIBS)
+pscom_utest$(EXEEXT): $(pscom_utest_OBJECTS) $(pscom_utest_DEPENDENCIES) $(EXTRA_pscom_utest_DEPENDENCIES) 
+	@rm -f pscom_utest$(EXEEXT)
+	$(AM_V_CCLD)$(pscom_utest_LINK) $(pscom_utest_OBJECTS) $(pscom_utest_LDADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f pscom/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_dispatch.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_utest-pscom_utest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@pscom/$(DEPDIR)/utest-test_cuda.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@pscom/$(DEPDIR)/utest-test_io.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -461,6 +510,48 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
+
+pscom_utest-pscom_utest.o: pscom_utest.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_utest-pscom_utest.o -MD -MP -MF $(DEPDIR)/pscom_utest-pscom_utest.Tpo -c -o pscom_utest-pscom_utest.o `test -f 'pscom_utest.c' || echo '$(srcdir)/'`pscom_utest.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_utest-pscom_utest.Tpo $(DEPDIR)/pscom_utest-pscom_utest.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_utest.c' object='pscom_utest-pscom_utest.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_utest-pscom_utest.o `test -f 'pscom_utest.c' || echo '$(srcdir)/'`pscom_utest.c
+
+pscom_utest-pscom_utest.obj: pscom_utest.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_utest-pscom_utest.obj -MD -MP -MF $(DEPDIR)/pscom_utest-pscom_utest.Tpo -c -o pscom_utest-pscom_utest.obj `if test -f 'pscom_utest.c'; then $(CYGPATH_W) 'pscom_utest.c'; else $(CYGPATH_W) '$(srcdir)/pscom_utest.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_utest-pscom_utest.Tpo $(DEPDIR)/pscom_utest-pscom_utest.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_utest.c' object='pscom_utest-pscom_utest.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom_utest-pscom_utest.obj `if test -f 'pscom_utest.c'; then $(CYGPATH_W) 'pscom_utest.c'; else $(CYGPATH_W) '$(srcdir)/pscom_utest.c'; fi`
+
+pscom/utest-test_io.o: pscom/test_io.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom/utest-test_io.o -MD -MP -MF pscom/$(DEPDIR)/utest-test_io.Tpo -c -o pscom/utest-test_io.o `test -f 'pscom/test_io.c' || echo '$(srcdir)/'`pscom/test_io.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) pscom/$(DEPDIR)/utest-test_io.Tpo pscom/$(DEPDIR)/utest-test_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom/test_io.c' object='pscom/utest-test_io.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom/utest-test_io.o `test -f 'pscom/test_io.c' || echo '$(srcdir)/'`pscom/test_io.c
+
+pscom/utest-test_io.obj: pscom/test_io.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom/utest-test_io.obj -MD -MP -MF pscom/$(DEPDIR)/utest-test_io.Tpo -c -o pscom/utest-test_io.obj `if test -f 'pscom/test_io.c'; then $(CYGPATH_W) 'pscom/test_io.c'; else $(CYGPATH_W) '$(srcdir)/pscom/test_io.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) pscom/$(DEPDIR)/utest-test_io.Tpo pscom/$(DEPDIR)/utest-test_io.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom/test_io.c' object='pscom/utest-test_io.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom/utest-test_io.obj `if test -f 'pscom/test_io.c'; then $(CYGPATH_W) 'pscom/test_io.c'; else $(CYGPATH_W) '$(srcdir)/pscom/test_io.c'; fi`
+
+pscom/utest-test_cuda.o: pscom/test_cuda.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom/utest-test_cuda.o -MD -MP -MF pscom/$(DEPDIR)/utest-test_cuda.Tpo -c -o pscom/utest-test_cuda.o `test -f 'pscom/test_cuda.c' || echo '$(srcdir)/'`pscom/test_cuda.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) pscom/$(DEPDIR)/utest-test_cuda.Tpo pscom/$(DEPDIR)/utest-test_cuda.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom/test_cuda.c' object='pscom/utest-test_cuda.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom/utest-test_cuda.o `test -f 'pscom/test_cuda.c' || echo '$(srcdir)/'`pscom/test_cuda.c
+
+pscom/utest-test_cuda.obj: pscom/test_cuda.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom/utest-test_cuda.obj -MD -MP -MF pscom/$(DEPDIR)/utest-test_cuda.Tpo -c -o pscom/utest-test_cuda.obj `if test -f 'pscom/test_cuda.c'; then $(CYGPATH_W) 'pscom/test_cuda.c'; else $(CYGPATH_W) '$(srcdir)/pscom/test_cuda.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) pscom/$(DEPDIR)/utest-test_cuda.Tpo pscom/$(DEPDIR)/utest-test_cuda.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom/test_cuda.c' object='pscom/utest-test_cuda.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom/utest-test_cuda.obj `if test -f 'pscom/test_cuda.c'; then $(CYGPATH_W) 'pscom/test_cuda.c'; else $(CYGPATH_W) '$(srcdir)/pscom/test_cuda.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -583,6 +674,8 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f pscom/$(DEPDIR)/$(am__dirstamp)
+	-rm -f pscom/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -593,7 +686,9 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 	mostlyclean-am
 
 distclean: distclean-am
-		-rm -f ./$(DEPDIR)/pscom_dispatch.Po
+		-rm -f ./$(DEPDIR)/pscom_utest-pscom_utest.Po
+	-rm -f pscom/$(DEPDIR)/utest-test_cuda.Po
+	-rm -f pscom/$(DEPDIR)/utest-test_io.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -639,7 +734,9 @@ install-ps-am:
 installcheck-am:
 
 maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/pscom_dispatch.Po
+		-rm -f ./$(DEPDIR)/pscom_utest-pscom_utest.Po
+	-rm -f pscom/$(DEPDIR)/utest-test_cuda.Po
+	-rm -f pscom/$(DEPDIR)/utest-test_io.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
@@ -691,6 +788,9 @@ uninstall-am:
 	-r "$(PACKAGE_NAME)-$(PACKAGE_VERSION)" \
 	-v "ParaStation" $(TXT2MAN_KEYWORDS) \
 	$< > $@
+
+@UTEST_ENABLED_TRUE@utest: pscom_utest
+@UTEST_ENABLED_TRUE@	$(abs_builddir)/pscom_utest
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

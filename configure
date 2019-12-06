@@ -640,8 +640,14 @@ LIBOBJS
 AM_LDFLAGS
 AM_CFLAGS
 AM_CPPFLAGS
+UTEST_ENABLED_FALSE
+UTEST_ENABLED_TRUE
 OPTIMIZATIONS_ENABLED_FALSE
 OPTIMIZATIONS_ENABLED_TRUE
+COVERAGE_ENABLED_FALSE
+COVERAGE_ENABLED_TRUE
+HAVE_GENHTML
+HAVE_LCOV
 CUDA_ENABLED_FALSE
 CUDA_ENABLED_TRUE
 CUDA_LDFLAGS
@@ -841,7 +847,9 @@ enable_elan
 enable_extoll
 enable_mxm
 enable_cuda
+enable_coverage
 enable_optimizations
+enable_utest
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1523,7 +1531,11 @@ Optional Features:
   --disable-extoll        disable EXTOLL support
   --disable-mxm           disable MXM support
   --disable-cuda          disable CUDA support
+  --enable-coverage       enable code coverage analysis (Default is disabled.)
+                          This implies '--disable-optimiations' and
+                          '--enable-utest'.
   --disable-optimizations compile using the -O0 flag
+  --enable-utest          enable unit tests (Default is disabled.)
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -11170,6 +11182,9 @@ fi
   # before this can be enabled.
   hardcode_into_libs=yes
 
+  # Add ABI-specific directories to the system library path.
+  sys_lib_dlsearch_path_spec="/lib64 /usr/lib64 /lib /usr/lib"
+
   # Ideally, we could use ldconfig to report *all* directores which are
   # searched for libraries, however this is still not possible.  Aside from not
   # being certain /sbin/ldconfig is available, command
@@ -11178,7 +11193,7 @@ fi
   # appending ld.so.conf contents (and includes) to the search path.
   if test -f /etc/ld.so.conf; then
     lt_ld_extra=`awk '/^include / { system(sprintf("cd /etc; cat %s 2>/dev/null", \$2)); skip = 1; } { if (!skip) print \$0; skip = 0; }' < /etc/ld.so.conf | $SED -e 's/#.*//;/^[	 ]*hwcap[	 ]/d;s/[:,	]/ /g;s/=[^=]*$//;s/=[^= ]* / /g;s/"//g;/^$/d' | tr '\n' ' '`
-    sys_lib_dlsearch_path_spec="/lib /usr/lib $lt_ld_extra"
+    sys_lib_dlsearch_path_spec="$sys_lib_dlsearch_path_spec $lt_ld_extra"
   fi
 
   # We used to test for /lib/ld.so.1 and disable shared libraries on
@@ -13466,19 +13481,123 @@ else
 fi
 
 
-# ----------
+# -- Code coverage --
+
+# Check whether --enable-coverage was given.
+if test "${enable_coverage+set}" = set; then :
+  enableval=$enable_coverage;
+fi
+
+
+if test "$enable_coverage" == "yes" ; then
+# Extract the first word of "lcov", so it can be a program name with args.
+set dummy lcov; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_HAVE_LCOV+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$HAVE_LCOV"; then
+  ac_cv_prog_HAVE_LCOV="$HAVE_LCOV" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_HAVE_LCOV="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_HAVE_LCOV" && ac_cv_prog_HAVE_LCOV="no"
+fi
+fi
+HAVE_LCOV=$ac_cv_prog_HAVE_LCOV
+if test -n "$HAVE_LCOV"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $HAVE_LCOV" >&5
+$as_echo "$HAVE_LCOV" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+# Extract the first word of "genhtml", so it can be a program name with args.
+set dummy genhtml; ac_word=$2
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for $ac_word" >&5
+$as_echo_n "checking for $ac_word... " >&6; }
+if ${ac_cv_prog_HAVE_GENHTML+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  if test -n "$HAVE_GENHTML"; then
+  ac_cv_prog_HAVE_GENHTML="$HAVE_GENHTML" # Let the user override the test.
+else
+as_save_IFS=$IFS; IFS=$PATH_SEPARATOR
+for as_dir in $PATH
+do
+  IFS=$as_save_IFS
+  test -z "$as_dir" && as_dir=.
+    for ac_exec_ext in '' $ac_executable_extensions; do
+  if as_fn_executable_p "$as_dir/$ac_word$ac_exec_ext"; then
+    ac_cv_prog_HAVE_GENHTML="yes"
+    $as_echo "$as_me:${as_lineno-$LINENO}: found $as_dir/$ac_word$ac_exec_ext" >&5
+    break 2
+  fi
+done
+  done
+IFS=$as_save_IFS
+
+  test -z "$ac_cv_prog_HAVE_GENHTML" && ac_cv_prog_HAVE_GENHTML="no"
+fi
+fi
+HAVE_GENHTML=$ac_cv_prog_HAVE_GENHTML
+if test -n "$HAVE_GENHTML"; then
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: $HAVE_GENHTML" >&5
+$as_echo "$HAVE_GENHTML" >&6; }
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+fi
+
+
+fi
+ if test "$enable_coverage" == "yes" -a x"$HAVE_LCOV" == x"yes" -a x"$HAVE_GENHTML" == x"yes"; then
+  COVERAGE_ENABLED_TRUE=
+  COVERAGE_ENABLED_FALSE='#'
+else
+  COVERAGE_ENABLED_TRUE='#'
+  COVERAGE_ENABLED_FALSE=
+fi
+
+
+# -- Optimizations --
+
 # Check whether --enable-optimizations was given.
 if test "${enable_optimizations+set}" = set; then :
   enableval=$enable_optimizations;
 fi
 
- if test "x$enable_optimizations" != xno; then
+
+# Disable optimizations for code coverage analysis
+if test "x$enable_coverage" == "xyes" -a "x$enable_optimizations" == "xyes"; then :
+
+	as_fn_error $? "The --enable-optimizations option is mutually exclusive with --enable-coverage. Abort!" "$LINENO" 5
+fi
+
+ if test "x$enable_optimizations" != xno -a -z "$COVERAGE_ENABLED_FALSE"; then
   OPTIMIZATIONS_ENABLED_TRUE=
   OPTIMIZATIONS_ENABLED_FALSE='#'
 else
   OPTIMIZATIONS_ENABLED_TRUE='#'
   OPTIMIZATIONS_ENABLED_FALSE=
 fi
+
 
 if test -z "$OPTIMIZATIONS_ENABLED_TRUE"; then :
   { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -O3" >&5
@@ -13553,6 +13672,104 @@ else
 fi
 
 fi
+
+# -- Unit Tests --
+
+# Check whether --enable-utest was given.
+if test "${enable_utest+set}" = set; then :
+  enableval=$enable_utest; enable_static=yes; enable_utest=${enableval}
+fi
+
+have_cmocka=no
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking cmocka.h" >&5
+$as_echo_n "checking cmocka.h... " >&6; }
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+#include <stdarg.h>
+#include <stddef.h>
+#include <setjmp.h>
+#include <cmocka.h>
+
+int
+main ()
+{
+int i = 3;
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_compile "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+                                     { $as_echo "$as_me:${as_lineno-$LINENO}: checking for _cmocka_run_group_tests in -lcmocka" >&5
+$as_echo_n "checking for _cmocka_run_group_tests in -lcmocka... " >&6; }
+if ${ac_cv_lib_cmocka__cmocka_run_group_tests+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lcmocka  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char _cmocka_run_group_tests ();
+int
+main ()
+{
+return _cmocka_run_group_tests ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_c_try_link "$LINENO"; then :
+  ac_cv_lib_cmocka__cmocka_run_group_tests=yes
+else
+  ac_cv_lib_cmocka__cmocka_run_group_tests=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_cmocka__cmocka_run_group_tests" >&5
+$as_echo "$ac_cv_lib_cmocka__cmocka_run_group_tests" >&6; }
+if test "x$ac_cv_lib_cmocka__cmocka_run_group_tests" = xyes; then :
+  have_cmocka=yes
+fi
+
+fi
+rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
+
+if test "x$enable_utest" == "xyes" ; then
+	if test "x$have_cmocka" = xno -a "x$enable_utest" = xyes; then :
+  as_fn_error $? "unit tests enabled but cmocka could not be found" "$LINENO" 5
+fi
+fi
+
+# Enable utests for code coverage analysis
+if test "x$enable_coverage" == "xyes"; then :
+  if test "x$enable_utest" == "xno"; then :
+  as_fn_error $? "The code coverage analysis requires unit tests to be enabled. Abort!" "$LINENO" 5
+else
+  enable_utest=yes
+fi
+fi
+
+ if test "x$enable_utest" == xyes -a "x$have_cmocka" = xyes; then
+  UTEST_ENABLED_TRUE=
+  UTEST_ENABLED_FALSE='#'
+else
+  UTEST_ENABLED_TRUE='#'
+  UTEST_ENABLED_FALSE=
+fi
+
+
+# ----------
 
 # -Wsign-conversion
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter" >&5
@@ -13636,6 +13853,8 @@ ac_config_files="$ac_config_files lib/pscom4psm/Makefile"
 ac_config_files="$ac_config_files lib/psmalloc/Makefile"
 
 ac_config_files="$ac_config_files scripts/Makefile"
+
+ac_config_files="$ac_config_files test/Makefile"
 
 ac_config_links="$ac_config_links dist/Makefile:dist/Makefile"
 
@@ -13870,8 +14089,16 @@ if test -z "${CUDA_ENABLED_TRUE}" && test -z "${CUDA_ENABLED_FALSE}"; then
   as_fn_error $? "conditional \"CUDA_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
+if test -z "${COVERAGE_ENABLED_TRUE}" && test -z "${COVERAGE_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"COVERAGE_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
 if test -z "${OPTIMIZATIONS_ENABLED_TRUE}" && test -z "${OPTIMIZATIONS_ENABLED_FALSE}"; then
   as_fn_error $? "conditional \"OPTIMIZATIONS_ENABLED\" was never defined.
+Usually this means the macro was only invoked conditionally." "$LINENO" 5
+fi
+if test -z "${UTEST_ENABLED_TRUE}" && test -z "${UTEST_ENABLED_FALSE}"; then
+  as_fn_error $? "conditional \"UTEST_ENABLED\" was never defined.
 Usually this means the macro was only invoked conditionally." "$LINENO" 5
 fi
 
@@ -14757,6 +14984,7 @@ do
     "lib/pscom4psm/Makefile") CONFIG_FILES="$CONFIG_FILES lib/pscom4psm/Makefile" ;;
     "lib/psmalloc/Makefile") CONFIG_FILES="$CONFIG_FILES lib/psmalloc/Makefile" ;;
     "scripts/Makefile") CONFIG_FILES="$CONFIG_FILES scripts/Makefile" ;;
+    "test/Makefile") CONFIG_FILES="$CONFIG_FILES test/Makefile" ;;
     "dist/Makefile") CONFIG_LINKS="$CONFIG_LINKS dist/Makefile:dist/Makefile" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
@@ -15328,6 +15556,7 @@ See \`config.log' for more details" "$LINENO" 5; }
     cat <<_LT_EOF >> "$cfgfile"
 #! $SHELL
 # Generated automatically by $as_me ($PACKAGE) $VERSION
+# Libtool was configured on host `(hostname || uname -n) 2>/dev/null | sed 1q`:
 # NOTE: Changes made to this file will be lost: look at ltmain.sh.
 
 # Provide generalized library-building support services.
@@ -15980,13 +16209,6 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: MXM_ENABLED:           no" >&5
 $as_echo "$as_me: MXM_ENABLED:           no" >&6;}
 fi
-if test -z "$CUDA_ENABLED_TRUE"; then :
-  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:          yes" >&5
-$as_echo "$as_me: CUDA_ENABLED:          yes" >&6;}
-else
-  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:          no" >&5
-$as_echo "$as_me: CUDA_ENABLED:          no" >&6;}
-fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: ---------------------" >&5
 $as_echo "$as_me: ---------------------" >&6;}
 if test -z "$OPTIMIZATIONS_ENABLED_TRUE"; then :
@@ -15996,9 +16218,30 @@ else
   { $as_echo "$as_me:${as_lineno-$LINENO}: OPTIMIZATIONS_ENABLED: no" >&5
 $as_echo "$as_me: OPTIMIZATIONS_ENABLED: no" >&6;}
 fi
+if test -z "$CUDA_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:          yes" >&5
+$as_echo "$as_me: CUDA_ENABLED:          yes" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: CUDA_ENABLED:          no" >&5
+$as_echo "$as_me: CUDA_ENABLED:          no" >&6;}
+fi
+if test -z "$UTEST_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: UTEST_ENABLED:         yes" >&5
+$as_echo "$as_me: UTEST_ENABLED:         yes" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: UTEST_ENABLED:         no" >&5
+$as_echo "$as_me: UTEST_ENABLED:         no" >&6;}
+fi
+if test -z "$COVERAGE_ENABLED_TRUE"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: COVERAGE_ENABLED:      yes" >&5
+$as_echo "$as_me: COVERAGE_ENABLED:      yes" >&6;}
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: COVERAGE_ENABLED:      no" >&5
+$as_echo "$as_me: COVERAGE_ENABLED:      no" >&6;}
+fi
 { $as_echo "$as_me:${as_lineno-$LINENO}: =====================" >&5
 $as_echo "$as_me: =====================" >&6;}
 
 # Local Variables:
-#  compile-command: "module load automake-1.15.1 && autoreconf -vif"
+#  compile-command: "module load automake-1.16.1 && autoreconf -vif"
 # End:
