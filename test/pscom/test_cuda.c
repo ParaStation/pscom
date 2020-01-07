@@ -139,10 +139,14 @@ CUresult __wrap_cuMemcpy(void* dst, CUdeviceptr src, size_t nbytes)
  * \brief Setup cuInit() with CUDA_SUCCESS
  */
 static inline
-void setup_enable_cuda_and_initialize(void)
+void setup_enable_cuda_and_initialize(size_t device_count)
 {
 	pscom.env.cuda = 1;
-	will_return(__wrap_cuInit, CUDA_SUCCESS);
+	if (device_count) {
+		will_return(__wrap_cuInit, CUDA_SUCCESS);
+	} else {
+		will_return(__wrap_cuInit, CUDA_ERROR_NO_DEVICE);
+	}
 }
 
 /**
@@ -264,7 +268,7 @@ void test_cuda_init_device_count_error(void **state)
 {
 	(void) state;
 
-	setup_enable_cuda_and_initialize();
+	setup_enable_cuda_and_initialize(1);
 
 	/* cuDeviceGetCount() shall return CUDA_ERROR_NOT_INITIALIZED */
 	will_return(__wrap_cuDeviceGetCount, 0x42);
@@ -279,19 +283,16 @@ void test_cuda_init_device_count_error(void **state)
  *
  * Given: CUDA-awareness is enabled
  * When: no CUDA device is present
- * Then: pscom_cuda_init() returns PSCOM_SUCCESS
+ * Then: pscom_cuda_init() returns PSCOM_SUCCESS but disables the CUDA awareness
  */
 void test_cuda_init_device_count_zero(void **state)
 {
 	(void) state;
 
-	setup_enable_cuda_and_initialize();
-
-	/* cuDeviceGetCount() shall return CUDA_SUCCESS but 0 devices */
-	will_return(__wrap_cuDeviceGetCount, 0);
-	will_return(__wrap_cuDeviceGetCount, CUDA_SUCCESS);
+	setup_enable_cuda_and_initialize(0);
 
 	assert_int_equal(pscom_cuda_init(), PSCOM_SUCCESS);
+	assert_int_equal(pscom.env.cuda, 0);
 }
 
 /**
@@ -305,7 +306,7 @@ void test_cuda_init_uva_check_fails(void **state)
 {
 	(void) state;
 
-	setup_enable_cuda_and_initialize();
+	setup_enable_cuda_and_initialize(1);
 	setup_uva_tests();
 
 	/* cuDeviceGetAttribute() fails */
@@ -327,7 +328,7 @@ void test_cuda_init_no_uva_support(void **state)
 {
 	(void) state;
 
-	setup_enable_cuda_and_initialize();
+	setup_enable_cuda_and_initialize(1);
 	setup_uva_tests();
 
 	/* cuDeviceGetAttribute() shall return CUDA_SUCCES but no UVA support */

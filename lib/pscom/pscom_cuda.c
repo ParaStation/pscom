@@ -23,20 +23,55 @@ int pscom_is_cuda_enabled(void)
 
 #ifdef PSCOM_CUDA_AWARENESS
 
+/**
+ * \brief Initializes the CUDA driver API
+ *
+ * This function initializes the CUDA driver API if CUDA awareness is enabled.
+ * Since cuInit() fails if no CUDA device could be found, this function disables
+ * the CUDA awareness to avoid further calls to the CUDA driver API.
+ *
+ * \return PSCOM_SUCCESS or PSCOM_ERR_STDERROR if cuInit() returns an error code
+ *         other than CUDA_SUCCESS or CUDA_ERROR_NO_DEVICE; errno is set
+ *         accordingly.
+ */
+static
+pscom_err_t pscom_cuda_init_driver_api(void)
+{
+	pscom_err_t ret = PSCOM_SUCCESS;
+	int cuda_ret;
+
+	if (pscom.env.cuda) {
+		cuda_ret = cuInit(0);
+
+		switch(cuda_ret) {
+		case CUDA_SUCCESS:
+			break;
+		case CUDA_ERROR_NO_DEVICE:
+			/* disable CUDA awareness if no GPU is available */
+			pscom.env.cuda = 0;
+
+			DPRINT(D_INFO, "Could not find any CUDA devices");
+			break;
+		default:
+			pscom_cuda_err_str("cuInit()", cuda_ret);
+			errno = EFAULT;
+			ret = PSCOM_ERR_STDERROR;
+			break;
+		}
+	}
+
+	return ret;
+}
+
 pscom_err_t pscom_cuda_init(void)
 {
 	CUresult ret;
 	int dev_cnt, i, uva_support;
 	const char *err_name;
 
-	if (pscom.env.cuda) {
-		/* initialize the CUDA driver API */
-		ret = cuInit(0);
-		if (ret != CUDA_SUCCESS) {
-			pscom_cuda_err_str("cuInit()", ret);
-			goto err_init;
-		}
+	if (pscom_cuda_init_driver_api() != PSCOM_SUCCESS) goto err_out;
 
+	if (pscom.env.cuda) {
 		/* determine the number of  CUDA devices */
 		ret = cuDeviceGetCount(&dev_cnt);
 		if (ret != CUDA_SUCCESS) {
@@ -44,7 +79,7 @@ pscom_err_t pscom_cuda_init(void)
 			goto err_init;
 		}
 
-		if (dev_cnt == 0) DPRINT(D_INFO, "Could not find any CUDA devices");
+		if (dev_cnt == 0) DPRINT(D_INFO, "CUDA device count is zero");
 
 		/* check if the devices share a unifed address space with the host */
 		for (i=0; i<dev_cnt; ++i) {
