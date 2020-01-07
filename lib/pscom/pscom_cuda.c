@@ -24,6 +24,27 @@ int pscom_is_cuda_enabled(void)
 #ifdef PSCOM_CUDA_AWARENESS
 
 /**
+ * \brief Prints a diagnostic string base on a CUresult
+ *
+ * This function can be used to print a diagnostic string from a
+ * CUresult != CUDA_SUCCESS.
+ *
+ * \param [in] func The CUDA driver API call that failed
+ * \param [in] err The CUDA error code
+ */
+static
+void pscom_print_cuda_err(const char *func, CUresult err)
+{
+	const char *cuda_err_str;
+	cuGetErrorName(err, &cuda_err_str);
+	DPRINT(D_ERR, "CUDA driver call '%s' failed "
+				  "[CUDA error code: '%s' (%d)]",
+				  func, cuda_err_str, err);
+
+	return;
+}
+
+/**
  * \brief Initializes the CUDA driver API
  *
  * This function initializes the CUDA driver API if CUDA awareness is enabled.
@@ -53,7 +74,7 @@ pscom_err_t pscom_cuda_init_driver_api(void)
 			DPRINT(D_INFO, "Could not find any CUDA devices");
 			break;
 		default:
-			pscom_cuda_err_str("cuInit()", cuda_ret);
+			pscom_print_cuda_err("cuInit()", cuda_ret);
 			errno = EFAULT;
 			ret = PSCOM_ERR_STDERROR;
 			break;
@@ -75,7 +96,7 @@ pscom_err_t pscom_cuda_init(void)
 		/* determine the number of  CUDA devices */
 		ret = cuDeviceGetCount(&dev_cnt);
 		if (ret != CUDA_SUCCESS) {
-			pscom_cuda_err_str("cuDeviceGetCount()", ret);
+			pscom_print_cuda_err("cuDeviceGetCount()", ret);
 			goto err_init;
 		}
 
@@ -85,7 +106,7 @@ pscom_err_t pscom_cuda_init(void)
 		for (i=0; i<dev_cnt; ++i) {
 			ret = cuDeviceGetAttribute(&uva_support, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING, i);
 			if (ret != CUDA_SUCCESS) {
-				pscom_cuda_err_str("cuDeviceGetAttribute()", ret);
+				pscom_print_cuda_err("cuDeviceGetAttribute()", ret);
 				goto err_init;
 			}
 
@@ -219,7 +240,7 @@ int _pscom_is_gpu_mem(const void* ptr, size_t length)
 	 * GPUDirect TODO: what about managed memory? */
 	if (pscom.env.cuda_sync_memops && is_gpu_mem && !sync_memops) {
 		ret = cuPointerSetAttribute(&is_gpu_mem, CU_POINTER_ATTRIBUTE_SYNC_MEMOPS, (CUdeviceptr)ptr);
-		if (ret != CUDA_SUCCESS) pscom_cuda_err_str("cuPointerSetAttribute()", ret);
+		if (ret != CUDA_SUCCESS) pscom_print_cuda_err("cuPointerSetAttribute()", ret);
 	}
 
 	return is_gpu_mem;

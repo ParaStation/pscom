@@ -8,27 +8,6 @@
 #include <cuda.h>
 #include <driver_types.h>
 
-/**
- * \brief Translates a CUresult to a diagnostic string
- *
- * This function can be used to retrieve a diagnostic string from a
- * CUresult != CUDA_SUCCESS.
- *
- * \param [in] func The CUDA driver API call that failed
- * \param [in] err The CUDA error code
- */
-static inline
-void pscom_cuda_err_str(const char *func, CUresult err)
-{
-	const char *cuda_err_str;
-	cuGetErrorName(err, &cuda_err_str);
-	DPRINT(D_ERR, "CUDA driver call '%s' failed "
-				  "[CUDA error code: '%s' (%d)]",
-				  func, cuda_err_str, err);
-
-	return;
-}
-
 #define MIN(a,b)      (((a)<(b))?(a):(b))
 
 pscom_err_t pscom_cuda_init(void);
