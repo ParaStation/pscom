@@ -5,6 +5,8 @@
 
 #include <errno.h>
 
+#include "pscom_utest.h"
+
 #include "pscom_priv.h"
 #include "pscom_cuda.h"
 #include "pscom_util.h"
@@ -19,10 +21,13 @@
 void *__real_memcpy(void *restrict dst, const void *restrict src, size_t nbytes);
 void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
 {
-	function_called();
-	check_expected(dst);
-	check_expected(src);
-	check_expected(nbytes);
+	/* only mock memcpy if this is set for the current test */
+	if (pscom_utest.mock_functions.memcpy) {
+		function_called();
+		check_expected(dst);
+		check_expected(src);
+		check_expected(nbytes);
+	}
 
 	return __real_memcpy(dst, src, nbytes);
 }
