@@ -330,6 +330,9 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 		// from now receive into newreq
 		con->in.req = newreq;
+
+		/* ensure that we further read on that connection */
+		_pscom_recv_req_cnt_check_start(con);
 	}
 
 	if (genreq->pending_io) {

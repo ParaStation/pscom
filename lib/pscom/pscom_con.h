@@ -50,4 +50,17 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con);
 void pscom_con_guard_start(pscom_con_t *con);
 void pscom_con_guard_stop(pscom_con_t *con);
 
+/**
+ * @brief Checks whether a connection should be reading
+ *
+ * @param [in] con The connection to be tested
+ *
+ * @return 1 if the connection should be open for reading; 0 otherwise
+ */
+static inline
+int pscom_con_should_read(pscom_con_t *con)
+{
+    return (con->recv_req_cnt || con->in.req);
+}
+
 #endif /* _PSCOM_CON_H_ */

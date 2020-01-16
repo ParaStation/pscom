@@ -287,6 +287,19 @@ struct PSCOM_con
 {
 	unsigned long		magic;
 	struct list_head	next;
+
+	/**
+	 * @brief Start reading on a connection
+	 *
+	 * This function sets a connection to reading state *without* passing
+	 * any received data to the upper pscom layer. This has to be done in a
+	 * seperate call.
+	 *
+	 * \remark The read_start() function can be called safely multiple times
+	 *         without the need to call read_stop() in between.
+	 *
+	 * @param [in] con The connection to be opened
+	 */
 	void (*read_start)(pscom_con_t *con);
 	void (*read_stop)(pscom_con_t *con);
 	void (*write_start)(pscom_con_t *con);

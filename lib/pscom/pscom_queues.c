@@ -10,6 +10,7 @@
  * Author:	Jens Hauke <hauke@par-tec.com>
  */
 
+#include "pscom_con.h"
 #include "pscom_queues.h"
 
 
@@ -183,7 +184,7 @@ void _pscom_recv_req_cnt_dec(pscom_con_t *con)
 
 void _pscom_recv_req_cnt_check_stop(pscom_con_t *con)
 {
-	if (!con->recv_req_cnt && !con->in.req && !pscom.env.unexpected_receives) {
+	if (!pscom_con_should_read(con) && !pscom.env.unexpected_receives) {
 		con->read_stop(con);
 	}
 }
@@ -191,7 +192,7 @@ void _pscom_recv_req_cnt_check_stop(pscom_con_t *con)
 
 void _pscom_recv_req_cnt_check_start(pscom_con_t *con)
 {
-	if (con->recv_req_cnt || con->in.req) {
+	if (pscom_con_should_read(con)) {
 		con->read_start(con);
 	}
 }
