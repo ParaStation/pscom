@@ -265,8 +265,15 @@ scripts/txt2man \
 scripts/vcversion \
 test/Makefile.am \
 test/Makefile.in \
+test/mocks/cuda_mocks.c \
+test/mocks/misc_mocks.c \
+test/mocks/misc_mocks.h \
+test/mocks/pscom_mocks.c \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
 test/pscom/test_io.c \
 test/pscom/test_io.h \
-test/pscom_utest.c
+test/pscom_utest.c \
+test/pscom_utest.h \
+test/util/test_utils_con.c \
+test/util/test_utils_con.h
