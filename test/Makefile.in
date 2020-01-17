@@ -134,13 +134,18 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am__pscom_utest_SOURCES_DIST = pscom_utest.c pscom/test_io.c \
-	pscom/test_cuda.c
+am__pscom_utest_SOURCES_DIST = mocks/pscom_mocks.c mocks/cuda_mocks.c \
+	mocks/misc_mocks.c pscom_utest.c pscom/test_io.c \
+	util/test_utils_con.c pscom/test_cuda.c
 am__dirstamp = $(am__leading_dot)dirstamp
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__objects_1 = pscom/utest-test_cuda.$(OBJEXT)
 @UTEST_ENABLED_TRUE@am_pscom_utest_OBJECTS =  \
+@UTEST_ENABLED_TRUE@	mocks/pscom_utest-pscom_mocks.$(OBJEXT) \
+@UTEST_ENABLED_TRUE@	mocks/pscom_utest-cuda_mocks.$(OBJEXT) \
+@UTEST_ENABLED_TRUE@	mocks/pscom_utest-misc_mocks.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	pscom_utest-pscom_utest.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	pscom/utest-test_io.$(OBJEXT) \
+@UTEST_ENABLED_TRUE@	util/pscom_utest-test_utils_con.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	$(am__objects_1)
 pscom_utest_OBJECTS = $(am_pscom_utest_OBJECTS)
 @UTEST_ENABLED_TRUE@pscom_utest_DEPENDENCIES =  \
@@ -168,8 +173,12 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/scripts/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/pscom_utest-pscom_utest.Po \
+	mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po \
+	mocks/$(DEPDIR)/pscom_utest-misc_mocks.Po \
+	mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Po \
 	pscom/$(DEPDIR)/utest-test_cuda.Po \
-	pscom/$(DEPDIR)/utest-test_io.Po
+	pscom/$(DEPDIR)/utest-test_io.Po \
+	util/$(DEPDIR)/pscom_utest-test_utils_con.Po
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -393,7 +402,7 @@ configdir = $(prefix)/config
 #
 # ParaStation
 #
-# Copyright (C) 2019 ParTec Cluster Competence Center GmbH, Munich
+# Copyright (C) 2020 ParTec Cluster Competence Center GmbH, Munich
 #
 # This file may be distributed under the terms of the Q Public License
 # as defined in the file LICENSE.QPL included in the packaging of this
@@ -408,10 +417,14 @@ configdir = $(prefix)/config
 @UTEST_ENABLED_TRUE@pscom_utest_CPPFLAGS = -I./pscom \
 @UTEST_ENABLED_TRUE@	-I$(top_srcdir)/include \
 @UTEST_ENABLED_TRUE@	-I$(top_srcdir)/lib/pscom $(am__append_4)
+
+# Mocked functions
 @UTEST_ENABLED_TRUE@pscom_utest_LDFLAGS = -static -lcmocka \
-@UTEST_ENABLED_TRUE@	$(am__append_6)
-@UTEST_ENABLED_TRUE@pscom_utest_SOURCES = pscom_utest.c \
-@UTEST_ENABLED_TRUE@	pscom/test_io.c $(am__append_5)
+@UTEST_ENABLED_TRUE@	-Wl,--wrap=pscom_unlock $(am__append_6)
+@UTEST_ENABLED_TRUE@pscom_utest_SOURCES = mocks/pscom_mocks.c \
+@UTEST_ENABLED_TRUE@	mocks/cuda_mocks.c mocks/misc_mocks.c \
+@UTEST_ENABLED_TRUE@	pscom_utest.c pscom/test_io.c \
+@UTEST_ENABLED_TRUE@	util/test_utils_con.c $(am__append_5)
 all: all-am
 
 .SUFFIXES:
@@ -455,6 +468,18 @@ clean-noinstPROGRAMS:
 	list=`for p in $$list; do echo "$$p"; done | sed 's/$(EXEEXT)$$//'`; \
 	echo " rm -f" $$list; \
 	rm -f $$list
+mocks/$(am__dirstamp):
+	@$(MKDIR_P) mocks
+	@: > mocks/$(am__dirstamp)
+mocks/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) mocks/$(DEPDIR)
+	@: > mocks/$(DEPDIR)/$(am__dirstamp)
+mocks/pscom_utest-pscom_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
+	mocks/$(DEPDIR)/$(am__dirstamp)
+mocks/pscom_utest-cuda_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
+	mocks/$(DEPDIR)/$(am__dirstamp)
+mocks/pscom_utest-misc_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
+	mocks/$(DEPDIR)/$(am__dirstamp)
 pscom/$(am__dirstamp):
 	@$(MKDIR_P) pscom
 	@: > pscom/$(am__dirstamp)
@@ -463,6 +488,14 @@ pscom/$(DEPDIR)/$(am__dirstamp):
 	@: > pscom/$(DEPDIR)/$(am__dirstamp)
 pscom/utest-test_io.$(OBJEXT): pscom/$(am__dirstamp) \
 	pscom/$(DEPDIR)/$(am__dirstamp)
+util/$(am__dirstamp):
+	@$(MKDIR_P) util
+	@: > util/$(am__dirstamp)
+util/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) util/$(DEPDIR)
+	@: > util/$(DEPDIR)/$(am__dirstamp)
+util/pscom_utest-test_utils_con.$(OBJEXT): util/$(am__dirstamp) \
+	util/$(DEPDIR)/$(am__dirstamp)
 pscom/utest-test_cuda.$(OBJEXT): pscom/$(am__dirstamp) \
 	pscom/$(DEPDIR)/$(am__dirstamp)
 
@@ -472,14 +505,20 @@ pscom_utest$(EXEEXT): $(pscom_utest_OBJECTS) $(pscom_utest_DEPENDENCIES) $(EXTRA
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
+	-rm -f mocks/*.$(OBJEXT)
 	-rm -f pscom/*.$(OBJEXT)
+	-rm -f util/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/pscom_utest-pscom_utest.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@mocks/$(DEPDIR)/pscom_utest-misc_mocks.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@pscom/$(DEPDIR)/utest-test_cuda.Po@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@pscom/$(DEPDIR)/utest-test_io.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/pscom_utest-test_utils_con.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -511,6 +550,48 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
+mocks/pscom_utest-pscom_mocks.o: mocks/pscom_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-pscom_mocks.o -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Tpo -c -o mocks/pscom_utest-pscom_mocks.o `test -f 'mocks/pscom_mocks.c' || echo '$(srcdir)/'`mocks/pscom_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/pscom_mocks.c' object='mocks/pscom_utest-pscom_mocks.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-pscom_mocks.o `test -f 'mocks/pscom_mocks.c' || echo '$(srcdir)/'`mocks/pscom_mocks.c
+
+mocks/pscom_utest-pscom_mocks.obj: mocks/pscom_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-pscom_mocks.obj -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Tpo -c -o mocks/pscom_utest-pscom_mocks.obj `if test -f 'mocks/pscom_mocks.c'; then $(CYGPATH_W) 'mocks/pscom_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/pscom_mocks.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/pscom_mocks.c' object='mocks/pscom_utest-pscom_mocks.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-pscom_mocks.obj `if test -f 'mocks/pscom_mocks.c'; then $(CYGPATH_W) 'mocks/pscom_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/pscom_mocks.c'; fi`
+
+mocks/pscom_utest-cuda_mocks.o: mocks/cuda_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-cuda_mocks.o -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo -c -o mocks/pscom_utest-cuda_mocks.o `test -f 'mocks/cuda_mocks.c' || echo '$(srcdir)/'`mocks/cuda_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/cuda_mocks.c' object='mocks/pscom_utest-cuda_mocks.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-cuda_mocks.o `test -f 'mocks/cuda_mocks.c' || echo '$(srcdir)/'`mocks/cuda_mocks.c
+
+mocks/pscom_utest-cuda_mocks.obj: mocks/cuda_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-cuda_mocks.obj -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo -c -o mocks/pscom_utest-cuda_mocks.obj `if test -f 'mocks/cuda_mocks.c'; then $(CYGPATH_W) 'mocks/cuda_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/cuda_mocks.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/cuda_mocks.c' object='mocks/pscom_utest-cuda_mocks.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-cuda_mocks.obj `if test -f 'mocks/cuda_mocks.c'; then $(CYGPATH_W) 'mocks/cuda_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/cuda_mocks.c'; fi`
+
+mocks/pscom_utest-misc_mocks.o: mocks/misc_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-misc_mocks.o -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-misc_mocks.Tpo -c -o mocks/pscom_utest-misc_mocks.o `test -f 'mocks/misc_mocks.c' || echo '$(srcdir)/'`mocks/misc_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-misc_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-misc_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/misc_mocks.c' object='mocks/pscom_utest-misc_mocks.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-misc_mocks.o `test -f 'mocks/misc_mocks.c' || echo '$(srcdir)/'`mocks/misc_mocks.c
+
+mocks/pscom_utest-misc_mocks.obj: mocks/misc_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-misc_mocks.obj -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-misc_mocks.Tpo -c -o mocks/pscom_utest-misc_mocks.obj `if test -f 'mocks/misc_mocks.c'; then $(CYGPATH_W) 'mocks/misc_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/misc_mocks.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-misc_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-misc_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/misc_mocks.c' object='mocks/pscom_utest-misc_mocks.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-misc_mocks.obj `if test -f 'mocks/misc_mocks.c'; then $(CYGPATH_W) 'mocks/misc_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/misc_mocks.c'; fi`
+
 pscom_utest-pscom_utest.o: pscom_utest.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom_utest-pscom_utest.o -MD -MP -MF $(DEPDIR)/pscom_utest-pscom_utest.Tpo -c -o pscom_utest-pscom_utest.o `test -f 'pscom_utest.c' || echo '$(srcdir)/'`pscom_utest.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/pscom_utest-pscom_utest.Tpo $(DEPDIR)/pscom_utest-pscom_utest.Po
@@ -538,6 +619,20 @@ pscom/utest-test_io.obj: pscom/test_io.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom/test_io.c' object='pscom/utest-test_io.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom/utest-test_io.obj `if test -f 'pscom/test_io.c'; then $(CYGPATH_W) 'pscom/test_io.c'; else $(CYGPATH_W) '$(srcdir)/pscom/test_io.c'; fi`
+
+util/pscom_utest-test_utils_con.o: util/test_utils_con.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT util/pscom_utest-test_utils_con.o -MD -MP -MF util/$(DEPDIR)/pscom_utest-test_utils_con.Tpo -c -o util/pscom_utest-test_utils_con.o `test -f 'util/test_utils_con.c' || echo '$(srcdir)/'`util/test_utils_con.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/pscom_utest-test_utils_con.Tpo util/$(DEPDIR)/pscom_utest-test_utils_con.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/test_utils_con.c' object='util/pscom_utest-test_utils_con.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o util/pscom_utest-test_utils_con.o `test -f 'util/test_utils_con.c' || echo '$(srcdir)/'`util/test_utils_con.c
+
+util/pscom_utest-test_utils_con.obj: util/test_utils_con.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT util/pscom_utest-test_utils_con.obj -MD -MP -MF util/$(DEPDIR)/pscom_utest-test_utils_con.Tpo -c -o util/pscom_utest-test_utils_con.obj `if test -f 'util/test_utils_con.c'; then $(CYGPATH_W) 'util/test_utils_con.c'; else $(CYGPATH_W) '$(srcdir)/util/test_utils_con.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) util/$(DEPDIR)/pscom_utest-test_utils_con.Tpo util/$(DEPDIR)/pscom_utest-test_utils_con.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='util/test_utils_con.c' object='util/pscom_utest-test_utils_con.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o util/pscom_utest-test_utils_con.obj `if test -f 'util/test_utils_con.c'; then $(CYGPATH_W) 'util/test_utils_con.c'; else $(CYGPATH_W) '$(srcdir)/util/test_utils_con.c'; fi`
 
 pscom/utest-test_cuda.o: pscom/test_cuda.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT pscom/utest-test_cuda.o -MD -MP -MF pscom/$(DEPDIR)/utest-test_cuda.Tpo -c -o pscom/utest-test_cuda.o `test -f 'pscom/test_cuda.c' || echo '$(srcdir)/'`pscom/test_cuda.c
@@ -674,8 +769,12 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
+	-rm -f mocks/$(DEPDIR)/$(am__dirstamp)
+	-rm -f mocks/$(am__dirstamp)
 	-rm -f pscom/$(DEPDIR)/$(am__dirstamp)
 	-rm -f pscom/$(am__dirstamp)
+	-rm -f util/$(DEPDIR)/$(am__dirstamp)
+	-rm -f util/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
@@ -687,8 +786,12 @@ clean-am: clean-generic clean-libtool clean-noinstPROGRAMS \
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/pscom_utest-pscom_utest.Po
+	-rm -f mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
+	-rm -f mocks/$(DEPDIR)/pscom_utest-misc_mocks.Po
+	-rm -f mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Po
 	-rm -f pscom/$(DEPDIR)/utest-test_cuda.Po
 	-rm -f pscom/$(DEPDIR)/utest-test_io.Po
+	-rm -f util/$(DEPDIR)/pscom_utest-test_utils_con.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -735,8 +838,12 @@ installcheck-am:
 
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/pscom_utest-pscom_utest.Po
+	-rm -f mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
+	-rm -f mocks/$(DEPDIR)/pscom_utest-misc_mocks.Po
+	-rm -f mocks/$(DEPDIR)/pscom_utest-pscom_mocks.Po
 	-rm -f pscom/$(DEPDIR)/utest-test_cuda.Po
 	-rm -f pscom/$(DEPDIR)/utest-test_io.Po
+	-rm -f util/$(DEPDIR)/pscom_utest-test_utils_con.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
