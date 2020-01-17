@@ -30,8 +30,14 @@ pscom_utest_LDFLAGS = \
 	-lcmocka
 
 pscom_utest_SOURCES = \
+	mocks/pscom_mocks.c \
+	mocks/cuda_mocks.c \
+	mocks/misc_mocks.c \
 	pscom_utest.c \
 	pscom/test_io.c
+
+# Mocked functions
+pscom_utest_LDFLAGS  += -Wl,--wrap=pscom_unlock
 
 # CUDA-related configuration
 if CUDA_ENABLED
