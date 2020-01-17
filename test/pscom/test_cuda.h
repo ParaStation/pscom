@@ -1,3 +1,15 @@
+/*
+ * ParaStation
+ *
+ * Copyright (C) 2020 ParTec Cluster Competence Center GmbH, Munich
+ *
+ * This file may be distributed under the terms of the Q Public License
+ * as defined in the file LICENSE.QPL included in the packaging of this
+ * file.
+ *
+ * Author:	Simon Pickartz <pickartz@par-tec.com>
+ */
+
 #ifndef _TEST_CUDA_H_
 #define _TEST_CUDA_H_
 void test_is_cuda_enabled_returns_zero_if_disabled(void **state);
