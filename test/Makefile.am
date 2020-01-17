@@ -34,7 +34,8 @@ pscom_utest_SOURCES = \
 	mocks/cuda_mocks.c \
 	mocks/misc_mocks.c \
 	pscom_utest.c \
-	pscom/test_io.c
+	pscom/test_io.c \
+	util/test_utils_con.c
 
 # Mocked functions
 pscom_utest_LDFLAGS  += -Wl,--wrap=pscom_unlock

@@ -5,11 +5,93 @@
 
 #include <errno.h>
 
+#include "pscom_con.h"
 #include "pscom_io.h"
 #include "pscom_priv.h"
+#include "pscom_queues.h"
 #include "pscom_util.h"
 #include "pscom_req.h"
 
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_post_recv()
+////////////////////////////////////////////////////////////////////////////////
+static
+int add_to_reading_count(int counter)
+{
+	static int total_count = 0;
+
+	total_count += counter;
+
+	return total_count;
+}
+
+static
+void check_read_start_called(pscom_con_t *con)
+{
+	function_called();
+	check_expected(con);
+
+	add_to_reading_count(1);
+}
+
+static
+void check_read_stop_called(pscom_con_t *con)
+{
+	function_called();
+	check_expected(con);
+
+	add_to_reading_count(-1);
+}
+
+/**
+ * \brief Test pscom_post_recv() for partially received message
+ *
+ * Given: A partially received message in a generated request
+ * When: pscom_post_recv() is called
+ * Then: the request should be merged properly and the connection should be
+ *       open for reading.
+ */
+void test_post_recv_partial_genreq(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create generated requests and enqueue to the list of net requests */
+	pscom_req_t *gen_req = pscom_req_create(0, 100);
+	gen_req->pub.connection = &recv_con->pub;
+	_pscom_net_recvq_user_enq(recv_con, gen_req);
+
+	/* set the read_start() function */
+	recv_con->read_start = &check_read_start_called;
+
+	/*
+	 * set the appropriate request state:
+	 * -> generated requests
+	 * -> IO has been started
+	 */
+	gen_req->pub.state = PSCOM_REQ_STATE_GRECV_REQUEST;
+	gen_req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
+
+	/* the request shall be the current request of the connection */
+	recv_con->in.req = gen_req;
+
+	/* create the receive request */
+	pscom_request_t *recv_req = pscom_request_create(0, 100);
+	recv_req->connection = &recv_con->pub;
+
+	/* read_start() should be called at least once */
+	expect_function_call_any(check_read_start_called);
+	expect_value(check_read_start_called, con, recv_con);
+
+	/* post the actual receive request */
+	pscom_post_recv(recv_req);
+
+	/*
+	 * read_start() should be called more often than read_stop()
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_true(add_to_reading_count(0));
+}
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_req_prepare_send_pending()
 ////////////////////////////////////////////////////////////////////////////////

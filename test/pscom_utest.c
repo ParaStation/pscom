@@ -7,6 +7,7 @@
 #include "pscom_utest.h"
 #include "pscom/test_cuda.h"
 #include "pscom/test_io.h"
+#include "util/test_utils_con.h"
 
 pscom_utest_t pscom_utest = {
 	.mock_functions = {
@@ -46,6 +47,10 @@ int main(void)
 	const struct CMUnitTest pscom_io_tests[] = {
 		cmocka_unit_test(test_req_prepare_send_pending_valid_send_request),
 		cmocka_unit_test(test_req_prepare_send_pending_truncate_data_len),
+		cmocka_unit_test_setup_teardown(
+			test_post_recv_partial_genreq,
+			setup_dummy_con,
+			teardown_dummy_con),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
