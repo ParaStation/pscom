@@ -32,23 +32,7 @@ pscom_utest_t pscom_utest = {
 ////////////////////////////////////////////////////////////////////////////////
 /// Setup/teardown helpers
 ////////////////////////////////////////////////////////////////////////////////
-static
-int pscom_utest_enable_memcpy_mock(void **state)
-{
-	(void) state;
-	pscom_utest.mock_functions.memcpy = 1;
 
-	return 0;
-}
-
-static
-int pscom_utest_disable_memcpy_mock(void **state)
-{
-	(void) state;
-	pscom_utest.mock_functions.memcpy = 0;
-
-	return 0;
-}
 
 int main(void)
 {
@@ -88,25 +72,13 @@ int main(void)
 		cmocka_unit_test(test_is_gpu_mem_wrapper_device_memory),
 		cmocka_unit_test(test_is_gpu_mem_sync_memop_disabled),
 		cmocka_unit_test(test_is_gpu_mem_sync_memop_enabled),
-		cmocka_unit_test_setup_teardown(
-			test_pscom_memcpy_gpu_safe_from_user_host_mem,
-			pscom_utest_enable_memcpy_mock,
-			pscom_utest_disable_memcpy_mock),
+		cmocka_unit_test(test_pscom_memcpy_gpu_safe_from_user_host_mem),
 		cmocka_unit_test(test_pscom_memcpy_gpu_safe_from_user_device_mem),
-		cmocka_unit_test_setup_teardown(
-			test_pscom_memcpy_gpu_safe_to_user_host_mem,
-			pscom_utest_enable_memcpy_mock,
-			pscom_utest_disable_memcpy_mock),
+		cmocka_unit_test(test_pscom_memcpy_gpu_safe_to_user_host_mem),
 		cmocka_unit_test(test_pscom_memcpy_gpu_safe_to_user_device_mem),
-		cmocka_unit_test_setup_teardown(
-			test_pscom_memcpy_gpu_safe_default_host_mem,
-			pscom_utest_enable_memcpy_mock,
-			pscom_utest_disable_memcpy_mock),
+		cmocka_unit_test(test_pscom_memcpy_gpu_safe_default_host_mem),
 		cmocka_unit_test(test_pscom_memcpy_gpu_safe_default_device_mem),
-		cmocka_unit_test_setup_teardown(
-			test_pscom_memcpy_host_mem,
-			pscom_utest_enable_memcpy_mock,
-			pscom_utest_disable_memcpy_mock),
+		cmocka_unit_test(test_pscom_memcpy_host_mem),
 		cmocka_unit_test(test_pscom_stage_buffer_dev_mem_no_con),
 		cmocka_unit_test(test_pscom_stage_buffer_host_mem),
 		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem),

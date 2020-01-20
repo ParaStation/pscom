@@ -15,6 +15,11 @@
 
 #include <stddef.h>
 
+#include "pscom_utest.h"
+
 void *__real_memcpy(void *restrict dst, const void *restrict src, size_t nbytes);
+
+static inline void enable_memcpy_mock(void) { pscom_utest.mock_functions.memcpy = 1; }
+static inline void disable_memcpy_mock(void) { pscom_utest.mock_functions.memcpy = 0; }
 
 #endif /* _MOCKS_H_ */

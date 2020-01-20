@@ -18,6 +18,7 @@
 #include <errno.h>
 
 #include "pscom_utest.h"
+#include "mocks/misc_mocks.h"
 
 #include "pscom_priv.h"
 #include "pscom_cuda.h"
@@ -479,12 +480,16 @@ void test_pscom_memcpy_gpu_safe_from_user_host_mem(void **state)
 	/* cuPointerGetAttributes() is only called for src */
 	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
 
+	enable_memcpy_mock();
 	expect_function_calls(__wrap_memcpy, 1);
 	expect_value(__wrap_memcpy, dst, &dst);
 	expect_value(__wrap_memcpy, src, &src);
 	expect_value(__wrap_memcpy, nbytes, sizeof(int));
 
 	pscom_memcpy_gpu_safe_from_user(&dst, &src, sizeof(int));
+
+	disable_memcpy_mock();
+
 	assert_int_equal(dst, src);
 }
 
@@ -540,12 +545,16 @@ void test_pscom_memcpy_gpu_safe_to_user_host_mem(void **state)
 	/* cuPointerGetAttributes() is only called for src */
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
 
+	enable_memcpy_mock();
 	expect_function_calls(__wrap_memcpy, 1);
 	expect_value(__wrap_memcpy, dst, &dst);
 	expect_value(__wrap_memcpy, src, &src);
 	expect_value(__wrap_memcpy, nbytes, sizeof(int));
 
 	pscom_memcpy_gpu_safe_to_user(&dst, &src, sizeof(int));
+
+	disable_memcpy_mock();
+
 	assert_int_equal(dst, src);
 }
 
@@ -601,12 +610,14 @@ void test_pscom_memcpy_gpu_safe_default_host_mem(void **state)
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
 	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
 
+	enable_memcpy_mock();
 	expect_function_calls(__wrap_memcpy, 1);
 	expect_value(__wrap_memcpy, dst, &dst);
 	expect_value(__wrap_memcpy, src, &src);
 	expect_value(__wrap_memcpy, nbytes, sizeof(int));
 
 	pscom_memcpy_gpu_safe_default(&dst, &src, sizeof(int));
+	disable_memcpy_mock();
 	assert_int_equal(dst, src);
 }
 
@@ -662,12 +673,16 @@ void test_pscom_memcpy_host_mem(void **state)
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
 	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_HOST, 0, 1, CUDA_SUCCESS);
 
+	enable_memcpy_mock();
 	expect_function_calls(__wrap_memcpy, 1);
 	expect_value(__wrap_memcpy, dst, &dst);
 	expect_value(__wrap_memcpy, src, &src);
 	expect_value(__wrap_memcpy, nbytes, sizeof(int));
 
 	pscom_memcpy(&dst, &src, sizeof(int));
+
+	disable_memcpy_mock();
+
 	assert_int_equal(dst, src);
 }
 
