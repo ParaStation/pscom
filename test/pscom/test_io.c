@@ -27,14 +27,24 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_post_recv()
 ////////////////////////////////////////////////////////////////////////////////
+
+typedef enum { TESTCON_STATE_CLOSED=0, TESTCON_STATE_OPENED } connection_state_t;
+typedef enum { TESTCON_OP_NOP=0, TESTCON_OP_STOP_READ, TESTCON_OP_START_READ } connection_action_t;
+
+connection_state_t transition_table[2][3] = {
+	{TESTCON_STATE_CLOSED, TESTCON_STATE_CLOSED, TESTCON_STATE_OPENED},
+	{TESTCON_STATE_OPENED, TESTCON_STATE_CLOSED, TESTCON_STATE_OPENED}
+};
+
 static
-int add_to_reading_count(int counter)
+int connection_state(connection_action_t action)
 {
-	static int total_count = 0;
+	static connection_state_t connection_state = TESTCON_STATE_CLOSED;
+	connection_state_t old_state = connection_state;
 
-	total_count += counter;
+	connection_state = transition_table[connection_state][action];
 
-	return total_count;
+	return old_state;
 }
 
 static
@@ -43,7 +53,7 @@ void check_read_start_called(pscom_con_t *con)
 	function_called();
 	check_expected(con);
 
-	add_to_reading_count(1);
+	connection_state(TESTCON_OP_START_READ);
 }
 
 static
@@ -52,7 +62,7 @@ void check_read_stop_called(pscom_con_t *con)
 	function_called();
 	check_expected(con);
 
-	add_to_reading_count(-1);
+	connection_state(TESTCON_OP_STOP_READ);
 }
 
 /**
@@ -73,8 +83,9 @@ void test_post_recv_partial_genreq(void **state)
 	gen_req->pub.connection = &recv_con->pub;
 	_pscom_net_recvq_user_enq(recv_con, gen_req);
 
-	/* set the read_start() function */
+	/* set the read_start()/read_stop() functions */
 	recv_con->read_start = &check_read_start_called;
+	recv_con->read_stop = &check_read_stop_called;
 
 	/*
 	 * set the appropriate request state:
@@ -99,10 +110,10 @@ void test_post_recv_partial_genreq(void **state)
 	pscom_post_recv(recv_req);
 
 	/*
-	 * read_start() should be called more often than read_stop()
+	 * read_start() should be called lastly
 	 * TODO: check connection state, once this is available within the pscom
 	 */
-	assert_true(add_to_reading_count(0));
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
 }
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_req_prepare_send_pending()
