@@ -507,7 +507,7 @@ int pspsm_process(psm2_mq_status2_t *status)
 		pscom_read_done_unlock(con, ci->rbuf, status->msg_length);
 		ci->rbuf = NULL;
 		/* Check, if there is more to read. Post the next receive request, if so. */
-		pscom_psm_do_read_check(con);
+		pscom_psm_post_recv_check(con);
 		return 1;
 		break;
 	default:

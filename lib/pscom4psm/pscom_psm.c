@@ -61,7 +61,7 @@ void pscom_psm_read_start(pscom_con_t *con)
 		poll_user_inc();
 	}
 	/* post a receive */
-	pscom_psm_do_read(con);
+	pscom_psm_post_recv(con);
 }
 
 
@@ -83,7 +83,7 @@ int pscom_psm_make_progress(pscom_poll_reader_t *reader)
 
 
 static
-int pscom_psm_do_read(pscom_con_t *con)
+int pscom_psm_post_recv(pscom_con_t *con)
 {
 	pspsm_con_info_t *ci = con->arch.psm.ci;
 	char *rbuf;             /**< buffer to be used for next receive */
@@ -106,11 +106,11 @@ err:
 
 
 static
-void pscom_psm_do_read_check(pscom_con_t *con)
+void pscom_psm_post_recv_check(pscom_con_t *con)
 {
 	if (con->arch.psm.reading) {
 		/* There is more to read. Post the next receive request */
-		pscom_psm_do_read(con);
+		pscom_psm_post_recv(con);
 	}
 }
 

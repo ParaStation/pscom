@@ -84,7 +84,7 @@ void pscom_read_done_unlock(struct PSCOM_con *con, char *buf, size_t len);
 
 static void poll_user_inc(void);
 static void poll_user_dec(void);
-static void pscom_psm_do_read_check(struct PSCOM_con *con);
+static void pscom_psm_post_recv_check(struct PSCOM_con *con);
 
 /*
  * Configuration
