@@ -115,6 +115,44 @@ void test_post_recv_partial_genreq(void **state)
 	 */
 	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
 }
+
+/**
+ * \brief Test pscom_post_recv() for generated requests
+ *
+ * Given: A generated request
+ * When: pscom_post_recv() is called
+ * Then: the matching user request should not be identified as a generated
+ *       request
+ */
+void test_post_recv_genreq_state(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create generated requests and enqueue to the list of net requests */
+	pscom_header_net_t nh;
+	pscom_req_t *gen_req = _pscom_generate_recv_req(NULL, &nh);
+	gen_req->pub.connection = &recv_con->pub;
+	_pscom_net_recvq_user_enq(recv_con, gen_req);
+
+	/*
+	 * set the appropriate request state:
+	 * -> generated requests
+	 * -> IO has been started
+	 */
+
+	/* create the receive request *not* being a generated request */
+	pscom_request_t *recv_req = pscom_request_create(0, 100);
+	recv_req->state &= ~PSCOM_REQ_STATE_GRECV_REQUEST;
+	recv_req->connection = &recv_con->pub;
+
+	/* post the actual receive request */
+	pscom_post_recv(recv_req);
+
+	/* the recv request should *not* be marked as a generated request */
+	assert_false(recv_req->state & PSCOM_REQ_STATE_GRECV_REQUEST);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_req_prepare_send_pending()
 ////////////////////////////////////////////////////////////////////////////////

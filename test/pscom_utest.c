@@ -47,6 +47,10 @@ int main(void)
 			test_post_recv_partial_genreq,
 			setup_dummy_con,
 			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_recv_genreq_state,
+			setup_dummy_con,
+			teardown_dummy_con),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
