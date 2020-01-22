@@ -319,7 +319,7 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 
 	genreq_copy_header(newreq, genreq);
 
-	newreq->pub.state |= genreq->pub.state;
+	newreq->pub.state |= (genreq->pub.state & ~PSCOM_REQ_STATE_GRECV_REQUEST);
 
 	if (con->in.req == genreq) {
 		// replace existing genreq with newreq;
