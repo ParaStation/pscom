@@ -26,12 +26,12 @@ pscom_utest_CPPFLAGS = \
 	-I$(top_srcdir)/lib/pscom
 
 pscom_utest_LDFLAGS = \
+	-Wl,--wrap=memcpy \
 	-static \
 	-lcmocka
 
 pscom_utest_SOURCES = \
 	mocks/pscom_mocks.c \
-	mocks/cuda_mocks.c \
 	mocks/misc_mocks.c \
 	pscom_utest.c \
 	pscom/test_io.c \
@@ -43,9 +43,8 @@ pscom_utest_LDFLAGS  += -Wl,--wrap=pscom_unlock
 # CUDA-related configuration
 if CUDA_ENABLED
 pscom_utest_CPPFLAGS += -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
-pscom_utest_SOURCES  += pscom/test_cuda.c
+pscom_utest_SOURCES  += pscom/test_cuda.c mocks/cuda_mocks.c
 pscom_utest_LDFLAGS  += $(CUDA_LDFLAGS) -lcuda \
-						-Wl,--wrap=memcpy \
 						-Wl,--wrap=cuInit \
 						-Wl,--wrap=cuDeviceGetCount \
 						-Wl,--wrap=cuDeviceGetAttribute \
