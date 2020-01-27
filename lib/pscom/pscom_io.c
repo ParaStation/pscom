@@ -11,6 +11,7 @@
  */
 
 #include "pscom_priv.h"
+#include "pscom_con.h"
 #include "pscom_io.h"
 #include "pscom_queues.h"
 #include "pscom_req.h"
@@ -194,7 +195,7 @@ void _pscom_update_in_recv_req(pscom_con_t *con, pscom_req_t *req)
 		con->in.req = NULL;
 
 		if (!req->pending_io) _pscom_recv_req_done(req);
-		_pscom_recv_req_cnt_check_stop(con);
+		pscom_con_check_read_stop(con);
 	}
 }
 
@@ -332,7 +333,7 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 		con->in.req = newreq;
 
 		/* ensure that we further read on that connection */
-		_pscom_recv_req_cnt_check_start(con);
+		pscom_con_check_read_start(con);
 	}
 
 	if (genreq->pending_io) {

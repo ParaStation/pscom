@@ -245,6 +245,7 @@ int _pscom_extoll_rma2_do_read(pscom_con_t *con, psex_con_info_t *ci)
 		return 1;
 	} else if ((size == -EINTR) || (size == -EAGAIN)) {
 		// Nothing received
+		pscom_con_check_read_stop(con);
 		return 0;
 	} else {
 		// Error

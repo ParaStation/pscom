@@ -38,7 +38,7 @@
    Count all "users" with a pending receive request on connection
    con. Call con->read_start() on the 0->1 edge. Does not automatic
    call con->read_stop() on 1->0! The zero user check is explicit
-   checked with _pscom_recv_req_cnt_check_stop() and calls
+   checked with pscom_con_check_read_stop() and calls
    con->read_stop() in case of cnt==0.
 
 
@@ -63,7 +63,7 @@ Start receiving of a message on connection con
 
 Finishing a receive request. (Last byte received)
 
- * Check con->recv_req_cnt (_pscom_recv_req_cnt_check_stop())
+ * Check con->recv_req_cnt (pscom_con_check_read_stop())
    If and only if connection has no pending receive requests
    (con->recv_req_cnt == 0) AND no active receive on this connection
    (con->in.req != NULL) AND pscom.env.unexpected_receives not
@@ -71,6 +71,9 @@ Finishing a receive request. (Last byte received)
 
 The Ticket #712: con->read_stop() not called on many connections after
 an ANY_SOURCE receive.
+ * Plugins with linear ANY_SOURCE scaling (openib, extoll) now check
+   if they should call con->read_stop() in pscom_xxx_on_read()
+   (pscom_con_check_read_stop(con)).
 
 = Posting receives =
 

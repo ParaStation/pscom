@@ -48,8 +48,6 @@ void _pscom_recv_req_cnt_inc(pscom_con_t *con);
 void _pscom_recv_req_cnt_dec(pscom_con_t *con);
 void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock);
 void _pscom_recv_req_cnt_any_dec(pscom_sock_t *sock);
-void _pscom_recv_req_cnt_check_start(pscom_con_t *con);
-void _pscom_recv_req_cnt_check_stop(pscom_con_t *con);
 void _pscom_recv_req_cnt_any_global_inc();
 void _pscom_recv_req_cnt_any_global_dec();
 

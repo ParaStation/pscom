@@ -83,6 +83,7 @@ int _pscom_openib_do_read(pscom_con_t *con, psoib_con_info_t *mcon)
 		return 1;
 	} else if ((size == -EINTR) || (size == -EAGAIN)) {
 		// Nothing received
+		pscom_con_check_read_stop(con);
 		return 0;
 	} else {
 		// Error

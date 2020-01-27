@@ -182,22 +182,6 @@ void _pscom_recv_req_cnt_dec(pscom_con_t *con)
 }
 
 
-void _pscom_recv_req_cnt_check_stop(pscom_con_t *con)
-{
-	if (!pscom_con_should_read(con) && !pscom.env.unexpected_receives) {
-		con->read_stop(con);
-	}
-}
-
-
-void _pscom_recv_req_cnt_check_start(pscom_con_t *con)
-{
-	if (pscom_con_should_read(con)) {
-		con->read_start(con);
-	}
-}
-
-
 void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock)
 {
 	struct list_head *pos;
