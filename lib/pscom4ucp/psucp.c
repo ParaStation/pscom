@@ -223,28 +223,15 @@ void psucp_pending_req_dequeue_and_release(psucp_req_t *psucp_req) {
 
 
 static
-int psucp_pending_req_progress(psucp_req_t *psucp_req) {
-	if (!psucp_req->completed) {
-		return 0;
-	}
-
-	if (psucp_req->completed == PSUCP_COMPLETED_SEND) {
-		if (psucp_req->type.send.req_priv) {
-			pscom_psucp_sendv_done(psucp_req->type.send.req_priv);
-		}
-	} else {
-		assert(psucp_req->completed == PSUCP_COMPLETED_RECV);
-	}
-
-	psucp_pending_req_dequeue_and_release(psucp_req);
-	return 1;
-}
-
-
-static
 void psucp_req_send_done(void *request, ucs_status_t status) {
 	psucp_req_t *psucp_req = (psucp_req_t *)request;
 	psucp_req->completed = PSUCP_COMPLETED_SEND;
+
+	if (psucp_req->type.send.req_priv) {
+		pscom_psucp_sendv_done(psucp_req->type.send.req_priv);
+	}
+
+	psucp_pending_req_dequeue_and_release(psucp_req);
 }
 
 
@@ -329,23 +316,6 @@ err_hca:
 	init_state = -1;
 	psucp_dprint(D_INFO, "UCP disabled : %s", psucp_err_str);
 	return -1;
-}
-
-
-int psucp_progress(void) {
-	hca_info_t *hca_info = &default_hca;
-	struct list_head *pos, *next;
-	int progress = 0;
-
-	// ucp_worker_progress() will fire completed request callbacks.
-	ucp_worker_progress(hca_info->ucp_worker);
-
-	list_for_each_safe(pos, next, &hca_info->pending_requests) {
-		psucp_req_t *psucp_req = list_entry(pos, psucp_req_t, next);
-
-		progress |= psucp_pending_req_progress(psucp_req);
-	}
-	return progress;
 }
 
 
@@ -590,7 +560,7 @@ size_t psucp_probe(psucp_msg_t *msg)
 	if (msg->msg_tag == NULL) {
 		// Progress with ucp_tag_probe_nb() alone didn't call the req callbacks.
 		// psucp_progres calls ucp_worker_progress(hca_info->ucp_worker);
-		psucp_progress();
+		ucp_worker_progress(hca_info->ucp_worker);
 		return 0;
 	}
 	assert(msg->info_tag.length > 0);
@@ -611,6 +581,7 @@ void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t
 		// On slow track. con_info set in psucp_irecv().
 		// printf("%s:%u:%s PSUCP_COMPLETED_RECV slow\n", __FILE__, __LINE__, __func__);
 		pscom_read_pending_done(con_info->con_priv, psucp_req->type.recv.req_priv);
+		psucp_pending_req_dequeue_and_release(psucp_req);
 	} /* else {
 		// called from within ucp_tag_msg_recv_nb(). con_info is still unset.
 		printf("%s:%u:%s PSUCP_COMPLETED_RECV fast\n", __FILE__, __LINE__, __func__);
