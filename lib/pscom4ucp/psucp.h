@@ -100,7 +100,7 @@ unsigned psucp_pending_tokens_suggestion(void);
 
 ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, size_t size);
 /* Callback to be implemented by upper layer */
-void pscom_psucp_read_done(void *con_priv, char *buf, size_t len);
+void pscom_psucp_read_done(void *con_priv, void *req_priv);
 
 /*
  * Configuration

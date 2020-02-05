@@ -74,31 +74,11 @@ void pscom_ucp_read_stop(pscom_con_t *con)
 	}
 }
 
-
-static
-int recv_in_progress = 0;
-
-
-void pscom_psucp_read_done(void *con_priv, char *buf, size_t len)
-{
-	pscom_con_t *con = (pscom_con_t *)con_priv;
-	pscom_read_done_unlock(con, buf, len);
-
-	recv_in_progress--;
-}
-
-
 static
 int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 {
 	psucp_msg_t msg;
 	ssize_t rc;
-
-	// ToDo: Allow more than one receive at once.
-	if (recv_in_progress) {
-		psucp_progress();
-		return 0;
-	}
 
 	rc = psucp_probe(&msg);
 
@@ -109,11 +89,9 @@ int pscom_ucp_do_read(pscom_poll_reader_t *reader)
 		size_t len;
 		ssize_t rlen;
 
-		recv_in_progress++;
-
 		assert(con->magic == MAGIC_CONNECTION);
 
-		pscom_read_get_buf_locked(con, &buf, &len);
+		pscom_read_get_buf(con, &buf, &len);
 
 		rlen = psucp_irecv(ci, &msg, buf, len);
 

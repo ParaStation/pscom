@@ -68,8 +68,7 @@ struct psucp_req {
 			void	*sendbuf;	// for small_msg only
 		} send;
 		struct {
-			char	*rbuf;		/* recv buffer of this receive */
-			size_t	rbuf_len;
+			void 	*req_priv;
 		} recv;
 	} type;
 };
@@ -611,8 +610,7 @@ void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t
 	if (con_info) {
 		// On slow track. con_info set in psucp_irecv().
 		// printf("%s:%u:%s PSUCP_COMPLETED_RECV slow\n", __FILE__, __LINE__, __func__);
-		pscom_psucp_read_done(con_info->con_priv,
-				      psucp_req->type.recv.rbuf, psucp_req->type.recv.rbuf_len);
+		pscom_read_pending_done(con_info->con_priv, psucp_req->type.recv.req_priv);
 	} /* else {
 		// called from within ucp_tag_msg_recv_nb(). con_info is still unset.
 		printf("%s:%u:%s PSUCP_COMPLETED_RECV fast\n", __FILE__, __LINE__, __func__);
@@ -645,15 +643,12 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, siz
 
 	if (psucp_req->completed) {
 		// On fast track. Request already completed (probably small message).
-		pscom_psucp_read_done(con_info->con_priv, buf, len);
+		pscom_read_done(con_info->con_priv, buf, len);
 		psucp_req_release(psucp_req);
 	} else {
-		// On slow track. Enqueue request into pending requests queue.
-		psucp_req->type.recv.rbuf = buf;
-		psucp_req->type.recv.rbuf_len = len;
-
 		// psucp_req not yet done. Poll for completion later:
 		psucp_pending_req_attach(request, con_info);
+		psucp_req->type.recv.req_priv = (void*)pscom_read_pending(con_info->con_priv, len);
 	}
 
 	//printf("%s:%u:%s recv %u : %s\n", __FILE__, __LINE__, __func__,
