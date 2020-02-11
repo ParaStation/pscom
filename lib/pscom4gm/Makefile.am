@@ -18,6 +18,7 @@ AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\" -I$(top_srcdir)/lib/pscom
 lib_LTLIBRARIES = libpscom4gm.la
 
 libpscom4gm_la_SOURCES = pscom_gm.c psgm.c psgm.h
+libpscom4gm_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4gm_la_CPPFLAGS = $(AM_CPPFLAGS) $(GM_CPPFLAGS)
 libpscom4gm_la_LDFLAGS = $(AM_LDFLAGS) $(GM_LDFLAGS)
 libpscom4gm_la_LIBADD = -lgm $(top_builddir)/lib/pscom/libpscom.la

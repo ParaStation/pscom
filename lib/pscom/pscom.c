@@ -46,7 +46,7 @@
 #include "pslib.h"
 #include "pscom_async.h"
 
-pscom_t pscom = {
+pscom_t pscom_in = {
 	.recv_req_cnt_any_global = 0,
 	.threaded = 0, /* default is unthreaded */
 	/* parameter from environment */
@@ -74,6 +74,10 @@ pscom_t pscom = {
 };
 
 
+PSCOM_PLUGIN_API_ALIAS(pscom_in, pscom_ex);
+
+
+PSCOM_API_EXPORT
 ssize_t pscom_writeall(int fd, const void *buf, size_t count)
 {
 	ssize_t len;
@@ -96,6 +100,7 @@ ssize_t pscom_writeall(int fd, const void *buf, size_t count)
 }
 
 
+PSCOM_API_EXPORT
 ssize_t pscom_readall(int fd, void *buf, size_t count)
 {
 	ssize_t len;
@@ -170,6 +175,7 @@ restart:
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_poll_write_stop(pscom_con_t *con)
 {
 	/* it's save to dequeue more then once */
@@ -177,6 +183,7 @@ void pscom_poll_write_stop(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_poll_write_start(pscom_con_t *con)
 {
 	if (list_empty(&con->poll_next_send)) {
@@ -188,6 +195,7 @@ void pscom_poll_write_start(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_poll_read_start(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
@@ -197,6 +205,7 @@ void pscom_poll_read_start(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_poll_read_stop(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
@@ -206,6 +215,7 @@ void pscom_poll_read_stop(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_ALIAS(pscom_progress, pscom_progress_ex);
 int pscom_progress(int timeout)
 {
 	struct list_head *pos, *next;
@@ -314,13 +324,14 @@ void _pscom_suspend_sighandler(int signum)
 ******************************************************************************
 */
 
+PSCOM_API_EXPORT
 void pscom_set_debug(int level)
 {
 	pscom.env.debug = level;
 }
 
 
-__attribute__((visibility("default")))
+PSCOM_API_EXPORT
 pscom_err_t pscom_init(int pscom_version)
 {
 	static int init=1;
@@ -388,6 +399,7 @@ out:
 }
 
 
+PSCOM_API_EXPORT
 pscom_err_t pscom_init_thread(int pscom_version)
 {
 	pscom.threaded = 1;
@@ -395,6 +407,7 @@ pscom_err_t pscom_init_thread(int pscom_version)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_get_nodeid(void)
 {
 	static int id = 0;
@@ -413,12 +426,14 @@ in_addr_t pscom_hostip(char *name)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_get_portno(pscom_socket_t *socket)
 {
 	return socket->listen_portno;
 }
 
 
+PSCOM_API_EXPORT
 int pscom_test_any(void)
 {
 	int ret;

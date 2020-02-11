@@ -492,7 +492,14 @@ struct PSCOM
 	}			stat;
 };
 
-extern pscom_t pscom;
+#ifdef LIBPSCOM
+extern pscom_t pscom_in;
+#  define pscom pscom_in /* libpscom uses internal pscom_in */
+#else
+extern pscom_t pscom_ex; // Exported alias to pscom_in
+#  define pscom pscom_ex /* Plugins use exported pscom_ex alias */
+#endif
+
 
 #define PSCOM_ARCH2CON_TYPE(arch) ((arch) - 101)
 #define PSCOM_CON_TYPE2ARCH(con_type) ((con_type) + 101)
@@ -705,7 +712,13 @@ void pscom_poll_write_stop(pscom_con_t *con);
 void pscom_poll_read_start(pscom_con_t *con);
 void pscom_poll_read_stop(pscom_con_t *con);
 
+#ifdef LIBPSCOM
 int pscom_progress(int timeout);
+#else
+#define pscom_progress pscom_progress_ex  /* Plugins must use pscom_progress_ex */
+#endif
+
+int pscom_progress_ex(int timeout); // exported alias to pscom_progress
 
 int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type);
 void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type);
@@ -742,4 +755,19 @@ void pscom_backtrace_onsigsegv_disable(void);
 
 void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type);
 void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type);
+
+
+#define API_EXPORT __attribute__ ((visibility("default")))
+#define API_HIDDEN __attribute__ ((visibility("hidden")))
+
+#ifndef PSCOM_ALLIN
+#define PSCOM_API_EXPORT API_EXPORT
+#else
+#define PSCOM_API_EXPORT API_HIDDEN
+#endif
+#define PSCOM_PLUGIN_API_EXPORT API_EXPORT
+#define PSCOM_PLUGIN_API_ALIAS(source, exp_alias) \
+	extern __typeof(source) exp_alias __attribute__((alias(#source), visibility("default")));
+
+
 #endif /* _PSCOM_PRIV_H_ */

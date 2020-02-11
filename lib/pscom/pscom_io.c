@@ -857,6 +857,7 @@ int pscom_read_is_at_message_start(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void
 pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
 {
@@ -889,6 +890,7 @@ pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
 
 // ToDo: Use pscom_read_get_buf()/pscom_read_pending()/pscom_read_pending_done() instead of
 //           pscom_read_get_buf_locked()/pscom_read_done_unlock()
+PSCOM_PLUGIN_API_EXPORT
 void
 pscom_read_get_buf_locked(pscom_con_t *con, char **buf, size_t *len)
 {
@@ -905,6 +907,7 @@ pscom_read_get_buf_locked(pscom_con_t *con, char **buf, size_t *len)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void
 pscom_read_done_unlock(pscom_con_t *con, char *buf, size_t len)
 {
@@ -918,6 +921,7 @@ pscom_read_done_unlock(pscom_con_t *con, char *buf, size_t len)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void
 pscom_read_pending_done(pscom_con_t *con, pscom_req_t *req)
 {
@@ -937,6 +941,7 @@ pscom_read_pending_done(pscom_con_t *con, pscom_req_t *req)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_req_t *
 pscom_read_pending(pscom_con_t *con, size_t len)
 {
@@ -956,6 +961,7 @@ pscom_read_pending(pscom_con_t *con, size_t len)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void
 pscom_read_done(pscom_con_t *con, char *buf, size_t len)
 {
@@ -1064,6 +1070,7 @@ err_eof:
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2])
 {
 	if (!list_empty(&con->sendq)) {
@@ -1095,6 +1102,7 @@ int send_req_all_io_started(pscom_req_t *req)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_write_done(pscom_con_t *con, pscom_req_t *req, size_t len)
 {
 	pscom_forward_iov(&req->cur_header, len);
@@ -1106,6 +1114,7 @@ void pscom_write_done(pscom_con_t *con, pscom_req_t *req, size_t len)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 {
 	pscom_forward_iov(&req->cur_header, len);
@@ -1119,6 +1128,7 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 {
 	if (_pscom_pendingio_cnt_dec(con, req) &&
@@ -1129,6 +1139,7 @@ void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_write_pending_error(pscom_con_t *con, pscom_req_t *req)
 {
 	req->pub.state |= PSCOM_REQ_STATE_ERROR;
@@ -1151,6 +1162,7 @@ void _pscom_post_send_direct_inline(pscom_con_t *con, pscom_req_t *req, pscom_ms
 
 
 /* Use con to send req with msg_type. pscom_lock must be held. */
+static
 void _pscom_post_send_direct(pscom_con_t *con, pscom_req_t *req, pscom_msgtype_t msg_type)
 {
 	_pscom_post_send_direct_inline(con, req, msg_type);
@@ -1495,6 +1507,7 @@ void _pscom_wait_any(void)
 ******************************************************************************
 */
 
+PSCOM_API_EXPORT
 pscom_request_t *pscom_request_create(size_t max_xheader_len, size_t user_size)
 {
 	pscom_req_t *req;
@@ -1505,13 +1518,14 @@ pscom_request_t *pscom_request_create(size_t max_xheader_len, size_t user_size)
 }
 
 
-__attribute__((visibility("default")))
+PSCOM_API_EXPORT
 void pscom_request_free(pscom_request_t *request)
 {
 	pscom_req_free(get_req(request));
 }
 
 
+PSCOM_API_EXPORT
 void pscom_post_recv(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1604,6 +1618,7 @@ static inline int pscom_iprobe_make_progress(void)
 
 /* return 1, if there is a matching receive. 0 otherwise. */
 /* in case 1: copy also the message header */
+PSCOM_API_EXPORT
 int pscom_iprobe(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1685,6 +1700,7 @@ int pscom_iprobe(pscom_request_t *request)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_probe(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1763,12 +1779,14 @@ void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
 	} pscom_unlock();
 }
 
+PSCOM_API_EXPORT
 void pscom_post_send(pscom_request_t *request)
 {
 	pscom_post_send_msgtype(request, PSCOM_MSGTYPE_USER);
 }
 
 
+PSCOM_API_EXPORT
 void pscom_send(pscom_connection_t *connection,
 		void *xheader, size_t xheader_len,
 		void *data, size_t data_len)
@@ -1781,6 +1799,7 @@ void pscom_send(pscom_connection_t *connection,
 }
 
 
+PSCOM_API_EXPORT
 void pscom_send_inplace(pscom_connection_t *connection,
 			void *xheader, size_t xheader_len,
 			void *data, size_t data_len,
@@ -1795,6 +1814,7 @@ void pscom_send_inplace(pscom_connection_t *connection,
 }
 
 
+PSCOM_API_EXPORT
 pscom_err_t pscom_recv(pscom_connection_t *connection, pscom_socket_t *socket,
 		       void *xheader, size_t xheader_len,
 		       void *data, size_t data_len)
@@ -1828,6 +1848,7 @@ pscom_err_t pscom_recv(pscom_connection_t *connection, pscom_socket_t *socket,
 }
 
 
+PSCOM_API_EXPORT
 void pscom_flush(pscom_connection_t *connection)
 {
 	if (!connection) return;
@@ -1843,6 +1864,7 @@ void pscom_flush(pscom_connection_t *connection)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_post_rma_write(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1856,6 +1878,7 @@ void pscom_post_rma_write(pscom_request_t *request)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_post_rma_read(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1871,6 +1894,7 @@ void pscom_post_rma_read(pscom_request_t *request)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_wait_any(void)
 {
 	pscom_lock(); {
@@ -1879,6 +1903,7 @@ void pscom_wait_any(void)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_wait(pscom_request_t *request)
 {
 	volatile pscom_req_state_t *state = &request->state;
@@ -1889,6 +1914,7 @@ void pscom_wait(pscom_request_t *request)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_wait_all(pscom_request_t **requests)
 {
 	while (*requests) {
@@ -1898,6 +1924,7 @@ void pscom_wait_all(pscom_request_t **requests)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_cancel_send(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1915,6 +1942,7 @@ int pscom_cancel_send(pscom_request_t *request)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_cancel_recv(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -1932,6 +1960,7 @@ int pscom_cancel_recv(pscom_request_t *request)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_cancel(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);

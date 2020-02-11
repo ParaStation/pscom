@@ -173,6 +173,7 @@ void pscom_dump_requests(FILE *out)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_dump_con(FILE *out, pscom_con_t *con)
 {
 	unsigned cnt;
@@ -246,6 +247,7 @@ void pscom_dump_sockets(FILE *out)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_dump_connection(FILE *out, pscom_connection_t *connection)
 {
 	pscom_con_t *con = get_con(connection);
@@ -255,6 +257,7 @@ void pscom_dump_connection(FILE *out, pscom_connection_t *connection)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_dump_reqstat(FILE *out)
 {
 	fprintf(out, "Reqs:%d GenReqs: (cnt:%d  used:%d)\n",
@@ -287,6 +290,7 @@ void pscom_dump_reqstat(FILE *out)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_dump_info(FILE *out)
 {
 	pscom_dump_requests(out);
@@ -308,6 +312,7 @@ void pscom_sigquit(int sig)
 }
 
 
+PSCOM_API_EXPORT
 char *pscom_debug_req_str(pscom_req_t *req)
 {
 	static char buf[sizeof("reqUSER_: XXX(Pgpsdec)done_____")];
@@ -324,6 +329,7 @@ char *pscom_debug_req_str(pscom_req_t *req)
 }
 
 
+PSCOM_API_EXPORT
 char *pscom_debug_request_str(pscom_request_t *request)
 {
 	return pscom_debug_req_str(get_req(request));
@@ -333,18 +339,21 @@ char *pscom_debug_request_str(pscom_request_t *request)
 /*
  * Helpers to translate user structs into internal ones.
  */
+PSCOM_API_EXPORT
 pscom_req_t *pscom_get_req(pscom_request_t *request)
 {
 	return get_req(request);
 }
 
 
+PSCOM_API_EXPORT
 pscom_con_t *pscom_get_con(pscom_connection_t *connection)
 {
 	return get_con(connection);
 }
 
 
+PSCOM_API_EXPORT
 pscom_sock_t *pscom_get_sock(pscom_socket_t *socket)
 {
 	return get_sock(socket);
@@ -354,6 +363,7 @@ pscom_sock_t *pscom_get_sock(pscom_socket_t *socket)
 /* pscom_dump_str() is usefull in a gdb session:
  * (gdb) printf "%s\n", pscom_dump_str(10)
  */
+PSCOM_API_EXPORT
 char *pscom_dump_str(int level)
 {
 	static char *res = NULL;

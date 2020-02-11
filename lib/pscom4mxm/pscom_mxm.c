@@ -265,6 +265,7 @@ void pscom_mxm_finalize(void){
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_plugin_t pscom_plugin = {
 	.name		= "mxm",
 	.version	= PSCOM_PLUGIN_VERSION,

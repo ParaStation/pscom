@@ -536,6 +536,7 @@ error_con_connect:
 
 
 #ifndef PSCOM_ALLIN_OPENIB
+PSCOM_PLUGIN_API_EXPORT
 pscom_plugin_t pscom_plugin =
 #else
 pscom_plugin_t pscom_plugin_openib =

@@ -236,6 +236,7 @@ void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type)
 ******************************************************************************
 */
 
+PSCOM_API_EXPORT
 pscom_socket_t *pscom_open_socket(size_t userdata_size,
 				  size_t connection_userdata_size)
 {
@@ -254,6 +255,7 @@ pscom_socket_t *pscom_open_socket(size_t userdata_size,
 }
 
 
+PSCOM_API_EXPORT
 void pscom_socket_set_name(pscom_socket_t *socket, const char *name)
 {
 	pscom_lock(); {
@@ -361,6 +363,7 @@ err_out:
 }
 
 
+PSCOM_API_EXPORT
 pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 {
 	pscom_sock_t *sock = get_sock(socket);
@@ -376,6 +379,7 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_close_socket(pscom_socket_t *socket)
 {
 	pscom_lock(); {
@@ -387,6 +391,7 @@ void pscom_close_socket(pscom_socket_t *socket)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_stop_listen(pscom_socket_t *socket)
 {
 	pscom_lock(); {
@@ -397,6 +402,7 @@ void pscom_stop_listen(pscom_socket_t *socket)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_con_type_mask_all(pscom_socket_t *socket)
 {
 	pscom_lock(); {
@@ -407,6 +413,7 @@ void pscom_con_type_mask_all(pscom_socket_t *socket)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_con_type_mask_only(pscom_socket_t *socket, pscom_con_type_t con_type)
 {
 	pscom_lock(); {
@@ -418,6 +425,7 @@ void pscom_con_type_mask_only(pscom_socket_t *socket, pscom_con_type_t con_type)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_con_type_mask_add(pscom_socket_t *socket, pscom_con_type_t con_type)
 {
 	pscom_lock(); {
@@ -429,6 +437,7 @@ void pscom_con_type_mask_add(pscom_socket_t *socket, pscom_con_type_t con_type)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_con_type_mask_del(pscom_socket_t *socket, pscom_con_type_t con_type)
 {
 	pscom_lock(); {
@@ -437,6 +446,7 @@ void pscom_con_type_mask_del(pscom_socket_t *socket, pscom_con_type_t con_type)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_con_type_mask_is_set(pscom_socket_t *socket, pscom_con_type_t con_type)
 {
 	int res;
@@ -458,6 +468,7 @@ typedef struct {
 } pscom_con_type_mask_backup_t;
 
 
+PSCOM_API_EXPORT
 void *pscom_con_type_mask_backup(pscom_socket_t *socket)
 {
 	pscom_con_type_mask_backup_t *mask = malloc(sizeof(*mask));
@@ -472,6 +483,7 @@ void *pscom_con_type_mask_backup(pscom_socket_t *socket)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_con_type_mask_restore(pscom_socket_t *socket, void *con_type_mask_backup)
 {
 	pscom_con_type_mask_backup_t *mask = (pscom_con_type_mask_backup_t *)con_type_mask_backup;

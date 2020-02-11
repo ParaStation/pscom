@@ -26,6 +26,7 @@
 /* Take a service name, and a service type, and return a port number.  If the
    service name is not found, it tries it as a decimal number.  The number
    returned is byte ordered for the network. */
+PSCOM_API_EXPORT
 int pscom_atoport(const char *service, const char *proto)
 {
 	long int lport;
@@ -53,6 +54,7 @@ int pscom_atoport(const char *service, const char *proto)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_atoaddr(const char *address, struct in_addr *addr)
 {
 	struct hostent *mhost;
@@ -86,6 +88,7 @@ err:
 }
 
 
+PSCOM_API_EXPORT
 int pscom_ascii_to_sockaddr_in(const char *host, const char *port,
 			       const char *protocol,
 			       struct sockaddr_in *addr)
@@ -115,6 +118,7 @@ err:
 }
 
 
+PSCOM_API_EXPORT
 const char *pscom_socket_ondemand_str(int nodeid, int portno, const char name[8])
 {
 	static char socket_str[sizeof("xxx.xxx.xxx.xxx:xxxxx@01234567____")];
@@ -136,6 +140,7 @@ err_invalid_port:
 }
 
 
+PSCOM_API_EXPORT
 const char *pscom_socket_str(int nodeid, int portno)
 {
 	char name[8] = "";
@@ -143,6 +148,7 @@ const char *pscom_socket_str(int nodeid, int portno)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_parse_socket_ondemand_str(const char *socket_str, int *nodeid, int *portno, char (*name)[8])
 {
 	char *lname = NULL;
@@ -188,6 +194,7 @@ int pscom_parse_socket_ondemand_str(const char *socket_str, int *nodeid, int *po
 }
 
 
+PSCOM_API_EXPORT
 int pscom_parse_socket_str(const char *socket_str, int *nodeid, int *portno)
 {
 	char name[8];
@@ -201,6 +208,7 @@ int pscom_parse_socket_str(const char *socket_str, int *nodeid, int *portno)
 }
 
 
+PSCOM_API_EXPORT
 pscom_err_t pscom_connect_socket_str(pscom_connection_t *connection, const char *socket_str)
 {
 	int nodeid;
@@ -227,6 +235,7 @@ err_parse:
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_listen_socket_str(pscom_socket_t *socket)
 {
@@ -234,6 +243,7 @@ pscom_listen_socket_str(pscom_socket_t *socket)
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_listen_socket_ondemand_str(pscom_socket_t *socket)
 {
@@ -251,6 +261,7 @@ pscom_inetstr(int addr)
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_con_state_str(pscom_con_state_t state)
 {
@@ -280,6 +291,7 @@ pscom_con_state_str(pscom_con_state_t state)
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_con_type_str(pscom_con_type_t type)
 {
@@ -314,6 +326,7 @@ pscom_con_type_str(pscom_con_type_t type)
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_con_info_str(pscom_con_info_t *con_info)
 {
@@ -327,6 +340,7 @@ pscom_con_info_str(pscom_con_info_t *con_info)
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_con_info_str2(pscom_con_info_t *con_info1, pscom_con_info_t *con_info2)
 {
@@ -345,6 +359,7 @@ pscom_con_info_str2(pscom_con_info_t *con_info1, pscom_con_info_t *con_info2)
 }
 
 
+PSCOM_API_EXPORT
 const char *pscom_con_str(pscom_connection_t *connection)
 {
 	pscom_con_t *con = get_con(connection);
@@ -365,6 +380,7 @@ const char *pscom_con_str_reverse(pscom_connection_t *connection)
 }
 
 
+PSCOM_API_EXPORT
 const char *pscom_req_state_str(pscom_req_state_t state)
 {
 	static char buf[sizeof("sendrecvrmarrmaw(Pgpsdec)done_____")];
@@ -407,6 +423,7 @@ const char *pscom_req_state_str(pscom_req_state_t state)
 }
 
 
+PSCOM_API_EXPORT
 const char *
 pscom_err_str(pscom_err_t error)
 {
@@ -428,6 +445,8 @@ pscom_err_str(pscom_err_t error)
 	return buf;
 }
 
+
+PSCOM_API_EXPORT
 const char *
 pscom_op_str(pscom_op_t operation)
 {
@@ -446,6 +465,7 @@ pscom_op_str(pscom_op_t operation)
 }
 
 
+PSCOM_API_EXPORT
 const char *pscom_dumpstr(const void *buf, size_t size)
 {
 	static char *ret=NULL;

@@ -47,7 +47,6 @@ int is_psshm_enabled()
 
    (See libpsmalloc.so)
  */
-__attribute__((visibility("default")))
 void psshm_init();
 
 

@@ -18,6 +18,7 @@ AM_CPPFLAGS += -DLIBDIR=\"$(libdir)\" -I$(top_srcdir)/lib/pscom
 lib_LTLIBRARIES = libpscom4extoll.la
 
 libpscom4extoll_la_SOURCES = pscom_extoll.c pscom_extoll.h psextoll.c psextoll.h
+libpscom4extoll_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4extoll_la_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 libpscom4extoll_la_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 libpscom4extoll_la_LIBADD = -lrma2 $(top_builddir)/lib/pscom/libpscom.la

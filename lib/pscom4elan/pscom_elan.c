@@ -339,6 +339,7 @@ out_noelan:
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_plugin_t pscom_plugin = {
 	.name		= "elan",
 	.version	= PSCOM_PLUGIN_VERSION,

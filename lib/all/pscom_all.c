@@ -10,6 +10,11 @@
 
 #define _GNU_SOURCE
 
+#define LIBPSCOM
+#ifndef PSCOM_ALLIN
+#define PSCOM_ALLIN
+#endif
+
 #include "../pscom/perf.c"
 #include "../pscom/pscom.c"
 #include "../pscom/pscom_async.c"

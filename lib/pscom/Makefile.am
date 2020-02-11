@@ -34,7 +34,8 @@ noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 
 libpscom_la_LDFLAGS = -version-info 2:0:0
 libpscom_la_LIBADD = -ldl
-libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
+libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread -fvisibility=hidden -flto
+libpscom_la_CPPFLAGS = $(AM_CPPFLAGS) -DLIBPSCOM
 
 if CUDA_ENABLED
 libpscom_la_LIBADD += $(CUDA_LDFLAGS) -lcuda

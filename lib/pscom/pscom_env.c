@@ -16,10 +16,14 @@
 #include "vc_version.h"
 #include "pslib.h"
 
+PSCOM_API_EXPORT
 char *(*pscom_env_get)(const char *name) = getenv;
+
+PSCOM_API_EXPORT
 int (*pscom_env_set)(const char *name, const char *value, int overwrite) = setenv;
 
 
+PSCOM_API_EXPORT
 void pscom_env_get_int(int *val, const char *name)
 {
 	char *aval;
@@ -35,6 +39,7 @@ void pscom_env_get_int(int *val, const char *name)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_env_get_uint(unsigned int *val, const char *name)
 {
 	char *aval;
@@ -54,6 +59,7 @@ void pscom_env_get_uint(unsigned int *val, const char *name)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_env_get_size_t(size_t *val, const char *name)
 {
 	char *aval;
@@ -73,6 +79,7 @@ void pscom_env_get_size_t(size_t *val, const char *name)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_env_get_str(char **val, const char *name)
 {
 	char *aval;
@@ -88,6 +95,7 @@ void pscom_env_get_str(char **val, const char *name)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_env_get_dir(char **val, const char *name)
 {
 	char *aval;

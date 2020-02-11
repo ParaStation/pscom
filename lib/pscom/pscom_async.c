@@ -418,6 +418,7 @@ void pscom_async_off_readable(int fd, async_cb_t *async_cb, void *priv)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_timer(unsigned msec, pscom_timer_cb_t *timer_cb, void *priv)
 {
 	if ((pscom.ufd_timeout == -1) ||

@@ -19,6 +19,7 @@ lib_LTLIBRARIES = libpscom4ucp.la
 
 libpscom4ucp_la_SOURCES = pscom_ucp.c pscom_ucp.h psucp.c psucp.h
 # noinst_HEADERS = psucp_mregion_cache.c
+libpscom4ucp_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4ucp_la_CPPFLAGS = $(AM_CPPFLAGS) $(UCP_CPPFLAGS)
 libpscom4ucp_la_LDFLAGS = $(AM_LDFLAGS) $(UCP_LDFLAGS)
 libpscom4ucp_la_LIBADD = -lucp $(top_builddir)/lib/pscom/libpscom.la

@@ -373,6 +373,7 @@ void pscom_precon_terminate(precon_t *pre)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(precon_t *pre)
 {
 	assert(pre->magic == MAGIC_PRECON);
@@ -877,6 +878,7 @@ check_read_error:
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_precon_send(precon_t *pre, unsigned type, void *data, unsigned size)
 {
 	assert(pre->magic == MAGIC_PRECON);
@@ -1090,7 +1092,6 @@ void pscom_precon_handshake(precon_t *pre)
 }
 
 
-__attribute__((visibility("hidden")))
 void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
 	pscom_sock_t *sock = ufd_info->priv;

@@ -203,6 +203,7 @@ err_not_listening:
 */
 
 
+PSCOM_API_EXPORT
 pscom_err_t pscom_connect_ondemand(pscom_connection_t *connection,
 				   int nodeid, int portno, const char name[8])
 {

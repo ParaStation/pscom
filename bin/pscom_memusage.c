@@ -25,6 +25,7 @@
 
 #ifdef OPENIB
 #include "psoib.c"
+pscom_t pscom; // fake pscom
 #endif
 
 #ifdef OFED

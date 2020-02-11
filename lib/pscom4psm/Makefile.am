@@ -24,6 +24,7 @@ endif
 lib_LTLIBRARIES = libpscom4psm.la
 
 libpscom4psm_la_SOURCES = pscom_psm.c pscom_psm.h pspsm.h
+libpscom4psm_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4psm_la_CPPFLAGS = $(AM_CPPFLAGS) $(PSM_CPPFLAGS) $(PSM_CPPFLAGS_EXTRA)
 libpscom4psm_la_LDFLAGS = $(AM_LDFLAGS) $(PSM_LDFLAGS)
 if PSM2_ENABLED

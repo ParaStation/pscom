@@ -297,6 +297,7 @@ error_con_init:
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_plugin_t pscom_plugin = {
 	.name		= "ucp",
 	.version	= PSCOM_PLUGIN_VERSION,

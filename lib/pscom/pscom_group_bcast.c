@@ -591,6 +591,7 @@ void _pscom_post_bcast_send(pscom_req_t *req_user, pscom_group_t *group)
 }
 
 
+PSCOM_API_EXPORT
 void pscom_post_bcast(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);
@@ -622,6 +623,7 @@ void pscom_post_bcast(pscom_request_t *request)
 
 
 /* Blocking version of bcast */
+PSCOM_API_EXPORT
 void pscom_bcast(pscom_group_t *group, unsigned bcast_root,
 		 void *xheader, unsigned int xheader_len,
 		 void *data, unsigned int data_len)
@@ -714,6 +716,7 @@ int recv_accept_bcast(pscom_request_t *request,
 
 
 /* Blocking version of bcast */
+PSCOM_API_EXPORT
 void pscom_bcast(pscom_group_t *group, unsigned bcast_root,
 		 void *xheader, size_t xheader_len,
 		 void *data, size_t data_len)
@@ -796,6 +799,7 @@ void pscom_bcast(pscom_group_t *group, unsigned bcast_root,
 
 /* ToDo: this communication is not asynchronous and
    pscom_post_bcast will block in this implementation! */
+PSCOM_API_EXPORT
 void pscom_post_bcast(pscom_request_t *request)
 {
 	pscom_req_t *req = get_req(request);

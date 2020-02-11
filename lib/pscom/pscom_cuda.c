@@ -16,6 +16,7 @@
 #include "pscom_priv.h"
 #include "pscom_util.h"
 
+PSCOM_API_EXPORT
 int pscom_is_cuda_enabled(void)
 {
 	return PSCOM_IF_CUDA(pscom.env.cuda, 0);
@@ -128,12 +129,14 @@ err_out:
 }
 
 /* simply map to internal _pscom_memcpy() */
+PSCOM_API_EXPORT
 void pscom_memcpy(void* dst, const void* src, size_t len)
 {
 	_pscom_memcpy_default(dst, src, len);
 }
 
 /* simply map to internal _pscom_is_gpu_ptr() */
+PSCOM_API_EXPORT
 int pscom_is_gpu_mem(const void* ptr)
 {
 	return _pscom_is_gpu_mem(ptr, 1);

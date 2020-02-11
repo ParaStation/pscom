@@ -40,7 +40,6 @@ void pscom_con_info_set(pscom_con_t *con, const char *path, const char *val)
 }
 
 
-__attribute__((visibility("hidden")))
 void pscom_no_rw_start_stop(pscom_con_t *con)
 {
 }
@@ -88,7 +87,6 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 
 // clear all recvq's of this connection. finish all recv requests
 // of this connection with error. (keep recv any!)
-__attribute__((visibility("hidden")))
 void pscom_con_terminate_recvq(pscom_con_t *con)
 {
 	struct list_head *pos, *next;
@@ -472,6 +470,7 @@ void pscom_con_error_deferred(pscom_con_t *con, pscom_op_t operation, pscom_err_
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 {
 	assert(con->magic == MAGIC_CONNECTION);
@@ -818,6 +817,7 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 {
 	precon_t *pre = con->precon;
@@ -839,6 +839,7 @@ void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_setup_ok(pscom_con_t *con)
 {
 	precon_t *pre = con->precon;
@@ -1063,6 +1064,7 @@ void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info) {
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_guard_start(pscom_con_t *con)
 {
 	precon_t *pre = con->precon;
@@ -1080,6 +1082,7 @@ void pscom_con_guard_start(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_guard_stop(pscom_con_t *con)
 {
 	int fd = con->con_guard.fd;
@@ -1100,6 +1103,7 @@ void pscom_con_guard_stop(pscom_con_t *con)
 ******************************************************************************
 */
 
+PSCOM_API_EXPORT
 pscom_connection_t *pscom_open_connection(pscom_socket_t *socket)
 {
 	pscom_sock_t *sock = get_sock(socket);
@@ -1120,6 +1124,7 @@ int pscom_is_local(pscom_socket_t *socket, int nodeid, int portno)
 }
 
 
+PSCOM_API_EXPORT
 pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid, int portno)
 {
 	pscom_con_t *con = get_con(connection);
@@ -1142,6 +1147,7 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid, int portno
 }
 
 
+PSCOM_API_EXPORT
 void pscom_close_connection(pscom_connection_t *connection)
 {
 	pscom_lock(); {
@@ -1152,6 +1158,7 @@ void pscom_close_connection(pscom_connection_t *connection)
 }
 
 
+PSCOM_API_EXPORT
 pscom_connection_t *pscom_get_next_connection(pscom_socket_t *socket, pscom_connection_t *connection)
 {
 	pscom_sock_t *sock = get_sock(socket);

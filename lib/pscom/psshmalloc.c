@@ -18,8 +18,10 @@
 
 #include "psshmalloc.h"
 #include "pscom_env.h"
+#include "pscom_priv.h"
 
 
+PSCOM_API_EXPORT
 struct Psshm psshm_info = {
 	.base = NULL,
 	.tail = NULL,
@@ -114,7 +116,7 @@ void getenv_ulong(unsigned long *val, const char *name)
 }
 
 
-__attribute__((visibility("default")))
+PSCOM_API_EXPORT
 void psshm_init()
 {
 	/* Hook into the malloc handler with __morecore... */

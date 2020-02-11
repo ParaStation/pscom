@@ -292,6 +292,7 @@ out_nogm:
 	return 0; /* Dont use gm */
 }
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_plugin_t pscom_plugin = {
 	.name		= "gm",
 	.version	= PSCOM_PLUGIN_VERSION,

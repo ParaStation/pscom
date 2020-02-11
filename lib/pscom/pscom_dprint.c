@@ -237,6 +237,7 @@ cookie_io_functions_t pscom_debug_io = {
 };
 
 
+PSCOM_PLUGIN_API_EXPORT
 FILE *pscom_debug_stream(void)
 {
 	if (!__pscom_debug_stream) {

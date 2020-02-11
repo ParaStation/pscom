@@ -105,6 +105,7 @@ void _pscom_group_open(pscom_group_t *group)
 ******************************************************************************
 */
 
+PSCOM_API_EXPORT
 pscom_group_t *pscom_group_open(pscom_socket_t *socket,
 				uint32_t group_id, uint32_t my_grank,
 				uint32_t group_size, pscom_connection_t **connections)
@@ -124,6 +125,7 @@ pscom_group_t *pscom_group_open(pscom_socket_t *socket,
 }
 
 
+PSCOM_API_EXPORT
 void pscom_group_close(pscom_group_t *group)
 {
 	pscom_lock(); {
@@ -159,6 +161,7 @@ int recv_accept_barrier(pscom_request_t *request,
 }
 
 
+PSCOM_API_EXPORT
 void pscom_barrier(pscom_group_t *group)
 {
 	pscom_req_t *req_send;
@@ -199,6 +202,7 @@ void pscom_barrier(pscom_group_t *group)
  * Group handling (translate between group_id and pscom_group_t)
  */
 
+PSCOM_API_EXPORT
 pscom_group_t *pscom_group_find(pscom_socket_t *socket, uint32_t group_id)
 {
 	pscom_sock_t *sock = get_sock(socket);
@@ -214,6 +218,7 @@ pscom_group_t *pscom_group_find(pscom_socket_t *socket, uint32_t group_id)
 }
 
 
+PSCOM_API_EXPORT
 uint32_t pscom_group_get_id(pscom_group_t *group)
 {
 	assert(group->magic == MAGIC_GROUP);

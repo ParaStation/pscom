@@ -21,6 +21,7 @@ noinst_LTLIBRARIES = libpsdapl.la
 
 libpscom4dapl_la_SOURCES = pscom_dapl.c pscom_dapl.h psdapl.c psdapl.h
 noinst_HEADERS = psdapl_rdma.c
+libpscom4dapl_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4dapl_la_CPPFLAGS = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)
 libpscom4dapl_la_LDFLAGS = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
 libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
