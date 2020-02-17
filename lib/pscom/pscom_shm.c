@@ -609,9 +609,6 @@ int shm_is_local(pscom_con_t *con)
 static
 void pscom_shm_sock_init(pscom_sock_t *sock)
 {
-#ifdef PSCOM_ALLIN
-	if(!__malloc_initialize_hook) psshm_init();
-#endif
 	if (psshm_info.size) {
 		DPRINT(D_INFO, "PSP_MALLOC = 1 : size = %lu\n", psshm_info.size);
 		pscom_env_get_uint(&shm_direct, ENV_SHM_DIRECT);

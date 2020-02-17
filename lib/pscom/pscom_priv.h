@@ -769,5 +769,6 @@ void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type
 #define PSCOM_PLUGIN_API_ALIAS(source, exp_alias) \
 	extern __typeof(source) exp_alias __attribute__((alias(#source), visibility("default")));
 
+#define PSCOM_SHM_API_EXPORT API_EXPORT
 
 #endif /* _PSCOM_PRIV_H_ */
