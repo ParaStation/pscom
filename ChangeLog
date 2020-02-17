@@ -1,8 +1,13 @@
+2020-02-17  Jens Hauke  <hauke@par-tec.com>
+
+	* changed default: prefer PSP_VELO (velo2+rma2) over PSP_EXTOLL
+	(rma2 only)
+
 2019-10-16  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.2-1
 
 	* Fix: Preparation of the rendezvous request message
 
-2019-10-08    Jens Hauke  <hauke@par-tec.com>	-	5.4.1-1
+2019-10-08  Jens Hauke  <hauke@par-tec.com>	-	5.4.1-1
 
 	* Workaround: TCP reconnect, if a call to connect() do not progress.
 	New environment variables:
@@ -12,7 +17,7 @@
 				reconnecting even without an error on the
 				connection.
 
-2019-09-19    Jens Hauke  <hauke@par-tec.com>	-	5.4.0-1
+2019-09-19  Jens Hauke  <hauke@par-tec.com>	-	5.4.0-1
 
 	* Fix rendezvous message order: In rare cases small messages had
 	overtaken large ones with the same MPI TAG.

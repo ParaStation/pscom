@@ -84,17 +84,22 @@ unsigned int pscom_plugin_uprio(const char *arch)
 			env_velo = ENV_UINT_AUTO;
 			pscom_env_get_uint(&env_velo, ENV_ARCH_PREFIX "VELO");
 
-			env_extoll = (env_velo == 0 || env_velo == ENV_UINT_AUTO) ? 1 : 0;
+			env_extoll = ENV_UINT_AUTO;
 			pscom_env_get_uint(&env_extoll, ENV_ARCH_PREFIX "EXTOLL");
 
+			if (env_extoll == ENV_UINT_AUTO) {
+				// auto: enable "extoll" only if "velo" is disabled.
+				env_extoll = (env_velo == 0) ? 1 : 0;
+			}
 			if (env_velo == ENV_UINT_AUTO) {
-				env_velo = env_extoll ? 0 : 1;
+				// auto: enable "velo" only if "extoll" is disabled (or was auto).
+				env_velo = (env_extoll == 0) ? 1 : 0;
 			}
 			if (env_extoll && env_velo) {
 				DPRINT(D_WARN, "'" ENV_ARCH_PREFIX "VELO' and '"
 				       ENV_ARCH_PREFIX "EXTOLL' are mutually exclusive! Disabling '"
-				       ENV_ARCH_PREFIX "VELO'");
-				env_velo = 0;
+				       ENV_ARCH_PREFIX "EXTOLL'");
+				env_extoll = 0;
 			}
 		}
 		if ((strcmp(env_name, ENV_ARCH_PREFIX "EXTOLL") == 0)) {
