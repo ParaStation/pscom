@@ -1,7 +1,26 @@
-2020-02-17  Jens Hauke  <hauke@par-tec.com>
+2020-02-17  Jens Hauke  <hauke@par-tec.com>	-	5.4.3-0rc1
 
-	* changed default: prefer PSP_VELO (velo2+rma2) over PSP_EXTOLL
+	* Changed default: prefer PSP_VELO (velo2+rma2) over PSP_EXTOLL
 	(rma2 only)
+
+	* Improvement: Reduce communication latency after ANY_SOURCE receives.
+
+	* Enhancement: Support for multiple concurrent receive requests.
+
+	* Fix: Avoid a recursion in the rendezvous path of shm.
+
+2020-02-05  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Improvement: Increase UCP throughput via concurrent receives.
+
+	* Improvement: A missing CUDA device does not produce an error.
+
+	* New: Add unit tests relying on the cmocka framework.
+
+	* Enhancement: Rendezvous support for non-user message types.
+
+	* Fix: Directly reference the rma2_port within the pscom4velo
+	registration cache.
 
 2019-10-16  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.2-1
 
