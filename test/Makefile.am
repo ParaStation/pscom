@@ -48,6 +48,7 @@ pscom_utest_LDFLAGS  += $(CUDA_LDFLAGS) -lcuda \
 						-Wl,--wrap=cuInit \
 						-Wl,--wrap=cuDeviceGetCount \
 						-Wl,--wrap=cuDeviceGetAttribute \
+						-Wl,--wrap=cuGetErrorName \
 						-Wl,--wrap=cuPointerSetAttribute \
 						-Wl,--wrap=cuPointerGetAttributes \
 						-Wl,--wrap=cuMemcpy \

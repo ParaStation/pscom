@@ -12,6 +12,7 @@
 
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdio.h>
 #include <setjmp.h>
 #include <cmocka.h>
 
@@ -19,6 +20,11 @@
 #include <driver_types.h>
 
 #include "mocks/misc_mocks.h"
+
+#define CUDA_MAX_STR "999"
+#define STRLEN(s) (sizeof(s)/sizeof(s[0]))
+static const char max_err_string[] = CUDA_MAX_STR;
+static char cuda_error_string[STRLEN(max_err_string)] = "";
 
 /**
  * \brief Mocking function for cuInit()
@@ -121,4 +127,23 @@ CUresult __wrap_cuMemcpyHtoD_v2(void* dst, CUdeviceptr src, size_t nbytes)
 CUresult __wrap_cuMemcpy(void* dst, CUdeviceptr src, size_t nbytes)
 {
 	return cuMemcpy_generic(dst, src, nbytes);
+}
+
+
+/**
+ * \brief Mocking function for cuGetErrorString()
+ */
+CUresult __wrap_cuGetErrorName(CUresult error, const char **pStr)
+{
+	CUresult ret = CUDA_SUCCESS;
+
+	if (error > CUDA_ERROR_UNKNOWN) {
+		ret = CUDA_ERROR_INVALID_VALUE;
+		*pStr = NULL;
+	} else {
+		snprintf(cuda_error_string, STRLEN(cuda_error_string), "%d", error);
+		*pStr = cuda_error_string;
+	}
+
+	return ret;
 }
