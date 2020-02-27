@@ -56,6 +56,10 @@ dist-hook:
 
 # ---- proxy to dist/Makefile
 #
+if CUDA_ENABLED
+  AM_CONFIGARGS := $(AM_CONFIGARGS) -with cuda
+endif
+
 .PHONY: tar rpm srpm tag version
 tar rpm srpm tag version:
-	TOP_SRCDIR=$(abs_top_srcdir) $(MAKE) -C dist $@
+	TOP_SRCDIR=$(abs_top_srcdir) $(MAKE) CONFIGARGS="$(AM_CONFIGARGS) $(CONFIGARGS)" -C dist $@

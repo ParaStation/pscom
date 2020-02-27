@@ -1,20 +1,26 @@
 # -*- rpm-spec -*-
 %{expand:%define buildForSuSE %(if [ -e /etc/SuSE-release ]; then echo 1; else echo 0; fi)}
 
+%{?_with_cuda: %global enable_cuda 1}
+
 Summary:   ParaStation Cluster Communication drivers and libraries
 Vendor:    ParTec Cluster Competence Center GmbH, Munich, Germany
-Name:      pscom
+Name:      pscom%{?enable_cuda:-cuda}
 Version:   @VERSION_pscom@
 Release:   @RELEASE_pscom@
 License:   QPL
 Group:     System/Development/Libraries
 Packager:  support@par-tec.de
-Source0:   %{name}-%{version}-%{release}.tar.gz
+Source0:   pscom-%{version}-%{release}.tar.gz
+
+%if 0%{?enable_cuda}
+BuildRequires:	cuda
+%endif
 
 # Dont use internal find_requires, because we dont want dependencies
 # to the infiniband libs. (Searching for a clean solution!)
 %define _use_internal_dependency_generator 0
-%define __find_requires %_builddir/%{name}-%{version}-@RELEASE_pscom@/scripts/rpm_noreq
+%define __find_requires %_builddir/pscom-%{version}-@RELEASE_pscom@/scripts/rpm_noreq
 
 BuildRoot:  %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
 
@@ -33,11 +39,12 @@ ParaStation Cluster Communication drivers and libraries.
 %endif
 
 %prep
-%setup -q -n %{name}-%{version}-%{release}
+%setup -q -n pscom-%{version}-%{release}
 
 %build
 export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,')"
-%configure --disable-silent-rules
+%configure --disable-silent-rules \
+	   %{!?enable_cuda:--disable-cuda}%{?enable_cuda:--enable-cuda}
 echo "CFLAGS:$CFLAGS"
 make %{?_smp_mflags}
 
