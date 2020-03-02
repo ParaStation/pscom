@@ -273,8 +273,8 @@ AM_CONDITIONAL([UTEST_ENABLED],
 # ----------
 
 # -Wsign-conversion
-AX_CHECK_COMPILE_FLAG([-Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter],
-  [AM_CFLAGS="$AM_CFLAGS -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"])
+AX_CHECK_COMPILE_FLAG([-std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter],
+  [AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"])
 
 AC_SUBST([AM_CPPFLAGS])
 AC_SUBST([AM_CFLAGS])
