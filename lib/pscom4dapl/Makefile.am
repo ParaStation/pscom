@@ -28,6 +28,7 @@ libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
 
 # intermediate libs needed elsewhere, in bin
 libpsdapl_la_SOURCES = psdapl.c psdapl.h
+libpsdapl_la_CPPFLAGS = $(AM_CPPFLAGS) -UPSCOM_CUDA_AWARENESS
 
 install-exec-hook:
 	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)
