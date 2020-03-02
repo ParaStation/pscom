@@ -60,6 +60,7 @@ void                       pscom_read_get_buf(pscom_con_t *con, char **buf, size
 void                       pscom_read_done(pscom_con_t *con, char *buf, size_t len);
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
 
 void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh, pscom_connection_t *connection)
@@ -1752,6 +1753,7 @@ void pscom_probe(pscom_request_t *request)
 	}
 }
 
+PSCOM_PLUGIN_API_EXPORT
 void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
 {
 	pscom_req_t *req = get_req(request);
@@ -1772,6 +1774,7 @@ void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type
 	}
 }
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
 {
 	pscom_lock(); {

@@ -404,6 +404,7 @@ void pscom_con_closing(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_close(pscom_con_t *con)
 {
 	int close_called = con->state.close_called;
@@ -506,9 +507,9 @@ void pscom_con_error(pscom_con_t *con, pscom_op_t operation, pscom_err_t error)
 }
 
 
-pscom_con_t **pscom_con_ids = NULL;
-pscom_con_id_t pscom_con_ids_mask = 0;
-pscom_con_id_t pscom_con_id_last = 0; // Start with con_id == 1.
+static pscom_con_t **pscom_con_ids = NULL;
+static pscom_con_id_t pscom_con_ids_mask = 0;
+static pscom_con_id_t pscom_con_id_last = 0; // Start with con_id == 1.
 
 
 static
@@ -596,12 +597,23 @@ void pscom_con_id_unregister(pscom_con_t *con) {
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_con_id_t pscom_con_to_id(pscom_con_t *con)
 {
 	return con->id;
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
+pscom_con_t *pscom_id_to_con(pscom_con_id_t id)
+{
+	pscom_con_t *con = pscom_con_ids[id & pscom_con_ids_mask];
+	if (!con || (con->id != id)) con = NULL;
+	return con;
+}
+
+
+PSCOM_PLUGIN_API_EXPORT
 void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info)
 {
 	*con_info = con->pub.socket->local_con_info;
@@ -609,6 +621,7 @@ void pscom_con_info(pscom_con_t *con, pscom_con_info_t *con_info)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 {
 	pscom_con_t *con;
@@ -683,6 +696,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void _pscom_con_ref_release(pscom_con_t *con) {
 	assert(con->magic == MAGIC_CONNECTION);
 	assert(con->state.use_count);
@@ -1011,6 +1025,7 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_err_t pscom_con_connect(pscom_con_t *con, int nodeid, int portno)
 {
 	pscom_err_t rc;

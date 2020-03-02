@@ -120,6 +120,13 @@ void pscom_env_get_dir(char **val, const char *name)
 }
 
 
+PSCOM_API_EXPORT
+void pscom_env_psm_fastinit_set(unsigned int psm_fastinit)
+{
+	pscom.env.psm_fastinit = psm_fastinit;
+}
+
+
 void pscom_env_init(void)
 {
 	pscom_pslib_read_config(ENV_CONFIG_FILES);

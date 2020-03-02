@@ -138,6 +138,7 @@ void pscom_free(void *ptr)
 
 #endif
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 {
 	pscom_req_t *req;
@@ -181,6 +182,7 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_req_free(pscom_req_t *req)
 {
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));

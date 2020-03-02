@@ -316,6 +316,9 @@ void pscom_plugins_init(void)
 #ifdef PSCOM_ALLIN_OPENIB
 	pscom_plugin_register(&pscom_plugin_openib, pscom_plugin_uprio("openib"));
 #endif
+#ifdef PSCOM_ALLIN_GATEWAY
+	pscom_plugin_register(&pscom_plugin_gateway, pscom_plugin_uprio("gateway"));
+#endif
 
 	// ToDo: Use file globbing!
 	char *pls[] = {
@@ -334,6 +337,9 @@ void pscom_plugins_init(void)
 		"dapl",
 		"mxm",
 		"ucp",
+#ifndef PSCOM_ALLIN_GATEWAY
+		"gateway",
+#endif
 		NULL };
 	char **tmp;
 

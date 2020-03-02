@@ -204,6 +204,7 @@ int pscom_dwrite(const char *_msg, size_t len)
 }
 
 
+PSCOM_API_EXPORT
 int pscom_dprintf(const char *fmt, ...)
 {
 	va_list arg;

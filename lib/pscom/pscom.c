@@ -46,7 +46,8 @@
 #include "pslib.h"
 #include "pscom_async.h"
 
-pscom_t pscom_in = {
+PSCOM_PLUGIN_API_EXPORT
+pscom_t pscom = {
 	.recv_req_cnt_any_global = 0,
 	.threaded = 0, /* default is unthreaded */
 	/* parameter from environment */
@@ -72,9 +73,6 @@ pscom_t pscom_in = {
 		.shm_direct_failed = 0,
 	},
 };
-
-
-PSCOM_PLUGIN_API_ALIAS(pscom_in, pscom_ex);
 
 
 PSCOM_API_EXPORT
@@ -128,6 +126,7 @@ ssize_t pscom_readall(int fd, void *buf, size_t count)
 
 
 #define PSP_NDCBS 10
+PSCOM_PLUGIN_API_EXPORT
 void pscom_unlock(void)
 {
 	int ndcbs;
@@ -175,7 +174,7 @@ restart:
 }
 
 
-PSCOM_PLUGIN_API_EXPORT
+PSCOM_PLUGIN_API_EXPORT_ONLY
 void pscom_poll_write_stop(pscom_con_t *con)
 {
 	/* it's save to dequeue more then once */
@@ -183,7 +182,7 @@ void pscom_poll_write_stop(pscom_con_t *con)
 }
 
 
-PSCOM_PLUGIN_API_EXPORT
+PSCOM_PLUGIN_API_EXPORT_ONLY
 void pscom_poll_write_start(pscom_con_t *con)
 {
 	if (list_empty(&con->poll_next_send)) {
@@ -195,7 +194,7 @@ void pscom_poll_write_start(pscom_con_t *con)
 }
 
 
-PSCOM_PLUGIN_API_EXPORT
+PSCOM_PLUGIN_API_EXPORT_ONLY
 void pscom_poll_read_start(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
@@ -205,7 +204,7 @@ void pscom_poll_read_start(pscom_con_t *con)
 }
 
 
-PSCOM_PLUGIN_API_EXPORT
+PSCOM_PLUGIN_API_EXPORT_ONLY
 void pscom_poll_read_stop(pscom_con_t *con)
 {
 	pscom_poll_reader_t *reader = &con->poll_reader;
@@ -215,7 +214,7 @@ void pscom_poll_read_stop(pscom_con_t *con)
 }
 
 
-PSCOM_PLUGIN_API_ALIAS(pscom_progress, pscom_progress_ex);
+PSCOM_PLUGIN_API_EXPORT
 int pscom_progress(int timeout)
 {
 	struct list_head *pos, *next;
@@ -420,6 +419,7 @@ int pscom_get_nodeid(void)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 in_addr_t pscom_hostip(char *name)
 {
 	return ntohl(psp_hostip(name));

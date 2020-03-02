@@ -121,6 +121,7 @@ retry:
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_sock_set_name(pscom_sock_t *sock, const char *name)
 {
 	memset(sock->pub.local_con_info.name, 0, sizeof(sock->pub.local_con_info.name));
@@ -200,12 +201,14 @@ void pscom_sock_destroy(pscom_sock_t *sock)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type)
 {
 	return !!(sock->con_type_mask & (1ULL << con_type));
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 pscom_sock_t *pscom_open_sock(size_t userdata_size,
 			      size_t connection_userdata_size)
 {
@@ -223,6 +226,7 @@ pscom_sock_t *pscom_open_sock(size_t userdata_size,
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type)
 {
 	assert(sock->magic == MAGIC_SOCKET);

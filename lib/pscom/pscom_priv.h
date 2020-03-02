@@ -492,13 +492,8 @@ struct PSCOM
 	}			stat;
 };
 
-#ifdef LIBPSCOM
-extern pscom_t pscom_in;
-#  define pscom pscom_in /* libpscom uses internal pscom_in */
-#else
-extern pscom_t pscom_ex; // Exported alias to pscom_in
-#  define pscom pscom_ex /* Plugins use exported pscom_ex alias */
-#endif
+
+extern pscom_t pscom;
 
 
 #define PSCOM_ARCH2CON_TYPE(arch) ((arch) - 101)
@@ -633,17 +628,8 @@ pscom_req_t *get_req(pscom_request_t *request)
 }
 
 
-extern pscom_con_t **pscom_con_ids;
-extern unsigned pscom_con_ids_mask;
-
 pscom_con_id_t pscom_con_to_id(pscom_con_t *con);
-
-static inline
-pscom_con_t *pscom_id_to_con(pscom_con_id_t id) {
-	pscom_con_t *con = pscom_con_ids[id & pscom_con_ids_mask];
-	if (!con || (con->id != id)) con = NULL;
-	return con;
-}
+pscom_con_t *pscom_id_to_con(pscom_con_id_t id);
 
 
 /* Get a buffer usable for receives. *buf is valid in the current
@@ -712,13 +698,7 @@ void pscom_poll_write_stop(pscom_con_t *con);
 void pscom_poll_read_start(pscom_con_t *con);
 void pscom_poll_read_stop(pscom_con_t *con);
 
-#ifdef LIBPSCOM
 int pscom_progress(int timeout);
-#else
-#define pscom_progress pscom_progress_ex  /* Plugins must use pscom_progress_ex */
-#endif
-
-int pscom_progress_ex(int timeout); // exported alias to pscom_progress
 
 int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type);
 void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type);
@@ -765,10 +745,9 @@ void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type
 #else
 #define PSCOM_API_EXPORT API_HIDDEN
 #endif
-#define PSCOM_PLUGIN_API_EXPORT API_EXPORT
-#define PSCOM_PLUGIN_API_ALIAS(source, exp_alias) \
-	extern __typeof(source) exp_alias __attribute__((alias(#source), visibility("default")));
-
+#define PSCOM_PLUGIN_API_EXPORT __attribute__ ((visibility("protected")))
+// Use PSCOM_PLUGIN_API_EXPORT_ONLY for all functions to which we use function pointers
+#define PSCOM_PLUGIN_API_EXPORT_ONLY __attribute__ ((visibility("default")))
 #define PSCOM_SHM_API_EXPORT API_EXPORT
 
 #endif /* _PSCOM_PRIV_H_ */

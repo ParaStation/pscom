@@ -251,6 +251,7 @@ pscom_listen_socket_ondemand_str(pscom_socket_t *socket)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 const char *
 pscom_inetstr(int addr)
 {

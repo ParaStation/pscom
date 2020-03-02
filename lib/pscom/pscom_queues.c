@@ -162,6 +162,7 @@ void _pscom_sendq_suspending_deq(pscom_con_t *con, pscom_req_t *req)
  * Receive requests
  */
 
+PSCOM_PLUGIN_API_EXPORT
 void _pscom_recv_req_cnt_inc(pscom_con_t *con)
 {
 	int start = !con->recv_req_cnt;
@@ -176,6 +177,7 @@ void _pscom_recv_req_cnt_inc(pscom_con_t *con)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void _pscom_recv_req_cnt_dec(pscom_con_t *con)
 {
 	con->recv_req_cnt--;

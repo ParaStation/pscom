@@ -140,6 +140,7 @@ void pscom_backlog_getall(struct list_head *backlog) {
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_backlog_push(void (*call)(void *priv), void *priv) {
 	pscom_backlog_t *bl = malloc(sizeof(*bl));
 	pthread_mutex_lock(&pscom.backlog_lock);{
@@ -150,6 +151,7 @@ void pscom_backlog_push(void (*call)(void *priv), void *priv) {
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 int pscom_backlog_del(void (*call)(void *priv), void *priv) {
 	int ret = 0;
 	pthread_mutex_lock(&pscom.backlog_lock);{
