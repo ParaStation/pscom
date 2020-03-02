@@ -108,9 +108,8 @@ target_triplet = @target@
 
 # CUDA-related configuration
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_4 = -DPSCOM_CUDA_AWARENESS $(CUDA_CPPFLAGS)
-@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_5 = pscom/test_cuda.c
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_5 = pscom/test_cuda.c mocks/cuda_mocks.c
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__append_6 = $(CUDA_LDFLAGS) -lcuda \
-@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=memcpy \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuInit \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuDeviceGetCount \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuDeviceGetAttribute \
@@ -134,14 +133,14 @@ mkinstalldirs = $(install_sh) -d
 CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
 PROGRAMS = $(noinst_PROGRAMS)
-am__pscom_utest_SOURCES_DIST = mocks/pscom_mocks.c mocks/cuda_mocks.c \
-	mocks/misc_mocks.c pscom_utest.c pscom/test_io.c \
-	util/test_utils_con.c pscom/test_cuda.c
+am__pscom_utest_SOURCES_DIST = mocks/pscom_mocks.c mocks/misc_mocks.c \
+	pscom_utest.c pscom/test_io.c util/test_utils_con.c \
+	pscom/test_cuda.c mocks/cuda_mocks.c
 am__dirstamp = $(am__leading_dot)dirstamp
-@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__objects_1 = pscom/utest-test_cuda.$(OBJEXT)
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@am__objects_1 = pscom/utest-test_cuda.$(OBJEXT) \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@	mocks/pscom_utest-cuda_mocks.$(OBJEXT)
 @UTEST_ENABLED_TRUE@am_pscom_utest_OBJECTS =  \
 @UTEST_ENABLED_TRUE@	mocks/pscom_utest-pscom_mocks.$(OBJEXT) \
-@UTEST_ENABLED_TRUE@	mocks/pscom_utest-cuda_mocks.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	mocks/pscom_utest-misc_mocks.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	pscom_utest-pscom_utest.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	pscom/utest-test_io.$(OBJEXT) \
@@ -364,6 +363,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -419,12 +419,13 @@ configdir = $(prefix)/config
 @UTEST_ENABLED_TRUE@	-I$(top_srcdir)/lib/pscom $(am__append_4)
 
 # Mocked functions
-@UTEST_ENABLED_TRUE@pscom_utest_LDFLAGS = -static -lcmocka \
-@UTEST_ENABLED_TRUE@	-Wl,--wrap=pscom_unlock $(am__append_6)
+@UTEST_ENABLED_TRUE@pscom_utest_LDFLAGS = -Wl,--wrap=memcpy -static \
+@UTEST_ENABLED_TRUE@	-lcmocka -Wl,--wrap=pscom_unlock \
+@UTEST_ENABLED_TRUE@	$(am__append_6)
 @UTEST_ENABLED_TRUE@pscom_utest_SOURCES = mocks/pscom_mocks.c \
-@UTEST_ENABLED_TRUE@	mocks/cuda_mocks.c mocks/misc_mocks.c \
-@UTEST_ENABLED_TRUE@	pscom_utest.c pscom/test_io.c \
-@UTEST_ENABLED_TRUE@	util/test_utils_con.c $(am__append_5)
+@UTEST_ENABLED_TRUE@	mocks/misc_mocks.c pscom_utest.c \
+@UTEST_ENABLED_TRUE@	pscom/test_io.c util/test_utils_con.c \
+@UTEST_ENABLED_TRUE@	$(am__append_5)
 all: all-am
 
 .SUFFIXES:
@@ -476,8 +477,6 @@ mocks/$(DEPDIR)/$(am__dirstamp):
 	@: > mocks/$(DEPDIR)/$(am__dirstamp)
 mocks/pscom_utest-pscom_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
 	mocks/$(DEPDIR)/$(am__dirstamp)
-mocks/pscom_utest-cuda_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
-	mocks/$(DEPDIR)/$(am__dirstamp)
 mocks/pscom_utest-misc_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
 	mocks/$(DEPDIR)/$(am__dirstamp)
 pscom/$(am__dirstamp):
@@ -498,6 +497,8 @@ util/pscom_utest-test_utils_con.$(OBJEXT): util/$(am__dirstamp) \
 	util/$(DEPDIR)/$(am__dirstamp)
 pscom/utest-test_cuda.$(OBJEXT): pscom/$(am__dirstamp) \
 	pscom/$(DEPDIR)/$(am__dirstamp)
+mocks/pscom_utest-cuda_mocks.$(OBJEXT): mocks/$(am__dirstamp) \
+	mocks/$(DEPDIR)/$(am__dirstamp)
 
 pscom_utest$(EXEEXT): $(pscom_utest_OBJECTS) $(pscom_utest_DEPENDENCIES) $(EXTRA_pscom_utest_DEPENDENCIES) 
 	@rm -f pscom_utest$(EXEEXT)
@@ -563,20 +564,6 @@ mocks/pscom_utest-pscom_mocks.obj: mocks/pscom_mocks.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/pscom_mocks.c' object='mocks/pscom_utest-pscom_mocks.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-pscom_mocks.obj `if test -f 'mocks/pscom_mocks.c'; then $(CYGPATH_W) 'mocks/pscom_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/pscom_mocks.c'; fi`
-
-mocks/pscom_utest-cuda_mocks.o: mocks/cuda_mocks.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-cuda_mocks.o -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo -c -o mocks/pscom_utest-cuda_mocks.o `test -f 'mocks/cuda_mocks.c' || echo '$(srcdir)/'`mocks/cuda_mocks.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/cuda_mocks.c' object='mocks/pscom_utest-cuda_mocks.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-cuda_mocks.o `test -f 'mocks/cuda_mocks.c' || echo '$(srcdir)/'`mocks/cuda_mocks.c
-
-mocks/pscom_utest-cuda_mocks.obj: mocks/cuda_mocks.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-cuda_mocks.obj -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo -c -o mocks/pscom_utest-cuda_mocks.obj `if test -f 'mocks/cuda_mocks.c'; then $(CYGPATH_W) 'mocks/cuda_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/cuda_mocks.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/cuda_mocks.c' object='mocks/pscom_utest-cuda_mocks.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-cuda_mocks.obj `if test -f 'mocks/cuda_mocks.c'; then $(CYGPATH_W) 'mocks/cuda_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/cuda_mocks.c'; fi`
 
 mocks/pscom_utest-misc_mocks.o: mocks/misc_mocks.c
 @am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-misc_mocks.o -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-misc_mocks.Tpo -c -o mocks/pscom_utest-misc_mocks.o `test -f 'mocks/misc_mocks.c' || echo '$(srcdir)/'`mocks/misc_mocks.c
@@ -647,6 +634,20 @@ pscom/utest-test_cuda.obj: pscom/test_cuda.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom/test_cuda.c' object='pscom/utest-test_cuda.obj' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o pscom/utest-test_cuda.obj `if test -f 'pscom/test_cuda.c'; then $(CYGPATH_W) 'pscom/test_cuda.c'; else $(CYGPATH_W) '$(srcdir)/pscom/test_cuda.c'; fi`
+
+mocks/pscom_utest-cuda_mocks.o: mocks/cuda_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-cuda_mocks.o -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo -c -o mocks/pscom_utest-cuda_mocks.o `test -f 'mocks/cuda_mocks.c' || echo '$(srcdir)/'`mocks/cuda_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/cuda_mocks.c' object='mocks/pscom_utest-cuda_mocks.o' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-cuda_mocks.o `test -f 'mocks/cuda_mocks.c' || echo '$(srcdir)/'`mocks/cuda_mocks.c
+
+mocks/pscom_utest-cuda_mocks.obj: mocks/cuda_mocks.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT mocks/pscom_utest-cuda_mocks.obj -MD -MP -MF mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo -c -o mocks/pscom_utest-cuda_mocks.obj `if test -f 'mocks/cuda_mocks.c'; then $(CYGPATH_W) 'mocks/cuda_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/cuda_mocks.c'; fi`
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Tpo mocks/$(DEPDIR)/pscom_utest-cuda_mocks.Po
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mocks/cuda_mocks.c' object='mocks/pscom_utest-cuda_mocks.obj' libtool=no @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(pscom_utest_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o mocks/pscom_utest-cuda_mocks.obj `if test -f 'mocks/cuda_mocks.c'; then $(CYGPATH_W) 'mocks/cuda_mocks.c'; else $(CYGPATH_W) '$(srcdir)/mocks/cuda_mocks.c'; fi`
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -431,6 +431,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -484,7 +485,8 @@ noinst_HEADERS = getid.c list.h pscom_con.h pscom_debug.h pscom_env.h	\
 
 libpscom_la_LDFLAGS = -version-info 2:0:0
 libpscom_la_LIBADD = -ldl $(am__append_4)
-libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread
+libpscom_la_CFLAGS = $(AM_CFLAGS) -pthread -fvisibility=hidden -flto
+libpscom_la_CPPFLAGS = $(AM_CPPFLAGS) -DLIBPSCOM
 
 # intermediate libs needed elsewhere, in bin
 libpslib_la_SOURCES = pslib.c pslib.h
@@ -655,179 +657,179 @@ am--depfiles: $(am__depfiles_remade)
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 libpscom_la-pscom.lo: pscom.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom.Tpo -c -o libpscom_la-pscom.lo `test -f 'pscom.c' || echo '$(srcdir)/'`pscom.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom.Tpo -c -o libpscom_la-pscom.lo `test -f 'pscom.c' || echo '$(srcdir)/'`pscom.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom.Tpo $(DEPDIR)/libpscom_la-pscom.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom.c' object='libpscom_la-pscom.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom.lo `test -f 'pscom.c' || echo '$(srcdir)/'`pscom.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom.lo `test -f 'pscom.c' || echo '$(srcdir)/'`pscom.c
 
 libpscom_la-pscom_con.lo: pscom_con.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_con.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_con.Tpo -c -o libpscom_la-pscom_con.lo `test -f 'pscom_con.c' || echo '$(srcdir)/'`pscom_con.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_con.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_con.Tpo -c -o libpscom_la-pscom_con.lo `test -f 'pscom_con.c' || echo '$(srcdir)/'`pscom_con.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_con.Tpo $(DEPDIR)/libpscom_la-pscom_con.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_con.c' object='libpscom_la-pscom_con.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_con.lo `test -f 'pscom_con.c' || echo '$(srcdir)/'`pscom_con.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_con.lo `test -f 'pscom_con.c' || echo '$(srcdir)/'`pscom_con.c
 
 libpscom_la-pscom_debug.lo: pscom_debug.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_debug.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_debug.Tpo -c -o libpscom_la-pscom_debug.lo `test -f 'pscom_debug.c' || echo '$(srcdir)/'`pscom_debug.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_debug.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_debug.Tpo -c -o libpscom_la-pscom_debug.lo `test -f 'pscom_debug.c' || echo '$(srcdir)/'`pscom_debug.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_debug.Tpo $(DEPDIR)/libpscom_la-pscom_debug.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_debug.c' object='libpscom_la-pscom_debug.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_debug.lo `test -f 'pscom_debug.c' || echo '$(srcdir)/'`pscom_debug.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_debug.lo `test -f 'pscom_debug.c' || echo '$(srcdir)/'`pscom_debug.c
 
 libpscom_la-pscom_dprint.lo: pscom_dprint.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_dprint.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_dprint.Tpo -c -o libpscom_la-pscom_dprint.lo `test -f 'pscom_dprint.c' || echo '$(srcdir)/'`pscom_dprint.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_dprint.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_dprint.Tpo -c -o libpscom_la-pscom_dprint.lo `test -f 'pscom_dprint.c' || echo '$(srcdir)/'`pscom_dprint.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_dprint.Tpo $(DEPDIR)/libpscom_la-pscom_dprint.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_dprint.c' object='libpscom_la-pscom_dprint.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_dprint.lo `test -f 'pscom_dprint.c' || echo '$(srcdir)/'`pscom_dprint.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_dprint.lo `test -f 'pscom_dprint.c' || echo '$(srcdir)/'`pscom_dprint.c
 
 libpscom_la-pscom_env.lo: pscom_env.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_env.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_env.Tpo -c -o libpscom_la-pscom_env.lo `test -f 'pscom_env.c' || echo '$(srcdir)/'`pscom_env.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_env.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_env.Tpo -c -o libpscom_la-pscom_env.lo `test -f 'pscom_env.c' || echo '$(srcdir)/'`pscom_env.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_env.Tpo $(DEPDIR)/libpscom_la-pscom_env.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_env.c' object='libpscom_la-pscom_env.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_env.lo `test -f 'pscom_env.c' || echo '$(srcdir)/'`pscom_env.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_env.lo `test -f 'pscom_env.c' || echo '$(srcdir)/'`pscom_env.c
 
 libpscom_la-pscom_group.lo: pscom_group.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_group.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_group.Tpo -c -o libpscom_la-pscom_group.lo `test -f 'pscom_group.c' || echo '$(srcdir)/'`pscom_group.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_group.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_group.Tpo -c -o libpscom_la-pscom_group.lo `test -f 'pscom_group.c' || echo '$(srcdir)/'`pscom_group.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_group.Tpo $(DEPDIR)/libpscom_la-pscom_group.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_group.c' object='libpscom_la-pscom_group.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_group.lo `test -f 'pscom_group.c' || echo '$(srcdir)/'`pscom_group.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_group.lo `test -f 'pscom_group.c' || echo '$(srcdir)/'`pscom_group.c
 
 libpscom_la-pscom_group_bcast.lo: pscom_group_bcast.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_group_bcast.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_group_bcast.Tpo -c -o libpscom_la-pscom_group_bcast.lo `test -f 'pscom_group_bcast.c' || echo '$(srcdir)/'`pscom_group_bcast.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_group_bcast.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_group_bcast.Tpo -c -o libpscom_la-pscom_group_bcast.lo `test -f 'pscom_group_bcast.c' || echo '$(srcdir)/'`pscom_group_bcast.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_group_bcast.Tpo $(DEPDIR)/libpscom_la-pscom_group_bcast.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_group_bcast.c' object='libpscom_la-pscom_group_bcast.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_group_bcast.lo `test -f 'pscom_group_bcast.c' || echo '$(srcdir)/'`pscom_group_bcast.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_group_bcast.lo `test -f 'pscom_group_bcast.c' || echo '$(srcdir)/'`pscom_group_bcast.c
 
 libpscom_la-pscom_io.lo: pscom_io.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_io.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_io.Tpo -c -o libpscom_la-pscom_io.lo `test -f 'pscom_io.c' || echo '$(srcdir)/'`pscom_io.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_io.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_io.Tpo -c -o libpscom_la-pscom_io.lo `test -f 'pscom_io.c' || echo '$(srcdir)/'`pscom_io.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_io.Tpo $(DEPDIR)/libpscom_la-pscom_io.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_io.c' object='libpscom_la-pscom_io.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_io.lo `test -f 'pscom_io.c' || echo '$(srcdir)/'`pscom_io.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_io.lo `test -f 'pscom_io.c' || echo '$(srcdir)/'`pscom_io.c
 
 libpscom_la-pscom_listener.lo: pscom_listener.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_listener.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_listener.Tpo -c -o libpscom_la-pscom_listener.lo `test -f 'pscom_listener.c' || echo '$(srcdir)/'`pscom_listener.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_listener.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_listener.Tpo -c -o libpscom_la-pscom_listener.lo `test -f 'pscom_listener.c' || echo '$(srcdir)/'`pscom_listener.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_listener.Tpo $(DEPDIR)/libpscom_la-pscom_listener.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_listener.c' object='libpscom_la-pscom_listener.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_listener.lo `test -f 'pscom_listener.c' || echo '$(srcdir)/'`pscom_listener.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_listener.lo `test -f 'pscom_listener.c' || echo '$(srcdir)/'`pscom_listener.c
 
 libpscom_la-pscom_ondemand.lo: pscom_ondemand.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_ondemand.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_ondemand.Tpo -c -o libpscom_la-pscom_ondemand.lo `test -f 'pscom_ondemand.c' || echo '$(srcdir)/'`pscom_ondemand.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_ondemand.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_ondemand.Tpo -c -o libpscom_la-pscom_ondemand.lo `test -f 'pscom_ondemand.c' || echo '$(srcdir)/'`pscom_ondemand.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_ondemand.Tpo $(DEPDIR)/libpscom_la-pscom_ondemand.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_ondemand.c' object='libpscom_la-pscom_ondemand.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_ondemand.lo `test -f 'pscom_ondemand.c' || echo '$(srcdir)/'`pscom_ondemand.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_ondemand.lo `test -f 'pscom_ondemand.c' || echo '$(srcdir)/'`pscom_ondemand.c
 
 libpscom_la-pscom_p4s.lo: pscom_p4s.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_p4s.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_p4s.Tpo -c -o libpscom_la-pscom_p4s.lo `test -f 'pscom_p4s.c' || echo '$(srcdir)/'`pscom_p4s.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_p4s.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_p4s.Tpo -c -o libpscom_la-pscom_p4s.lo `test -f 'pscom_p4s.c' || echo '$(srcdir)/'`pscom_p4s.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_p4s.Tpo $(DEPDIR)/libpscom_la-pscom_p4s.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_p4s.c' object='libpscom_la-pscom_p4s.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_p4s.lo `test -f 'pscom_p4s.c' || echo '$(srcdir)/'`pscom_p4s.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_p4s.lo `test -f 'pscom_p4s.c' || echo '$(srcdir)/'`pscom_p4s.c
 
 libpscom_la-pscom_plugin.lo: pscom_plugin.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_plugin.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_plugin.Tpo -c -o libpscom_la-pscom_plugin.lo `test -f 'pscom_plugin.c' || echo '$(srcdir)/'`pscom_plugin.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_plugin.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_plugin.Tpo -c -o libpscom_la-pscom_plugin.lo `test -f 'pscom_plugin.c' || echo '$(srcdir)/'`pscom_plugin.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_plugin.Tpo $(DEPDIR)/libpscom_la-pscom_plugin.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_plugin.c' object='libpscom_la-pscom_plugin.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_plugin.lo `test -f 'pscom_plugin.c' || echo '$(srcdir)/'`pscom_plugin.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_plugin.lo `test -f 'pscom_plugin.c' || echo '$(srcdir)/'`pscom_plugin.c
 
 libpscom_la-pscom_queues.lo: pscom_queues.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_queues.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_queues.Tpo -c -o libpscom_la-pscom_queues.lo `test -f 'pscom_queues.c' || echo '$(srcdir)/'`pscom_queues.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_queues.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_queues.Tpo -c -o libpscom_la-pscom_queues.lo `test -f 'pscom_queues.c' || echo '$(srcdir)/'`pscom_queues.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_queues.Tpo $(DEPDIR)/libpscom_la-pscom_queues.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_queues.c' object='libpscom_la-pscom_queues.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_queues.lo `test -f 'pscom_queues.c' || echo '$(srcdir)/'`pscom_queues.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_queues.lo `test -f 'pscom_queues.c' || echo '$(srcdir)/'`pscom_queues.c
 
 libpscom_la-pscom_req.lo: pscom_req.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_req.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_req.Tpo -c -o libpscom_la-pscom_req.lo `test -f 'pscom_req.c' || echo '$(srcdir)/'`pscom_req.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_req.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_req.Tpo -c -o libpscom_la-pscom_req.lo `test -f 'pscom_req.c' || echo '$(srcdir)/'`pscom_req.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_req.Tpo $(DEPDIR)/libpscom_la-pscom_req.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_req.c' object='libpscom_la-pscom_req.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_req.lo `test -f 'pscom_req.c' || echo '$(srcdir)/'`pscom_req.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_req.lo `test -f 'pscom_req.c' || echo '$(srcdir)/'`pscom_req.c
 
 libpscom_la-pscom_shm.lo: pscom_shm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_shm.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_shm.Tpo -c -o libpscom_la-pscom_shm.lo `test -f 'pscom_shm.c' || echo '$(srcdir)/'`pscom_shm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_shm.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_shm.Tpo -c -o libpscom_la-pscom_shm.lo `test -f 'pscom_shm.c' || echo '$(srcdir)/'`pscom_shm.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_shm.Tpo $(DEPDIR)/libpscom_la-pscom_shm.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_shm.c' object='libpscom_la-pscom_shm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_shm.lo `test -f 'pscom_shm.c' || echo '$(srcdir)/'`pscom_shm.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_shm.lo `test -f 'pscom_shm.c' || echo '$(srcdir)/'`pscom_shm.c
 
 libpscom_la-pscom_sock.lo: pscom_sock.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_sock.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_sock.Tpo -c -o libpscom_la-pscom_sock.lo `test -f 'pscom_sock.c' || echo '$(srcdir)/'`pscom_sock.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_sock.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_sock.Tpo -c -o libpscom_la-pscom_sock.lo `test -f 'pscom_sock.c' || echo '$(srcdir)/'`pscom_sock.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_sock.Tpo $(DEPDIR)/libpscom_la-pscom_sock.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_sock.c' object='libpscom_la-pscom_sock.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_sock.lo `test -f 'pscom_sock.c' || echo '$(srcdir)/'`pscom_sock.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_sock.lo `test -f 'pscom_sock.c' || echo '$(srcdir)/'`pscom_sock.c
 
 libpscom_la-pscom_str_util.lo: pscom_str_util.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_str_util.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_str_util.Tpo -c -o libpscom_la-pscom_str_util.lo `test -f 'pscom_str_util.c' || echo '$(srcdir)/'`pscom_str_util.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_str_util.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_str_util.Tpo -c -o libpscom_la-pscom_str_util.lo `test -f 'pscom_str_util.c' || echo '$(srcdir)/'`pscom_str_util.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_str_util.Tpo $(DEPDIR)/libpscom_la-pscom_str_util.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_str_util.c' object='libpscom_la-pscom_str_util.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_str_util.lo `test -f 'pscom_str_util.c' || echo '$(srcdir)/'`pscom_str_util.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_str_util.lo `test -f 'pscom_str_util.c' || echo '$(srcdir)/'`pscom_str_util.c
 
 libpscom_la-pscom_tcp.lo: pscom_tcp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_tcp.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_tcp.Tpo -c -o libpscom_la-pscom_tcp.lo `test -f 'pscom_tcp.c' || echo '$(srcdir)/'`pscom_tcp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_tcp.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_tcp.Tpo -c -o libpscom_la-pscom_tcp.lo `test -f 'pscom_tcp.c' || echo '$(srcdir)/'`pscom_tcp.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_tcp.Tpo $(DEPDIR)/libpscom_la-pscom_tcp.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_tcp.c' object='libpscom_la-pscom_tcp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_tcp.lo `test -f 'pscom_tcp.c' || echo '$(srcdir)/'`pscom_tcp.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_tcp.lo `test -f 'pscom_tcp.c' || echo '$(srcdir)/'`pscom_tcp.c
 
 libpscom_la-pscom_ufd.lo: pscom_ufd.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_ufd.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_ufd.Tpo -c -o libpscom_la-pscom_ufd.lo `test -f 'pscom_ufd.c' || echo '$(srcdir)/'`pscom_ufd.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_ufd.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_ufd.Tpo -c -o libpscom_la-pscom_ufd.lo `test -f 'pscom_ufd.c' || echo '$(srcdir)/'`pscom_ufd.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_ufd.Tpo $(DEPDIR)/libpscom_la-pscom_ufd.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_ufd.c' object='libpscom_la-pscom_ufd.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_ufd.lo `test -f 'pscom_ufd.c' || echo '$(srcdir)/'`pscom_ufd.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_ufd.lo `test -f 'pscom_ufd.c' || echo '$(srcdir)/'`pscom_ufd.c
 
 libpscom_la-pslib.lo: pslib.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pslib.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pslib.Tpo -c -o libpscom_la-pslib.lo `test -f 'pslib.c' || echo '$(srcdir)/'`pslib.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pslib.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pslib.Tpo -c -o libpscom_la-pslib.lo `test -f 'pslib.c' || echo '$(srcdir)/'`pslib.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pslib.Tpo $(DEPDIR)/libpscom_la-pslib.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pslib.c' object='libpscom_la-pslib.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pslib.lo `test -f 'pslib.c' || echo '$(srcdir)/'`pslib.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pslib.lo `test -f 'pslib.c' || echo '$(srcdir)/'`pslib.c
 
 libpscom_la-psshmalloc.lo: psshmalloc.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-psshmalloc.lo -MD -MP -MF $(DEPDIR)/libpscom_la-psshmalloc.Tpo -c -o libpscom_la-psshmalloc.lo `test -f 'psshmalloc.c' || echo '$(srcdir)/'`psshmalloc.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-psshmalloc.lo -MD -MP -MF $(DEPDIR)/libpscom_la-psshmalloc.Tpo -c -o libpscom_la-psshmalloc.lo `test -f 'psshmalloc.c' || echo '$(srcdir)/'`psshmalloc.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-psshmalloc.Tpo $(DEPDIR)/libpscom_la-psshmalloc.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psshmalloc.c' object='libpscom_la-psshmalloc.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-psshmalloc.lo `test -f 'psshmalloc.c' || echo '$(srcdir)/'`psshmalloc.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-psshmalloc.lo `test -f 'psshmalloc.c' || echo '$(srcdir)/'`psshmalloc.c
 
 libpscom_la-pscom_precon.lo: pscom_precon.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_precon.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_precon.Tpo -c -o libpscom_la-pscom_precon.lo `test -f 'pscom_precon.c' || echo '$(srcdir)/'`pscom_precon.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_precon.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_precon.Tpo -c -o libpscom_la-pscom_precon.lo `test -f 'pscom_precon.c' || echo '$(srcdir)/'`pscom_precon.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_precon.Tpo $(DEPDIR)/libpscom_la-pscom_precon.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_precon.c' object='libpscom_la-pscom_precon.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_precon.lo `test -f 'pscom_precon.c' || echo '$(srcdir)/'`pscom_precon.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_precon.lo `test -f 'pscom_precon.c' || echo '$(srcdir)/'`pscom_precon.c
 
 libpscom_la-pscom_async.lo: pscom_async.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_async.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_async.Tpo -c -o libpscom_la-pscom_async.lo `test -f 'pscom_async.c' || echo '$(srcdir)/'`pscom_async.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_async.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_async.Tpo -c -o libpscom_la-pscom_async.lo `test -f 'pscom_async.c' || echo '$(srcdir)/'`pscom_async.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_async.Tpo $(DEPDIR)/libpscom_la-pscom_async.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_async.c' object='libpscom_la-pscom_async.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_async.lo `test -f 'pscom_async.c' || echo '$(srcdir)/'`pscom_async.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_async.lo `test -f 'pscom_async.c' || echo '$(srcdir)/'`pscom_async.c
 
 libpscom_la-pscom_suspend.lo: pscom_suspend.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_suspend.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_suspend.Tpo -c -o libpscom_la-pscom_suspend.lo `test -f 'pscom_suspend.c' || echo '$(srcdir)/'`pscom_suspend.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_suspend.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_suspend.Tpo -c -o libpscom_la-pscom_suspend.lo `test -f 'pscom_suspend.c' || echo '$(srcdir)/'`pscom_suspend.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_suspend.Tpo $(DEPDIR)/libpscom_la-pscom_suspend.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_suspend.c' object='libpscom_la-pscom_suspend.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_suspend.lo `test -f 'pscom_suspend.c' || echo '$(srcdir)/'`pscom_suspend.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_suspend.lo `test -f 'pscom_suspend.c' || echo '$(srcdir)/'`pscom_suspend.c
 
 libpscom_la-pscom_cuda.lo: pscom_cuda.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_cuda.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_cuda.Tpo -c -o libpscom_la-pscom_cuda.lo `test -f 'pscom_cuda.c' || echo '$(srcdir)/'`pscom_cuda.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -MT libpscom_la-pscom_cuda.lo -MD -MP -MF $(DEPDIR)/libpscom_la-pscom_cuda.Tpo -c -o libpscom_la-pscom_cuda.lo `test -f 'pscom_cuda.c' || echo '$(srcdir)/'`pscom_cuda.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom_la-pscom_cuda.Tpo $(DEPDIR)/libpscom_la-pscom_cuda.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_cuda.c' object='libpscom_la-pscom_cuda.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_cuda.lo `test -f 'pscom_cuda.c' || echo '$(srcdir)/'`pscom_cuda.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom_la_CPPFLAGS) $(CPPFLAGS) $(libpscom_la_CFLAGS) $(CFLAGS) -c -o libpscom_la-pscom_cuda.lo `test -f 'pscom_cuda.c' || echo '$(srcdir)/'`pscom_cuda.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

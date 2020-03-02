@@ -156,8 +156,8 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 libpscom4mxm_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libpscom4mxm_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+	$(libpscom4mxm_la_CFLAGS) $(CFLAGS) $(libpscom4mxm_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -374,6 +374,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -410,6 +411,7 @@ TXT2MAN = $(top_srcdir)/scripts/txt2man
 configdir = $(prefix)/config
 lib_LTLIBRARIES = libpscom4mxm.la
 libpscom4mxm_la_SOURCES = pscom_mxm.c pscom_mxm.h psmxm.c psmxm.h
+libpscom4mxm_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4mxm_la_CPPFLAGS = $(AM_CPPFLAGS) $(MXM_CPPFLAGS)
 libpscom4mxm_la_LDFLAGS = $(AM_LDFLAGS) $(MXM_LDFLAGS)
 libpscom4mxm_la_LIBADD = -lmxm $(top_builddir)/lib/pscom/libpscom.la
@@ -526,18 +528,18 @@ am--depfiles: $(am__depfiles_remade)
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 libpscom4mxm_la-pscom_mxm.lo: pscom_mxm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4mxm_la-pscom_mxm.lo -MD -MP -MF $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Tpo -c -o libpscom4mxm_la-pscom_mxm.lo `test -f 'pscom_mxm.c' || echo '$(srcdir)/'`pscom_mxm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4mxm_la_CFLAGS) $(CFLAGS) -MT libpscom4mxm_la-pscom_mxm.lo -MD -MP -MF $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Tpo -c -o libpscom4mxm_la-pscom_mxm.lo `test -f 'pscom_mxm.c' || echo '$(srcdir)/'`pscom_mxm.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Tpo $(DEPDIR)/libpscom4mxm_la-pscom_mxm.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_mxm.c' object='libpscom4mxm_la-pscom_mxm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4mxm_la-pscom_mxm.lo `test -f 'pscom_mxm.c' || echo '$(srcdir)/'`pscom_mxm.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4mxm_la_CFLAGS) $(CFLAGS) -c -o libpscom4mxm_la-pscom_mxm.lo `test -f 'pscom_mxm.c' || echo '$(srcdir)/'`pscom_mxm.c
 
 libpscom4mxm_la-psmxm.lo: psmxm.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4mxm_la-psmxm.lo -MD -MP -MF $(DEPDIR)/libpscom4mxm_la-psmxm.Tpo -c -o libpscom4mxm_la-psmxm.lo `test -f 'psmxm.c' || echo '$(srcdir)/'`psmxm.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4mxm_la_CFLAGS) $(CFLAGS) -MT libpscom4mxm_la-psmxm.lo -MD -MP -MF $(DEPDIR)/libpscom4mxm_la-psmxm.Tpo -c -o libpscom4mxm_la-psmxm.lo `test -f 'psmxm.c' || echo '$(srcdir)/'`psmxm.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4mxm_la-psmxm.Tpo $(DEPDIR)/libpscom4mxm_la-psmxm.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psmxm.c' object='libpscom4mxm_la-psmxm.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4mxm_la-psmxm.lo `test -f 'psmxm.c' || echo '$(srcdir)/'`psmxm.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4mxm_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4mxm_la_CFLAGS) $(CFLAGS) -c -o libpscom4mxm_la-psmxm.lo `test -f 'psmxm.c' || echo '$(srcdir)/'`psmxm.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

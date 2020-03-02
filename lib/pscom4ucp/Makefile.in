@@ -156,8 +156,8 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 libpscom4ucp_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libpscom4ucp_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+	$(libpscom4ucp_la_CFLAGS) $(CFLAGS) $(libpscom4ucp_la_LDFLAGS) \
+	$(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -374,6 +374,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -411,6 +412,7 @@ configdir = $(prefix)/config
 lib_LTLIBRARIES = libpscom4ucp.la
 libpscom4ucp_la_SOURCES = pscom_ucp.c pscom_ucp.h psucp.c psucp.h
 # noinst_HEADERS = psucp_mregion_cache.c
+libpscom4ucp_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4ucp_la_CPPFLAGS = $(AM_CPPFLAGS) $(UCP_CPPFLAGS)
 libpscom4ucp_la_LDFLAGS = $(AM_LDFLAGS) $(UCP_LDFLAGS)
 libpscom4ucp_la_LIBADD = -lucp $(top_builddir)/lib/pscom/libpscom.la
@@ -527,18 +529,18 @@ am--depfiles: $(am__depfiles_remade)
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 libpscom4ucp_la-pscom_ucp.lo: pscom_ucp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4ucp_la-pscom_ucp.lo -MD -MP -MF $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Tpo -c -o libpscom4ucp_la-pscom_ucp.lo `test -f 'pscom_ucp.c' || echo '$(srcdir)/'`pscom_ucp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4ucp_la_CFLAGS) $(CFLAGS) -MT libpscom4ucp_la-pscom_ucp.lo -MD -MP -MF $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Tpo -c -o libpscom4ucp_la-pscom_ucp.lo `test -f 'pscom_ucp.c' || echo '$(srcdir)/'`pscom_ucp.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Tpo $(DEPDIR)/libpscom4ucp_la-pscom_ucp.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_ucp.c' object='libpscom4ucp_la-pscom_ucp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4ucp_la-pscom_ucp.lo `test -f 'pscom_ucp.c' || echo '$(srcdir)/'`pscom_ucp.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4ucp_la_CFLAGS) $(CFLAGS) -c -o libpscom4ucp_la-pscom_ucp.lo `test -f 'pscom_ucp.c' || echo '$(srcdir)/'`pscom_ucp.c
 
 libpscom4ucp_la-psucp.lo: psucp.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4ucp_la-psucp.lo -MD -MP -MF $(DEPDIR)/libpscom4ucp_la-psucp.Tpo -c -o libpscom4ucp_la-psucp.lo `test -f 'psucp.c' || echo '$(srcdir)/'`psucp.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4ucp_la_CFLAGS) $(CFLAGS) -MT libpscom4ucp_la-psucp.lo -MD -MP -MF $(DEPDIR)/libpscom4ucp_la-psucp.Tpo -c -o libpscom4ucp_la-psucp.lo `test -f 'psucp.c' || echo '$(srcdir)/'`psucp.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4ucp_la-psucp.Tpo $(DEPDIR)/libpscom4ucp_la-psucp.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psucp.c' object='libpscom4ucp_la-psucp.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4ucp_la-psucp.lo `test -f 'psucp.c' || echo '$(srcdir)/'`psucp.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4ucp_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4ucp_la_CFLAGS) $(CFLAGS) -c -o libpscom4ucp_la-psucp.lo `test -f 'psucp.c' || echo '$(srcdir)/'`psucp.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

@@ -158,8 +158,8 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 libpscom4dapl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libpscom4dapl_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+	$(libpscom4dapl_la_CFLAGS) $(CFLAGS) \
+	$(libpscom4dapl_la_LDFLAGS) $(LDFLAGS) -o $@
 libpsdapl_la_LIBADD =
 am_libpsdapl_la_OBJECTS = psdapl.lo
 libpsdapl_la_OBJECTS = $(am_libpsdapl_la_OBJECTS)
@@ -380,6 +380,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -418,6 +419,7 @@ lib_LTLIBRARIES = libpscom4dapl.la
 noinst_LTLIBRARIES = libpsdapl.la
 libpscom4dapl_la_SOURCES = pscom_dapl.c pscom_dapl.h psdapl.c psdapl.h
 noinst_HEADERS = psdapl_rdma.c
+libpscom4dapl_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4dapl_la_CPPFLAGS = $(AM_CPPFLAGS) $(DAPL_CPPFLAGS)
 libpscom4dapl_la_LDFLAGS = $(AM_LDFLAGS) $(DAPL_LDFLAGS)
 libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
@@ -552,18 +554,18 @@ am--depfiles: $(am__depfiles_remade)
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 libpscom4dapl_la-pscom_dapl.lo: pscom_dapl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4dapl_la-pscom_dapl.lo -MD -MP -MF $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Tpo -c -o libpscom4dapl_la-pscom_dapl.lo `test -f 'pscom_dapl.c' || echo '$(srcdir)/'`pscom_dapl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4dapl_la_CFLAGS) $(CFLAGS) -MT libpscom4dapl_la-pscom_dapl.lo -MD -MP -MF $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Tpo -c -o libpscom4dapl_la-pscom_dapl.lo `test -f 'pscom_dapl.c' || echo '$(srcdir)/'`pscom_dapl.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Tpo $(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_dapl.c' object='libpscom4dapl_la-pscom_dapl.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-pscom_dapl.lo `test -f 'pscom_dapl.c' || echo '$(srcdir)/'`pscom_dapl.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4dapl_la_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-pscom_dapl.lo `test -f 'pscom_dapl.c' || echo '$(srcdir)/'`pscom_dapl.c
 
 libpscom4dapl_la-psdapl.lo: psdapl.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4dapl_la-psdapl.lo -MD -MP -MF $(DEPDIR)/libpscom4dapl_la-psdapl.Tpo -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4dapl_la_CFLAGS) $(CFLAGS) -MT libpscom4dapl_la-psdapl.lo -MD -MP -MF $(DEPDIR)/libpscom4dapl_la-psdapl.Tpo -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4dapl_la-psdapl.Tpo $(DEPDIR)/libpscom4dapl_la-psdapl.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psdapl.c' object='libpscom4dapl_la-psdapl.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4dapl_la_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
 
 mostlyclean-libtool:
 	-rm -f *.lo

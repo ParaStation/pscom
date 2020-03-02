@@ -158,8 +158,8 @@ am__v_lt_0 = --silent
 am__v_lt_1 = 
 libpscom4velo_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(AM_CFLAGS) $(CFLAGS) $(libpscom4velo_la_LDFLAGS) $(LDFLAGS) \
-	-o $@
+	$(libpscom4velo_la_CFLAGS) $(CFLAGS) \
+	$(libpscom4velo_la_LDFLAGS) $(LDFLAGS) -o $@
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -377,6 +377,7 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
+runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -414,6 +415,7 @@ configdir = $(prefix)/config
 lib_LTLIBRARIES = libpscom4velo.la
 libpscom4velo_la_SOURCES = pscom_extoll.c pscom_extoll.h psextoll.c psextoll.h
 noinst_HEADERS = psextoll_mregion_cache.c
+libpscom4velo_la_CFLAGS = $(AM_CFLAGS) -fvisibility=hidden -flto
 libpscom4velo_la_CPPFLAGS = $(AM_CPPFLAGS) $(EXTOLL_CPPFLAGS)
 libpscom4velo_la_LDFLAGS = $(AM_LDFLAGS) $(EXTOLL_LDFLAGS)
 libpscom4velo_la_LIBADD = -lrma2 -lvelo2 $(top_builddir)/lib/pscom/libpscom.la
@@ -530,18 +532,18 @@ am--depfiles: $(am__depfiles_remade)
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LTCOMPILE) -c -o $@ $<
 
 libpscom4velo_la-pscom_extoll.lo: pscom_extoll.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4velo_la-pscom_extoll.lo -MD -MP -MF $(DEPDIR)/libpscom4velo_la-pscom_extoll.Tpo -c -o libpscom4velo_la-pscom_extoll.lo `test -f 'pscom_extoll.c' || echo '$(srcdir)/'`pscom_extoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4velo_la_CFLAGS) $(CFLAGS) -MT libpscom4velo_la-pscom_extoll.lo -MD -MP -MF $(DEPDIR)/libpscom4velo_la-pscom_extoll.Tpo -c -o libpscom4velo_la-pscom_extoll.lo `test -f 'pscom_extoll.c' || echo '$(srcdir)/'`pscom_extoll.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4velo_la-pscom_extoll.Tpo $(DEPDIR)/libpscom4velo_la-pscom_extoll.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='pscom_extoll.c' object='libpscom4velo_la-pscom_extoll.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4velo_la-pscom_extoll.lo `test -f 'pscom_extoll.c' || echo '$(srcdir)/'`pscom_extoll.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4velo_la_CFLAGS) $(CFLAGS) -c -o libpscom4velo_la-pscom_extoll.lo `test -f 'pscom_extoll.c' || echo '$(srcdir)/'`pscom_extoll.c
 
 libpscom4velo_la-psextoll.lo: psextoll.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpscom4velo_la-psextoll.lo -MD -MP -MF $(DEPDIR)/libpscom4velo_la-psextoll.Tpo -c -o libpscom4velo_la-psextoll.lo `test -f 'psextoll.c' || echo '$(srcdir)/'`psextoll.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4velo_la_CFLAGS) $(CFLAGS) -MT libpscom4velo_la-psextoll.lo -MD -MP -MF $(DEPDIR)/libpscom4velo_la-psextoll.Tpo -c -o libpscom4velo_la-psextoll.lo `test -f 'psextoll.c' || echo '$(srcdir)/'`psextoll.c
 @am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpscom4velo_la-psextoll.Tpo $(DEPDIR)/libpscom4velo_la-psextoll.Plo
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psextoll.c' object='libpscom4velo_la-psextoll.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpscom4velo_la-psextoll.lo `test -f 'psextoll.c' || echo '$(srcdir)/'`psextoll.c
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4velo_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4velo_la_CFLAGS) $(CFLAGS) -c -o libpscom4velo_la-psextoll.lo `test -f 'psextoll.c' || echo '$(srcdir)/'`psextoll.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
