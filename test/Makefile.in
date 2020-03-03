@@ -113,6 +113,7 @@ target_triplet = @target@
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuInit \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuDeviceGetCount \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuDeviceGetAttribute \
+@CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuGetErrorName \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuPointerSetAttribute \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuPointerGetAttributes \
 @CUDA_ENABLED_TRUE@@UTEST_ENABLED_TRUE@						-Wl,--wrap=cuMemcpy \
@@ -147,8 +148,7 @@ am__dirstamp = $(am__leading_dot)dirstamp
 @UTEST_ENABLED_TRUE@	util/pscom_utest-test_utils_con.$(OBJEXT) \
 @UTEST_ENABLED_TRUE@	$(am__objects_1)
 pscom_utest_OBJECTS = $(am_pscom_utest_OBJECTS)
-@UTEST_ENABLED_TRUE@pscom_utest_DEPENDENCIES =  \
-@UTEST_ENABLED_TRUE@	$(top_builddir)/lib/pscom/libpscom.la
+@UTEST_ENABLED_TRUE@pscom_utest_DEPENDENCIES = $(top_builddir)/lib/pscom/libpscom_utest.la
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
@@ -363,7 +363,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -412,7 +411,7 @@ configdir = $(prefix)/config
 #
 @UTEST_ENABLED_TRUE@ACLOCAL_AMFLAGS = -I m4
 @UTEST_ENABLED_TRUE@pscom_utest_LDADD = \
-@UTEST_ENABLED_TRUE@	$(top_builddir)/lib/pscom/libpscom.la
+@UTEST_ENABLED_TRUE@	$(top_builddir)/lib/pscom/libpscom_utest.la
 
 @UTEST_ENABLED_TRUE@pscom_utest_CPPFLAGS = -I./pscom \
 @UTEST_ENABLED_TRUE@	-I$(top_srcdir)/include \

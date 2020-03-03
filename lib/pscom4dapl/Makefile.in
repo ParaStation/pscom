@@ -161,7 +161,7 @@ libpscom4dapl_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
 	$(libpscom4dapl_la_CFLAGS) $(CFLAGS) \
 	$(libpscom4dapl_la_LDFLAGS) $(LDFLAGS) -o $@
 libpsdapl_la_LIBADD =
-am_libpsdapl_la_OBJECTS = psdapl.lo
+am_libpsdapl_la_OBJECTS = libpsdapl_la-psdapl.lo
 libpsdapl_la_OBJECTS = $(am_libpsdapl_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -179,7 +179,8 @@ DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/scripts/depcomp
 am__maybe_remake_depfiles = depfiles
 am__depfiles_remade = ./$(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo \
-	./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo ./$(DEPDIR)/psdapl.Plo
+	./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo \
+	./$(DEPDIR)/libpsdapl_la-psdapl.Plo
 am__mv = mv -f
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
@@ -380,7 +381,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -426,6 +426,7 @@ libpscom4dapl_la_LIBADD = -ldat $(top_builddir)/lib/pscom/libpscom.la
 
 # intermediate libs needed elsewhere, in bin
 libpsdapl_la_SOURCES = psdapl.c psdapl.h
+libpsdapl_la_CPPFLAGS = $(AM_CPPFLAGS) -UPSCOM_CUDA_AWARENESS
 all: all-am
 
 .SUFFIXES:
@@ -521,7 +522,7 @@ distclean-compile:
 
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo@am__quote@ # am--include-marker
 @AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/psdapl.Plo@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libpsdapl_la-psdapl.Plo@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
@@ -566,6 +567,13 @@ libpscom4dapl_la-psdapl.lo: psdapl.c
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psdapl.c' object='libpscom4dapl_la-psdapl.lo' libtool=yes @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpscom4dapl_la_CPPFLAGS) $(CPPFLAGS) $(libpscom4dapl_la_CFLAGS) $(CFLAGS) -c -o libpscom4dapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
+
+libpsdapl_la-psdapl.lo: psdapl.c
+@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpsdapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -MT libpsdapl_la-psdapl.lo -MD -MP -MF $(DEPDIR)/libpsdapl_la-psdapl.Tpo -c -o libpsdapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
+@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/libpsdapl_la-psdapl.Tpo $(DEPDIR)/libpsdapl_la-psdapl.Plo
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='psdapl.c' object='libpsdapl_la-psdapl.lo' libtool=yes @AMDEPBACKSLASH@
+@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
+@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(libpsdapl_la_CPPFLAGS) $(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS) -c -o libpsdapl_la-psdapl.lo `test -f 'psdapl.c' || echo '$(srcdir)/'`psdapl.c
 
 mostlyclean-libtool:
 	-rm -f *.lo
@@ -703,7 +711,7 @@ clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo
 	-rm -f ./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo
-	-rm -f ./$(DEPDIR)/psdapl.Plo
+	-rm -f ./$(DEPDIR)/libpsdapl_la-psdapl.Plo
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-tags
@@ -752,7 +760,7 @@ installcheck-am:
 maintainer-clean: maintainer-clean-am
 		-rm -f ./$(DEPDIR)/libpscom4dapl_la-pscom_dapl.Plo
 	-rm -f ./$(DEPDIR)/libpscom4dapl_la-psdapl.Plo
-	-rm -f ./$(DEPDIR)/psdapl.Plo
+	-rm -f ./$(DEPDIR)/libpsdapl_la-psdapl.Plo
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 

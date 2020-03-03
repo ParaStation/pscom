@@ -403,7 +403,6 @@ pdfdir = @pdfdir@
 prefix = @prefix@
 program_transform_name = @program_transform_name@
 psdir = @psdir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -449,6 +448,10 @@ dist_doc_DATA = LICENSE.QPL ChangeLog
 #
 nodist_doc_DATA = VERSION.pscom
 CLEANFILES = VERSION.pscom
+
+# ---- proxy to dist/Makefile
+#
+@CUDA_ENABLED_TRUE@AM_CONFIGARGS := $(AM_CONFIGARGS) -with cuda
 all: all-recursive
 
 .SUFFIXES:
@@ -1005,11 +1008,9 @@ VERSION.pscom:
 dist-hook:
 	@echo "$(VC_VERSION)" > $(top_distdir)/VERSION
 
-# ---- proxy to dist/Makefile
-#
 .PHONY: tar rpm srpm tag version
 tar rpm srpm tag version:
-	TOP_SRCDIR=$(abs_top_srcdir) $(MAKE) -C dist $@
+	TOP_SRCDIR=$(abs_top_srcdir) $(MAKE) CONFIGARGS="$(AM_CONFIGARGS) $(CONFIGARGS)" -C dist $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.
