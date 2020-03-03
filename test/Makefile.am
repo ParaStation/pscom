@@ -18,7 +18,7 @@ ACLOCAL_AMFLAGS = -I m4
 noinst_PROGRAMS = pscom_utest
 
 pscom_utest_LDADD = \
-	$(top_builddir)/lib/pscom/libpscom.la
+	$(top_builddir)/lib/pscom/libpscom_utest.la
 
 pscom_utest_CPPFLAGS = \
 	-I./pscom \

@@ -53,5 +53,15 @@ libpslib_la_LIBADD += $(CUDA_LDFLAGS) -lcuda
 endif
 
 
+if UTEST_ENABLED
+noinst_LTLIBRARIES += libpscom_utest.la
+
+libpscom_utest_la_SOURCES = $(libpscom_la_SOURCES)
+libpscom_utest_la_LDFLAGS = $(libpscom_la_LDFLAGS)
+libpscom_utest_la_LIBADD = $(libpscom_la_LIBADD)
+libpscom_utest_la_CFLAGS = $(AM_CFLAGS) -pthread -fvisibility=hidden
+libpscom_utest_la_CPPFLAGS = $(libpscom_la_CPPFLAGS)
+endif
+
 install-exec-hook:
 	cd $(DESTDIR)$(libdir) && $(RM) $(lib_LTLIBRARIES)
