@@ -148,6 +148,7 @@ int pscom_is_gpu_mem(const void* ptr)
  *
  * For details see _pscom_memcpy_from_user().
  */
+PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 {
 	CUresult ret;
@@ -165,6 +166,7 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
  *
  * For details see _pscom_memcpy_from_user().
  */
+PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 {
 	CUresult ret;
@@ -182,6 +184,7 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
  *
  * For details see _pscom_memcpy_default().
  */
+PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 {
 	CUresult ret;
