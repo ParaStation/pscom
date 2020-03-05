@@ -1,3 +1,16 @@
+2020-03-05  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.4-0rc1
+
+	* Build: Set C language standard to gnu99.
+
+	* Packaging: Add support for RPM builds with CUDA support.
+
+	* Fix: DAPL builds with enabled CUDA awareness.
+
+2020-03-02  Jens Hauke  <hauke@par-tec.com>
+
+	* Build/Enhancement: Improve communiation latency by enabling lto and
+	explicitly setting symbol visibilities.
+
 2020-02-20  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.3-1
 
 2020-02-17  Jens Hauke  <hauke@par-tec.com>	-	5.4.3-0rc1
