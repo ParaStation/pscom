@@ -1,3 +1,7 @@
+2020-03-05  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.4-1
+
+	* Fix: Add missing functions to the plugin API.
+
 2020-03-05  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.4-0rc1
 
 	* Build: Set C language standard to gnu99.
