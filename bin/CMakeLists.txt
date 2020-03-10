@@ -129,6 +129,8 @@ if (OPENIB_ENABLED)
       ${PROJECT_SOURCE_DIR}/lib/pscom/pslib.c
       )
 
+    add_dependencies(${target} vc_version.h)
+
     target_link_libraries(
       ${target}
       PRIVATE ${IBVERBS_LIBRARIES}
@@ -148,7 +150,7 @@ if (OPENIB_ENABLED)
   openib_target(openib_pp	openib/openib_pp.c)
   #install(TARGETS	openib_pp	DESTINATION bin)
 
-  openib_target(openib_ud_pp	openib/openib_pp.c)
+  openib_target(openib_ud_pp	openib/openib_ud_pp.c)
   #install(TARGETS	openib_ud_pp	DESTINATION bin)
 
   add_executable(pscom_memusage_openib pscom_memusage.c)
@@ -374,4 +376,3 @@ install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/parastation-config DESTINATION conf
 
 # test: pscom_test
 # 	$(builddir)/pscom_test
-
