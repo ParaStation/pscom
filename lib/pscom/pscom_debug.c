@@ -107,7 +107,7 @@ const char *pscom_msgtype_str(pscom_msgtype_t msg_type)
 static
 void pscom_dump_request(FILE *out, pscom_req_t *req)
 {
-	fprintf(out, "req#%p state:%20s xhlen:%3lu dlen:%7lu ty:%s con:%p no:%5u received:%7d\n",
+	fprintf(out, "req#%p state:%20s xhlen:%3lu dlen:%7lu ty:%s con:%p no:%5u received:%7d",
 		&req->pub,
 		pscom_req_state_str(req->pub.state),
 		req->pub.xheader_len,
@@ -116,6 +116,14 @@ void pscom_dump_request(FILE *out, pscom_req_t *req)
 		req->pub.connection,
 		req->req_no,
 		(int)((char*)req->cur_data.iov_base - (char *)req->pub.data));
+
+	if (req->pending_io) {
+		fprintf(out, " pending_io: %u pending_io_req: %p",
+			req->pending_io,
+			req->pending_io_req? &req->pending_io_req->pub : NULL);
+	}
+	fputs("\n", out);
+
 	if (5 <= pscom.env.debug && req->pub.xheader_len >= sizeof(MPID_PSCOM_XHeader_t)) {
 		MPID_PSCOM_XHeader_t *xhead = (MPID_PSCOM_XHeader_t *)&req->pub.xheader.user;
 		fprintf(out, " mpi2: tag:%6d con_id:%4d src_rank:%4d type:%d(%s)\n",
