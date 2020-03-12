@@ -125,6 +125,14 @@ void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
 {
 	if (!req->pending_io++) {
 		_pscom_pendingio_enq(con, req);
+
+		/*
+		 * keep reading on the connection for user requests with pending io
+		 * -> increase the recv requests counter
+		 */
+		if (!(req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST)) {
+				_pscom_recv_req_cnt_inc(con);
+		}
 	}
 }
 
@@ -134,6 +142,14 @@ int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
 {
 	int done = !(--req->pending_io);
 	if (done) {
+		/*
+		 * decrease the recv requests counter for user requests
+		 * (cf. _pscom_pendingio_cnt_inc()
+		 */
+		if (!(req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST)) {
+				_pscom_recv_req_cnt_dec(con);
+		}
+
 		_pscom_pendingio_deq(con, req);
 	}
 	return done;
