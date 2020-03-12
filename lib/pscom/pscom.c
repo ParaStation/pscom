@@ -48,10 +48,28 @@
 
 PSCOM_PLUGIN_API_EXPORT
 pscom_t pscom = {
+	.sockets     = LIST_HEAD_INIT(pscom.sockets),
+	.requests    = LIST_HEAD_INIT(pscom.requests),
+	.ufd_timeout = -1,
+
+	.recvq_any_global        = LIST_HEAD_INIT(pscom.recvq_any_global),
 	.recv_req_cnt_any_global = 0,
-	.threaded = 0, /* default is unthreaded */
+
+	.global_lock   = PTHREAD_MUTEX_INITIALIZER,
+	.lock_requests = PTHREAD_MUTEX_INITIALIZER,
+	.threaded      = 0, /* default is unthreaded */
+
+	.io_doneq = LIST_HEAD_INIT(pscom.io_doneq),
+
+	.poll_reader = LIST_HEAD_INIT(pscom.poll_reader),
+	.poll_sender = LIST_HEAD_INIT(pscom.poll_sender),
+	.backlog     = LIST_HEAD_INIT(pscom.backlog),
+
+	.backlog_lock = PTHREAD_MUTEX_INITIALIZER,
+
 	/* parameter from environment */
 	.env = PSCOM_ENV_defaults,
+
 	/* statistic */
 	.stat = {
 		.reqs = 0,
@@ -354,27 +372,7 @@ pscom_err_t pscom_init(int pscom_version)
 	if (init <= 0) goto out;
 	init = PSCOM_SUCCESS;
 
-	{
-		int res_mutex_init;
-		res_mutex_init = pthread_mutex_init(&pscom.global_lock, NULL);
-		assert(res_mutex_init == 0);
-		res_mutex_init = pthread_mutex_init(&pscom.lock_requests, NULL);
-		assert(res_mutex_init == 0);
-		res_mutex_init = pthread_mutex_init(&pscom.backlog_lock, NULL);
-		assert(res_mutex_init == 0);
-	}
-
 	ufd_init(&pscom.ufd);
-	INIT_LIST_HEAD(&pscom.sockets);
-	INIT_LIST_HEAD(&pscom.requests);
-	pscom.ufd_timeout = -1;
-	INIT_LIST_HEAD(&pscom.io_doneq);
-
-	INIT_LIST_HEAD(&pscom.recvq_any_global);
-
-	INIT_LIST_HEAD(&pscom.poll_reader);
-	INIT_LIST_HEAD(&pscom.poll_sender);
-	INIT_LIST_HEAD(&pscom.backlog);
 
 	pscom_pslib_init();
 	pscom_env_init();
