@@ -1,3 +1,11 @@
+2020-03-12  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.5-0rc1
+
+	* Enhancement: Simplify the pscom initalization by using more static
+	assignments
+
+	* Fix: keep connections open for reading in case of requests with
+	pending I/O
+
 2020-03-05  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.4-1
 
 	* Fix: Add missing functions to the plugin API.
