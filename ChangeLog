@@ -1,3 +1,5 @@
+2020-03-17  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.5-1
+
 2020-03-12  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.5-0rc1
 
 	* Enhancement: Simplify the pscom initalization by using more static
