@@ -34,6 +34,7 @@ find_package(Ucp)
 find_package(Psm2)
 find_package(Extoll)
 find_package(Dapl)
+find_package(Cuda)
 
 cmake_dependent_option(OPENIB_ENABLED "Enable pscom4openib" TRUE "IBVERBS_FOUND" FALSE)
 message(STATUS	  "OPENIB_ENABLED:	${OPENIB_ENABLED}")
@@ -52,6 +53,13 @@ message(STATUS	  "EXTOLL_ENABLED:	${EXTOLL_ENABLED}")
 
 cmake_dependent_option(DAPL_ENABLED "Enable pscom4dapl" TRUE "DAPL_FOUND" FALSE)
 message(STATUS	  "DAPL_ENABLED:	${DAPL_ENABLED}")
+
+cmake_dependent_option(CUDA_ENABLED "Enable cuda awareness" FALSE "CUDA_FOUND" FALSE)
+message(STATUS	  "CUDA_ENABLED:	${CUDA_ENABLED}")
+
+if(CUDA_ENABLED)
+add_compile_definitions(PSCOM_CUDA_AWARENESS=1)
+endif(CUDA_ENABLED)
 
 add_subdirectory(include)
 add_subdirectory(lib)

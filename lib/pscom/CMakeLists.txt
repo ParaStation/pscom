@@ -76,11 +76,6 @@ set_target_properties(pscom
 )
 
 
-if(CUDA_ENABLED)
-  target_link_libraries(
-    pscom
-    PRIVATE cuda
-  )
-endif(CUDA_ENABLED)
+target_add_cuda(pscom)
 
 install(TARGETS pscom DESTINATION "${CMAKE_INSTALL_LIBDIR}")
