@@ -162,6 +162,7 @@ void pscom_plugin_register(pscom_plugin_t *plugin, unsigned int user_prio)
 }
 
 
+#if ENABLE_PLUGIN_LOADING
 static
 pscom_plugin_t *load_plugin_lib(char *lib)
 {
@@ -260,6 +261,7 @@ void pscom_plugin_load(const char *arch)
 	}
 	if (!cnt) DPRINT(D_DBG_V, "libpscom4%s.so not available", arch);
 }
+#endif
 
 
 pscom_plugin_t *pscom_plugin_by_archid(unsigned int arch_id)
@@ -320,6 +322,7 @@ void pscom_plugins_init(void)
 	pscom_plugin_register(&pscom_plugin_gateway, pscom_plugin_uprio("gateway"));
 #endif
 
+#if ENABLE_PLUGIN_LOADING
 	// ToDo: Use file globbing!
 	char *pls[] = {
 #ifndef PSCOM_ALLIN_PSM2
@@ -346,6 +349,7 @@ void pscom_plugins_init(void)
 	for (tmp = pls; *tmp; tmp++) {
 		pscom_plugin_load(*tmp);
 	}
+#endif
 
 	struct list_head *pos;
 	list_for_each(pos, &pscom_plugins) {

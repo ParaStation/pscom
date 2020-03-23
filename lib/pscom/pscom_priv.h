@@ -736,6 +736,9 @@ void pscom_backtrace_onsigsegv_disable(void);
 void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type);
 void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type);
 
+#ifndef ENABLE_PLUGIN_LOADING
+#define ENABLE_PLUGIN_LOADING 1
+#endif
 
 #define API_EXPORT __attribute__ ((visibility("default")))
 #define API_HIDDEN __attribute__ ((visibility("hidden")))
@@ -752,7 +755,12 @@ void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type
 #else
 #define PSCOM_API_EXPORT API_HIDDEN
 #endif
+
+#if ENABLE_PLUGIN_LOADING
 #define PSCOM_PLUGIN_API_EXPORT API_PROTECTED
+#else
+#define PSCOM_PLUGIN_API_EXPORT API_HIDDEN
+#endif
 
 // Use PSCOM_PLUGIN_API_EXPORT_ONLY for all functions to which we use function pointers
 #define PSCOM_PLUGIN_API_EXPORT_ONLY __attribute__ ((visibility("default")))
