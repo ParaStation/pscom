@@ -740,12 +740,20 @@ void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type
 #define API_EXPORT __attribute__ ((visibility("default")))
 #define API_HIDDEN __attribute__ ((visibility("hidden")))
 
+#if !defined(NO_PROTECTED_FUNC) || !NO_PROTECTED_FUNC
+#  define API_PROTECTED __attribute__ ((visibility("protected")))
+#else
+// The compiler does not support protected functions. Fallback to "default".
+#  define API_PROTECTED __attribute__ ((visibility("default")))
+#endif
+
 #ifndef PSCOM_ALLIN
 #define PSCOM_API_EXPORT API_EXPORT
 #else
 #define PSCOM_API_EXPORT API_HIDDEN
 #endif
-#define PSCOM_PLUGIN_API_EXPORT __attribute__ ((visibility("protected")))
+#define PSCOM_PLUGIN_API_EXPORT API_PROTECTED
+
 // Use PSCOM_PLUGIN_API_EXPORT_ONLY for all functions to which we use function pointers
 #define PSCOM_PLUGIN_API_EXPORT_ONLY __attribute__ ((visibility("default")))
 #define PSCOM_SHM_API_EXPORT API_EXPORT
