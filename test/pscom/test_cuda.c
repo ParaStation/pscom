@@ -144,8 +144,11 @@ void test_cuda_init_cuInit_error(void **state)
 
 	/* enable CUDA support */
 	pscom.env.cuda = 1;
-
+#ifdef CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE
 	will_return(__wrap_cuInit, CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE);
+#else
+	will_return(__wrap_cuInit, CUDA_ERROR_NOT_SUPPORTED);
+#endif
 	assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
 	assert_int_equal(errno, EFAULT);
 }
