@@ -212,8 +212,8 @@ AM_CONDITIONAL([CUDA_ENABLED],
 # -- Code coverage --
 
 AC_ARG_ENABLE([coverage],
-              [AS_HELP_STRING([--enable-coverage],
-                              [enable code coverage analysis (Default is disabled.) This implies '--disable-optimiations' and '--enable-utest'.])])
+	      [AS_HELP_STRING([--enable-coverage],
+			      [enable code coverage analysis (Default is disabled.) This implies '--disable-optimiations' and '--enable-utest'.])])
 
 if test "$enable_coverage" == "yes" ; then
 AC_CHECK_PROG([HAVE_LCOV],[lcov],[yes],[no])
@@ -235,15 +235,15 @@ AM_CONDITIONAL([OPTIMIZATIONS_ENABLED],
 	       [test "x$enable_optimizations" != xno -a -z "$COVERAGE_ENABLED_FALSE"])
 
 AM_COND_IF([OPTIMIZATIONS_ENABLED],
-           [AX_CHECK_COMPILE_FLAG([-O3],[AM_CFLAGS="$AM_CFLAGS -O3"])],
-           [AX_CHECK_COMPILE_FLAG([-O0],[AM_CFLAGS="$AM_CFLAGS -O0"])])
+	   [AX_CHECK_COMPILE_FLAG([-O3],[AM_CFLAGS="$AM_CFLAGS -O3"])],
+	   [AX_CHECK_COMPILE_FLAG([-O0],[AM_CFLAGS="$AM_CFLAGS -O0"])])
 
 # -- Unit Tests --
 
 AC_ARG_ENABLE([utest],
-              [AS_HELP_STRING([--enable-utest],
-                              [enable unit tests (Default is disabled.)])],
-                              [enable_static=yes; enable_utest=${enableval}])
+	      [AS_HELP_STRING([--enable-utest],
+			      [enable unit tests (Default is disabled.)])],
+			      [enable_static=yes; enable_utest=${enableval}])
 have_cmocka=no
 AC_MSG_CHECKING(cmocka.h)
 AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
@@ -251,10 +251,10 @@ AC_COMPILE_IFELSE([AC_LANG_PROGRAM([[
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
-                                    ]], [[int i = 3;]])],
-	                            [AC_MSG_RESULT(yes)
-                                     AC_CHECK_LIB([cmocka], [_cmocka_run_group_tests],
-                                                  [have_cmocka=yes])])
+				    ]], [[int i = 3;]])],
+				    [AC_MSG_RESULT(yes)
+				     AC_CHECK_LIB([cmocka], [_cmocka_run_group_tests],
+						  [have_cmocka=yes])])
 
 if test "x$enable_utest" == "xyes" ; then
 	AS_IF([test "x$have_cmocka" = xno -a "x$enable_utest" = xyes],
@@ -264,8 +264,8 @@ fi
 # Enable utests for code coverage analysis
 AS_IF([test "x$enable_coverage" == "xyes"],
        AS_IF([test "x$enable_utest" == "xno"],
-             [AC_MSG_ERROR([The code coverage analysis requires unit tests to be enabled. Abort!])],
-             [enable_utest=yes]))
+	     [AC_MSG_ERROR([The code coverage analysis requires unit tests to be enabled. Abort!])],
+	     [enable_utest=yes]))
 
 AM_CONDITIONAL([UTEST_ENABLED],
 	       [test "x$enable_utest" == xyes -a "x$have_cmocka" = xyes])
