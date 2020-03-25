@@ -92,8 +92,6 @@ void _write_start_suspending(pscom_con_t *con)
 static
 void suspend_init_con(pscom_con_t *con)
 {
-	pscom_sock_t *sock = get_sock(con->pub.socket);
-
 	con->pub.type = PSCOM_CON_TYPE_SUSPENDED;
 	con->pub.state = PSCOM_CON_STATE_RW;
 

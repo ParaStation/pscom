@@ -40,7 +40,6 @@ static        pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con,
 static        pscom_req_t *_pscom_get_eof_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_suspend_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        void         pscom_rendezvous_read_data_io_done(pscom_request_t *request);
-static        void         pscom_rendezvous_receiver_io_done(pscom_request_t *req);
 static        pscom_req_t *pscom_get_rendezvous_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 static        pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
@@ -547,7 +546,6 @@ static
 pscom_req_t *_pscom_get_rma_read_answer_receiver(pscom_con_t *con, pscom_header_net_t *nh)
 {
 	pscom_req_t *req;
-	pscom_xheader_rma_read_answer_t *rma_answer;
 
 	assert(!list_empty(con->recvq_rma.next));
 

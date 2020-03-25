@@ -228,6 +228,7 @@ void pscom_openib_rma_mem_deregister(pscom_con_t *con, pscom_rendezvous_data_t *
 }
 
 
+#ifndef IB_RNDV_RDMA_WRITE
 static
 void pscom_openib_rma_read_io_done(void *priv, int err)
 {
@@ -250,7 +251,7 @@ void pscom_openib_rma_read_io_done(void *priv, int err)
 static
 int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd)
 {
-	int err, ret;
+	int err;
 	pscom_rendezvous_data_openib_t *psopenib_rd = get_req_data(rd);
 	psoib_rma_req_t *dreq = &psopenib_rd->rma_req;
 	pscom_con_t *con = get_con(rendezvous_req->pub.connection);
@@ -286,6 +287,7 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 err_register:
 	return -1;
 }
+#endif
 
 
 static

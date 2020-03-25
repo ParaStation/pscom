@@ -341,7 +341,6 @@ void pscom_con_recv_eof_stop_check(pscom_con_t *con)
 
 void pscom_con_closing(pscom_con_t *con)
 {
-	int send_eof;
 	assert(con->magic == MAGIC_CONNECTION);
 
 	DPRINT(D_DBG_V, "...closing %s via %s %s :%s%s%s%s",

@@ -89,7 +89,6 @@ pscom_err_t pscom_cuda_init(void)
 {
 	CUresult ret;
 	int dev_cnt, i, uva_support;
-	const char *err_name;
 
 	if (pscom_cuda_init_driver_api() != PSCOM_SUCCESS) goto err_out;
 

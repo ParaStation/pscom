@@ -158,28 +158,6 @@ int shm_cansend(shm_conn_t *shm)
 }
 
 
-/* send buf.
-   Call only if shm_cansend() == true (no check inside)!
-   len must be smaller or equal SHM_BUFLEN!
-*/
-static
-void shm_send(shm_conn_t *shm, char *buf, int len)
-{
-	int cur = shm->send_cur;
-	shm_buf_t *shmbuf = &shm->remote_com->buf[cur];
-
-	/* copy to sharedmem */
-	_pscom_memcpy_from_user(SHM_DATA(shmbuf, len), buf, len);
-	shmbuf->header.len = len;
-
-	shm_mb();
-
-	/* Notification about the new message */
-	shmbuf->header.msg_type = SHM_MSGTYPE_STD;
-	shm->send_cur = (shm->send_cur + 1) % SHM_BUFS;
-}
-
-
 /* send iov.
    Call only if shm_cansend() == true (no check inside)!
 */
@@ -559,7 +537,6 @@ static
 void shm_close(pscom_con_t *con)
 {
 	if (con->arch.shm.local_com) {
-		int i;
 		shm_conn_t *shm = &con->arch.shm;
 
 		// ToDo: This must not be a blocking while loop!

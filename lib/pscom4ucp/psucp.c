@@ -248,7 +248,6 @@ void psucp_req_send_small_done(void *request, ucs_status_t status) {
 static
 int psucp_init_hca(hca_info_t *hca_info)
 {
-	int rc;
 	ucs_status_t status;
 	ucp_config_t *config;
 	ucp_params_t ucp_params;
@@ -364,8 +363,6 @@ err_close:
 
 int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_priv)
 {
-	unsigned int i;
-
 	if (!hca_info) hca_info = &default_hca;
 	memset(con_info, 0, sizeof(*con_info));
 
@@ -374,18 +371,12 @@ int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_p
 	con_info->con_broken = 0;
 
 	return 0;
-	/* --- */
-err_alloc:
-	psucp_con_cleanup(con_info);
-	psucp_dprint(D_ERR, "psucp_con_init() : %s", psucp_err_str);
-	return -1;
 }
 
 
 int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 {
 	hca_info_t *hca_info = con_info->hca_info;
-	int rc;
 	ucs_status_t status;
 	ucp_ep_params_t ep_params;
 
@@ -428,7 +419,6 @@ void psucp_con_free(psucp_con_info_t *con_info)
 psucp_info_msg_t *
 psucp_con_get_info_msg(psucp_con_info_t *con_info, unsigned long tag)
 {
-	int rc;
 	hca_info_t *hca_info = con_info->hca_info;
 	psucp_info_msg_t *info_msg = malloc(sizeof(*info_msg) + hca_info->my_ucp_address_size);
 

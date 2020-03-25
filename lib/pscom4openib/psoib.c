@@ -1307,8 +1307,6 @@ int psoib_poll(hca_info_t *hca_info, int blocking);
 static
 int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
 {
-	int hit;
-	static int first_call=1;
 	hca_info_t *hca_info = ci->hca_info;
 	mem_info_t *mem_info = &mreg->mem_info;
 

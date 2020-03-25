@@ -26,6 +26,7 @@
 #endif
 
 // #define PSPSM_TRACE
+#define PSPSM_SKIP_EP_CLOSE 1
 
 struct pspsm_con_info {
 	/* general info */
@@ -172,6 +173,7 @@ void pspsm_print_stats()
 }
 
 
+#if !PSPSM_SKIP_EP_CLOSE
 static
 void pspsm_sendbuf_free(void) {
 	if (!sendbuf) return;
@@ -179,6 +181,7 @@ void pspsm_sendbuf_free(void) {
 	sendbuf = NULL;
 	sendbuf_len = 0;
 }
+#endif
 
 
 static
@@ -249,7 +252,7 @@ int pspsm_init_mq(void)
 static
 int pspsm_close_endpoint(void)
 {
-#if 1
+#if PSPSM_SKIP_EP_CLOSE
 	/* Hack: psm_ep_close() SegFaults. A sleep(1) before sometimes helps, disabling
 	   the cleanup always helps.
 	   (Seen with infinipath-libs-3.2-32129.1162_rhel6_qlc.x86_64) */

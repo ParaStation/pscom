@@ -192,6 +192,7 @@ void psex_err(char *str)
 }
 
 
+#ifndef DISABLE_RMA2
 static
 void psex_err_errno(char *str, int err_no)
 {
@@ -208,6 +209,7 @@ void psex_err_errno(char *str, int err_no)
 	psex_err(msg);
 	free(msg);
 }
+#endif
 
 
 static
@@ -299,6 +301,7 @@ void psex_rma2_free(hca_info_t *hca_info, mem_info_t *mem_info)
 #endif
 
 
+#ifndef DISABLE_RMA2
 static
 void print_mlock_help(unsigned size)
 {
@@ -317,7 +320,6 @@ void print_mlock_help(unsigned size)
 }
 
 
-#ifndef DISABLE_RMA2
 static
 int psex_rma2_alloc(hca_info_t *hca_info, int size, mem_info_t *mem_info)
 {
@@ -611,7 +613,9 @@ void psex_con_cleanup(psex_con_info_t *con_info)
 
 int psex_con_init(psex_con_info_t *con_info, hca_info_t *hca_info, void *priv)
 {
+#ifndef DISABLE_RMA2
 	unsigned int i;
+#endif
 
 	if (!hca_info) hca_info = &default_hca;
 	memset(con_info, 0, sizeof(*con_info));
@@ -660,10 +664,12 @@ int psex_con_init(psex_con_info_t *con_info, hca_info_t *hca_info, void *priv)
 
 	return 0;
 	/* --- */
+#ifndef DISABLE_RMA2
 err_alloc:
 	psex_con_cleanup(con_info);
 	psex_dprint(1, "psex_con_init() : %s", psex_err_str);
 	return -1;
+#endif
 }
 
 
@@ -794,7 +800,9 @@ int psex_init_hca(hca_info_t *hca_info)
 	return 0;
 	/* --- */
 err_velo2_open:
+#ifndef DISABLE_RMA2
 err_alloc:
+#endif
 	psex_cleanup_hca(hca_info);
 err_hca:
 	return -1;
@@ -1114,14 +1122,16 @@ void psex_con_free(psex_con_info_t *con_info)
 
 void psex_con_get_info_msg(psex_con_info_t *con_info /* in */, psex_info_msg_t *info_msg /* out */)
 {
-	int rc;
 	hca_info_t *hca_info = con_info->hca_info;
 
 	info_msg->rma2_nodeid	= hca_info->rma2_nodeid;
 	info_msg->rma2_vpid	= hca_info->rma2_vpid;
 #ifndef DISABLE_RMA2
-	rc = rma2_get_nla(con_info->recv.bufs.mr, 0, &info_msg->rbuf_nla);
-	assert(rc == RMA2_SUCCESS);
+	{
+		int rc;
+		rc = rma2_get_nla(con_info->recv.bufs.mr, 0, &info_msg->rbuf_nla);
+		assert(rc == RMA2_SUCCESS);
+	}
 #endif
 	info_msg->velo2_nodeid	= hca_info->velo2_nodeid;
 	info_msg->velo2_vpid	= hca_info->velo2_vpid;

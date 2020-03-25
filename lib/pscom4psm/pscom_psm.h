@@ -36,10 +36,7 @@
 
 static int pscom_psm_post_recv(pscom_con_t *con);
 static void pscom_psm_do_write(pscom_con_t *con);
-static void pscom_psm_close(pscom_con_t *con);
 static void pscom_psm_init(void);
-static int pscom_psm_connect(pscom_con_t *con, int con_fd);
-static int pscom_psm_accept(pscom_con_t *con, int con_fd);
 static void pscom_psm_finalize();
 
 

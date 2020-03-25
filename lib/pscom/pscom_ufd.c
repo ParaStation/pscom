@@ -255,7 +255,6 @@ return_0:
 int ufd_poll(ufd_t *ufd, int timeout)
 {
 	int nfds;
-	struct list_head *pos, *next;
 	unsigned i;
 
 	if (unlikely(!ufd->n_ufd_pollfd)) {
