@@ -322,6 +322,10 @@ void pscom_extoll_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_VELO;
 
+#ifdef PSCOM_CUDA_AWARENESS
+	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_velo;
+#endif
+
 	/*
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
