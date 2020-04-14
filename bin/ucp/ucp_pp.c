@@ -302,7 +302,6 @@ static
 void init(FILE *peer)
 {
 	pp_info_msg_t lmsg, rmsg;
-	ucs_status_t status;
 
 	psucp_init();
 	init_bufs();

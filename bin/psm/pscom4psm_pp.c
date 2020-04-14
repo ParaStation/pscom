@@ -186,10 +186,6 @@ void pp_info_read(FILE *peer, pspsm_info_msg_t *msg)
 {
 	int rc;
 
-	uint64_t epid;          /**< endpoint id */
-	uint64_t id;            /**< tag to be used sending to that epid */
-	char protocol_version[8];  /**< 8 byte psm protocol identifier */
-
 	rc = fscanf(peer, VERSION "\n");
 	if (rc != 0) error(1, 0, "Parsing error! Only %d from 0 fields. Version mismatch?\n", rc);
 
@@ -244,6 +240,16 @@ void init(FILE *peer)
 }
 
 
+static
+void cleanup(void)
+{
+	pspsm_con_cleanup(con);
+	pspsm_con_free(con); con = NULL;
+	pspsm_close_endpoint();
+	pspsm_finalize_mq();
+}
+
+
 static inline
 void pspsm_send(size_t len)
 {
@@ -282,6 +288,7 @@ unsigned pspsm_recv(void)
 	int rc;
 
 	rc = pspsm_recv_start(con, (char*)r_buf, sizeof(*r_buf));
+	assert(rc == 0);
 
 	while (pspsm_recv_pending(con)) {
 		pspsm_progress();
@@ -493,6 +500,7 @@ int main(int argc, char **argv)
 
 	if (arg_verbose) pspsm_print_stats();
 
+	cleanup();
 
 	return 0;
 }

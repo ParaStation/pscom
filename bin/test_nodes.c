@@ -272,7 +272,7 @@ int answer_equal(int i,int j)
 
 void time_handler(int signal)
 {
-    int i,j,k;
+    int i,j;
     int *checked = (int *)malloc(sizeof(int) * arg_np);
     int tmpsize;
     int *tmp = (int *)malloc(sizeof(int) * arg_np);
@@ -510,7 +510,6 @@ void send_msg(pscom_connection_t *connection,
 	  void *xheader, unsigned int xheader_len,
 	  void *data, unsigned int data_len)
 {
-    int rc;
     if (!connection) return;
 
     pscom_send(connection, xheader, xheader_len,
@@ -734,7 +733,7 @@ void spawn(int argc, char **argv, int np)
 void run(int argc,char **argv,int np)
 {
 //    PSP_PortH_t rawporth;
-    int i,j,k,end;
+    int j,k,end;
     FILE *out;
     struct itimerval timer;
     struct itimerval timer_old;
@@ -784,6 +783,7 @@ void run(int argc,char **argv,int np)
 	    signal(SIGALRM,time_handler);
 	}
 	rc = setitimer(ITIMER_REAL,&timer,&timer_old);
+	assert(rc == 0);
 	//rc = setitimer(ITIMER_VIRTUAL,&timer,&timer_old);
     }
 

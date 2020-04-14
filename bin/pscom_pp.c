@@ -189,7 +189,7 @@ void run_pp_server(pscom_connection_t *con)
 static
 int pp_loop(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 {
-	unsigned cnt, i;
+	unsigned cnt;
 	for (cnt = 0; cnt < loops; cnt++) {
 		pscom_post_send(sreq);
 
@@ -241,7 +241,7 @@ int pp_loop_verify(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 static
 int pp_loop_histo(pscom_request_t *sreq, pscom_request_t *rreq, unsigned loops)
 {
-	unsigned cnt, i;
+	unsigned cnt;
 	size_t msize = sreq->data_len;
 	unsigned long *time = malloc(sizeof(*time) * loops + 1);
 	for (cnt = 0; cnt < loops; cnt++) {
