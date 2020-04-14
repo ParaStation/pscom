@@ -648,7 +648,7 @@ COVERAGE_ENABLED_FALSE
 COVERAGE_ENABLED_TRUE
 HAVE_GENHTML
 HAVE_LCOV
-pscom_cv_protected_func
+pscom_cv_protected
 CUDA_ENABLED_FALSE
 CUDA_ENABLED_TRUE
 CUDA_LDFLAGS
@@ -13505,44 +13505,47 @@ fi
 
 
 # -- visibility ("protected") support --
-
-# Does __attribute__ ((visibility ("protected"))) work with functions?
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking linker support for protected functions" >&5
-$as_echo_n "checking linker support for protected functions... " >&6; }
-if ${pscom_cv_protected_func+:} false; then :
+# Does __attribute__ ((visibility ("protected"))) work with data and functions?
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking linker support for protected symbols" >&5
+$as_echo_n "checking linker support for protected symbols... " >&6; }
+if ${pscom_cv_protected+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   cat > conftest.c <<EOF
-	       __attribute__ ((visibility("protected")))
-	       int bar(void) { return 1; }
+		int bar __attribute__ ((visibility ("protected"))) = 1;
+
+		__attribute__ ((visibility ("protected")))
+		int bla(void) { return bar; };
 EOF
-		pscom_cv_protected_func=no
-		if { ac_try='${CC-cc} -nostdlib -nostartfiles $no_ssp -fPIC -shared conftest.c -o conftest.so'
+		pscom_cv_protected=no
+		if { ac_try='${CC-cc} -nostdlib -nostartfiles -fPIC -shared conftest.c -o conftest.so'
   { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
   (eval $ac_try) 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; }; then
 		  cat > conftest.c <<EOF
-		  extern int bar(void);
-		  int main (void) { return bar(); }
+		  extern int bar;
+		  int bla(void);
+		  int main (void) { return bar + bla(); }
 EOF
-		  if { ac_try='${CC-cc} -nostdlib -nostartfiles $no_ssp conftest.c -o conftest conftest.so'
+		  if { ac_try='${CC-cc} conftest.c -o conftest conftest.so'
   { { eval echo "\"\$as_me\":${as_lineno-$LINENO}: \"$ac_try\""; } >&5
   (eval $ac_try) 2>&5
   ac_status=$?
   $as_echo "$as_me:${as_lineno-$LINENO}: \$? = $ac_status" >&5
   test $ac_status = 0; }; }; then
-		    pscom_cv_protected_func=yes
+		    pscom_cv_protected=yes
 		  fi
 		fi
 		rm -f conftest.*
 
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pscom_cv_protected_func" >&5
-$as_echo "$pscom_cv_protected_func" >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $pscom_cv_protected" >&5
+$as_echo "$pscom_cv_protected" >&6; }
 
-if test "$pscom_cv_protected_func" = "no"; then :
+
+if test "$pscom_cv_protected" = "no"; then :
 
 $as_echo "#define NO_PROTECTED_FUNC 1" >>confdefs.h
 
@@ -13840,14 +13843,16 @@ fi
 # ----------
 
 # -Wsign-conversion
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter" >&5
-$as_echo_n "checking whether C compiler accepts -std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter... " >&6; }
-if ${ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter+:} false; then :
+#AX_CHECK_COMPILE_FLAG([-std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused-parameter],
+#  [AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused-parameter"])
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether C compiler accepts -std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused-parameter" >&5
+$as_echo_n "checking whether C compiler accepts -std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused-parameter... " >&6; }
+if ${ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused_parameter+:} false; then :
   $as_echo_n "(cached) " >&6
 else
 
   ax_check_save_flags=$CFLAGS
-  CFLAGS="$CFLAGS  -std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused -Wno-unused-parameter"
+  CFLAGS="$CFLAGS  -std=gnu99 -Wall -Wextra -Wconversion -Wsign-conversion -Wno-unused-parameter"
   cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 
@@ -13860,17 +13865,17 @@ main ()
 }
 _ACEOF
 if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter=yes
+  ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused_parameter=yes
 else
-  ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter=no
+  ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused_parameter=no
 fi
 rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
   CFLAGS=$ax_check_save_flags
 fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter" >&5
-$as_echo "$ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter" >&6; }
-if test "x$ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused__Wno_unused_parameter" = xyes; then :
-  AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused_parameter" >&5
+$as_echo "$ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused_parameter" >&6; }
+if test "x$ax_cv_check_cflags___std_gnu99__Wall__Wextra__Wconversion__Wsign_conversion__Wno_unused_parameter" = xyes; then :
+  AM_CFLAGS="$AM_CFLAGS -std=gnu99 -Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused-parameter"
 else
   :
 fi
