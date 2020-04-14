@@ -210,29 +210,32 @@ AM_CONDITIONAL([CUDA_ENABLED],
 	       [test "x$enable_cuda" != xno -a "x$have_cuda" = xyes])
 
 # -- visibility ("protected") support --
-
-# Does __attribute__ ((visibility ("protected"))) work with functions?
-AC_CACHE_CHECK(linker support for protected functions,
-	       pscom_cv_protected_func,
+# Does __attribute__ ((visibility ("protected"))) work with data and functions?
+AC_CACHE_CHECK(linker support for protected symbols,
+	       pscom_cv_protected,
 	       [cat > conftest.c <<EOF
-	       __attribute__ ((visibility("protected")))
-	       int bar(void) { return 1; }
+		int bar __attribute__ ((visibility ("protected"))) = 1;
+
+		__attribute__ ((visibility ("protected")))
+		int bla(void) { return bar; };
 EOF
-		pscom_cv_protected_func=no
-		if AC_TRY_COMMAND(${CC-cc} -nostdlib -nostartfiles $no_ssp -fPIC -shared conftest.c -o conftest.so); then
+		pscom_cv_protected=no
+		if AC_TRY_COMMAND(${CC-cc} -nostdlib -nostartfiles -fPIC -shared conftest.c -o conftest.so); then
 		  cat > conftest.c <<EOF
-		  extern int bar(void);
-		  int main (void) { return bar(); }
+		  extern int bar;
+		  int bla(void);
+		  int main (void) { return bar + bla(); }
 EOF
-		  if AC_TRY_COMMAND(${CC-cc} -nostdlib -nostartfiles $no_ssp conftest.c -o conftest conftest.so); then
-		    pscom_cv_protected_func=yes
+		  if AC_TRY_COMMAND(${CC-cc} conftest.c -o conftest conftest.so); then
+		    pscom_cv_protected=yes
 		  fi
 		fi
 		rm -f conftest.*
 	       ])
-AC_SUBST(pscom_cv_protected_func)
-AS_IF([test "$pscom_cv_protected_func" = "no"],
-    AC_DEFINE([NO_PROTECTED_FUNC], [1], [Define to 1 if visibility ("protected") does not work on functions])
+AC_SUBST(pscom_cv_protected)
+
+AS_IF([test "$pscom_cv_protected" = "no"],
+    AC_DEFINE([NO_PROTECTED_FUNC], [1], [Define to 1 if visibility ("protected") does not work])
 )
 
 # -- Code coverage --
