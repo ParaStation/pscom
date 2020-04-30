@@ -25,8 +25,6 @@ unsigned psex_mregion_cache_max_size = 6;
 static unsigned psex_mregion_cache_size = 0;
 static LIST_HEAD(psex_mregion_cache);
 
-static unsigned psex_page_size;
-
 
 static inline
 int psex_mregion_is_inside(psex_mregion_cache_t *mregc,
@@ -99,17 +97,18 @@ psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, RMA2_Port rma2
 
 	mregc->use_cnt = 0;
 
-	/* dec buf and inc size to page_size borders. */
-	unsigned long page_mask = (psex_page_size - 1);
-	size += ((unsigned long) buf) & page_mask;
-	size = (size + page_mask) & ~page_mask;
-	buf = (void*)((unsigned long) buf & ~page_mask);
-
 	err = psex_mregion_register(&mregc->rma2_region, &mregc->rma2_nla, rma2_port, buf, size);
 	if (err) goto err_register;
 
-	mregc->buf = buf;
-	mregc->size = size;
+	/* determine actual start address and size of the registered memory region */
+	mregc->buf = mregc->rma2_region.start;
+	mregc->size = mregc->rma2_region.size;
+	assert(mregc->buf <= buf);
+	assert((mregc->buf + mregc->size) >= (buf + size));
+
+	/* adjust the NLA to the actual start of the memory region */
+	mregc->rma2_nla -= mregc->rma2_region.offset;
+
 	mregc->rma2_port = rma2_port;
 
 	return mregc;
@@ -190,13 +189,4 @@ void psex_mregion_cache_cleanup(void)
 {
 	psex_mregion_gc(0);
 	assert(psex_mregion_cache_size == 0);
-}
-
-
-static
-void psex_mregion_cache_init(void)
-{
-	psex_page_size = (unsigned)getpagesize();
-	assert(psex_page_size != 0);
-	assert((psex_page_size & (psex_page_size - 1)) == 0); /* power of 2 */
 }

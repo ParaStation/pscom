@@ -794,9 +794,6 @@ int psex_init_hca(hca_info_t *hca_info)
 		    hca_info->velo2_vpid,
 		    hca_info->rma2_vpid);
 
-#if PSEX_USE_MREGION_CACHE
-	psex_mregion_cache_init();
-#endif
 	return 0;
 	/* --- */
 err_velo2_open:
