@@ -97,7 +97,7 @@ psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, RMA2_Port rma2
 
 	mregc->use_cnt = 0;
 
-	err = psex_mregion_register(&mregc->rma2_region, &mregc->rma2_nla, rma2_port, buf, size);
+	err = psex_mregion_register(&mregc->rma2_region, rma2_port, buf, size);
 	if (err) goto err_register;
 
 	/* determine actual start address and size of the registered memory region */
@@ -105,9 +105,6 @@ psex_mregion_cache_t *psex_mregion_create(void *buf, size_t size, RMA2_Port rma2
 	mregc->size = mregc->rma2_region.size;
 	assert(mregc->buf <= buf);
 	assert((mregc->buf + mregc->size) >= (buf + size));
-
-	/* adjust the NLA to the actual start of the memory region */
-	mregc->rma2_nla -= mregc->rma2_region.offset;
 
 	mregc->rma2_port = rma2_port;
 
@@ -167,7 +164,7 @@ int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info
 	}
 
 	mreg->mreg_cache = mregc;
-	mreg->rma2_nla = mregc->rma2_nla + (size_t)((char *)buf - (char*)mregc->buf);
+	mreg->rma2_nla = psex_mregion_nla(&mregc->rma2_region, buf);
 
 	return 0;
 err_register:

@@ -353,15 +353,12 @@ err_malloc:
  */
 
 static
-int psex_mregion_register(RMA2_Region *rma2_region, RMA2_NLA *rma2_nla,
+int psex_mregion_register(RMA2_Region *rma2_region,
 			  RMA2_Port rma2_port, void *buf, size_t size)
 {
 	RMA2_ERROR rma2_error;
 
 	rma2_error = rma2_register_nomalloc(rma2_port, buf, size, rma2_region);
-	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
-
-	rma2_error = rma2_get_nla(rma2_region, 0, rma2_nla);
 	assert(rma2_error == RMA2_SUCCESS); // ToDo: catch error
 
 	// printf("%s:%u:%s  buf:%p nla:%lx size:%lu\n", __FILE__, __LINE__, __func__, buf, mreg->rma2_nla, size);
@@ -380,6 +377,13 @@ int psex_mregion_deregister(RMA2_Region *rma2_region, RMA2_Port rma2_port)
 	return 0; /* success */
 }
 
+
+static
+RMA2_NLA psex_mregion_nla(RMA2_Region *rma2_region, void *buf)
+{
+	return rma2_region->nla + (buf - rma2_region->start);
+}
+
 #if PSEX_USE_MREGION_CACHE
 /* Use mregion cache */
 
@@ -391,8 +395,9 @@ int psex_mregion_deregister(RMA2_Region *rma2_region, RMA2_Port rma2_port)
 int psex_get_mregion(psex_mregion_t *mreg, void *buf, size_t size, psex_con_info_t *ci)
 {
 	int err;
-	err = psex_mregion_register(&mreg->rma2_region, &mreg->rma2_nla,
+	err = psex_mregion_register(&mreg->rma2_region,
 				    ci->rma2_port, buf, size);
+	mreg->rma2_nla = psex_mregion_nla(&mreg->rma2_region, buf);
 	return err;
 }
 
