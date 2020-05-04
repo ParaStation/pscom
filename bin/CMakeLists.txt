@@ -129,7 +129,7 @@ if (OPENIB_ENABLED)
       ${PROJECT_SOURCE_DIR}/lib/pscom/pslib.c
       )
 
-    add_dependencies(${target} vc_version.h)
+    add_dependencies(${target} vc_version)
 
     target_link_libraries(
       ${target}

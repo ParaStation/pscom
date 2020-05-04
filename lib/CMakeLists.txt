@@ -9,8 +9,10 @@
 #
 
 function(link_to_lib source)
+  # Collect symlinks to all libraries in the current directory for
+  # convenience. (LD_LIBRARY_PATH usage without installing the libraries)
   add_custom_target(lib${source} ALL
-    ln -sf "${PROJECT_BINARY_DIR}/$?*" .
+    ln -sf "${CMAKE_CURRENT_BINARY_DIR}/${source}/lib${source}.so*" .
     DEPENDS ${source}
     BYPRODUCTS lib${source}.so
     )

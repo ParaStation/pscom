@@ -65,7 +65,8 @@ add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(bin)
 
-add_custom_target(VERSION.pscom ALL
+add_custom_target(VERSION.pscom-target ALL
+  BYPRODUCTS VERSION.pscom
   COMMAND ${PROJECT_SOURCE_DIR}/scripts/VERSION.pscom.sh VERSION.pscom
   VERBATIM)
 

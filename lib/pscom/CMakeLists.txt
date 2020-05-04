@@ -36,7 +36,7 @@ add_library(pscom SHARED
   psshmalloc.c
 )
 
-add_dependencies(pscom vc_version.h)
+add_dependencies(pscom vc_version)
 
 target_include_directories(
   pscom
