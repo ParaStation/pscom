@@ -250,7 +250,7 @@ typedef struct _pscom_rendezvous_data_dapl {
 
 typedef struct _pscom_rendezvous_data_extoll {
 	/* placeholder for struct pscom_rendezvous_data_extoll */
-	char /* struct psex_rma_req */ _rma_req[128];
+	char /* struct psex_rma_req */ _rma_req[192];
 } _pscom_rendezvous_data_extoll_t;
 
 
