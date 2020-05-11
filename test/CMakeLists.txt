@@ -24,6 +24,13 @@ add_custom_target(utest-build
 #
 # Warning: "ctest" does not track dependencies and therefore does not
 # rebuild the tests, if test dependencies change!
+# The "build-tests" pseudo test tries to compensate for this missing feature.
+add_test(
+  NAME	build-tests
+  COMMAND	"${CMAKE_MAKE_PROGRAM}" utest-build
+  WORKING_DIRECTORY	${PROJECT_BINARY_DIR}
+  )
+
 
 add_test(
   NAME	pscom_utest
