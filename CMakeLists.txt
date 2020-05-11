@@ -60,12 +60,14 @@ find_package(Cuda)
 cmake_dependent_option(CUDA_ENABLED "Enable cuda awareness" FALSE "CUDA_FOUND" FALSE)
 
 if(CUDA_ENABLED)
-add_compile_definitions(PSCOM_CUDA_AWARENESS=1)
+  add_compile_definitions(PSCOM_CUDA_AWARENESS=1)
 endif(CUDA_ENABLED)
+
+find_package(Psmgmt)
+cmake_dependent_option(PSMGMT_ENABLED "Enable psmgmt" TRUE "PSMGMT_FOUND" FALSE)
 
 find_package(CMocka)
 cmake_dependent_option(UTEST_ENABLED "Enable unit tests ('ctest' or Target 'utest')" TRUE "CMOCKA_FOUND" FALSE)
-option(UTEST_ENABLED "enable unit tests."	ON)
 
 add_subdirectory(include)
 add_subdirectory(lib)
@@ -107,12 +109,13 @@ install(FILES
 
 message(STATUS	  "OPENIB_ENABLED:	${OPENIB_ENABLED}")
 message(STATUS	  "OFED_ENABLED:	${OFED_ENABLED}")
-message(STATUS	  "UCP_ENABLED:	${UCP_ENABLED}")
+message(STATUS	  "UCP_ENABLED:		${UCP_ENABLED}")
 message(STATUS	  "PSM2_ENABLED:	${PSM2_ENABLED}")
 message(STATUS	  "EXTOLL_ENABLED:	${EXTOLL_ENABLED}")
 message(STATUS	  "DAPL_ENABLED:	${DAPL_ENABLED}")
 message(STATUS	  "CUDA_ENABLED:	${CUDA_ENABLED}")
 message(STATUS	  "")
+message(STATUS	  "PSMGMT_ENABLED:	${PSMGMT_ENABLED}")
 message(STATUS	  "UTEST_ENABLED:	${UTEST_ENABLED}")
 message(STATUS	  "COVERAGE_ENABLED:	${COVERAGE_ENABLED}")
 message(STATUS	  "OPTIMIZATIONS_ENABLED:	${OPTIMIZATIONS_ENABLED}")

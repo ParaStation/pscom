@@ -19,21 +19,6 @@ function(link_to_lib source)
 endfunction()
 
 
-function(target_add_cuda target)
-  if(CUDA_ENABLED)
-    target_include_directories(
-      ${target}
-      PRIVATE ${CUDA_INCLUDE_DIRS}
-      )
-
-    target_link_libraries(
-      ${target}
-      PRIVATE ${CUDA_LIBRARIES}
-      )
-  endif(CUDA_ENABLED)
-endfunction()
-
-
 function(plugin_common plugin)
   target_include_directories(
     ${plugin}
@@ -63,7 +48,9 @@ function(plugin_common plugin)
     NO_SONAME TRUE
     )
 
-  target_add_cuda(${plugin})
+  if(CUDA_ENABLED)
+    target_add_cuda(${plugin})
+  endif(CUDA_ENABLED)
 
   install(TARGETS ${plugin} DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endfunction()

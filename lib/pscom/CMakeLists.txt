@@ -76,7 +76,9 @@ set_target_properties(pscom
 )
 
 
-target_add_cuda(pscom)
+if(CUDA_ENABLED)
+  target_add_cuda(pscom)
+endif(CUDA_ENABLED)
 
 install(TARGETS pscom DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
@@ -97,4 +99,6 @@ add_dependencies(pscom-static vc_version)
 target_include_directories(pscom-static PRIVATE ${PSCOM_INCLUDE_DIRECTORIES})
 target_compile_definitions(pscom-static PRIVATE ${PSCOM_COMPILE_DEFINITIONS})
 target_link_libraries(pscom-static PRIVATE ${PSCOM_LINK_LIBRARIES})
-target_add_cuda(pscom-static)
+if(CUDA_ENABLED)
+  target_add_cuda(pscom-static)
+endif(CUDA_ENABLED)

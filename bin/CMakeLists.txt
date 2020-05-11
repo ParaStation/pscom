@@ -51,11 +51,10 @@ target_link_libraries(	pscom_test_fault PRIVATE pscom popt)
 
 add_executable(		test_nodes	test_nodes.c)
 target_link_libraries(	test_nodes	PRIVATE pscom popt)
-if (PSMGMT_ENABLED)
-  target_link_libraries(test_nodes	PRIVATE pse psi)
-  target_compile_definitions(test_nodes	PRIVATE PSMGMT_ENABLED)
-endif (PSMGMT_ENABLED)
 install(TARGETS		test_nodes	DESTINATION "${CMAKE_INSTALL_BINDIR}")
+if(PSMGMT_ENABLED)
+  target_add_psmgmt(	test_nodes)
+endif(PSMGMT_ENABLED)
 
 
 #

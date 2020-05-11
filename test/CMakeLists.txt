@@ -73,8 +73,6 @@ target_include_directories(	pscom_utest
   ${CMOCKA_INCLUDE_DIR}
   )
 
-message(STATUS	"pscom_utest CMOCKA_INCLUDE_DIR: ${CMOCKA_INCLUDE_DIR}")
-
 
 if(CUDA_ENABLED)
   # CUDA-related configuration
@@ -91,33 +89,13 @@ if(CUDA_ENABLED)
     -Wl,--wrap=cuMemcpyHtoD_v2
     )
 
-  target_link_libraries(	pscom_utest
-    PRIVATE
-    ${CUDA_LIBRARIES}
-    )
-
-  target_compile_definitions(	pscom_utest
-    PRIVATE
-    -DPSCOM_CUDA_AWARENESS
-    )
-
   target_sources(	pscom_utest
     PRIVATE
     pscom/test_cuda.c
     mocks/cuda_mocks.c
     )
 
-  target_link_libraries(	pscom_utest
-    PRIVATE
-    ${CUDA_LIBRARIES}
-    )
-
-  target_include_directories(	pscom_utest
-    PRIVATE
-    ${CUDA_INCLUDE_DIRS}
-    )
-
-#  target_add_cuda(pscom_utest)
+  target_add_cuda(pscom_utest)
 endif(CUDA_ENABLED)
 
 
