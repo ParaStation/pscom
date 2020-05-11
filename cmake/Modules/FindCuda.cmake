@@ -11,3 +11,17 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(
   Cuda  DEFAULT_MSG
   CUDA_LIBRARY CUDA_INCLUDE_DIR)
+
+function(target_add_cuda target)
+  if(CUDA_ENABLED)
+    target_include_directories(
+      ${target}
+      PRIVATE ${CUDA_INCLUDE_DIRS}
+      )
+
+    target_link_libraries(
+      ${target}
+      PRIVATE ${CUDA_LIBRARIES}
+      )
+  endif(CUDA_ENABLED)
+endfunction()
