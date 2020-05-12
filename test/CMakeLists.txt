@@ -28,7 +28,7 @@ add_custom_target(utest-build
 add_test(
   NAME	build-tests
   COMMAND	"${CMAKE_MAKE_PROGRAM}" utest-build
-  WORKING_DIRECTORY	${PROJECT_BINARY_DIR}
+  WORKING_DIRECTORY	${CMAKE_BINARY_DIR}
   )
 
 
@@ -36,6 +36,23 @@ add_test(
   NAME	pscom_utest
   COMMAND	pscom_utest
   )
+
+#
+# Code coverage
+#
+if(COVERAGE_ENABLED)
+  add_compile_options(--coverage)
+  add_link_options(--coverage)
+
+  add_custom_target(coverage
+    COMMAND	pscom_utest
+    COMMAND	lcov -t pscom_utest -o pscom_utest.info -c -d ${CMAKE_CURRENT_BINARY_DIR} -d ${CMAKE_BINARY_DIR}/lib
+    COMMAND	genhtml -o pscom_coverage pscom_utest.info
+    COMMAND	echo "Coverage analysis: ${CMAKE_CURRENT_BINARY_DIR}/pscom_coverage/index.html"
+    WORKING_DIRECTORY	${CMAKE_CURRENT_BINARY_DIR}
+    DEPENDS	pscom_utest
+    )
+endif(COVERAGE_ENABLED)
 
 
 #
