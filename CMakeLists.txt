@@ -40,6 +40,11 @@ endif(OPTIMIZATIONS_ENABLED)
 add_compile_options(-g)
 add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter)
 
+include(CheckVisibilityProtected)
+if(NOT VISIBILITY_PROTECTED)
+  add_compile_definitions(NO_PROTECTED_FUNC=1)
+endif(NOT VISIBILITY_PROTECTED)
+
 find_package(IbVerbs)
 cmake_dependent_option(OPENIB_ENABLED "Enable pscom4openib" TRUE "IBVERBS_FOUND" FALSE)
 cmake_dependent_option(OFED_ENABLED "Enable pscom4ofed" TRUE "IBVERBS_FOUND" FALSE)
