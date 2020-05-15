@@ -29,16 +29,6 @@ include(Legacy)
 execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r .. -n OUTPUT_VARIABLE VC_VERSION)
 message("VC_VERSION: ${VC_VERSION}")
 
-#
-# Optimizations?
-#
-option(OPTIMIZATIONS_ENABLED "compile using the -O3 or -O0 flag" ON)
-
-if(OPTIMIZATIONS_ENABLED)
-  add_compile_options(-O3)
-else(OPTIMIZATIONS_ENABLED)
-  add_compile_options(-O0)
-endif(OPTIMIZATIONS_ENABLED)
 
 add_compile_options(-g)
 add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter)
@@ -90,17 +80,16 @@ endif(UTEST_ENABLED)
 #
 # Code coverage?
 #
-option(COVERAGE_ENABLED "enable code coverage analysis (Default is disabled.) This implies OPTIMIZATIONS_ENABLED=OFF and UTEST_ENABLED=ON'." OFF)
+option(COVERAGE_ENABLED "enable code coverage analysis (Default is disabled.) This implies UTEST_ENABLED=ON'." OFF)
 
 if(COVERAGE_ENABLED)
-  if(OPTIMIZATIONS_ENABLED OR NOT UTEST_ENABLED)
+  if(NOT UTEST_ENABLED)
     message(WARNING "COVERAGE_ENABLED requires:
-  UTEST_ENABLED=ON
-  OPTIMIZATIONS_ENABLED=OFF")
+  UTEST_ENABLED=ON")
     set(COVERAGE_ENABLED OFF)
     # AC_CHECK_PROG([HAVE_LCOV],[lcov],[yes],[no])
     # AC_CHECK_PROG([HAVE_GENHTML],[genhtml],[yes],[no])
-  endif(OPTIMIZATIONS_ENABLED OR NOT UTEST_ENABLED)
+  endif(NOT UTEST_ENABLED)
 endif(COVERAGE_ENABLED)
 
 
@@ -126,5 +115,4 @@ message(STATUS	  "")
 message(STATUS	  "PSMGMT_ENABLED:	${PSMGMT_ENABLED}")
 message(STATUS	  "UTEST_ENABLED:	${UTEST_ENABLED}")
 message(STATUS	  "COVERAGE_ENABLED:	${COVERAGE_ENABLED}")
-message(STATUS	  "OPTIMIZATIONS_ENABLED:	${OPTIMIZATIONS_ENABLED}")
 
