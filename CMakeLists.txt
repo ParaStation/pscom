@@ -84,10 +84,6 @@ add_subdirectory(lib)
 add_subdirectory(bin)
 
 
-if(UTEST_ENABLED)
-  add_subdirectory(test)
-endif(UTEST_ENABLED)
-
 
 #
 # Code coverage?
@@ -95,14 +91,16 @@ endif(UTEST_ENABLED)
 option(COVERAGE_ENABLED "enable code coverage analysis (Default is disabled.) This implies UTEST_ENABLED=ON'." OFF)
 
 if(COVERAGE_ENABLED)
-  if(NOT UTEST_ENABLED)
-    message(WARNING "COVERAGE_ENABLED requires:
-  UTEST_ENABLED=ON")
+  string(TOUPPER ${CMAKE_BUILD_TYPE} CMAKE_BUILD_TYPE_TOUPPER)
+  if(NOT (UTEST_ENABLED AND (CMAKE_BUILD_TYPE_TOUPPER STREQUAL "DEBUG")))
+    message(WARNING "COVERAGE_ENABLED requires: UTEST_ENABLED=ON and CMAKE_BUILD_TYPE=Debug. Disabling coverage!")
     set(COVERAGE_ENABLED OFF)
-    # AC_CHECK_PROG([HAVE_LCOV],[lcov],[yes],[no])
-    # AC_CHECK_PROG([HAVE_GENHTML],[genhtml],[yes],[no])
-  endif(NOT UTEST_ENABLED)
+  endif(NOT (UTEST_ENABLED AND (CMAKE_BUILD_TYPE_TOUPPER STREQUAL "DEBUG")))
 endif(COVERAGE_ENABLED)
+
+if(UTEST_ENABLED)
+  add_subdirectory(test)
+endif(UTEST_ENABLED)
 
 
 add_custom_target(VERSION.pscom-target ALL

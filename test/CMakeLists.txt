@@ -41,17 +41,46 @@ add_test(
 # Code coverage
 #
 if(COVERAGE_ENABLED)
-  add_compile_options(--coverage)
-  add_link_options(--coverage)
+  # Disable any optimizations and add necessary compiler flags
+  string(REGEX REPLACE "-Og" "-O0" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
+  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -fprofile-arcs -ftest-coverage")
 
+  # Check prerequisites
+  find_program(GCOV_PATH gcov)
+  if(NOT GCOV_PATH)
+    message(FATAL_ERROR "Could not find the 'gcov' executable. Abort")
+  endif(NOT GCOV_PATH)
+  find_program(GCOVR_PATH gcovr)
+  if(NOT GCOVR_PATH)
+    message(FATAL_ERROR "Could not find the 'gcovr' executable. Abort")
+  endif(NOT GCOVR_PATH)
+
+  set(COVERAGE_NAME "pscom-coverage")
+
+  # XML coverage report
   add_custom_target(coverage
-    COMMAND	pscom_utest
-    COMMAND	lcov -t pscom_utest -o pscom_utest.info -c -d ${CMAKE_CURRENT_BINARY_DIR} -d ${CMAKE_BINARY_DIR}/lib
-    COMMAND	genhtml -o pscom_coverage pscom_utest.info
-    COMMAND	echo "Coverage analysis: ${CMAKE_CURRENT_BINARY_DIR}/pscom_coverage/index.html"
-    WORKING_DIRECTORY	${CMAKE_CURRENT_BINARY_DIR}
-    DEPENDS	pscom_utest
-    )
+      # Run tests
+      pscom_utest
+
+      # Running gcovr for XML generation
+      COMMAND ${GCOVR_PATH} --xml
+          -r ${PROJECT_SOURCE_DIR}
+	  -e ${PROJECT_SOURCE_DIR}/test
+          --object-directory=${PROJECT_BINARY_DIR}
+	  -o ${COVERAGE_NAME}.xml
+      # Running gcovr for HTML generation
+      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}
+      COMMAND ${GCOVR_PATH} --html --html-details
+          -r ${PROJECT_SOURCE_DIR}
+	  -e ${PROJECT_SOURCE_DIR}/test
+          --object-directory=${PROJECT_BINARY_DIR}
+	  -o ${COVERAGE_NAME}/index.html
+      BYPRODUCTS ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}.xml ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}
+      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+      DEPENDS pscom_utest
+      VERBATIM
+      COMMENT "Running gcovr to produce HTML and XML code coverage report."
+  )
 endif(COVERAGE_ENABLED)
 
 
