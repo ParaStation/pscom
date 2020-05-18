@@ -29,8 +29,20 @@ include(Legacy)
 execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r .. -n OUTPUT_VARIABLE VC_VERSION)
 message("VC_VERSION: ${VC_VERSION}")
 
+# set the default build type
+set(default_build_type "RelWithDebInfo")
+if(NOT CMAKE_BUILD_TYPE)
+  set(CMAKE_BUILD_TYPE ${default_build_type} CACHE STRING
+    "Choose the type of build, options are: None Debug Release RelWithDebInfo MinSizeRel."
+    FORCE)
+endif(NOT CMAKE_BUILD_TYPE)
 
-add_compile_options(-g)
+# Explicitly configure the available build types
+set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
+set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g")
+set(CMAKE_C_FLAGS_MINSIZEREL "-Os -g")
+set(CMAKE_C_FLAGS_DEBUG "-Og -g")
+
 add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter)
 
 include(CheckVisibilityProtected)
@@ -115,4 +127,4 @@ message(STATUS	  "")
 message(STATUS	  "PSMGMT_ENABLED:	${PSMGMT_ENABLED}")
 message(STATUS	  "UTEST_ENABLED:	${UTEST_ENABLED}")
 message(STATUS	  "COVERAGE_ENABLED:	${COVERAGE_ENABLED}")
-
+message(STATUS	  "BUILD TYPE:		${CMAKE_BUILD_TYPE}")
