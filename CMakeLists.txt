@@ -16,6 +16,7 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(CMakeDependentOption)
 include(GNUInstallDirs)
 include(CTest)
+include(OptionConditional)
 
 # VERSION.pscom:
 # 	@echo "$(PACKAGE_NAME) $(VC_VERSION) ($(shell LC_ALL=C date))" > $@
@@ -46,33 +47,33 @@ if(NOT VISIBILITY_PROTECTED)
 endif(NOT VISIBILITY_PROTECTED)
 
 find_package(IbVerbs)
-cmake_dependent_option(OPENIB_ENABLED "Enable pscom4openib" TRUE "IBVERBS_FOUND" FALSE)
-cmake_dependent_option(OFED_ENABLED "Enable pscom4ofed" TRUE "IBVERBS_FOUND" FALSE)
+option_conditional(OPENIB_ENABLED "Enable pscom4openib" TRUE "IBVERBS_FOUND" FALSE)
+option_conditional(OFED_ENABLED "Enable pscom4ofed" TRUE "IBVERBS_FOUND" FALSE)
 
 find_package(Ucp)
-cmake_dependent_option(UCP_ENABLED "Enable pscom4ucp" TRUE "UCP_FOUND" FALSE)
+option_conditional(UCP_ENABLED "Enable pscom4ucp" TRUE "UCP_FOUND" FALSE)
 
 find_package(Psm2)
-cmake_dependent_option(PSM2_ENABLED "Enable pscom4psm" TRUE "PSM2_FOUND" FALSE)
+option_conditional(PSM2_ENABLED "Enable pscom4psm" TRUE "PSM2_FOUND" FALSE)
 
 find_package(Extoll)
-cmake_dependent_option(EXTOLL_ENABLED "Enable pscom4extoll and pscom4velo" TRUE "EXTOLL_FOUND" FALSE)
+option_conditional(EXTOLL_ENABLED "Enable pscom4extoll and pscom4velo" TRUE "EXTOLL_FOUND" FALSE)
 
 find_package(Dapl)
-cmake_dependent_option(DAPL_ENABLED "Enable pscom4dapl" TRUE "DAPL_FOUND" FALSE)
+option_conditional(DAPL_ENABLED "Enable pscom4dapl" TRUE "DAPL_FOUND" FALSE)
 
 find_package(Cuda)
-cmake_dependent_option(CUDA_ENABLED "Enable cuda awareness" FALSE "CUDA_FOUND" FALSE)
+option_conditional(CUDA_ENABLED "Enable cuda awareness" FALSE "CUDA_FOUND" FALSE)
 
 if(CUDA_ENABLED)
   add_compile_definitions(PSCOM_CUDA_AWARENESS=1)
 endif(CUDA_ENABLED)
 
 find_package(Psmgmt)
-cmake_dependent_option(PSMGMT_ENABLED "Enable psmgmt" TRUE "PSMGMT_FOUND" FALSE)
+option_conditional(PSMGMT_ENABLED "Enable psmgmt" TRUE "PSMGMT_FOUND" FALSE)
 
 find_package(CMocka)
-cmake_dependent_option(UTEST_ENABLED "Enable unit tests ('ctest' or Target 'utest')" TRUE "CMOCKA_FOUND" FALSE)
+option_conditional(UTEST_ENABLED "Enable unit tests ('ctest' or Target 'utest')" TRUE "CMOCKA_FOUND" FALSE)
 
 add_subdirectory(include)
 add_subdirectory(lib)
