@@ -17,6 +17,8 @@ include(CMakeDependentOption)
 include(GNUInstallDirs)
 include(CTest)
 include(OptionConditional)
+include(Legacy)
+
 
 # VERSION.pscom:
 # 	@echo "$(PACKAGE_NAME) $(VC_VERSION) ($(shell LC_ALL=C date))" > $@
