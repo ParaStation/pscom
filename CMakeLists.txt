@@ -43,6 +43,10 @@ set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g")
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -g")
 set(CMAKE_C_FLAGS_DEBUG "-Og -g")
 
+set(_buildtypeEnum RelWithDebInfo Release MinSizeRel Debug)
+set(trafficLight Green CACHE STRING "Status of something")
+set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_buildtypeEnum})
+
 add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter)
 
 include(CheckVisibilityProtected)
