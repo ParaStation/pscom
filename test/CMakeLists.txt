@@ -17,6 +17,7 @@ add_custom_target(utest
 # "make utest-build" : Build all tests (but do not call them)
 add_custom_target(utest-build
   DEPENDS	pscom_utest
+  DEPENDS	pscom_pp
   )
 
 #
@@ -37,6 +38,11 @@ add_test(
   COMMAND	pscom_utest
   )
 
+add_test(
+  NAME	testlocal
+  COMMAND	"${CMAKE_SOURCE_DIR}/scripts/testlocal.sh"
+  WORKING_DIRECTORY	"${CMAKE_BINARY_DIR}/bin"
+  )
 #
 # Code coverage
 #
