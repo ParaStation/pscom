@@ -43,17 +43,12 @@ ParaStation Cluster Communication drivers and libraries.
 
 %build
 export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,')"
-%configure --disable-silent-rules \
-	   %{!?enable_cuda:--disable-cuda}%{?enable_cuda:--enable-cuda}
 echo "CFLAGS:$CFLAGS"
-make %{?_smp_mflags}
+%cmake . %{?enable_cuda:-DCUDA_ENABLED=ON}
+%make_build
 
 %install
-rm -rf %{buildroot}
-make DESTDIR=%{buildroot} install
-
-# do not distribute .la files
-find %{buildroot} -name '*.la' -delete
+%make_install
 
 %clean
 rm -rf %{buildroot}
