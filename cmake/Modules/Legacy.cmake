@@ -1,6 +1,5 @@
 
-if(COMMAND target_link_options)
-else()
+if(NOT COMMAND target_link_options)
   # Legacy partial implementation of:
   # target_link_options(<target> PUBLIC [items1...])
 
@@ -30,8 +29,7 @@ else()
 
 endif()
 
-if(COMMAND add_compile_definitions)
-else()
+if(NOT COMMAND add_compile_definitions)
   # Legacy partial implementation of:
   # add_compile_definitions(<definition>)
 
