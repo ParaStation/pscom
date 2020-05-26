@@ -2,8 +2,8 @@
 execute_process(
   COMMAND	env CC=${CMAKE_C_COMPILER} ${CMAKE_SOURCE_DIR}/scripts/check-visibility-protected.sh
   RESULT_VARIABLE	CHECK_VISIBILITY_RESULT
-#  OUTPUT_QUIET
-  ERROR_QUIET
+  OUTPUT_FILE cmake.CheckVisibilityProtected.log
+  ERROR_FILE cmake.CheckVisibilityProtected.log
   )
 
 if(CHECK_VISIBILITY_RESULT EQUAL 0)
