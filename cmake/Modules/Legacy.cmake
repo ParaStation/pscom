@@ -29,3 +29,13 @@ else()
   endfunction()
 
 endif()
+
+if(COMMAND add_compile_definitions)
+else()
+  # Legacy partial implementation of:
+  # add_compile_definitions(<definition>)
+
+  function(add_compile_definitions def)
+    add_definitions(-D${def})
+  endfunction()
+endif()
