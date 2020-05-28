@@ -11,6 +11,7 @@
 # "make utest" : Build and call all utests
 add_custom_target(utest
   COMMAND	${CMAKE_CURRENT_BINARY_DIR}/pscom_utest
+  COMMAND	"${CMAKE_SOURCE_DIR}/scripts/testlocal.sh"
   DEPENDS	utest-build
   )
 
