@@ -70,7 +70,7 @@ if(COVERAGE_ENABLED)
       pscom_utest
 
       # Running gcovr for XML generation
-      COMMAND ${GCOVR_PATH} --xml
+      COMMAND ${GCOVR_PATH} --xml -s
           -r ${PROJECT_SOURCE_DIR}
 	  -e ${PROJECT_SOURCE_DIR}/test
           --object-directory=${PROJECT_BINARY_DIR}
