@@ -80,7 +80,7 @@ void psex_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *ms
  * -EAGAIN if ci is busy or
  * -EPIPE in case of a broken connection.
  */
-int psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size);
+ssize_t psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, size_t size);
 
 
 /* Start receiving.

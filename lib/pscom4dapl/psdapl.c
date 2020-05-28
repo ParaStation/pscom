@@ -112,8 +112,8 @@ struct psdapl_con_info {
 
 	/* higher level */
 	unsigned	n_send_toks;
-	unsigned	n_recv_toks;
-	unsigned	n_tosend_toks;
+	uint16_t	n_recv_toks;
+	uint16_t	n_tosend_toks;
 
 	int con_broken;
 
@@ -397,11 +397,11 @@ int psdapl_str2addr(psdapl_info_msg_t *msg, const char *str)
 	if (!addr || !str) return -1;
 	unsigned data[14];
 	unsigned long cq;
-	unsigned fam;
+	unsigned short fam;
 	int rc;
 	int i;
 	rc = sscanf(str,
-		    "%u_%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u_%lu",
+		    "%hu_%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u:%u_%lu",
 		    &fam,
 		    &data[0], &data[1], &data[2], &data[3],
 		    &data[4], &data[5], &data[6], &data[7],
@@ -409,7 +409,7 @@ int psdapl_str2addr(psdapl_info_msg_t *msg, const char *str)
 		    &data[12], &data[13], &cq);
 
 	addr->sa_family = fam;
-	for (i = 0; i < 14; i++) addr->sa_data[i] = data[i];
+	for (i = 0; i < 14; i++) addr->sa_data[i] = (char)data[i];
 	msg->conn_qual = cq;
 	return rc == 16 ? 0 : -1;
 }
@@ -946,7 +946,7 @@ err_init_buf:
 static
 int psdapl_flush_sendbuf(psdapl_con_info_t *ci,
 			 char *lmem /* ci->send_bufs.lmr_mem */,
-			 unsigned roffset, unsigned size)
+			 off_t roffset, size_t size)
 {
 	DAT_RETURN dat_rc;
 	DAT_LMR_TRIPLET lmr;
@@ -1082,10 +1082,10 @@ void psdapl_get_fresh_tokens(psdapl_con_info_t *ci);
 
 /* returnvalue like write(), except on error errno is negative return */
 static
-int _psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size, unsigned int magic)
+ssize_t _psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, size_t size, unsigned int magic)
 {
-	int len;
-	int psdapllen;
+	size_t len;
+	size_t psdapllen;
 	psdapl_msg_t *msg;
 	int rc;
 	psdapl_msgheader_t *tail;
@@ -1112,7 +1112,7 @@ int _psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size, unsigned i
 		goto err_busy;
 	}
 */
-	len = (size <= (int)DAPL_BUFSIZE_PAYLOAD) ? size : (int)DAPL_BUFSIZE_PAYLOAD;
+	len = (size <= DAPL_BUFSIZE_PAYLOAD) ? size : DAPL_BUFSIZE_PAYLOAD;
 	psdapllen = PSDAPL_LEN(len);
 
 	msg = ((psdapl_msg_t *)ci->send_bufs.lmr_mem) + ci->send_pos;
@@ -1120,7 +1120,7 @@ int _psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size, unsigned i
 	tail = (psdapl_msgheader_t *)((char*)msg + psdapllen);
 
 	tail->token = ci->n_tosend_toks;
-	tail->payload = len;
+	tail->payload = (uint16_t)len;
 	tail->magic = magic;
 
 	/* copy to registerd send buffer */
@@ -1159,7 +1159,7 @@ err_broken:
 }
 
 
-int psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, int size)
+ssize_t psdapl_sendv(psdapl_con_info_t *ci, struct iovec *iov, size_t size)
 {
 	return _psdapl_sendv(ci, iov, size, PSDAPL_MAGIC_IO);
 }

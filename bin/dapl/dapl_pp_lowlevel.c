@@ -112,7 +112,7 @@ void parse_opt(int argc, char **argv)
 int psdapl_debug = 2;
 
 #define psdapl_dprint(level,fmt,arg... ) do {			\
-        if ((level) <= psdapl_debug) {				\
+	if ((level) <= psdapl_debug) {				\
 		fprintf(stderr, "<psdapl:"fmt">\n",##arg);	\
 		fflush(stderr);					\
 	}							\
@@ -709,7 +709,7 @@ err_init_send:
 /* return -1 on error */
 static
 int psdapl_flush_sendbuf(psdapl_socket_t *sock, psdapl_con_info_t *ci,
-			 unsigned offset, unsigned size)
+			 off_t offset, size_t size)
 {
 	DAT_RETURN dat_rc;
 	DAT_LMR_TRIPLET lmr;

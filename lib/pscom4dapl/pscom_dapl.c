@@ -68,7 +68,7 @@ int pscom_dapl_do_read(pscom_poll_reader_t *reader)
 static
 void pscom_dapl_do_write(pscom_con_t *con)
 {
-	unsigned int len;
+	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
 
@@ -78,7 +78,7 @@ void pscom_dapl_do_write(pscom_con_t *con)
 		psdapl_con_info_t *ci = con->arch.dapl.ci;
 		len = iov[0].iov_len + iov[1].iov_len;
 
-		int rlen = psdapl_sendv(ci, iov, len);
+		ssize_t rlen = psdapl_sendv(ci, iov, len);
 
 		if (rlen >= 0) {
 			pscom_write_done(con, req, rlen);
