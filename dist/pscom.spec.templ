@@ -44,7 +44,7 @@ ParaStation Cluster Communication drivers and libraries.
 %build
 export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,')"
 echo "CFLAGS:$CFLAGS"
-%cmake . %{?enable_cuda:-DCUDA_ENABLED=ON}
+%{?cmake:%cmake}%{!?cmake:%{?cmake3:%cmake3}%{!?cmake3:cmake}} . %{?enable_cuda:-DCUDA_ENABLED=ON}
 %make_build
 
 %install
