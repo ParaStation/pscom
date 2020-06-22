@@ -160,6 +160,8 @@ lib/pscom/pscom_p4s.c \
 lib/pscom/pscom_p4s.h \
 lib/pscom/pscom_plugin.c \
 lib/pscom/pscom_plugin.h \
+lib/pscom/pscom_poll.c \
+lib/pscom/pscom_poll.h \
 lib/pscom/pscom_precon.c \
 lib/pscom/pscom_precon.h \
 lib/pscom/pscom_priv.h \
@@ -290,6 +292,7 @@ scripts/rpm_noreq \
 scripts/tcpdump.awk \
 scripts/tcpdumpp4 \
 scripts/test-driver \
+scripts/testlocal.sh \
 scripts/txt2man \
 scripts/vc_version.h.sh \
 scripts/vcversion \

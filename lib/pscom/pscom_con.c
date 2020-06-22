@@ -646,10 +646,6 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	INIT_LIST_HEAD(&con->recvq_rma);
 	INIT_LIST_HEAD(&con->net_recvq_user);
 	INIT_LIST_HEAD(&con->net_recvq_ctrl);
-
-	INIT_LIST_HEAD(&con->poll_reader.next);
-	INIT_LIST_HEAD(&con->poll_next_send);
-
 	INIT_LIST_HEAD(&con->sendq_gw_fw);
 
 	pscom_con_id_register(con);
@@ -668,8 +664,6 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->write_stop = pscom_no_rw_start_stop;
 	con->read_start = pscom_no_rw_start_stop;
 	con->read_stop = pscom_no_rw_start_stop;
-	con->poll_reader.do_read = NULL;
-	con->do_write = NULL;
 	con->close = pscom_no_rw_start_stop;
 	/* RMA */
 	con->rma_mem_register_check = NULL;
@@ -728,8 +722,8 @@ void _pscom_con_destroy(pscom_con_t *con)
 		       pscom_con_state_str(con->pub.state));
 	}
 	assert(con->pub.state == PSCOM_CON_STATE_CLOSED);
-	assert(list_empty(&con->poll_next_send));
-	assert(list_empty(&con->poll_reader.next));
+	assert(list_empty(&con->poll_read.next));
+	assert(list_empty(&con->poll_write.next));
 
 	if(con->in.readahead.iov_base) {
 		free(con->in.readahead.iov_base);

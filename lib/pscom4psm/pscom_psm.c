@@ -76,7 +76,7 @@ void pscom_psm_read_stop(pscom_con_t *con)
 
 
 static
-int pscom_psm_make_progress(pscom_poll_reader_t *reader)
+int pscom_psm_make_progress(pscom_poll_t *poll)
 {
 	return pspsm_progress();
 }

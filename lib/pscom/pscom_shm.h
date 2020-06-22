@@ -22,6 +22,7 @@
 #include <stdint.h>
 #include "list.h"
 #include "pscom_types.h"
+#include "pscom_poll.h"
 #include "pscom_plugin.h"
 /*
  * Shared memory structs
@@ -67,7 +68,7 @@ typedef struct shm_conn_s {
 	int		remote_id;
 	void		*direct_base; /* shm direct base */
 
-	struct list_head pending_io_next_conn; /* next shm_conn_t with pending io. Head: shm_pending_io.shm_conn_head */
+	pscom_poll_t	poll_write_pending_io; // Polled if this shm_conn_t has pending io
 	struct shm_pending *shm_pending; /* first pending io request of this connection */
 } shm_conn_t;
 

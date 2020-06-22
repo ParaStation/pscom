@@ -30,9 +30,13 @@
 #include "pscom_ofed.h"
 
 static struct {
-	struct pscom_poll_reader reader;
-	unsigned reader_user;
+	pscom_poll_t	poll_read;
+	unsigned	reader_user;
 } pscom_ofed;
+
+
+static
+int pscom_ofed_do_read(pscom_poll_t *poll);
 
 
 static
@@ -40,7 +44,7 @@ void reader_inc(void)
 {
 	if (!pscom_ofed.reader_user) {
 		// enqueue to polling reader
-		list_add_tail(&pscom_ofed.reader.next, &pscom.poll_reader);
+		pscom_poll_start(&pscom_ofed.poll_read, pscom_ofed_do_read, &pscom.poll_read);
 	}
 	pscom_ofed.reader_user++;
 }
@@ -52,7 +56,7 @@ void reader_dec(void)
 	pscom_ofed.reader_user--;
 	if (!pscom_ofed.reader_user) {
 		// dequeue from polling reader
-		list_del_init(&pscom_ofed.reader.next);
+		pscom_poll_stop(&pscom_ofed.poll_read);
 	}
 }
 
@@ -78,7 +82,7 @@ void pscom_ofed_read_stop(pscom_con_t *con)
 
 
 static
-int pscom_ofed_do_read(pscom_poll_reader_t *reader)
+int pscom_ofed_do_read(pscom_poll_t *poll)
 {
 	psofed_recv_t *msg = psofed_recv(NULL);
 
@@ -103,10 +107,11 @@ int pscom_ofed_do_read(pscom_poll_reader_t *reader)
 
 
 static
-void pscom_ofed_do_write(pscom_con_t *con)
+int pscom_ofed_do_write(pscom_poll_t *poll)
 {
 	struct iovec iov[2];
 	pscom_req_t *req;
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
 
 	req = pscom_write_get_iov(con, iov);
 
@@ -129,6 +134,7 @@ void pscom_ofed_do_write(pscom_con_t *con)
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
+	return 0;
 }
 
 
@@ -156,17 +162,24 @@ void pscom_ofed_con_close(pscom_con_t *con)
 
 
 static
+void pscom_poll_write_start_ofed(pscom_con_t *con) {
+	pscom_poll_write_start(con, pscom_ofed_do_write);
+}
+
+
+static
 void pscom_ofed_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_OFED;
 
 	// Only Polling:
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
 	con->read_start = pscom_ofed_read_start;
 	con->read_stop = pscom_ofed_read_stop;
 
-	con->do_write = pscom_ofed_do_write;
+	pscom_poll_init(&con->poll_write);
+	con->write_start = pscom_poll_write_start_ofed;
+	con->write_stop = pscom_poll_write_stop;
+
 	con->close = pscom_ofed_con_close;
 
 	pscom_con_setup_ok(con);
@@ -202,8 +215,7 @@ void pscom_ofed_init(void)
 	pscom_env_get_int(&psofed_event_count, ENV_OFED_EVENT_CNT);
 	pscom_env_get_int(&psofed_lid_offset, ENV_OFED_LID_OFFSET);
 
-	INIT_LIST_HEAD(&pscom_ofed.reader.next);
-	pscom_ofed.reader.do_read = pscom_ofed_do_read;
+	pscom_poll_init(&pscom_ofed.poll_read);
 	pscom_ofed.reader_user = 0;
 }
 

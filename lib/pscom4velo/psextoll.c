@@ -72,7 +72,7 @@ struct hca_info {
 
 	/* rma2 rendezvous */
 	struct list_head rma2_reqs;	/* list of active RMA requests : psex_rma_req_t.next */
-	struct pscom_poll_reader rma2_reqs_reader; // calling psex_progress(). Used if !list_empty(rma2_reqs)
+	pscom_poll_t	rma2_reqs_read; // calling psex_progress(). Used if !list_empty(rma2_reqs)
 
 	/* VELO2 */
 	velo2_nodeid_t	velo2_nodeid;	/* local velo2 nodeid */
@@ -172,6 +172,10 @@ struct psex_stat_s {
 
 #define psex_map_size	8192
 psex_con_info_t *psex_map[psex_map_size] = { NULL };
+
+static
+int psex_rma2_reqs_progress(pscom_poll_t *poll);
+
 
 #define psex_dprint(level,fmt,arg... )					\
 	do {								\
@@ -430,7 +434,7 @@ void psex_rma2_reqs_enq(psex_rma_req_t *req)
 
 	if (first) {
 		// Start polling for completer notifications
-		list_add_tail(&hca_info->rma2_reqs_reader.next, &pscom.poll_reader);
+		pscom_poll_start(&hca_info->rma2_reqs_read, psex_rma2_reqs_progress, &pscom.poll_read);
 	}
 }
 
@@ -444,7 +448,7 @@ void psex_rma2_reqs_deq(psex_rma_req_t *req)
 
 	if (list_empty(&hca_info->rma2_reqs)) {
 		// Stop polling for completer notifications
-		list_del(&hca_info->rma2_reqs_reader.next);
+		pscom_poll_stop(&hca_info->rma2_reqs_read);
 	}
 }
 
@@ -519,9 +523,9 @@ void psex_handle_notification(hca_info_t *hca_info, RMA2_Notification *notificat
 
 
 static
-int psex_rma2_reqs_progress(pscom_poll_reader_t *reader)
+int psex_rma2_reqs_progress(pscom_poll_t *poll)
 {
-	hca_info_t *hca_info = list_entry(reader, hca_info_t, rma2_reqs_reader);
+	hca_info_t *hca_info = list_entry(poll, hca_info_t, rma2_reqs_read);
 	RMA2_Notification *notification;
 	RMA2_ERROR rc;
 	RMA2_Port rma2_port = hca_info->rma2_port;
@@ -780,7 +784,7 @@ int psex_init_hca(hca_info_t *hca_info)
 	hca_info->rma2_vpid = rma2_get_vpid(hca_info->rma2_port);
 
 	INIT_LIST_HEAD(&hca_info->rma2_reqs);
-	hca_info->rma2_reqs_reader.do_read = psex_rma2_reqs_progress;
+	pscom_poll_init(&hca_info->rma2_reqs_read);
 
 	/*
 	 * VELO2

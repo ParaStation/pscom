@@ -15,6 +15,7 @@
 
 #include "pscom.h"
 #include "pscom_types.h"
+#include "pscom_poll.h"
 #include "list.h"
 #include "pscom_ufd.h"
 #include <string.h>
@@ -300,11 +301,14 @@ struct PSCOM_con
 	 *
 	 * @param [in] con The connection to be opened
 	 */
+	pscom_poll_t		poll_read;	// used if .read_start = pscom_poll_read_start
 	void (*read_start)(pscom_con_t *con);
 	void (*read_stop)(pscom_con_t *con);
+
+	pscom_poll_t		poll_write;	// used if .write_start = pscom_poll_write_start
 	void (*write_start)(pscom_con_t *con);
 	void (*write_stop)(pscom_con_t *con);
-	void (*do_write)(pscom_con_t *con); // used only if .write_start = pscom_poll_write_start
+
 	void (*close)(pscom_con_t *con);
 
 	/* RMA functions: */
@@ -344,9 +348,6 @@ struct PSCOM_con
 	struct list_head	net_recvq_ctrl; // List of pscom_req_t.next
 	/* more net receivequeues in pscom_group_t:
 	 *                      net_recvq_bcast */
-
-	pscom_poll_reader_t	poll_reader;
-	struct list_head	poll_next_send; // used by pscom.poll_sender
 
 	struct list_head	sendq_gw_fw;	// List of pscom_req_t.next_alt
 
@@ -458,8 +459,8 @@ struct PSCOM
 
 	struct list_head	io_doneq; // List of pscom_req_t.next
 
-	struct list_head	poll_reader;	// List of pscom_poll_reader_t.next
-	struct list_head	poll_sender;	// List of pscom_con_t.poll_next_send
+	pscom_poll_list_t	poll_read;
+	pscom_poll_list_t	poll_write;
 	struct list_head	backlog;	// List of pscom_backlog_t.next
 
 	pthread_mutex_t		backlog_lock;	// Lock for backlog
@@ -693,9 +694,20 @@ void _pscom_send_inplace(pscom_con_t *con, pscom_msgtype_t msg_type,
 			 void *data, size_t data_len,
 			 void (*io_done)(pscom_req_state_t state, void *priv), void *priv);
 
-void pscom_poll_write_start(pscom_con_t *con);
+static inline
+void pscom_poll_write_start(pscom_con_t *con, pscom_poll_func_t *do_poll) {
+	pscom_poll_start(&con->poll_write, do_poll, &pscom.poll_write);
+}
+
+
 void pscom_poll_write_stop(pscom_con_t *con);
-void pscom_poll_read_start(pscom_con_t *con);
+
+static inline
+void pscom_poll_read_start(pscom_con_t *con, pscom_poll_func_t *do_poll) {
+	pscom_poll_start(&con->poll_read, do_poll, &pscom.poll_read);
+}
+
+
 void pscom_poll_read_stop(pscom_con_t *con);
 
 int pscom_progress(int timeout);

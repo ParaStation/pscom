@@ -20,10 +20,4 @@ typedef struct PSCOM_req pscom_req_t;
 typedef struct PSCOM_sock pscom_sock_t;
 typedef struct PSCOM pscom_t;
 
-typedef struct pscom_poll_reader pscom_poll_reader_t;
-struct pscom_poll_reader {
-	struct list_head	next; // Used by pscom.poll_reader
-	int (*do_read)(pscom_poll_reader_t *poll_reader); // return 1, if you made progress
-};
-
 #endif /* _PSCOM_TYPES_H_ */

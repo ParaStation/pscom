@@ -23,6 +23,7 @@ add_library(pscom SHARED
   pscom_ondemand.c
   pscom_p4s.c
   pscom_plugin.c
+  pscom_poll.c
   pscom_precon.c
   pscom_queues.c
   pscom_req.c

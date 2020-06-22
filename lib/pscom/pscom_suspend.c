@@ -131,8 +131,8 @@ void _pscom_con_check_suspended(pscom_con_t *con)
 	pscom_con_guard_stop(con);
 
 	// Verify success
-	assert(list_empty(&con->poll_next_send));
-	assert(list_empty(&con->poll_reader.next));
+	assert(list_empty(&con->poll_read.next));
+	assert(list_empty(&con->poll_write.next));
 
 	DPRINT(D_SUSPEND, "SUSPENDED %s", pscom_con_str(&con->pub));
 	suspend_init_con(con);

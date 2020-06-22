@@ -61,8 +61,8 @@ pscom_t pscom = {
 
 	.io_doneq = LIST_HEAD_INIT(pscom.io_doneq),
 
-	.poll_reader = LIST_HEAD_INIT(pscom.poll_reader),
-	.poll_sender = LIST_HEAD_INIT(pscom.poll_sender),
+	.poll_read   = POLL_LIST_HEAD_INIT(pscom.poll_read),
+	.poll_write  = POLL_LIST_HEAD_INIT(pscom.poll_write),
 	.backlog     = LIST_HEAD_INIT(pscom.backlog),
 
 	.backlog_lock = PTHREAD_MUTEX_INITIALIZER,
@@ -195,40 +195,14 @@ restart:
 PSCOM_PLUGIN_API_EXPORT_ONLY
 void pscom_poll_write_stop(pscom_con_t *con)
 {
-	/* it's save to dequeue more then once */
-	list_del_init(&con->poll_next_send);
-}
-
-
-PSCOM_PLUGIN_API_EXPORT_ONLY
-void pscom_poll_write_start(pscom_con_t *con)
-{
-	if (list_empty(&con->poll_next_send)) {
-		list_add_tail(&con->poll_next_send, &pscom.poll_sender);
-	}
-	con->do_write(con);
-	/* Dont do anything after this line.
-	   do_write() can reenter pscom_poll_write_start()! */
-}
-
-
-PSCOM_PLUGIN_API_EXPORT_ONLY
-void pscom_poll_read_start(pscom_con_t *con)
-{
-	pscom_poll_reader_t *reader = &con->poll_reader;
-	if (list_empty(&reader->next)) {
-		list_add_tail(&reader->next, &pscom.poll_reader);
-	}
+	pscom_poll_stop(&con->poll_write);
 }
 
 
 PSCOM_PLUGIN_API_EXPORT_ONLY
 void pscom_poll_read_stop(pscom_con_t *con)
 {
-	pscom_poll_reader_t *reader = &con->poll_reader;
-
-	/* it's save to dequeue more then once */
-	list_del_init(&reader->next);
+	pscom_poll_stop(&con->poll_read);
 }
 
 
@@ -237,27 +211,14 @@ int pscom_progress(int timeout)
 {
 	struct list_head *pos, *next;
 
-	list_for_each_safe(pos, next, &pscom.poll_sender) {
-		pscom_con_t *con = list_entry(pos, pscom_con_t, poll_next_send);
-		con->do_write(con);
-		timeout = 0; // enable polling
+	pscom_poll(&pscom.poll_write);
+
+	if (pscom_poll(&pscom.poll_read)) {
+		return 1;
 	}
 
-	list_for_each_safe(pos, next, &pscom.poll_reader) {
-		pscom_poll_reader_t *reader = list_entry(pos, pscom_poll_reader_t, next);
-		if (reader->do_read(reader)) {
-#if 0
-			/* Fixme: reader might be dequeued in reader->do_read()
-			 * with list_del() instead of list_del_init(). This could
-			 * result in race here. */
-			if(!list_empty(pos)) {
-				/* avoid starvation: move reader to the back! */
-				list_del(pos);
-				list_add_tail(pos, &pscom.poll_reader);
-			}
-#endif
-			return 1;
-		}
+	if (!pscom_poll_list_empty(&pscom.poll_write) &&
+	    !pscom_poll_list_empty(&pscom.poll_read)) {
 		timeout = 0; // enable polling
 	}
 

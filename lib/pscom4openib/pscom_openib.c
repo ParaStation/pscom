@@ -37,17 +37,16 @@
 
 
 static
-struct pscom_poll_reader pscom_cq_poll;
+pscom_poll_t pscom_poll_cq;
 
 __attribute__((visibility("hidden")))
-int pscom_poll_cq(pscom_poll_reader_t *reader)
+int pscom_do_poll_cq(pscom_poll_t *poll)
 {
 	psoib_progress();
 
 	if (!psoib_outstanding_cq_entries) {
 		/* Stop polling on cq */
-		/* it's save to dequeue more then once */
-		list_del_init(&reader->next);
+		pscom_poll_stop(poll);
 	}
 
 	return 0;
@@ -56,13 +55,12 @@ int pscom_poll_cq(pscom_poll_reader_t *reader)
 static inline
 void pscom_check_cq_poll(void)
 {
-	if (psoib_outstanding_cq_entries &&
-	    list_empty(&pscom_cq_poll.next)) {
-		// There are outstanding cq events and
-		// we do not already poll the cq
+	if (psoib_outstanding_cq_entries) {
+		// There are outstanding cq events
 
 		// Start polling:
-		list_add_tail(&pscom_cq_poll.next, &pscom.poll_reader);
+		 // ToDo: Should we prefer &pscom.poll_write here?
+		pscom_poll_start(&pscom_poll_cq, pscom_do_poll_cq, &pscom.poll_read);
 	}
 }
 
@@ -95,9 +93,9 @@ int _pscom_openib_do_read(pscom_con_t *con, psoib_con_info_t *mcon)
 
 
 static
-int pscom_openib_do_read(pscom_poll_reader_t *reader)
+int pscom_openib_do_read(pscom_poll_t *poll)
 {
-	pscom_con_t *con = list_entry(reader, pscom_con_t, poll_reader);
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_read);
 	psoib_con_info_t *mcon = con->arch.openib.mcon;
 
 	return _pscom_openib_do_read(con, mcon);
@@ -105,8 +103,9 @@ int pscom_openib_do_read(pscom_poll_reader_t *reader)
 
 
 static
-void pscom_openib_do_write(pscom_con_t *con)
+int pscom_openib_do_write(pscom_poll_t *poll)
 {
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
 	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
@@ -131,6 +130,7 @@ void pscom_openib_do_write(pscom_con_t *con)
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
+	return 0;
 }
 
 
@@ -390,6 +390,18 @@ void pscom_openib_con_close(pscom_con_t *con)
 
 
 static
+void pscom_poll_read_start_openib(pscom_con_t *con) {
+	pscom_poll_read_start(con, pscom_openib_do_read);
+}
+
+
+static
+void pscom_poll_write_start_openib(pscom_con_t *con) {
+	pscom_poll_write_start(con, pscom_openib_do_write);
+}
+
+
+static
 void pscom_openib_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_OPENIB;
@@ -399,13 +411,14 @@ void pscom_openib_init_con(pscom_con_t *con)
 #endif
 
 	// Only Polling:
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
-	con->read_start = pscom_poll_read_start;
+	pscom_poll_init(&con->poll_read);
+	con->read_start = pscom_poll_read_start_openib;
 	con->read_stop = pscom_poll_read_stop;
 
-	con->poll_reader.do_read = pscom_openib_do_read;
-	con->do_write = pscom_openib_do_write;
+	pscom_poll_init(&con->poll_write);
+	con->write_start = pscom_poll_write_start_openib;
+	con->write_stop = pscom_poll_write_stop;
+
 	con->close = pscom_openib_con_close;
 
 #ifdef IB_USE_RNDV
@@ -471,9 +484,7 @@ void pscom_openib_init(void)
 #endif
 	pscom_env_get_int(&psoib_rndv_fallbacks, ENV_OPENIB_RNDV_FALLBACKS);
 
-	INIT_LIST_HEAD(&pscom_cq_poll.next);
-	pscom_cq_poll.do_read = pscom_poll_cq;
-
+	pscom_poll_init(&pscom_poll_cq);
 }
 
 

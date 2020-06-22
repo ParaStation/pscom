@@ -54,9 +54,9 @@ int _pscom_gm_do_read(psgm_sock_t *sock)
 
 
 static
-int pscom_gm_do_read(pscom_poll_reader_t *reader)
+int pscom_gm_do_read(pscom_poll_t *poll)
 {
-	psgm_sock_t *sock = list_entry(reader, psgm_sock_t, poll_reader);
+	psgm_sock_t *sock = list_entry(poll, psgm_sock_t, poll_read);
 	return _pscom_gm_do_read(sock);
 }
 

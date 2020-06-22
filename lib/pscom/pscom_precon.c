@@ -615,7 +615,7 @@ void pscom_precon_destroy(precon_t *pre)
 	}
 
 	pscom_precon_count--;
-	list_del_init(&pre->poll_reader.next);
+	pscom_poll_dequeue(&pre->poll_read);
 
 	free(pre->send); pre->send = NULL; pre->send_len = 0;
 	free(pre->recv); pre->recv = NULL; pre->recv_len = 0;
@@ -970,9 +970,9 @@ int pscom_precon_tcp_connect(precon_t *pre, int nodeid, int portno)
 
 /* Print statistic about this precon */
 static
-int pscom_precon_do_read_poll(pscom_poll_reader_t *reader)
+int pscom_precon_do_read_poll(pscom_poll_t *poll)
 {
-	precon_t *pre = list_entry(reader, precon_t, poll_reader);
+	precon_t *pre = list_entry(poll, precon_t, poll_read);
 	assert(pre->magic == MAGIC_PRECON);
 	unsigned long now = getusec();
 
@@ -1052,8 +1052,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 	pre->last_reconnect =
 		pre->last_print_stat = getusec();
 
-	pre->poll_reader.do_read = pscom_precon_do_read_poll;
-	list_add_tail(&pre->poll_reader.next, &pscom.poll_reader);
+	pscom_poll_start(&pre->poll_read, pscom_precon_do_read_poll, &pscom.poll_read);
 
 	pre->stat_send = 0;
 	pre->stat_recv = 0;
