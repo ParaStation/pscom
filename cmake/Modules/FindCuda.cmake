@@ -1,6 +1,14 @@
 
-find_path(CUDA_INCLUDE_DIR cuda.h driver_types.h)
-find_library(CUDA_LIBRARY cuda)
+set(CUDA_HOME "/usr/local/cuda" CACHE STRING "Default location where to search CUDA.")
+
+find_path(CUDA_INCLUDE_DIR
+  NAMES cuda.h driver_types.h
+  HINTS ${CUDA_HOME} ENV CUDA_HOME
+  PATH_SUFFIXES include)
+find_library(CUDA_LIBRARY
+  NAMES cuda
+  HINTS ${CUDA_HOME} ENV CUDA_HOME
+  PATH_SUFFIXES lib lib64)
 
 set(CUDA_LIBRARIES ${CUDA_LIBRARY})
 set(CUDA_INCLUDE_DIRS ${CUDA_INCLUDE_DIR})
