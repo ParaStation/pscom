@@ -22,8 +22,8 @@ endfunction()
 function(plugin_common plugin)
   target_include_directories(
     ${plugin}
-    PRIVATE .
-    PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
+    BEFORE PRIVATE .
+    BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
     )
 
   target_link_libraries(

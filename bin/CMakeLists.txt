@@ -313,10 +313,10 @@ if (EXTOLL_ENABLED)
   add_executable(pscom_memusage_extoll pscom_memusage.c)
   target_include_directories(
     pscom_memusage_extoll
-    PRIVATE ${EXTOLL_INCLUDE_DIRS}
     PRIVATE ${PROJECT_BINARY_DIR}/include
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4extoll
+    PRIVATE ${EXTOLL_INCLUDE_DIRS}
     )
   target_link_libraries(
     pscom_memusage_extoll
@@ -330,10 +330,10 @@ if (EXTOLL_ENABLED)
   add_executable(pscom_memusage_velo pscom_memusage.c)
   target_include_directories(
     pscom_memusage_velo
-    PRIVATE ${EXTOLL_INCLUDE_DIRS}
     PRIVATE ${PROJECT_BINARY_DIR}/include
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4velo
+    PRIVATE ${EXTOLL_INCLUDE_DIRS}
     )
   target_link_libraries(
     pscom_memusage_velo
