@@ -1052,6 +1052,8 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 	pre->last_reconnect =
 		pre->last_print_stat = getusec();
 
+	pscom_poll_init(&pre->poll_read);
+
 	pscom_poll_start(&pre->poll_read, pscom_precon_do_read_poll, &pscom.poll_read);
 
 	pre->stat_send = 0;
