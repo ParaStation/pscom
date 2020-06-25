@@ -230,6 +230,13 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		pscom_con_end_write(con);
 		pscom_con_end_read(con);
 
+		// Stop polling, if used. Usually pscom_con_end_{read,write} have
+		// already called pscom_poll_{read,write}_stop. The con->poll_read
+		// and con->poll_write might be still in a pscom_poll_list_t list.
+		// De-queue now. It is safe to de-queue multiple times:
+		pscom_poll_dequeue(&con->poll_read);
+		pscom_poll_dequeue(&con->poll_write);
+
 		_pscom_con_terminate_net_queues(con);
 
 		assert(con->pub.state == PSCOM_CON_STATE_CLOSE_WAIT);
@@ -665,6 +672,10 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 	con->read_start = pscom_no_rw_start_stop;
 	con->read_stop = pscom_no_rw_start_stop;
 	con->close = pscom_no_rw_start_stop;
+
+	pscom_poll_init(&con->poll_read);
+	pscom_poll_init(&con->poll_write);
+
 	/* RMA */
 	con->rma_mem_register_check = NULL;
 	con->rma_mem_register = NULL;

@@ -339,12 +339,10 @@ void pscom_extoll_init_con(pscom_con_t *con)
 #endif
 
 	// Read
-	pscom_poll_init(&con->poll_read);
 	con->read_start = pscom_extoll_velo2_read_start;
 	con->read_stop = pscom_extoll_velo2_read_stop;
 
 	// Write with polling:
-	pscom_poll_init(&con->poll_write);
 	con->write_start = pscom_poll_write_start_extoll;
 	con->write_stop = pscom_poll_write_stop;
 

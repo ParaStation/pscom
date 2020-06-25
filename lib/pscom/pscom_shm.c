@@ -517,6 +517,7 @@ void shm_close(pscom_con_t *con)
 		while (shm->shm_pending) {
 			shm_poll_write_pending_io(&shm->poll_write_pending_io);
 		}
+		pscom_poll_dequeue(&shm->poll_write_pending_io);
 
 		shm_cleanup_shm_conn(shm);
 

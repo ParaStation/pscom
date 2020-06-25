@@ -411,11 +411,9 @@ void pscom_openib_init_con(pscom_con_t *con)
 #endif
 
 	// Only Polling:
-	pscom_poll_init(&con->poll_read);
 	con->read_start = pscom_poll_read_start_openib;
 	con->read_stop = pscom_poll_read_stop;
 
-	pscom_poll_init(&con->poll_write);
 	con->write_start = pscom_poll_write_start_openib;
 	con->write_stop = pscom_poll_write_stop;
 

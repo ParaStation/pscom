@@ -176,7 +176,6 @@ void pscom_ofed_init_con(pscom_con_t *con)
 	con->read_start = pscom_ofed_read_start;
 	con->read_stop = pscom_ofed_read_stop;
 
-	pscom_poll_init(&con->poll_write);
 	con->write_start = pscom_poll_write_start_ofed;
 	con->write_stop = pscom_poll_write_stop;
 

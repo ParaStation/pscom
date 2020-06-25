@@ -236,11 +236,9 @@ void pscom_elan_con_init(pscom_con_t *con, int con_fd,
 	con->arch.elan.ci = ci;
 
 	// Only Polling:
-	pscom_poll_init(&con->poll_read);
 	con->read_start = pscom_poll_read_start_elan;
 	con->read_stop = pscom_poll_read_stop;
 
-	pscom_poll_init(&con->poll_write);
 	con->write_start = pscom_poll_write_start_elan;
 	con->write_stop = pscom_poll_write_stop;
 

@@ -206,7 +206,6 @@ void pscom_ucp_init_con(pscom_con_t *con)
 	con->read_start = pscom_ucp_read_start;
 	con->read_stop = pscom_ucp_read_stop;
 
-	pscom_poll_init(&con->poll_write);
 	con->write_start = pscom_poll_write_start_ucp;
 	con->write_stop = pscom_poll_write_stop;
 
