@@ -217,7 +217,7 @@ int pscom_progress(int timeout)
 		return 1;
 	}
 
-	if (!pscom_poll_list_empty(&pscom.poll_write) &&
+	if (!pscom_poll_list_empty(&pscom.poll_write) ||
 	    !pscom_poll_list_empty(&pscom.poll_read)) {
 		timeout = 0; // enable polling
 	}
