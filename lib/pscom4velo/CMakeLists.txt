@@ -25,3 +25,10 @@ target_link_libraries(
 )
 
 plugin_common(pscom4velo)
+
+option(EXTOLL_MEMCACHE_ENABLED "Enable the registration cache of the pscom4velo plugin." OFF)
+if(EXTOLL_MEMCACHE_ENABLED)
+  target_compile_definitions(
+    pscom4velo
+    PRIVATE PSEX_USE_MREGION_CACHE)
+endif(EXTOLL_MEMCACHE_ENABLED)

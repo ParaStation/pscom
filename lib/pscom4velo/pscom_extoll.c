@@ -387,7 +387,7 @@ void pscom_extoll_init(void)
 	pscom_env_get_int(&psex_event_count, ENV_EXTOLL_EVENT_CNT);
 #endif
 
-#if PSEX_USE_MREGION_CACHE
+#ifdef PSEX_USE_MREGION_CACHE
 	pscom_env_get_uint(&psex_mregion_cache_max_size, ENV_EXTOLL_MCACHE_SIZE);
 	if (!psex_mregion_cache_max_size) psex_mregion_cache_max_size = 1; // 0 not allowed.
 #endif

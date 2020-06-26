@@ -384,7 +384,7 @@ RMA2_NLA psex_mregion_nla(RMA2_Region *rma2_region, void *buf)
 	return rma2_region->nla + (buf - rma2_region->start);
 }
 
-#if PSEX_USE_MREGION_CACHE
+#ifdef PSEX_USE_MREGION_CACHE
 /* Use mregion cache */
 
 #include "psextoll_mregion_cache.c"
@@ -726,7 +726,7 @@ void psex_cleanup_hca(hca_info_t *hca_info)
 		hca_info->send.bufs.mr = 0;
 	}
 #endif
-#if PSEX_USE_MREGION_CACHE
+#ifdef PSEX_USE_MREGION_CACHE
 	psex_mregion_cache_cleanup();
 #endif
 	if (hca_info->rma2_port) {

@@ -136,8 +136,7 @@ int psex_velo2_recv(hca_info_t *hca_info, void **priv, void *msg, size_t msglen)
 /* registered memory region. (Opaque object for users of psex_get_mregion() and psex_put_mregion()) */
 typedef struct psex_rma_req psex_rma_req_t;
 
-#define PSEX_USE_MREGION_CACHE 1
-#if PSEX_USE_MREGION_CACHE
+#ifdef PSEX_USE_MREGION_CACHE
 /* Using mregion cache */
 
 typedef struct psex_mregion_cache psex_mregion_cache_t;
