@@ -282,6 +282,8 @@ int pscom_openib_rma_read(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *
 	err = psoib_post_rma_get(dreq);
 	assert(!err); // ToDo: Catch error
 
+	pscom_check_cq_poll();
+
 	return 0;
 
 err_register:
@@ -353,6 +355,8 @@ int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *
 	assert(!err); // ToDo: Catch error
 	rd_data = NULL; /* Do not use rd_data after psoib_post_rma_put()!
 			   io_done might already be called and freed rd_data. */
+
+	pscom_check_cq_poll();
 
 	return 0;
 
