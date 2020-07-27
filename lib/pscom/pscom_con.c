@@ -1168,7 +1168,23 @@ void pscom_close_connection(pscom_connection_t *connection)
 		pscom_con_t *con = get_con(connection);
 		assert(con->magic == MAGIC_CONNECTION);
 		pscom_con_close(con);
+
+		// Speedup sending of EOFs by progressing now:
+		pscom_progress(0);
 	} pscom_unlock();
+}
+
+
+static
+int pscom_connection_is_closing(pscom_connection_t *connection) {
+	switch (connection->state) {
+	case PSCOM_CON_STATE_CLOSED:
+	case PSCOM_CON_STATE_CLOSE_WAIT:
+	case PSCOM_CON_STATE_CLOSING:
+		return 1;
+	default:
+		return 0;
+	}
 }
 
 
@@ -1176,29 +1192,34 @@ PSCOM_API_EXPORT
 pscom_connection_t *pscom_get_next_connection(pscom_socket_t *socket, pscom_connection_t *connection)
 {
 	pscom_sock_t *sock = get_sock(socket);
-	pscom_con_t *res;
 
 	assert(sock->magic == MAGIC_SOCKET);
 
 	pscom_lock(); {
-		if (!connection) {
+		do {
+			struct list_head *next;
 
-			if (list_empty(&sock->connections)) {
-				res = NULL;
+			if (!connection) {
+				// First element
+				next = sock->connections.next;
 			} else {
-				res = list_entry(sock->connections.next, pscom_con_t, next);
-			}
-		} else {
-			pscom_con_t *con = get_con(connection);
-			assert(con->magic == MAGIC_CONNECTION);
+				// Next element
+				pscom_con_t *con = get_con(connection);
+				assert(con->magic == MAGIC_CONNECTION);
 
-			if (con->next.next != &sock->connections) {
-				res = list_entry(con->next.next, pscom_con_t, next);
-			} else {
-				res = NULL;
+				next = con->next.next;
 			}
-		}
+			if (next == &sock->connections) {
+				// No connection found.
+				connection = NULL;
+			} else {
+				// Next connection from next element
+				pscom_con_t *con = list_entry(next, pscom_con_t, next);
+				assert(con->magic == MAGIC_CONNECTION);
+				connection = &con->pub;
+			}
+		} while (connection && pscom_connection_is_closing(connection));
 	} pscom_unlock();
 
-	return res ? &res->pub : NULL;
+	return connection;
 }
