@@ -322,6 +322,10 @@ void pscom_extoll_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_VELO;
 
+#ifdef PSCOM_CUDA_AWARENESS
+	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_velo;
+#endif
+
 	/*
 	// Only Polling:
 	con->write_start = pscom_poll_write_start;
@@ -383,7 +387,7 @@ void pscom_extoll_init(void)
 	pscom_env_get_int(&psex_event_count, ENV_EXTOLL_EVENT_CNT);
 #endif
 
-#if PSEX_USE_MREGION_CACHE
+#ifdef PSEX_USE_MREGION_CACHE
 	pscom_env_get_uint(&psex_mregion_cache_max_size, ENV_EXTOLL_MCACHE_SIZE);
 	if (!psex_mregion_cache_max_size) psex_mregion_cache_max_size = 1; // 0 not allowed.
 #endif

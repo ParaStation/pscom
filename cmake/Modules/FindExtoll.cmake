@@ -1,12 +1,19 @@
 
 set(EXTOLL_HOME "/opt/extoll/x86_64" CACHE STRING "Default location where to search the EXTOLL libraries.")
 
+# We need to link to rma2gpud for GPUDirect support within librma2
+if(CUDA_ENABLED)
+  set(EXTOLL_RMA2_LIBRARY_NAME "rma2gpud")
+else(CUDA_ENABLED)
+  set(EXTOLL_RMA2_LIBRARY_NAME "rma2")
+endif(CUDA_ENABLED)
+
 find_path(EXTOLL_INCLUDE_DIR
   NAMES rma2.h velo2.h
   HINTS ${EXTOLL_HOME}
   PATH_SUFFIXES include)
 find_library(EXTOLL_RMA2_LIBRARY
-  NAMES rma2
+  NAMES ${EXTOLL_RMA2_LIBRARY_NAME}
   HINTS ${EXTOLL_HOME}
   PATH_SUFFIXES lib lib64)
 find_library(EXTOLL_VELO2_LIBRARY

@@ -169,6 +169,8 @@
 #define ENV_CUDA_AWARE_SHM "PSP_CUDA_AWARE_SHM"
 #define ENV_CUDA_AWARE_OPENIB "PSP_CUDA_AWARE_OPENIB"
 #define ENV_CUDA_AWARE_UCP "PSP_CUDA_AWARE_UCP"
+#define ENV_CUDA_AWARE_VELO "PSP_CUDA_AWARE_VELO"
+#define ENV_CUDA_AWARE_EXTOLL "PSP_CUDA_AWARE_EXTOLL"
 
 /* Manage a list of all requests for debug dumps (decrease performance!) */
 #define ENV_DEBUG_REQ     "PSP_DEBUG_REQ"
@@ -244,6 +246,8 @@ struct PSCOM_env {
 	unsigned int 	cuda_aware_shm;
 	unsigned int 	cuda_aware_openib;
 	unsigned int 	cuda_aware_ucp;
+	unsigned int 	cuda_aware_velo;
+	unsigned int 	cuda_aware_extoll;
 #endif
 };
 
@@ -255,7 +259,9 @@ struct PSCOM_env {
 	.cuda_enforce_staging = 0, \
 	.cuda_aware_shm       = 1, \
 	.cuda_aware_openib    = 1, \
-	.cuda_aware_ucp       = 1
+	.cuda_aware_ucp       = 1, \
+	.cuda_aware_velo      = 1, \
+	.cuda_aware_extoll    = 1
 #else
 #define PSCOM_ENV_CUDA
 #endif
