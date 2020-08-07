@@ -233,6 +233,7 @@ void pscom_ucp_init(void)
 	// pscom_env_get_int(&psucp_global_sendq, ENV_UCP_GLOBAL_SENDQ);
 	// pscom_env_get_uint(&psucp_sendq_size, ENV_UCP_SENDQ_SIZE);
 	psucp_small_msg_len = pscom.env.readahead;
+	psucp_max_recv = pscom.env.ucp_max_recv;
 
 	pscom_poll_init(&pscom_ucp.poll_read);
 	pscom_ucp.reader_user = 0;

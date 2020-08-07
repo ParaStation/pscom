@@ -83,6 +83,9 @@ FILE *psucp_debug_stream = NULL;
 unsigned psucp_small_msg_len = 350; // will be overwritten by pscom.env.readahead (PSP_READAHEAD)
 void *psucp_small_msg_sendbuf = NULL; // Prepared sendbuffer for small messages
 size_t psucp_small_msg_sendbuf_len = 0;
+unsigned int psucp_max_recv = ~0U;  // will be overwritten by pscom.env.ucp_max_recv (PSP_UCP_MAX_RECV)
+
+static unsigned int psucp_recv_in_progress = 0; // count all receives currently in progress
 
 #define psucp_dprint(level,fmt,arg... )					\
 do {									\
@@ -187,6 +190,7 @@ static
 void psucp_req_release(psucp_req_t *psucp_req) {
 	// Call psucp_req_init. ucp_request_free() move the request to
 	// the request pool and do NOT call psucp_req_init() before reusing it!
+
 	psucp_req_init(psucp_req);
 	ucp_request_free(psucp_req);
 }
@@ -297,6 +301,20 @@ err_worker:
 	psucp_cleanup_hca(hca_info);
 err_init:
 	return -1;
+}
+
+
+static inline
+void psucp_recv_req_inc(void)
+{
+    psucp_recv_in_progress++;
+}
+
+
+static inline
+void psucp_recv_req_dec(void)
+{
+    psucp_recv_in_progress--;
 }
 
 
@@ -541,11 +559,15 @@ size_t psucp_probe(psucp_msg_t *msg)
 {
 	hca_info_t *hca_info = &default_hca;
 
-	msg->msg_tag = ucp_tag_probe_nb(
-		hca_info->ucp_worker,
-		0 /* tag */, (ucp_tag_t)0 /* tag mask any */,
-		1 /* remove */,
-		&msg->info_tag);
+	if (psucp_recv_in_progress < psucp_max_recv) {
+		msg->msg_tag = ucp_tag_probe_nb(
+			hca_info->ucp_worker,
+			0 /* tag */, (ucp_tag_t)0 /* tag mask any */,
+			1 /* remove */,
+			&msg->info_tag);
+	} else {
+		msg->msg_tag = NULL;
+	}
 
 	if (msg->msg_tag == NULL) {
 		// Progress with ucp_tag_probe_nb() alone didn't call the req callbacks.
@@ -572,6 +594,7 @@ void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t
 		// printf("%s:%u:%s PSUCP_COMPLETED_RECV slow\n", __FILE__, __LINE__, __func__);
 		pscom_read_pending_done(con_info->con_priv, psucp_req->type.recv.req_priv);
 		psucp_pending_req_dequeue_and_release(psucp_req);
+		psucp_recv_req_dec();
 	} /* else {
 		// called from within ucp_tag_msg_recv_nb(). con_info is still unset.
 		printf("%s:%u:%s PSUCP_COMPLETED_RECV fast\n", __FILE__, __LINE__, __func__);
@@ -607,6 +630,8 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, siz
 		pscom_read_done(con_info->con_priv, buf, len);
 		psucp_req_release(psucp_req);
 	} else {
+		psucp_recv_req_inc();
+
 		// psucp_req not yet done. Poll for completion later:
 		psucp_pending_req_attach(request, con_info);
 		psucp_req->type.recv.req_priv = (void*)pscom_read_pending(con_info->con_priv, len);
