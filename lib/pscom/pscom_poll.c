@@ -16,12 +16,6 @@ void pscom_poll_list_init(pscom_poll_list_t *poll_list) {
 }
 
 
-void pscom_poll_dequeue(pscom_poll_t *poll) {
-	// De-queue
-	list_del_init(&poll->next);
-}
-
-
 int pscom_poll(pscom_poll_list_t *poll_list) {
 	struct list_head *pos, *next;
 
@@ -32,7 +26,7 @@ int pscom_poll(pscom_poll_list_t *poll_list) {
 				return 1;
 			}
 		} else {
-			pscom_poll_dequeue(poll);
+			pscom_poll_cleanup_init(poll);
 		}
 	}
 	return 0;
@@ -59,4 +53,11 @@ void pscom_poll_start(pscom_poll_t *poll, pscom_poll_func_t *do_poll, pscom_poll
 PSCOM_PLUGIN_API_EXPORT
 void pscom_poll_stop(pscom_poll_t *poll) {
 	poll->do_poll = NULL; // Mark for de-queue
+}
+
+
+PSCOM_PLUGIN_API_EXPORT
+void pscom_poll_cleanup_init(pscom_poll_t *poll) {
+	// De-queue
+	list_del_init(&poll->next);
 }

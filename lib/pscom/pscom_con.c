@@ -234,8 +234,8 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		// already called pscom_poll_{read,write}_stop. The con->poll_read
 		// and con->poll_write might be still in a pscom_poll_list_t list.
 		// De-queue now. It is safe to de-queue multiple times:
-		pscom_poll_dequeue(&con->poll_read);
-		pscom_poll_dequeue(&con->poll_write);
+		pscom_poll_cleanup_init(&con->poll_read);
+		pscom_poll_cleanup_init(&con->poll_write);
 
 		_pscom_con_terminate_net_queues(con);
 

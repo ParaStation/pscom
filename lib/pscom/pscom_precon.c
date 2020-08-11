@@ -615,7 +615,7 @@ void pscom_precon_destroy(precon_t *pre)
 	}
 
 	pscom_precon_count--;
-	pscom_poll_dequeue(&pre->poll_read);
+	pscom_poll_cleanup_init(&pre->poll_read);
 
 	free(pre->send); pre->send = NULL; pre->send_len = 0;
 	free(pre->recv); pre->recv = NULL; pre->recv_len = 0;
