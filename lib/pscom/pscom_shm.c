@@ -56,11 +56,6 @@ unsigned shm_direct = SHM_DIRECT;
 static
 unsigned shm_indirect = SHM_INDIRECT;
 
-//static
-//struct {
-//	struct pscom_poll_reader poll_reader; // calling shm_poll_pending_io(). Used if !list_empty(shm_conn_head)
-//	//struct list_head	shm_conn_head; // shm_conn_t.pending_io_next_conn.
-//} shm_pending_io;
 
 typedef struct shm_info_msg_s {
 	int shm_id;
