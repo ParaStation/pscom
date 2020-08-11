@@ -82,10 +82,10 @@ if (UCP_ENABLED)
 endif (UCP_ENABLED)
 
 
-if (PSM_ENABLED)
+if (PSM2_ENABLED)
   add_subdirectory(pscom4psm)
   link_to_lib(pscom4psm)
-endif (PSM_ENABLED)
+endif (PSM2_ENABLED)
 
 
 if (EXTOLL_ENABLED)
