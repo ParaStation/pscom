@@ -70,4 +70,13 @@ void pscom_poll_stop(pscom_poll_t *poll);
 void pscom_poll_cleanup_init(pscom_poll_t *poll);
 
 
+/**
+ * Return a bool, if this poll is in use of any pscom_poll_list_t.
+ */
+static inline
+int pscom_poll_is_inuse(pscom_poll_t *poll) {
+	return !list_empty(&poll->next);
+}
+
+
 #endif /* _PSCOM_POLL_H_ */

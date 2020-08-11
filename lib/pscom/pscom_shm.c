@@ -521,8 +521,8 @@ void shm_close(pscom_con_t *con)
 
 		shm_cleanup_shm_conn(shm);
 
-		assert(list_empty(&con->poll_read.next));
-		assert(list_empty(&con->poll_write.next));
+		assert(!pscom_poll_is_inuse(&con->poll_read));
+		assert(!pscom_poll_is_inuse(&con->poll_write));
 	}
 }
 

@@ -733,8 +733,8 @@ void _pscom_con_destroy(pscom_con_t *con)
 		       pscom_con_state_str(con->pub.state));
 	}
 	assert(con->pub.state == PSCOM_CON_STATE_CLOSED);
-	assert(list_empty(&con->poll_read.next));
-	assert(list_empty(&con->poll_write.next));
+	assert(!pscom_poll_is_inuse(&con->poll_read));
+	assert(!pscom_poll_is_inuse(&con->poll_write));
 
 	if(con->in.readahead.iov_base) {
 		free(con->in.readahead.iov_base);
