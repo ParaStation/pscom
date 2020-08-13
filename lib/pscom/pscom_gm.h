@@ -27,7 +27,7 @@ typedef struct psgm_conn {
 
 typedef struct psgm_sock {
 	int			readers;
-	pscom_poll_reader_t	poll_reader;
+	pscom_poll_t		poll_read;
 } psgm_sock_t;
 
 #endif /* _PSPORT_GM_H_ */

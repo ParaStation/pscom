@@ -24,7 +24,7 @@
 
 
 typedef struct {
-	struct pscom_poll_reader poll;
+	pscom_poll_t	poll_read;
 	unsigned poll_user; // count the users which wait for progress
 } pspsm_poll_t;
 
@@ -32,11 +32,15 @@ static pspsm_poll_t pspsm_poll;
 
 
 static
+int pscom_psm_make_progress(pscom_poll_t *poll);
+
+
+static
 void poll_user_inc(void)
 {
 	if (!pspsm_poll.poll_user) {
 		/* enqueue to polling reader */
-		list_add_tail(&pspsm_poll.poll.next, &pscom.poll_reader);
+		pscom_poll_start(&pspsm_poll.poll_read, pscom_psm_make_progress, &pscom.poll_read);
 	}
 	pspsm_poll.poll_user++;
 }
@@ -48,7 +52,7 @@ void poll_user_dec(void)
 	pspsm_poll.poll_user--;
 	if (!pspsm_poll.poll_user) {
 		/* dequeue from polling reader */
-		list_del_init(&pspsm_poll.poll.next);
+		pscom_poll_stop(&pspsm_poll.poll_read);
 	}
 }
 
@@ -76,7 +80,7 @@ void pscom_psm_read_stop(pscom_con_t *con)
 
 
 static
-int pscom_psm_make_progress(pscom_poll_reader_t *reader)
+int pscom_psm_make_progress(pscom_poll_t *poll)
 {
 	return pspsm_progress();
 }
@@ -116,15 +120,16 @@ void pscom_psm_post_recv_check(pscom_con_t *con)
 
 
 static
-void pscom_psm_do_write(pscom_con_t *con)
+int pscom_psm_do_write(pscom_poll_t *poll)
 {
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
 	pspsm_con_info_t *ci = con->arch.psm.ci;
 	struct iovec iov[2];
 
 	if (pspsm_send_pending(ci)) {
 		/* send in progress. wait for completion before
 		   transmiting the next message. */
-		return;
+		return 0;
 	}
 
 	/* FIXME: we might want to send more than one message at a
@@ -147,6 +152,7 @@ void pscom_psm_do_write(pscom_con_t *con)
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
+	return 0;
 }
 
 
@@ -194,16 +200,21 @@ void pscom_psm_con_close(pscom_con_t *con)
 
 
 static
+void pscom_poll_write_start_psm(pscom_con_t *con) {
+	pscom_poll_write_start(con, pscom_psm_do_write);
+}
+
+
+static
 void pscom_psm_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_PSM;
 
-	con->write_start = pscom_poll_write_start;
+	con->write_start = pscom_poll_write_start_psm;
 	con->write_stop = pscom_poll_write_stop;
 	con->read_start = pscom_psm_read_start;
 	con->read_stop = pscom_psm_read_stop;
 
-	con->do_write = pscom_psm_do_write;
 	con->close = pscom_psm_con_close;
 
 	pscom_con_setup_ok(con);
@@ -223,8 +234,8 @@ void pscom_psm_init(void)
 	}
 	pscom_env_get_uint(&pspsm_devcheck, ENV_PSM_DEVCHECK);
 
-	INIT_LIST_HEAD(&pspsm_poll.poll.next);
-	pspsm_poll.poll.do_read = pscom_psm_make_progress;
+	pscom_poll_init(&pspsm_poll.poll_read);
+	pspsm_poll.poll_user = 0;
 
 	// Preinitialize pspsm. Ignore errors. pspsm_connect will see the error again.
 

@@ -30,9 +30,13 @@
 #include "pscom_extoll.h"
 
 static struct {
-	struct pscom_poll_reader reader; // pscom_extoll_velo2_do_read
-	unsigned reader_user;
+	pscom_poll_t  poll_read; // pscom_extoll_velo2_do_read
+	unsigned      reader_user;
 } pscom_extoll;
+
+
+static
+int pscom_extoll_velo2_do_read(pscom_poll_t *poll);
 
 
 static
@@ -40,7 +44,7 @@ void reader_inc(void)
 {
 	if (!pscom_extoll.reader_user) {
 		// enqueue to polling reader
-		list_add_tail(&pscom_extoll.reader.next, &pscom.poll_reader);
+		pscom_poll_start(&pscom_extoll.poll_read, pscom_extoll_velo2_do_read, &pscom.poll_read);
 	}
 	pscom_extoll.reader_user++;
 }
@@ -52,7 +56,7 @@ void reader_dec(void)
 	pscom_extoll.reader_user--;
 	if (!pscom_extoll.reader_user) {
 		// dequeue from polling reader
-		list_del_init(&pscom_extoll.reader.next);
+		pscom_poll_stop(&pscom_extoll.poll_read);
 	}
 }
 
@@ -78,7 +82,7 @@ void pscom_extoll_velo2_read_stop(pscom_con_t *con)
 
 
 static
-int pscom_extoll_velo2_do_read(pscom_poll_reader_t *reader)
+int pscom_extoll_velo2_do_read(pscom_poll_t *poll)
 {
 	char msg[PSEX_VELO2_MTU];
 	pscom_con_t *con = NULL;
@@ -104,8 +108,9 @@ int pscom_extoll_velo2_do_read(pscom_poll_reader_t *reader)
 
 
 static
-void pscom_extoll_velo2_do_write(pscom_con_t *con)
+int pscom_extoll_velo2_do_write(pscom_poll_t *poll)
 {
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
 	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
@@ -128,6 +133,7 @@ void pscom_extoll_velo2_do_write(pscom_con_t *con)
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
+	return 0;
 }
 
 
@@ -257,9 +263,9 @@ int _pscom_extoll_rma2_do_read(pscom_con_t *con, psex_con_info_t *ci)
 
 
 static
-int pscom_extoll_rma2_do_read(pscom_poll_reader_t *reader)
+int pscom_extoll_rma2_do_read(pscom_poll_t *poll)
 {
-	pscom_con_t *con = list_entry(reader, pscom_con_t, poll_reader);
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_read);
 	psex_con_info_t *ci = con->arch.extoll.ci;
 
 	return _pscom_extoll_rma2_do_read(con, ci);
@@ -318,6 +324,12 @@ void pscom_extoll_con_close(pscom_con_t *con)
 
 
 static
+void pscom_poll_write_start_extoll(pscom_con_t *con) {
+	pscom_poll_write_start(con, pscom_extoll_velo2_do_write);
+}
+
+
+static
 void pscom_extoll_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_VELO;
@@ -326,24 +338,13 @@ void pscom_extoll_init_con(pscom_con_t *con)
 	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_velo;
 #endif
 
-	/*
-	// Only Polling:
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
-	con->read_start = pscom_poll_read_start;
-	con->read_stop = pscom_poll_read_stop;
-
-	con->poll_reader.do_read = pscom_extoll_do_read;
-	con->do_write = pscom_extoll_do_write;
-	*/
-	// Write with polling:
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
-	con->do_write = pscom_extoll_velo2_do_write;
-
 	// Read
 	con->read_start = pscom_extoll_velo2_read_start;
 	con->read_stop = pscom_extoll_velo2_read_stop;
+
+	// Write with polling:
+	con->write_start = pscom_poll_write_start_extoll;
+	con->write_stop = pscom_poll_write_stop;
 
 	con->close = pscom_extoll_con_close;
 
@@ -392,10 +393,8 @@ void pscom_extoll_init(void)
 	if (!psex_mregion_cache_max_size) psex_mregion_cache_max_size = 1; // 0 not allowed.
 #endif
 
-	INIT_LIST_HEAD(&pscom_extoll.reader.next);
-	pscom_extoll.reader.do_read = pscom_extoll_velo2_do_read;
+	pscom_poll_init(&pscom_extoll.poll_read);
 	pscom_extoll.reader_user = 0;
-
 }
 
 

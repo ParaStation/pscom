@@ -29,9 +29,6 @@
 #include <infiniband/verbs.h>
 
 #include "list.h"
-#ifndef IB_DONT_USE_ZERO_COPY
-#include "pscom_priv.h"
-#endif
 #include "pscom_util.h"
 #include "perf.h"
 #include "psoib.h"
@@ -76,12 +73,10 @@ struct hca_info {
 #ifdef IB_USE_RNDV
     /* RMA */
     struct list_head rma_reqs; /* list of active RMA requests : psiob_rma_req_t.next */
-    struct pscom_poll_reader rma_reqs_reader; /* calling psoib_progress(). Used if !list_empty(rma_reqs) */
 #endif
 };
 
 #ifdef IB_USE_RNDV
-static int psoib_rma_reqs_progress(pscom_poll_reader_t *reader);
 static void psoib_rma_reqs_deq(psoib_rma_req_t *dreq);
 #endif
 
@@ -830,7 +825,6 @@ int psoib_init_hca(hca_info_t *hca_info)
 
 #ifdef IB_USE_RNDV
     INIT_LIST_HEAD(&hca_info->rma_reqs);
-    hca_info->rma_reqs_reader.do_read = psoib_rma_reqs_progress;
 #endif /* IB_USE_RNDV */
 
     return 0;
@@ -1195,6 +1189,9 @@ int psoib_check_cq(hca_info_t *hca_info)
 	} else if (wc.opcode == IBV_WC_RDMA_READ) {
 		psoib_rma_req_t *req = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
 		int failed = wc.status != IBV_WC_SUCCESS;
+
+		psoib_outstanding_cq_entries--;
+
 		/* Dequeue and finish request: */
 		perf_add("openib_post_rma_get_done");
 		if (failed) {
@@ -1361,11 +1358,6 @@ void psoib_rma_reqs_enq(psoib_rma_req_t *req)
 	int first = list_empty(&hca_info->rma_reqs);
 
 	list_add_tail(&req->next, &hca_info->rma_reqs);
-
-	if (first) {
-		// Start polling for completer notifications
-		list_add_tail(&hca_info->rma_reqs_reader.next, &pscom.poll_reader);
-	}
 }
 
 static
@@ -1386,11 +1378,6 @@ void psoib_rma_reqs_deq(psoib_rma_req_t *dreq)
 #endif
 
 	list_del(&dreq->next);
-
-	if (list_empty(&hca_info->rma_reqs)) {
-		// Stop polling for completer notifications
-		list_del(&hca_info->rma_reqs_reader.next);
-	}
 }
 
 
@@ -1426,6 +1413,8 @@ int psoib_post_rma_get(psoib_rma_req_t *req)
 
 	error = ibv_post_send(req->ci->qp, &wr, &bad_wr);
 	assert(!error);
+
+	psoib_outstanding_cq_entries++;
 
 	// Enqueue this request and wait for notification via completion queue.
 	psoib_rma_reqs_enq(req);
@@ -1469,22 +1458,12 @@ int psoib_post_rma_put(psoib_rma_req_t *req)
 	error = ibv_post_send(req->ci->qp, &wr, &bad_wr);
 	assert(!error);
 
+	psoib_outstanding_cq_entries++;
+
 	// Enqueue this request and wait for notification via completion queue.
 	psoib_rma_reqs_enq(req);
 
 	psoib_poll(req->ci->hca_info, 0);
-	psoib_outstanding_cq_entries++;
-
-	return 0;
-}
-
-
-static
-int psoib_rma_reqs_progress(pscom_poll_reader_t *reader)
-{
-	hca_info_t *hca_info = list_entry(reader, hca_info_t, rma_reqs_reader);
-
-	psoib_poll(hca_info, 0);
 
 	return 0;
 }

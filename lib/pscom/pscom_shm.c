@@ -56,11 +56,6 @@ unsigned shm_direct = SHM_DIRECT;
 static
 unsigned shm_indirect = SHM_INDIRECT;
 
-static
-struct {
-	struct pscom_poll_reader poll_reader; // calling shm_poll_pending_io(). Used if !list_empty(shm_conn_head)
-	struct list_head	shm_conn_head; // shm_conn_t.pending_io_next_conn.
-} shm_pending_io;
 
 typedef struct shm_info_msg_s {
 	int shm_id;
@@ -72,6 +67,10 @@ struct shm_direct_header {
 	void	*base;
 	size_t	len;
 };
+
+
+static
+int shm_poll_write_pending_io(pscom_poll_t *poll);
 
 
 static
@@ -294,9 +293,9 @@ void shm_recvdone_direct(shm_conn_t *shm)
 /****************************************************************/
 
 static
-int shm_do_read(pscom_poll_reader_t *reader)
+int shm_do_read(pscom_poll_t *poll)
 {
-	pscom_con_t *con = list_entry(reader, pscom_con_t, poll_reader);
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_read);
 	uint32_t ret;
 	char *buf;
 	unsigned int len;
@@ -327,28 +326,6 @@ int shm_do_read(pscom_poll_reader_t *reader)
  */
 
 
-static
-void shm_pending_io_conn_enq(shm_conn_t *shm)
-{
-	if (list_empty(&shm_pending_io.shm_conn_head)) {
-		// Start polling for pending_io
-		list_add_tail(&shm_pending_io.poll_reader.next, &pscom.poll_reader);
-	}
-	list_add_tail(&shm->pending_io_next_conn, &shm_pending_io.shm_conn_head);
-}
-
-
-static
-void shm_pending_io_conn_deq(shm_conn_t *shm)
-{
-	list_del(&shm->pending_io_next_conn);
-	if (list_empty(&shm_pending_io.shm_conn_head)) {
-		// No shm_conn_t with pending io requests left. Stop polling for pending_io.
-		list_del(&shm_pending_io.poll_reader.next);
-	}
-}
-
-
 struct shm_pending {
 	struct shm_pending *next;
 	pscom_con_t *con;
@@ -359,8 +336,9 @@ struct shm_pending {
 
 
 static
-void shm_check_pending_io(shm_conn_t *shm)
+int shm_poll_write_pending_io(pscom_poll_t *poll)
 {
+	shm_conn_t *shm = list_entry(poll, shm_conn_t, poll_write_pending_io);
 	struct shm_pending *sp;
 	while (((sp = shm->shm_pending)) && (
 		       (sp->msg->msg_type == SHM_MSGTYPE_DIRECT_DONE) ||
@@ -379,22 +357,9 @@ void shm_check_pending_io(shm_conn_t *shm)
 
 		if (!shm->shm_pending) {
 			// shm_conn_t is without pending io requests.
-			shm_pending_io_conn_deq(shm);
+			pscom_poll_stop(&shm->poll_write_pending_io);
 			break;
 		}
-	}
-}
-
-
-static
-int shm_poll_pending_io(pscom_poll_reader_t *poll_reader)
-{
-	struct list_head *pos, *next;
-	// For each shm_conn_t shm
-	list_for_each_safe(pos, next, &shm_pending_io.shm_conn_head) {
-		shm_conn_t *shm = list_entry(pos, shm_conn_t, pending_io_next_conn);
-
-		shm_check_pending_io(shm);
 	}
 	return 0;
 }
@@ -421,7 +386,7 @@ void shm_pending_io_enq(pscom_con_t *con, shm_msg_t *msg, pscom_req_t *req, void
 	sp->data = data;
 
 	if (!shm->shm_pending) {
-		shm_pending_io_conn_enq(shm);
+		pscom_poll_start(&shm->poll_write_pending_io, shm_poll_write_pending_io, &pscom.poll_write);
 		shm->shm_pending = sp;
 	} else {
 		// Append at the end
@@ -432,8 +397,9 @@ void shm_pending_io_enq(pscom_con_t *con, shm_msg_t *msg, pscom_req_t *req, void
 
 
 static
-void shm_do_write(pscom_con_t *con)
+int shm_do_write(pscom_poll_t *poll)
 {
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
 	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
@@ -504,6 +470,7 @@ void shm_do_write(pscom_con_t *con)
 
 
 	}
+	return 0;
 }
 
 
@@ -516,6 +483,8 @@ void shm_init_shm_conn(shm_conn_t *shm)
 	shm->direct_base = NULL;
 	shm->local_id = -1;
 	shm->remote_id = -1;
+
+	pscom_poll_init(&shm->poll_write_pending_io);
 }
 
 
@@ -541,14 +510,27 @@ void shm_close(pscom_con_t *con)
 
 		// ToDo: This must not be a blocking while loop!
 		while (shm->shm_pending) {
-			shm_check_pending_io(shm);
+			shm_poll_write_pending_io(&shm->poll_write_pending_io);
 		}
+		pscom_poll_cleanup_init(&shm->poll_write_pending_io);
 
 		shm_cleanup_shm_conn(shm);
 
-		assert(list_empty(&con->poll_next_send));
-		assert(list_empty(&con->poll_reader.next));
+		assert(!pscom_poll_is_inuse(&con->poll_read));
+		assert(!pscom_poll_is_inuse(&con->poll_write));
 	}
+}
+
+
+static
+void pscom_poll_read_start_shm(pscom_con_t *con) {
+	pscom_poll_read_start(con, shm_do_read);
+}
+
+
+static
+void pscom_poll_write_start_shm(pscom_con_t *con) {
+	pscom_poll_write_start(con, shm_do_write);
 }
 
 
@@ -561,13 +543,14 @@ void shm_init_con(pscom_con_t *con)
 	con->is_gpu_aware = pscom.env.cuda && pscom.env.cuda_aware_shm;
 #endif
 
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
-	con->read_start = pscom_poll_read_start;
+	pscom_poll_init(&con->poll_read);
+	con->read_start = pscom_poll_read_start_shm;
 	con->read_stop = pscom_poll_read_stop;
 
-	con->poll_reader.do_read = shm_do_read;
-	con->do_write = shm_do_write;
+	pscom_poll_init(&con->poll_write);
+	con->write_start = pscom_poll_write_start_shm;
+	con->write_stop = pscom_poll_write_stop;
+
 	con->close = shm_close;
 
 	con->rendezvous_size = pscom.env.rendezvous_size_shm;
@@ -600,9 +583,6 @@ void pscom_shm_sock_init(pscom_sock_t *sock)
 		shm_direct = (unsigned)~0;
 		shm_indirect = (unsigned)~0;
 	}
-
-	shm_pending_io.poll_reader.do_read = shm_poll_pending_io;
-	INIT_LIST_HEAD(&shm_pending_io.shm_conn_head);
 }
 
 

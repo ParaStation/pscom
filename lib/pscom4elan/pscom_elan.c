@@ -59,9 +59,9 @@ int _pscom_elan_do_read(pscom_con_t *con, pselan_con_info_t *ci)
 
 
 static
-int pscom_elan_do_read(pscom_poll_reader_t *reader)
+int pscom_elan_do_read(pscom_poll_t *poll)
 {
-	pscom_con_t *con = list_entry(reader, pscom_con_t, poll_reader);
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_read);
 	pselan_con_info_t *ci = con->arch.elan.ci;
 
 	return _pscom_elan_do_read(con, ci);
@@ -213,6 +213,18 @@ void pscom_elan_close(pscom_con_t *con)
 
 
 static
+void pscom_poll_read_start_elan(pscom_con_t *con) {
+	pscom_poll_read_start(con, pscom_elan_do_read);
+}
+
+
+static
+void pscom_poll_write_start_elan(pscom_con_t *con) {
+	pscom_poll_write_start(con, pscom_elan_do_write);
+}
+
+
+static
 void pscom_elan_con_init(pscom_con_t *con, int con_fd,
 			 pselan_con_info_t *ci)
 {
@@ -224,13 +236,12 @@ void pscom_elan_con_init(pscom_con_t *con, int con_fd,
 	con->arch.elan.ci = ci;
 
 	// Only Polling:
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
-	con->read_start = pscom_poll_read_start;
+	con->read_start = pscom_poll_read_start_elan;
 	con->read_stop = pscom_poll_read_stop;
 
-	con->poll_reader.do_read = pscom_elan_do_read;
-	con->do_write = pscom_elan_do_write;
+	con->write_start = pscom_poll_write_start_elan;
+	con->write_stop = pscom_poll_write_stop;
+
 	con->close = pscom_elan_close;
 
 //	con->rma_mem_register = pscom_elan_rma_mem_register;

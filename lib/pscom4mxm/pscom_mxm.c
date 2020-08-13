@@ -81,7 +81,7 @@ void pscom_process_rreq(psmxm_recv_req_t *rreq)
 
 
 static
-int pscom_mxm_make_progress(pscom_poll_reader_t *reader)
+int pscom_mxm_make_progress(pscom_poll_t *poll)
 {
 	psmxm_recv_req_t *rreq;
 	rreq = psmxm_recv_peek();

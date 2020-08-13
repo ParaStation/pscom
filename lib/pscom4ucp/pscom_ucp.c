@@ -28,9 +28,13 @@
 #include "pscom_ucp.h"
 
 static struct {
-	struct pscom_poll_reader reader; // pscom_ucp_do_read
+	pscom_poll_t poll_read; // pscom_ucp_do_read
 	unsigned reader_user;
 } pscom_ucp;
+
+
+static
+int pscom_ucp_do_read(pscom_poll_t *poll);
 
 
 static
@@ -38,7 +42,7 @@ void reader_inc(void)
 {
 	if (!pscom_ucp.reader_user) {
 		// enqueue to polling reader
-		list_add_tail(&pscom_ucp.reader.next, &pscom.poll_reader);
+		pscom_poll_start(&pscom_ucp.poll_read, pscom_ucp_do_read, &pscom.poll_read);
 	}
 	pscom_ucp.reader_user++;
 }
@@ -50,7 +54,7 @@ void reader_dec(void)
 	pscom_ucp.reader_user--;
 	if (!pscom_ucp.reader_user) {
 		// dequeue from polling reader
-		list_del_init(&pscom_ucp.reader.next);
+		pscom_poll_stop(&pscom_ucp.poll_read);
 	}
 }
 
@@ -75,7 +79,7 @@ void pscom_ucp_read_stop(pscom_con_t *con)
 }
 
 static
-int pscom_ucp_do_read(pscom_poll_reader_t *reader)
+int pscom_ucp_do_read(pscom_poll_t *poll)
 {
 	psucp_msg_t msg;
 	ssize_t rc;
@@ -124,11 +128,12 @@ void pscom_psucp_sendv_done(void *req_priv)
 
 
 static
-void pscom_ucp_do_write(pscom_con_t *con)
+int pscom_ucp_do_write(pscom_poll_t *poll)
 {
 	size_t len;
 	struct iovec iov[2];
 	pscom_req_t *req;
+	pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
 
 	req = pscom_write_get_iov(con, iov);
 
@@ -154,6 +159,7 @@ void pscom_ucp_do_write(pscom_con_t *con)
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
+	return 0;
 }
 
 
@@ -182,6 +188,12 @@ void pscom_ucp_con_close(pscom_con_t *con)
 
 
 static
+void pscom_poll_write_start_ucp(pscom_con_t *con) {
+	pscom_poll_write_start(con, pscom_ucp_do_write);
+}
+
+
+static
 void pscom_ucp_init_con(pscom_con_t *con)
 {
 	con->pub.type = PSCOM_CON_TYPE_UCP;
@@ -191,12 +203,12 @@ void pscom_ucp_init_con(pscom_con_t *con)
 #endif
 
 	// Only Polling:
-	con->write_start = pscom_poll_write_start;
-	con->write_stop = pscom_poll_write_stop;
 	con->read_start = pscom_ucp_read_start;
 	con->read_stop = pscom_ucp_read_stop;
 
-	con->do_write = pscom_ucp_do_write;
+	con->write_start = pscom_poll_write_start_ucp;
+	con->write_stop = pscom_poll_write_stop;
+
 	con->close = pscom_ucp_con_close;
 
 //	con->rma_mem_register = pscom_ucp_rma_mem_register;
@@ -222,8 +234,7 @@ void pscom_ucp_init(void)
 	// pscom_env_get_uint(&psucp_sendq_size, ENV_UCP_SENDQ_SIZE);
 	psucp_small_msg_len = pscom.env.readahead;
 
-	INIT_LIST_HEAD(&pscom_ucp.reader.next);
-	pscom_ucp.reader.do_read = pscom_ucp_do_read;
+	pscom_poll_init(&pscom_ucp.poll_read);
 	pscom_ucp.reader_user = 0;
 
 	/* ensure the initialization of the UCP memory cache */
