@@ -28,6 +28,7 @@
 #include "../pscom/pscom_listener.c"
 #include "../pscom/pscom_ondemand.c"
 #include "../pscom/pscom_p4s.c"
+#include "../pscom/pscom_poll.c"
 
 #ifdef PSCOM_ALLIN_PSM2
 #include "../pscom4psm/pscom_psm.c"
