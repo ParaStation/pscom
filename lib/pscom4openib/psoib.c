@@ -308,7 +308,8 @@ void psoib_scan_hca_ports(struct ibv_device *ib_dev)
 	marker = "";
 	if (port_state == IBV_PORT_ACTIVE &&
 	    (!psoib_hca || !strcmp(dev_name, psoib_hca)) &&
-	    (!psoib_port || psoib_port == port)) {
+	    (!psoib_port || psoib_port == port) &&
+	    (port_attr.lid != 0)) {
 	    // use this port for the communication:
 
 	    if (!psoib_hca) psoib_hca = strdup(dev_name);
@@ -316,8 +317,8 @@ void psoib_scan_hca_ports(struct ibv_device *ib_dev)
 	    marker = "*";
 	}
 
-	psoib_dprint(D_DBG_V, "IB port <%s:%u>: %s%s",
-		     dev_name, port, port_state_str(port_state), marker);
+	psoib_dprint(D_DBG_V, "IB port <%s:%u> lid:%u : %s%s",
+		     dev_name, port, port_attr.lid, port_state_str(port_state), marker);
     }
 
     if (ctx) ibv_close_device(ctx);
