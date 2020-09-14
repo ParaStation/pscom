@@ -8,7 +8,8 @@
 # file.
 #
 
-project(pscom)
+project(pscom
+	LANGUAGES C)
 
 cmake_minimum_required(VERSION 3.10)
 
