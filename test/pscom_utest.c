@@ -39,6 +39,9 @@ int main(void)
 	size_t failed_tests = 0;
 	size_t total_tests = 0;
 
+	/* generate JUnit XML output of the test results */
+	cmocka_set_message_output(CM_OUTPUT_XML);
+
 	/* pscom_io tests */
 	const struct CMUnitTest pscom_io_tests[] = {
 		cmocka_unit_test(test_req_prepare_send_pending_valid_send_request),
