@@ -1,6 +1,14 @@
 
-find_path(UCP_INCLUDE_DIR ucp/api/ucp.h ucp/api/ucp_def.h)
-find_library(UCP_LIBRARY ucp)
+set(UCP_HOME "/usr" CACHE STRING "Default location where to search UCX library.")
+
+find_path(UCP_INCLUDE_DIR
+  NAMES ucp/api/ucp.h ucp/api/ucp_def.h
+  HINTS ${UCP_HOME} ENV UCP_HOME
+  PATH_SUFFIXES include)
+find_library(UCP_LIBRARY
+  NAMES ucp
+  HINTS ${UCP_HOME} ENV UCP_HOME
+  PATH_SUFFIXES lib lib64)
 
 set(UCP_LIBRARIES ${UCP_LIBRARY})
 set(UCP_INCLUDE_DIRS ${UCP_INCLUDE_DIR})
