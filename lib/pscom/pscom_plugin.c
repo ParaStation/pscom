@@ -270,6 +270,9 @@ void pscom_plugins_init(void)
 #ifdef PSCOM_ALLIN_OPENIB
 	pscom_plugin_register(&pscom_plugin_openib, pscom_plugin_uprio(PSCOM_CON_TYPE_OPENIB));
 #endif
+#ifdef PSCOM_ALLIN_UCP
+	pscom_plugin_register(&pscom_plugin_ucp, pscom_plugin_uprio(PSCOM_CON_TYPE_UCP));
+#endif
 #ifdef PSCOM_ALLIN_GATEWAY
 	pscom_plugin_register(&pscom_plugin_gateway, pscom_plugin_uprio(PSCOM_CON_TYPE_GW));
 #endif
@@ -291,7 +294,9 @@ void pscom_plugins_init(void)
 		PSCOM_CON_TYPE_VELO,
 		PSCOM_CON_TYPE_DAPL,
 		PSCOM_CON_TYPE_MXM,
+#ifndef PSCOM_ALLIN_UCP
 		PSCOM_CON_TYPE_UCP,
+#endif
 #ifndef PSCOM_ALLIN_GATEWAY
 		PSCOM_CON_TYPE_GW,
 #endif

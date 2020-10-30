@@ -21,6 +21,7 @@ LDLIBS += $(LDLIBS_$@)
 CPPFLAGS += -I../pscom -I../../include -I. -DLIBDIR='"lib64"'
 CPPFLAGS += -DPSCOM_ALLIN_PSM2
 CPPFLAGS += -DPSCOM_ALLIN_OPENIB
+CPPFLAGS += -DPSCOM_ALLIN_UCP
 PSCOM_OBJS = pscom_all.o
 PSCOM_SONAME = libpscom.so.2
 
