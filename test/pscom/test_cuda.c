@@ -517,6 +517,7 @@ void test_pscom_memcpy_gpu_safe_from_user_device_mem(void **state)
 	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, dst, &dst);
 	expect_value(cuMemcpy_generic, src, &src);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
@@ -582,6 +583,7 @@ void test_pscom_memcpy_gpu_safe_to_user_device_mem(void **state)
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, dst, &dst);
 	expect_value(cuMemcpy_generic, src, &src);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
@@ -645,6 +647,7 @@ void test_pscom_memcpy_gpu_safe_default_device_mem(void **state)
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, dst, &dst);
 	expect_value(cuMemcpy_generic, src, &src);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
@@ -716,6 +719,7 @@ void test_pscom_stage_buffer_dev_mem_no_con(void **state)
 	/* prepare mocking functions */
 	setup_cuPointerGetAttributes(&buffer, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, src, &buffer);
 	expect_any(cuMemcpy_generic, dst);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(buffer));
@@ -795,6 +799,7 @@ void test_pscom_unstage_buffer_dev_mem(void **state)
 
 	/* prepare mocking functions */
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, src, stage_buffer);
 	expect_value(cuMemcpy_generic, dst, &buffer);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(buffer));

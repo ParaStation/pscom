@@ -102,6 +102,7 @@ add_executable(		pscom_utest
   pscom_utest.c
   pscom/test_io.c
   util/test_utils_con.c
+  util/test_utils_cuda.c
   )
 
 # Mocked functions
@@ -140,6 +141,12 @@ if(CUDA_ENABLED)
     -Wl,--wrap=cuMemcpy
     -Wl,--wrap=cuMemcpyDtoH_v2
     -Wl,--wrap=cuMemcpyHtoD_v2
+    -Wl,--wrap=cuMemcpyAsync
+    -Wl,--wrap=cuMemcpyDtoHAsync_v2
+    -Wl,--wrap=cuMemcpyHtoDAsync_v2
+    -Wl,--wrap=cuStreamSynchronize
+    -Wl,--wrap=cuStreamDestroy_v2
+    -Wl,--wrap=cuStreamCreate
     )
 
   target_sources(	pscom_utest

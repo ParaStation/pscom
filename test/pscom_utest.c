@@ -22,6 +22,7 @@
 #include "pscom/test_cuda.h"
 #include "pscom/test_io.h"
 #include "util/test_utils_con.h"
+#include "util/test_utils_cuda.h"
 
 pscom_utest_t pscom_utest = {
 	.mock_functions = {
@@ -74,6 +75,18 @@ int main(void)
 		cmocka_unit_test(test_cuda_init_device_count_zero),
 		cmocka_unit_test(test_cuda_init_uva_check_fails),
 		cmocka_unit_test(test_cuda_init_no_uva_support),
+		cmocka_unit_test(test_cuda_cleanup_returns_success_if_disabled),
+		cmocka_unit_test_setup_teardown(
+			test_cuda_cleanup_destroys_cuda_streams,
+			setup_dummy_streams,
+			clear_dummy_streams),
+		cmocka_unit_test(test_cuda_cleanup_for_inactive_device),
+		cmocka_unit_test(test_cuda_cleanup_for_unclear_device_status),
+		cmocka_unit_test(test_cuda_cleanup_for_cuda_deinitialized),
+		cmocka_unit_test_setup_teardown(
+			test_cuda_cleanup_for_failing_stream_destroy,
+			setup_dummy_streams,
+			clear_dummy_streams),
 		cmocka_unit_test(test_buffer_needs_staging_if_cuda_disabled),
 		cmocka_unit_test(test_buffer_needs_staging_con_not_cuda_aware),
 		cmocka_unit_test(test_buffer_needs_staging_con_cuda_aware),
@@ -85,15 +98,31 @@ int main(void)
 		cmocka_unit_test(test_is_gpu_mem_sync_memop_disabled),
 		cmocka_unit_test(test_is_gpu_mem_sync_memop_enabled),
 		cmocka_unit_test(test_pscom_memcpy_gpu_safe_from_user_host_mem),
-		cmocka_unit_test(test_pscom_memcpy_gpu_safe_from_user_device_mem),
+		cmocka_unit_test_setup_teardown(
+			test_pscom_memcpy_gpu_safe_from_user_device_mem,
+			setup_dummy_streams,
+			clear_dummy_streams),
+		cmocka_unit_test(test_pscom_memcpy_gpu_safe_from_user_creates_cuda_stream),
 		cmocka_unit_test(test_pscom_memcpy_gpu_safe_to_user_host_mem),
-		cmocka_unit_test(test_pscom_memcpy_gpu_safe_to_user_device_mem),
+		cmocka_unit_test_setup_teardown(
+			test_pscom_memcpy_gpu_safe_to_user_device_mem,
+			setup_dummy_streams,
+			clear_dummy_streams),
 		cmocka_unit_test(test_pscom_memcpy_gpu_safe_default_host_mem),
-		cmocka_unit_test(test_pscom_memcpy_gpu_safe_default_device_mem),
+		cmocka_unit_test_setup_teardown(
+			test_pscom_memcpy_gpu_safe_default_device_mem,
+			setup_dummy_streams,
+			clear_dummy_streams),
 		cmocka_unit_test(test_pscom_memcpy_host_mem),
-		cmocka_unit_test(test_pscom_stage_buffer_dev_mem_no_con),
+		cmocka_unit_test_setup_teardown(
+			test_pscom_stage_buffer_dev_mem_no_con,
+			setup_dummy_streams,
+			clear_dummy_streams),
 		cmocka_unit_test(test_pscom_stage_buffer_host_mem),
-		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem),
+		cmocka_unit_test_setup_teardown(
+			test_pscom_unstage_buffer_dev_mem,
+			setup_dummy_streams,
+			clear_dummy_streams),
 		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem_no_copy),
 		cmocka_unit_test(test_pscom_unstage_buffer_host_mem),
 	};
