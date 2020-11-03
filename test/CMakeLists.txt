@@ -133,8 +133,11 @@ if(CUDA_ENABLED)
   target_link_options(	pscom_utest
     PRIVATE
     -Wl,--wrap=cuInit
+    -Wl,--wrap=cuCtxGetCurrent
+    -Wl,--wrap=cuCtxGetDevice
     -Wl,--wrap=cuDeviceGetCount
     -Wl,--wrap=cuDeviceGetAttribute
+    -Wl,--wrap=cuDevicePrimaryCtxGetState
     -Wl,--wrap=cuGetErrorName
     -Wl,--wrap=cuPointerSetAttribute
     -Wl,--wrap=cuPointerGetAttributes

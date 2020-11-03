@@ -17,6 +17,7 @@
 #include <cmocka.h>
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include <driver_types.h>
 
 #include "mocks/misc_mocks.h"
@@ -237,3 +238,4 @@ CUresult __wrap_cuStreamCreate(CUstream *phStream, unsigned int Flags)
 
 	return mock_type(CUresult);
 }
+

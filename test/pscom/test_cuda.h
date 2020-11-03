@@ -22,6 +22,13 @@ void test_cuda_init_device_count_zero(void **state);
 void test_cuda_init_uva_check_fails(void **state);
 void test_cuda_init_no_uva_support(void **state);
 
+void test_cuda_cleanup_returns_success_if_disabled(void **state);
+void test_cuda_cleanup_destroys_cuda_streams(void **state);
+void test_cuda_cleanup_for_inactive_device(void **state);
+void test_cuda_cleanup_for_unclear_device_status(void **state);
+void test_cuda_cleanup_for_cuda_deinitialized(void **state);
+void test_cuda_cleanup_for_failing_stream_destroy(void **state);
+
 void test_buffer_needs_staging_if_cuda_disabled(void **state);
 void test_buffer_needs_staging_con_not_cuda_aware(void **state);
 void test_buffer_needs_staging_con_cuda_aware(void **state);
@@ -36,6 +43,7 @@ void test_is_gpu_mem_sync_memop_enabled(void **state);
 
 void test_pscom_memcpy_gpu_safe_from_user_host_mem(void **state);
 void test_pscom_memcpy_gpu_safe_from_user_device_mem(void **state);
+void test_pscom_memcpy_gpu_safe_from_user_creates_cuda_stream(void **state);
 void test_pscom_memcpy_gpu_safe_to_user_host_mem(void **state);
 void test_pscom_memcpy_gpu_safe_to_user_device_mem(void **state);
 void test_pscom_memcpy_gpu_safe_default_host_mem(void **state);
