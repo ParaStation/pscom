@@ -13,7 +13,9 @@
 #include <stdarg.h>
 #include <stdio.h>
 #include <stddef.h>
+#include <stdlib.h>
 #include <setjmp.h>
+#include <string.h>
 #include <cmocka.h>
 
 #include "pscom_utest.h"
@@ -39,8 +41,11 @@ int main(void)
 	size_t failed_tests = 0;
 	size_t total_tests = 0;
 
-	/* generate JUnit XML output of the test results */
-	cmocka_set_message_output(CM_OUTPUT_XML);
+	/* determine output type */
+	char *output_format = getenv("PSP_UTEST_OUTPUT");
+	if (output_format && !strcmp(output_format, "xml")) {
+		cmocka_set_message_output(CM_OUTPUT_XML);
+	}
 
 	/* pscom_io tests */
 	const struct CMUnitTest pscom_io_tests[] = {

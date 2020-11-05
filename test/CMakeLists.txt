@@ -35,8 +35,8 @@ add_test(
 
 
 add_test(
-  NAME	pscom_utest
-  COMMAND	pscom_utest
+  NAME pscom_utest
+  COMMAND ${CMAKE_COMMAND} -E env "PSP_UTEST_OUTPUT=xml" ${PROJECT_BINARY_DIR}/test/pscom_utest
   )
 
 add_test(
