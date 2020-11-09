@@ -81,4 +81,42 @@ void pscom_con_check_read_start(pscom_con_t *con)
 	}
 }
 
+
+/**
+ * @brief Checks whether a connection should be writing
+ *
+ * Send requests can be of two different kinds: either they are synchronously
+ * processed and remain in the connection's send queue, or the respective plugin
+ * is capable of asynchronous processing resulting in pending I/O on this
+ * request. As long as a send request has pending I/O this is reflected by the
+ * connections pending I/O counter.
+ *
+ * @param [in] con The connection to be tested
+ *
+ * @return 1 if the connection should be open for writing; 0 otherwise
+ */
+static inline
+int pscom_con_should_write(pscom_con_t *con)
+{
+	return (!list_empty(&con->sendq) || con->write_pending_io_cnt);
+}
+
+
+static inline
+void pscom_con_check_write_start(pscom_con_t *con)
+{
+	if (pscom_con_should_write(con)) {
+		con->write_start(con);
+	}
+}
+
+
+static inline
+void pscom_con_check_write_stop(pscom_con_t *con)
+{
+	if (!pscom_con_should_write(con)) {
+		assert(list_empty(&con->sendq));
+		con->write_stop(con);
+	}
+}
 #endif /* _PSCOM_CON_H_ */

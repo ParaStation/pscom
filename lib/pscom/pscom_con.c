@@ -77,7 +77,7 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 				// Rendezvous send requests are waiting for an ACK message. If the connection dies,
 				// the ACK will never arrive. Therefor we decrement the pending counter here.
 				if (!(req->pub.state & PSCOM_REQ_STATE_IO_DONE)) {
-					_pscom_pendingio_cnt_dec(con, req);  // inc in pscom_prepare_send_rendezvous_inline()
+					_pscom_write_pendingio_cnt_dec(con, req);  // inc in pscom_prepare_send_rendezvous_inline()
 					_pscom_send_req_done(req); // done with error (error flag set in _pscom_pendingio_abort)
 				}
 			}
@@ -684,6 +684,7 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
 #endif
 
 	con->recv_req_cnt = 0;
+	con->write_pending_io_cnt = 0;
 	INIT_LIST_HEAD(&con->next);
 	INIT_LIST_HEAD(&con->sendq);
 	INIT_LIST_HEAD(&con->recvq_user);

@@ -661,7 +661,7 @@ void test_pscom_get_rma_read_receiver_failing_rma_write(void **state)
 	user_req->pub.connection = &recv_con->pub;
 
 	pscom_lock(); {
-		_pscom_pendingio_cnt_inc(recv_con, user_req);
+		_pscom_write_pendingio_cnt_inc(recv_con, user_req);
 		_pscom_get_rma_read_receiver(recv_con, &nh);
 	} pscom_unlock();
 
