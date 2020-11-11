@@ -917,3 +917,61 @@ void test_write_pending_done_second_last_io(void **state)
 	assert_int_equal(send_req->pending_io, 0);
 	assert_true(pscom_con_should_write(send_con));
 }
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_read_peding_done()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_read_pending_done() for open generated request
+ *
+ * Given: A generated request that is currently processed (i.e., con->in.req)
+ * When: pscom_read_peding_done() is called on another unrelated request
+ * Then: the state of the generated request should remain unchanged
+ */
+void test_read_pending_done_unrelated_genreq(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create generated requests and enqueue to the list of net requests */
+	pscom_req_t *gen_req = pscom_req_create(0, 100);
+	gen_req->pub.connection = &recv_con->pub;
+	_pscom_net_recvq_user_enq(recv_con, gen_req);
+
+	/* set the read_start()/read_stop() functions */
+	recv_con->read_start = &check_rw_start_called;
+	recv_con->read_stop = &check_rw_stop_called;
+
+	/* create another receive request and start pending read */
+	pscom_req_t *recv_req = pscom_req_create(0, 100);
+	recv_req->pub.connection = &recv_con->pub;
+	recv_con->in.req = recv_req;
+
+	/* read_start() should be called at least once */
+	expect_function_calls(check_rw_start_called, 1);
+	expect_value(check_rw_start_called, con, recv_con);
+
+	assert_int_equal(recv_req, pscom_read_pending(recv_con, 0));
+
+
+	/*
+	 * set the appropriate request state:
+	 * -> generated requests
+	 * -> IO has been started
+	 */
+	gen_req->pub.state = PSCOM_REQ_STATE_GRECV_REQUEST;
+	gen_req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
+
+	/* the request shall be the current request of the connection */
+	recv_con->in.req = gen_req;
+
+	/* post the actual receive request */
+	pscom_read_pending_done(recv_con, recv_req);
+
+	/*
+	 * read_start() should be called lastly
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_int_equal(recv_con->in.req, gen_req);
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
+}

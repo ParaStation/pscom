@@ -125,6 +125,10 @@ int main(void)
 			test_write_pending_done_second_last_io,
 			setup_dummy_con,
 			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_read_pending_done_unrelated_genreq,
+			setup_dummy_con,
+			teardown_dummy_con),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);

@@ -30,4 +30,5 @@ void test_write_pending_first_io_con_closed(void **state);
 void test_write_pending_first_io_con_open(void **state);
 void test_write_pending_done_last_io(void **state);
 void test_write_pending_done_second_last_io(void **state);
+void test_read_pending_done_unrelated_genreq(void **state);
 #endif /* _TEST_IO_H_ */
