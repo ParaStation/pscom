@@ -150,16 +150,3 @@ if(CUDA_ENABLED)
 
   target_add_cuda(pscom_utest)
 endif(CUDA_ENABLED)
-
-
-# ACLOCAL_AMFLAGS = -I m4
-
-# noinst_PROGRAMS = pscom_utest
-
-# pscom_utest_LDADD = \
-#	$(top_builddir)/lib/pscom/libpscom_utest.la
-
-# pscom_utest_CPPFLAGS = \
-#	-I./pscom \
-#	-I$(top_srcdir)/include \
-#	-I$(top_srcdir)/lib/pscom
