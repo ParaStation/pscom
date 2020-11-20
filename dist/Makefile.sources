@@ -253,4 +253,6 @@ test/pscom/test_io.h \
 test/pscom_utest.c \
 test/pscom_utest.h \
 test/util/test_utils_con.c \
-test/util/test_utils_con.h
+test/util/test_utils_con.h \
+test/util/test_utils_cuda.c \
+test/util/test_utils_cuda.h
