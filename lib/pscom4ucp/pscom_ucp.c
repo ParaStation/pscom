@@ -215,7 +215,6 @@ void pscom_ucp_con_close(pscom_con_t *con)
 	if (!ci) return;
 
 	pscom_ucp_con_cleanup(con);
-	reader_dec();
 }
 
 
@@ -249,7 +248,6 @@ void pscom_ucp_init_con(pscom_con_t *con)
 
 	con->rendezvous_size = pscom.env.rendezvous_size_ucp;
 
-	reader_inc();
 	pscom_con_setup_ok(con);
 }
 
