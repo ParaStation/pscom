@@ -17,6 +17,7 @@
 #include <cmocka.h>
 
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include <driver_types.h>
 
 #include "mocks/misc_mocks.h"
@@ -36,6 +37,8 @@ CUresult __wrap_cuInit(unsigned int flags)
 
 	return mock_type(CUresult);
 }
+
+
 /**
  * \brief Mocking function for cuDeviceGetCount()
  */
@@ -44,6 +47,7 @@ CUresult __wrap_cuDeviceGetCount(int* count)
 	*count = mock_type(int);
 	return mock_type(CUresult);
 }
+
 
 /**
  * \brief Mocking function for cuDeviceGetAttribute()
@@ -57,6 +61,7 @@ CUresult __wrap_cuDeviceGetAttribute(int* pi, CUdevice_attribute attrib,
 	*pi = mock_type(int);
 	return mock_type(CUresult);
 }
+
 
 /**
  * \brief Mocking function for cuPointerGetAttributes()
@@ -73,6 +78,7 @@ CUresult __wrap_cuPointerGetAttributes(unsigned int  numAttributes,
 
 	return mock_type(CUresult);
 }
+
 
 /**
  * \brief Mocking function for cuPointerSetAttribute()
@@ -105,13 +111,42 @@ CUresult cuMemcpy_generic(void* dst, CUdeviceptr src, size_t nbytes)
 	return mock_type(CUresult);
 }
 
+
 /**
- * \brief Mocking function for cuMemcpyDtoH_v2()
+ * \brief Mocking function for cuMemcpyAsync()
  */
-CUresult __wrap_cuMemcpyDtoH_v2(void* dst, CUdeviceptr src, size_t nbytes)
+CUresult __wrap_cuMemcpyAsync(void* dst, CUdeviceptr src, size_t nbytes, CUstream hStream)
 {
 	return cuMemcpy_generic(dst, src, nbytes);
 }
+
+/**
+ * \brief Mocking function for cuMemcpyDtoHAsync_v2()
+ */
+CUresult __wrap_cuMemcpyDtoHAsync_v2(void* dst, CUdeviceptr src, size_t nbytes, CUstream hStream)
+{
+	return cuMemcpy_generic(dst, src, nbytes);
+}
+
+
+/**
+ * \brief Mocking function for cuMemcpyHtoDAsync_v2()
+ */
+CUresult __wrap_cuMemcpyHtoDAsync_v2(void* dst, CUdeviceptr src, size_t nbytes, CUstream hStream)
+{
+	return cuMemcpy_generic(dst, src, nbytes);
+}
+
+
+/**
+ * \brief Mocking function for cuStreamSynchronize()
+ */
+CUresult __wrap_cuStreamSynchronize(CUstream hStream)
+{
+	function_called();
+	return CUDA_SUCCESS;
+}
+
 
 /**
  * \brief Mocking function for cuMemcpyHtoD_v2()
@@ -120,6 +155,7 @@ CUresult __wrap_cuMemcpyHtoD_v2(void* dst, CUdeviceptr src, size_t nbytes)
 {
 	return cuMemcpy_generic(dst, src, nbytes);
 }
+
 
 /**
  * \brief Mocking function for cuMemcpy()
@@ -147,3 +183,59 @@ CUresult __wrap_cuGetErrorName(CUresult error, const char **pStr)
 
 	return ret;
 }
+
+
+/**
+ * \brief Mocking function for cuCtxGetCurrent()
+ */
+CUresult __wrap_cuCtxGetCurrent(CUcontext *pctx)
+{
+	*pctx = mock_type(CUcontext);
+
+	return mock_type(CUresult);
+}
+
+
+/**
+ * \brief Mocking function for cuCtxGetDevice()
+ */
+CUresult __wrap_cuCtxGetDevice(CUdevice *device)
+{
+	return mock_type(CUresult);
+}
+
+
+/**
+ * \brief Mocking function for cuCtxGetDevice()
+ */
+CUresult __wrap_cuDevicePrimaryCtxGetState(CUdevice dev, unsigned int *flags, int *active)
+{
+	*active = mock_type(int);
+
+	return mock_type(CUresult);
+}
+
+
+/**
+ * \brief Mocking function for cuStreamDestroy()
+ */
+CUresult CUDAAPI __wrap_cuStreamDestroy_v2(CUstream hStream)
+{
+	function_called();
+
+	return mock_type(CUresult);
+}
+
+
+/**
+ * \brief Mocking function for cudaStreamCreateWithFlags()
+ */
+CUresult __wrap_cuStreamCreate(CUstream *phStream, unsigned int Flags)
+{
+	function_called();
+
+	*phStream = mock_type(CUstream);
+
+	return mock_type(CUresult);
+}
+

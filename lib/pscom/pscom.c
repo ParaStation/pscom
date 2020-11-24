@@ -251,6 +251,10 @@ void pscom_cleanup(void)
 		pscom_close_socket(&sock->pub);
 	}
 
+#ifdef PSCOM_CUDA_AWARENESS
+	pscom_cuda_cleanup();
+#endif
+
 	pscom_plugins_destroy();
 	pscom_pslib_cleanup();
 	if (pscom.env.debug >= D_STATS) pscom_dump_reqstat(pscom_debug_stream());

@@ -42,6 +42,7 @@ void setup_enable_cuda_and_initialize(size_t device_count)
 	}
 }
 
+
 /**
  * \brief Setup cuPointerGetAttributes_device_ptr() returning dev pointer
  */
@@ -56,6 +57,7 @@ void setup_cuPointerGetAttributes(const void *dev_ptr, CUmemorytype mem_type,
 	will_return(__wrap_cuPointerGetAttributes, sync_memops);
 	will_return(__wrap_cuPointerGetAttributes, ret_val);
 }
+
 
 /**
  * \brief Setup UVA tests
@@ -73,6 +75,25 @@ void setup_uva_tests(void)
 	expect_value(__wrap_cuDeviceGetAttribute, attrib, CU_DEVICE_ATTRIBUTE_UNIFIED_ADDRESSING);
 	expect_value(__wrap_cuDeviceGetAttribute, dev, 0);
 }
+
+
+/**
+ * \brief Setup successful context wth active devie
+ */
+static inline
+void setup_valid_ctx_with_active_device(void)
+{
+	/* we need a valid context */
+	will_return(__wrap_cuCtxGetCurrent, 0x42);
+	will_return(__wrap_cuCtxGetCurrent, CUDA_SUCCESS);
+	will_return(__wrap_cuCtxGetDevice, CUDA_SUCCESS);
+
+	/* the associated device should be active */
+	will_return(__wrap_cuDevicePrimaryCtxGetState, 1);
+	will_return(__wrap_cuDevicePrimaryCtxGetState, CUDA_SUCCESS);
+
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_is_cuda_enabled()
@@ -234,6 +255,155 @@ void test_cuda_init_no_uva_support(void **state)
 	assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
 	assert_int_equal(errno, ENOTSUP);
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_cuda_cleanup()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_cuda_cleanup() for disabled CUDA-awareness
+ *
+ * Given: CUDA-awareness is disabled
+ * When: pscom_cuda_cleanup() is called
+ * Then: it returns PSCOM_SUCCESS
+ */
+void test_cuda_cleanup_returns_success_if_disabled(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 0;
+
+	assert_int_equal(pscom_cuda_cleanup(), PSCOM_SUCCESS);
+}
+
+
+/**
+ * \brief Test pscom_cuda_cleanup() for valid CUDA context
+ *
+ * Given: There is a valid CUDA context
+ * When: pscom_cuda_cleanup() is called
+ * Then: the CUDA streams are destroyed
+ */
+void test_cuda_cleanup_destroys_cuda_streams(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 1;
+
+	setup_valid_ctx_with_active_device();
+
+	will_return(__wrap_cuStreamDestroy_v2, CUDA_SUCCESS);
+	will_return(__wrap_cuStreamDestroy_v2, CUDA_SUCCESS);
+	will_return(__wrap_cuStreamDestroy_v2, CUDA_SUCCESS);
+	expect_function_calls(__wrap_cuStreamDestroy_v2, 3);
+
+
+	assert_int_equal(pscom_cuda_cleanup(), PSCOM_SUCCESS);
+}
+
+/**
+ * \brief Test pscom_cuda_cleanup() for failing stream destroy
+ *
+ * Given: There is a valid CUDA context with active device
+ * When: but the CUDA streams cannot be destroyed
+ * Then: pscom_cuda_cleanup() fails
+ */
+void test_cuda_cleanup_for_failing_stream_destroy(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 1;
+
+	setup_valid_ctx_with_active_device();
+
+	will_return(__wrap_cuStreamDestroy_v2, CUDA_ERROR_DEINITIALIZED);
+	will_return(__wrap_cuStreamDestroy_v2, CUDA_ERROR_DEINITIALIZED);
+	will_return(__wrap_cuStreamDestroy_v2, CUDA_ERROR_DEINITIALIZED);
+	expect_function_calls(__wrap_cuStreamDestroy_v2, 3);
+
+	assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
+
+/**
+ * \brief Test pscom_cuda_cleanup() for inactive device
+ *
+ * Given: There is a valid CUDA context but inactive device
+ * When: pscom_cuda_cleanup() is called
+ * Then: the CUDA streams are not destroyed
+ */
+void test_cuda_cleanup_for_inactive_device(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* simply return a dummy context and active device*/
+	will_return(__wrap_cuCtxGetCurrent, 0x42);
+	will_return(__wrap_cuCtxGetCurrent, CUDA_SUCCESS);
+	will_return(__wrap_cuCtxGetDevice, CUDA_SUCCESS);
+	will_return(__wrap_cuDevicePrimaryCtxGetState, 0);
+	will_return(__wrap_cuDevicePrimaryCtxGetState, CUDA_SUCCESS);
+
+	assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
+
+/**
+ * \brief Test pscom_cuda_cleanup() for issues determining device status
+ *
+ * Given: There is a valid CUDA context but the device status cannot be determined
+ * When: pscom_cuda_cleanup() is called
+ * Then: the CUDA streams are not destroyed
+ */
+void test_cuda_cleanup_for_unclear_device_status(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* simply return a dummy context and active device*/
+	will_return(__wrap_cuCtxGetCurrent, 0x42);
+	will_return(__wrap_cuCtxGetCurrent, CUDA_SUCCESS);
+	will_return(__wrap_cuCtxGetDevice, CUDA_SUCCESS);
+	will_return(__wrap_cuDevicePrimaryCtxGetState, 1);
+	will_return(__wrap_cuDevicePrimaryCtxGetState, CUDA_ERROR_INVALID_DEVICE);
+
+	assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
+
+/**
+ * \brief Test pscom_cuda_cleanup() for CUDA driver already shutting down
+ *
+ * Given: There is a valid CUDA context but the associated device cannot be determined
+ * When: pscom_cuda_cleanup() is called
+ * Then: the CUDA streams are not destroyed
+ */
+void test_cuda_cleanup_for_cuda_deinitialized(void **state)
+{
+	(void) state;
+
+	/* disable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* simply return a dummy context and active device*/
+	will_return(__wrap_cuCtxGetCurrent, 0x42);
+	will_return(__wrap_cuCtxGetCurrent, CUDA_SUCCESS);
+	will_return(__wrap_cuCtxGetDevice, CUDA_ERROR_DEINITIALIZED);
+
+	assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
+	assert_int_equal(errno, EFAULT);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// _pscom_buffer_needs_staging()
@@ -517,6 +687,42 @@ void test_pscom_memcpy_gpu_safe_from_user_device_mem(void **state)
 	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
+	expect_value(cuMemcpy_generic, dst, &dst);
+	expect_value(cuMemcpy_generic, src, &src);
+	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
+	will_return(cuMemcpy_generic, CUDA_SUCCESS);
+
+	pscom_memcpy_gpu_safe_from_user(&dst, &src, sizeof(int));
+}
+
+/**
+ * \brief Test _pscom_memcpy_gpu_safe_from_user() creates CUDA stream
+ *
+ * Given: src points to device memory
+ * When: pscom_memcpy_gpu_safe_from_user() ist called and the CUDA stream for
+ *       device2host memcpy has not been created
+ * Then: it invokes the standard cuMemcpyDtoH() with according parameters
+ */
+void test_pscom_memcpy_gpu_safe_from_user_creates_cuda_stream(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	int dst = 0;
+	int src = 42;
+
+	/* cuPointerGetAttributes() is only called for src */
+	setup_cuPointerGetAttributes(&src, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
+
+	expect_function_calls(__wrap_cuStreamCreate, 1);
+	will_return(__wrap_cuStreamCreate, 0x42);
+	will_return(__wrap_cuStreamCreate, CUDA_SUCCESS);
+
+	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, dst, &dst);
 	expect_value(cuMemcpy_generic, src, &src);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
@@ -582,6 +788,7 @@ void test_pscom_memcpy_gpu_safe_to_user_device_mem(void **state)
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, dst, &dst);
 	expect_value(cuMemcpy_generic, src, &src);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
@@ -645,6 +852,7 @@ void test_pscom_memcpy_gpu_safe_default_device_mem(void **state)
 	setup_cuPointerGetAttributes(&dst, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, dst, &dst);
 	expect_value(cuMemcpy_generic, src, &src);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(int));
@@ -716,6 +924,7 @@ void test_pscom_stage_buffer_dev_mem_no_con(void **state)
 	/* prepare mocking functions */
 	setup_cuPointerGetAttributes(&buffer, CU_MEMORYTYPE_DEVICE, 0, 1, CUDA_SUCCESS);
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, src, &buffer);
 	expect_any(cuMemcpy_generic, dst);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(buffer));
@@ -795,6 +1004,7 @@ void test_pscom_unstage_buffer_dev_mem(void **state)
 
 	/* prepare mocking functions */
 	expect_function_calls(cuMemcpy_generic, 1);
+	expect_function_calls(__wrap_cuStreamSynchronize, 1);
 	expect_value(cuMemcpy_generic, src, stage_buffer);
 	expect_value(cuMemcpy_generic, dst, &buffer);
 	expect_value(cuMemcpy_generic, nbytes, sizeof(buffer));

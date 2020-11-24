@@ -24,6 +24,8 @@ int pscom_is_cuda_enabled(void)
 
 #ifdef PSCOM_CUDA_AWARENESS
 
+CUstream pscom_cuda_stream_set[PSCOM_COPY_DIR_COUNT] = {0};
+
 /**
  * \brief Prints a diagnostic string base on a CUresult
  *
@@ -44,6 +46,7 @@ void pscom_print_cuda_err(const char *func, CUresult err)
 
 	return;
 }
+
 
 /**
  * \brief Initializes the CUDA driver API
@@ -84,6 +87,148 @@ pscom_err_t pscom_cuda_init_driver_api(void)
 
 	return ret;
 }
+
+
+/**
+ * @brief  Creates a given CUDA stream for pscom-internal memcpy operations
+ *
+ * This function is used for lazy creation of CUDA streams that can be used for
+ * any of the cuMemcpy*Async() operations (i.e., default, Device-to-Host, or
+ * Host-to-Device).
+ *
+ * @param stream [in] The copy direction of the respective stream
+ *
+ * @return The appropriate CUDA stream
+ */
+static inline CUstream
+pscom_cuda_stream_get_or_create(pscom_copy_dir_t dir)
+{
+	CUresult ret;
+
+	/* we expect that the stream has already been created */
+	if (unlikely(!pscom_cuda_stream_set[dir])) {
+		ret = cuStreamCreate(&pscom_cuda_stream_set[dir],
+				     CU_STREAM_NON_BLOCKING);
+
+		/* we want to know why the stream creation failed before asserting */
+		if (ret != CUDA_SUCCESS) {
+			pscom_print_cuda_err("cuStreamCreate()", ret);
+			assert(0);
+		}
+	}
+
+	return pscom_cuda_stream_set[dir];
+}
+
+
+/**
+ * @brief Checks whether there is a valid CUDA context that is active
+ */
+static int
+pscom_cuda_is_primary_ctx_active(void)
+{
+	CUresult ret;
+	CUcontext cur_ctx = NULL;
+	CUdevice dev;
+	unsigned flags;
+	int active = 0;
+
+	/* only check the context state if there is CUDA activity */
+	if ((CUDA_SUCCESS == cuCtxGetCurrent(&cur_ctx)) && (NULL != cur_ctx)) {
+		ret = cuCtxGetDevice(&dev);
+		if (ret != CUDA_SUCCESS) {
+			pscom_print_cuda_err("cuCtxGetDevice()", ret);
+			goto err_out;
+		}
+		ret = cuDevicePrimaryCtxGetState(dev, &flags, &active);
+		if (ret != CUDA_SUCCESS) {
+			pscom_print_cuda_err("cuDevicePrimaryCtxGetState()", ret);
+			goto err_out;
+		}
+	}
+	return active;
+	/* --- */
+err_out:
+	DPRINT(D_ERR, "Could not determine whether there is a valid CUDA context. Assuming there is none.");
+	return 0;
+}
+
+
+/**
+ * @brief  Destroys all pscom-internal CUDA streams
+ */
+static pscom_err_t
+pscom_cuda_destroy_streams(void)
+{
+	CUresult ret;
+	size_t err_cnt = 0;
+	int i;
+
+	/* check whether the primary CUDA context is still active and valid */
+	if (!pscom_cuda_is_primary_ctx_active()) goto err_out;
+
+	for (i=0; i<PSCOM_COPY_DIR_COUNT; ++i) {
+		if (pscom_cuda_stream_set[i]) {
+			ret = cuStreamDestroy(pscom_cuda_stream_set[i]);
+			if (ret != CUDA_SUCCESS) {
+				pscom_print_cuda_err("cuStreamDestroy()", ret);
+				err_cnt++;
+			}
+		}
+	}
+
+	if (err_cnt) goto err_out;
+
+	return PSCOM_SUCCESS;
+	/* --- */
+err_out:
+	errno = EFAULT;
+	return PSCOM_ERR_STDERROR;
+}
+
+
+static inline
+void pscom_memcpy_any_dir(void* dst, const void* src, size_t len)
+{
+	CUresult ret;
+
+	CUstream copy_stream = pscom_cuda_stream_get_or_create(PSCOM_COPY_ANY_DIR);
+
+	ret = cuMemcpyAsync((CUdeviceptr)dst, (CUdeviceptr)src, len,
+			    copy_stream);
+	assert(ret == CUDA_SUCCESS);
+	ret = cuStreamSynchronize(copy_stream);
+	assert(ret == CUDA_SUCCESS);
+}
+
+
+void pscom_memcpy_device2host(void* dst, const void* src, size_t len)
+{
+	CUresult ret;
+
+	CUstream copy_stream = pscom_cuda_stream_get_or_create(PSCOM_COPY_DEVICE2HOST);
+
+	ret = cuMemcpyDtoHAsync(dst, (CUdeviceptr)src, len,
+				copy_stream);
+	assert(ret == CUDA_SUCCESS);
+	ret = cuStreamSynchronize(copy_stream);
+	assert(ret == CUDA_SUCCESS);
+}
+
+
+void pscom_memcpy_host2device(void* dst, const void* src, size_t len)
+{
+	CUresult ret;
+
+	CUstream copy_stream = pscom_cuda_stream_get_or_create(PSCOM_COPY_HOST2DEVICE);
+
+	ret = cuMemcpyHtoDAsync((CUdeviceptr)dst, src, len,
+				copy_stream);
+	assert(ret == CUDA_SUCCESS);
+	ret = cuStreamSynchronize(copy_stream);
+	assert(ret == CUDA_SUCCESS);
+}
+
 
 pscom_err_t pscom_cuda_init(void)
 {
@@ -127,12 +272,26 @@ err_out:
 	return PSCOM_ERR_STDERROR;
 }
 
+pscom_err_t pscom_cuda_cleanup(void)
+{
+	pscom_err_t ret = PSCOM_SUCCESS;
+
+	if (pscom.env.cuda) {
+		/* destroy the CUDA streams */
+		ret = pscom_cuda_destroy_streams();
+	}
+
+	return ret;
+}
+
+
 /* simply map to internal _pscom_memcpy() */
 PSCOM_API_EXPORT
 void pscom_memcpy(void* dst, const void* src, size_t len)
 {
 	_pscom_memcpy_default(dst, src, len);
 }
+
 
 /* simply map to internal _pscom_is_gpu_ptr() */
 PSCOM_API_EXPORT
@@ -146,6 +305,8 @@ int pscom_is_gpu_mem(const void* ptr)
  * \brief GPU-safe memcpy from user to host memory
  *
  * For details see _pscom_memcpy_from_user().
+ *
+ * \remark This is a synchronous memcpy!
  */
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
@@ -153,17 +314,19 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 	CUresult ret;
 
 	if (_pscom_is_gpu_mem(src, len)) {
-		ret = cuMemcpyDtoH(dst, (CUdeviceptr)src, len);
-		assert(ret == CUDA_SUCCESS);
+		pscom_memcpy_device2host(dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
 }
 
+
 /**
  * \brief GPU-safe memcpy from host to user memory
  *
  * For details see _pscom_memcpy_from_user().
+ *
+ * \remark This is a synchronous memcpy!
  */
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
@@ -171,17 +334,19 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 	CUresult ret;
 
 	if (_pscom_is_gpu_mem(dst, len)) {
-		ret = cuMemcpyHtoD((CUdeviceptr)dst, src, len);
-		assert(ret == CUDA_SUCCESS);
+		pscom_memcpy_host2device(dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
 }
 
+
 /**
  * \brief GPU-safe memcpy
  *
  * For details see _pscom_memcpy_default().
+ *
+ * \remark This is a synchronous memcpy!
  */
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
@@ -189,12 +354,12 @@ void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 	CUresult ret;
 
 	if (_pscom_is_gpu_mem(dst, len) || _pscom_is_gpu_mem(src, len)) {
-		ret = cuMemcpy((CUdeviceptr)dst, (CUdeviceptr)src, len);
-		assert(ret == CUDA_SUCCESS);
+		pscom_memcpy_any_dir(dst, src, len);
 	} else {
 		memcpy(dst, src, len);
 	}
 }
+
 
 /**
  * \brief Check for device memory and set memop synchronization if necessary
