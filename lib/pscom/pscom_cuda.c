@@ -216,6 +216,7 @@ void pscom_memcpy_device2host(void* dst, const void* src, size_t len)
 }
 
 
+PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_host2device(void* dst, const void* src, size_t len)
 {
 	CUresult ret;
