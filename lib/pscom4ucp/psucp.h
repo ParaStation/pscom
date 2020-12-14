@@ -91,9 +91,6 @@ typedef struct {
 size_t psucp_probe(psucp_msg_t *msg);
 ssize_t psucp_recv(psucp_msg_t *msg, void *buf, size_t size);
 
-/* Flush the notification queue and make progress. */
-int psucp_progress(void);
-
 /* Suggest a value for psucp_pending_tokens. Result depends on psucp_recvq_size. */
 unsigned psucp_pending_tokens_suggestion(void);
 
@@ -114,6 +111,7 @@ extern unsigned int psucp_recvq_size;
 extern unsigned int psucp_pending_tokens;
 extern int psucp_global_sendq; /* bool. Use one sendqueue for all connections? */
 extern int psucp_event_count; /* bool. Be busy if outstanding_cq_entries is to high? */
+extern unsigned int psucp_max_recv; /* Maximum number of concurrent receive requests */
 
 /*
  * Information
