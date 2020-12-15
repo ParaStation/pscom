@@ -1,3 +1,24 @@
+2020-12-14  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.7-0rc1
+
+	* Feature: Outstanding receive requests in pscom4ucp can be limited by
+	setting the PSP_UCP_MAX_RECV environment variable.
+
+	* Enhancement: Use CUDA streams for pscom-internal memcpy() operations.
+
+	* Enhancement: Basic CUDA support for the EXTOLL plugins pscom4extoll
+	and pscom4velo.
+
+2020-08-23  Jens Hauke  <hauke@par-tec.com>
+
+	* New: Implement generic polling meachanism within the progress engine.
+
+	* Build: Switch to CMake as build system.
+
+	* Fix: pscom4openib omits HCA ports with LID = 0.
+
+	Fix: pscom_get_next_connection: Do not return connections in state
+	"closing".
+
 2020-03-25  Jens Hauke  <hauke@par-tec.com>		-	5.4.6-1
 
 	* Build: Support for icc (Symbol visibility)
