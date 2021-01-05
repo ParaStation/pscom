@@ -1109,16 +1109,12 @@ pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2])
 		if (req->cur_data.iov_len || req->cur_header.iov_len) {
 			req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
 			return req;
-		} else {
-			/* Nothing to send. Wait for more data (up
-			   to req->skip bytes) */
-			pscom_con_check_write_stop(con);
-			return 0;
 		}
-	} else {
-		pscom_con_check_write_stop(con);
-		return 0;
 	}
+
+	/* Nothing to send. Wait for more data (up to req->skip bytes) */
+	pscom_con_check_write_stop(con);
+	return 0;
 }
 
 
