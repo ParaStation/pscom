@@ -479,6 +479,14 @@ void _send_rma_read_answer(pscom_req_t *req_answer)
 
 
 static
+void send_rma_read_answer_error(pscom_request_t *request_answer)
+{
+	pscom_con_error(get_con(request_answer->connection), PSCOM_OP_WRITE, PSCOM_ERR_IOERROR);
+	pscom_request_free(request_answer);
+}
+
+
+static
 void send_rma_read_answer(pscom_request_t *request_answer)
 {
 	pscom_req_t *req_answer = get_req(request_answer);
@@ -494,7 +502,7 @@ void send_rma_read_answer(pscom_request_t *request_answer)
 
 
 static
-void _rma_write_done(void *priv)
+void _rma_write_done(void *priv, int error)
 {
 	pscom_req_t *req_answer = (pscom_req_t *)priv;
 	/* rma_write_done() could be called anytime by the lower level
@@ -502,7 +510,8 @@ void _rma_write_done(void *priv)
 	 * postpone the pscom_post_send_direct(PSCOM_MSGTYPE_RMA_READ_ANSWER)
 	 * call until it is safe to call.
 	 */
-	req_answer->pub.ops.io_done = send_rma_read_answer;
+	req_answer->pub.ops.io_done = error ? send_rma_read_answer_error : send_rma_read_answer;
+
 	_pscom_req_done(req_answer);
 }
 
@@ -734,10 +743,11 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 		con->rma_mem_deregister(con, rd);
 	}
 
-	_pscom_recv_req_cnt_dec(con); // inc in pscom_post_send_rendezvous_inline()
 	pscom_request_free(&req->pub);
 
 	perf_add("rndv_send_done");
+	_pscom_pendingio_cnt_dec(con, user_req); // inc in pscom_prepare_send_rendezvous_inline()
+
 	_pscom_send_req_done(user_req); // done
 
 	return NULL;
@@ -1362,10 +1372,12 @@ pscom_req_t *pscom_prepare_send_rendezvous_inline(pscom_req_t *user_req, pscom_m
 
 	rndv_req->pub.ops.io_done = NULL;
 
+	pscom_req_prepare_send(user_req, msg_type);
 	user_req->partner_req = rndv_req;
 	user_req->pub.state = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
 		PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
-	user_req->pub.header.msg_type = msg_type;
+
+	_pscom_pendingio_cnt_inc(con, user_req); // Pending rendezvous. Dec in _pscom_get_rendezvous_fin_receiver() or _pscom_con_terminate_sendq()
 
 	return rndv_req;
 
@@ -1391,7 +1403,6 @@ void _pscom_post_send_rendezvous_inline(pscom_req_t *user_req, pscom_msgtype_t m
 		_pscom_post_send_direct_inline(con, user_req, msg_type);
 	} else {
 		_pscom_post_send_direct_inline(con, req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
-		_pscom_recv_req_cnt_inc(con); // dec in _pscom_get_rendezvous_fin_receiver()
 	}
 
 	return;

@@ -68,6 +68,18 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 
 		if (req->pub.connection == &con->pub) {
 			_pscom_pendingio_abort(con, req);
+
+			pscom_req_state_t mask_rndv_send_posted = (
+				PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
+				PSCOM_REQ_STATE_SEND_REQUEST |
+				PSCOM_REQ_STATE_POSTED);
+
+			if ((mask_rndv_send_posted & req->pub.state) == mask_rndv_send_posted) {
+				// Rendezvous send requests are waiting for an ACK message. If the connection dies,
+				// the ACK will never arrive. Therefor we decrement the pending counter here.
+				_pscom_pendingio_cnt_dec(con, req);  // inc in pscom_prepare_send_rendezvous_inline()
+			}
+
 		}
 	}
 

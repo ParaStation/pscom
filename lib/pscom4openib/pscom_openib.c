@@ -143,7 +143,7 @@ typedef struct pscom_rendezvous_data_openib {
 	struct psoib_rma_req	rma_req;
 	pscom_req_t		*rendezvous_req; // Receiving side: users receive request (or generated request)
 	pscom_con_t		*con;
-	void			(*io_done)(void *priv);
+	void			(*io_done)(void *priv, int err);
 	void			*priv;
 } pscom_rendezvous_data_openib_t;
 
@@ -298,8 +298,7 @@ void pscom_openib_rma_write_io_done(void *priv, int err)
 	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)priv;
 	pscom_rendezvous_data_openib_t *rd_data_openib = get_req_data(rd_data);
 
-	// ToDo: Error propagation
-	rd_data_openib->io_done(rd_data_openib->priv);
+	rd_data_openib->io_done(rd_data_openib->priv, err);
 
 	pscom_openib_rma_mem_deregister(rd_data_openib->con, rd_data);
 	pscom_free(rd_data);
@@ -317,7 +316,7 @@ void pscom_openib_rma_write_io_done(void *priv, int err)
 
 static
 int pscom_openib_rma_write(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
-			   void (*io_done)(void *priv), void *priv)
+			   void (*io_done)(void *priv, int err), void *priv)
 {
 	pscom_rendezvous_data_t *rd_data = (pscom_rendezvous_data_t *)pscom_malloc(sizeof(*rd_data));
 	pscom_rendezvous_data_openib_t *rd_data_openib = get_req_data(rd_data);
