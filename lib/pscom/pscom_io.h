@@ -133,6 +133,8 @@ void _pscom_genreq_abort_rendezvous_rma_reads(pscom_con_t *con);
 void _pscom_post_recv_ctrl(pscom_req_t *req); /* must hold pscom_lock() */
 void pscom_post_recv_ctrl(pscom_req_t *req); /* must not hold pscom_lock() */
 
+void _pscom_recvq_rma_terminate(pscom_con_t *con);
+
 // receiver for PSCOM_MSGTYPE_GW_ENVELOPE, set by pscom4gateway.
 extern
 pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con, pscom_header_net_t *nh);

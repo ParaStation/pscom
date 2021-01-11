@@ -125,6 +125,9 @@ void _pscom_recvq_rma_deq(pscom_con_t *con, pscom_req_t *req);
 
 int _pscom_recvq_rma_contains(pscom_con_t *con, pscom_req_t *req_needle);
 
+int _pscom_recvq_rma_empty(pscom_con_t *con);
+
+pscom_req_t *_pscom_recvq_rma_head(pscom_con_t *con);
 
 /*************
  * Recvq bcast

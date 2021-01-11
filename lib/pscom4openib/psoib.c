@@ -393,7 +393,7 @@ struct ibv_device *psoib_get_dev_by_hca_name(const char *in_hca_name)
     return ib_dev;
     /* --- */
  err_no_dev:
-    psoib_err_errno("ibv_get_devices() failed : No IB dev found", errno);
+    psoib_err("ibv_get_devices() failed : No IB dev found");
     return 0;
     /* --- */
  err_no_dev2:
@@ -1177,6 +1177,11 @@ int psoib_check_cq(hca_info_t *hca_info)
 		psoib_rma_req_t *dreq = (psoib_rma_req_t *)(unsigned long)wc.wr_id;
 		int failed = wc.status != IBV_WC_SUCCESS;
 //		printf("RDMA write done...\n");
+#if 0
+		static int fail_emulate_countdown = 5;
+		printf("RDMA write fail_emulate_countdown:%u.\n", --fail_emulate_countdown);
+		if (!fail_emulate_countdown) failed = 1; // fake fail.
+#endif
 		if (failed) {
 		    psoib_dprint(D_ERR, "Failed RDMA write request (status %d : %s). Connection broken!",
 				 wc.status, ibv_wc_status_str(wc.status));

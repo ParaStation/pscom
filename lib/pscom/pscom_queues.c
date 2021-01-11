@@ -699,6 +699,16 @@ int _pscom_recvq_rma_contains(pscom_con_t *con, pscom_req_t *req_needle)
 }
 
 
+int _pscom_recvq_rma_empty(pscom_con_t *con) {
+	return list_empty(&con->recvq_rma);
+}
+
+
+pscom_req_t *_pscom_recvq_rma_head(pscom_con_t *con) {
+	return list_entry(con->recvq_rma.next, pscom_req_t, next);
+}
+
+
 /*************
  * Recvq bcast
  */
