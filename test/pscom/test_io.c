@@ -24,6 +24,11 @@
 #include "pscom_util.h"
 #include "pscom_req.h"
 
+#include "util/test_utils_con.h"
+
+/* we need to access some static functions */
+#include "pscom_io.c"
+
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_post_recv()
 ////////////////////////////////////////////////////////////////////////////////
@@ -213,4 +218,124 @@ void test_req_prepare_send_pending_truncate_data_len(void **state)
 	pscom_req_prepare_send_pending(&req, PSCOM_MSGTYPE_USER, 0);
 
 	assert_true(req.pub.header.data_len <= PSCOM_DATA_LEN_MASK);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_get_rma_read_receiver_failing_rma_write()
+////////////////////////////////////////////////////////////////////////////////
+static
+int rma_write_error(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
+			   void (*io_done)(void *priv, int err), void *priv)
+{
+	/* simply call io_done with error */
+	io_done(priv, 1);
+
+	return 0;
+}
+
+/**
+ * \brief Test pscom_get_rma_read_receiver() for an error in con->rma_write
+ *
+ * Given: A rendezvous send requests and incomming PSCOM_MSGTYPE_RMA_READ
+ * When: con->rma_write() fails
+ * Then: the request should be marked with an error; pending IO should be zero
+ *       and the connection should be closed for writing
+ */
+void test_pscom_get_rma_read_receiver_failing_rma_write(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+	recv_con->rma_read = NULL;
+	recv_con->rma_write = rma_write_error;
+
+	/* poen connection for reading and writing */
+	recv_con->pub.state = PSCOM_CON_STATE_RW;
+
+
+	/* create the appropriate network header */
+	pscom_header_net_t nh = {
+		.msg_type = PSCOM_MSGTYPE_RMA_READ,
+	};
+
+	/* create user rndv request an append to pending IO queue */
+	pscom_req_t *user_req = pscom_req_create(0, 100);
+	user_req->pub.state = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
+		PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
+	user_req->pub.connection = &recv_con->pub;
+
+	pscom_lock(); {
+		_pscom_pendingio_cnt_inc(recv_con, user_req);
+		_pscom_get_rma_read_receiver(recv_con, &nh);
+	} pscom_unlock();
+
+	assert_true(user_req->pub.state & PSCOM_REQ_STATE_ERROR);
+	assert_true(user_req->pending_io == 0);
+	assert_false(recv_con->pub.state & PSCOM_CON_STATE_W);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Rendezvous Receiver (RMA write)
+////////////////////////////////////////////////////////////////////////////////
+static
+int rma_write_null(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
+			   void (*io_done)(void *priv, int err), void *priv)
+{
+	/* do nothing here */
+
+	return 0;
+}
+/**
+ * \brief Test read error during rendezvous on the receiver side
+ *
+ * Given: An RMA read request on a connection relying on RMA put
+ * When: a read error occurs
+ * Then: the request should be marked with an error and the connection should
+ *       be closed for reading
+ */
+void test_rndv_recv_read_error(void **state)
+{
+	const size_t data_len = 32768;
+
+	/* obtain the dummy connections from the test setup */
+	dummy_con_pair_t *con_pair = (dummy_con_pair_t*)(*state);
+	pscom_con_t *recv_con, *send_con;
+
+	recv_con = con_pair->recv_con;
+	recv_con->rma_read = NULL;
+	recv_con->rma_write = rma_write_null;
+
+	send_con = con_pair->send_con;
+	send_con->rma_read = NULL;
+	send_con->rma_write = rma_write_null;
+
+	/* open recv connection for reading and writing */
+	recv_con->pub.state = PSCOM_CON_STATE_RW;
+
+	/* create and post a user recv request on the recv con */
+	pscom_request_t *user_recv_req = pscom_request_create(0, 100);
+	user_recv_req->connection = &recv_con->pub;
+	user_recv_req->data_len = data_len;
+	pscom_post_recv(user_recv_req);
+
+	/* create a matching send requests, i.e., the correct network header*/
+	pscom_req_t *send_req = pscom_req_create(100, 0);
+	send_req->pub.data_len = data_len;
+	send_req->pub.connection = &send_con->pub;
+	pscom_req_t *rndv_req = pscom_prepare_send_rendezvous_inline(send_req, PSCOM_MSGTYPE_USER);
+	pscom_req_prepare_send(rndv_req, PSCOM_MSGTYPE_RENDEZVOUS_REQ);
+	pscom_header_net_t *nh = &rndv_req->pub.header;
+
+	/* assume we received a PSCOM_MSGTYPE_RENDEZVOUS_REQ */
+	pscom_get_rendezvous_receiver(recv_con, nh);
+
+	/* force READ error on the connection */
+	pscom_lock(); {
+		pscom_read_done(recv_con, NULL, 0);
+	} pscom_unlock();
+
+	/* check request and conection state */
+	assert_true(user_recv_req->state & PSCOM_REQ_STATE_ERROR);
+	assert_false(recv_con->pub.state & PSCOM_CON_STATE_R);
 }
