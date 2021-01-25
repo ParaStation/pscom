@@ -617,6 +617,10 @@ void pscom_rendezvous_read_data_io_done(pscom_request_t *request)
 	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__, pscom_debug_req_str(req)));
 	assert(req->magic == MAGIC_REQUEST);
 	assert(user_req->magic == MAGIC_REQUEST);
+
+	if (!pscom_req_state_successful(req->pub.state)) {
+		user_req->pub.state |= PSCOM_REQ_STATE_ERROR;
+	}
 	pscom_recv_req_done(user_req);
 
 	/* rewrite rendezvous_req for rendezvous fin message */
