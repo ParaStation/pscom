@@ -1,3 +1,9 @@
+2021-01-25  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.7-0rc2
+2021-01-25  Jens Hauke  <hauke@par-tec.com>
+
+	* Fix: Error propagation on the rendezvous path including errors
+	comming from the low-level transports (e.g., pscom4openib).
+
 2020-12-14  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.7-0rc1
 
 	* Feature: Outstanding receive requests in pscom4ucp can be limited by
