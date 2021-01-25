@@ -97,7 +97,6 @@ endif(COVERAGE_ENABLED)
 
 add_executable(		pscom_utest
   EXCLUDE_FROM_ALL
-  mocks/pscom_mocks.c
   mocks/misc_mocks.c
   pscom_utest.c
   pscom/test_io.c
@@ -108,7 +107,6 @@ add_executable(		pscom_utest
 # Mocked functions
 target_link_options(	pscom_utest
   PRIVATE
-  -Wl,--wrap=pscom_unlock
   -Wl,--wrap=memcpy
 #  -static
 )

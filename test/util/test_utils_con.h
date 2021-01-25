@@ -13,7 +13,15 @@
 #ifndef _PSCOM_UTIL_CON_H_
 #define _PSCOM_UTIL_CON_H_
 
+typedef struct dummy_con_pair {
+        void *send_con;
+        void *recv_con;
+} dummy_con_pair_t;
+
 int setup_dummy_con(void **state);
 int teardown_dummy_con(void **state);
+
+int setup_dummy_con_pair(void **state);
+int teardown_dummy_con_pair(void **state);
 
 #endif /* _PSCOM_UTIL_CON_H_*/

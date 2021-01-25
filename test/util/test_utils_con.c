@@ -15,6 +15,8 @@
 #include "pscom_priv.h"
 #include "pscom_con.h"
 
+#include "test_utils_con.h"
+
 static
 pscom_sock_t* create_dummy_sock(void)
 {
@@ -26,6 +28,7 @@ pscom_sock_t* create_dummy_sock(void)
 	INIT_LIST_HEAD(&sock->connections);
 	INIT_LIST_HEAD(&sock->genrecvq_any);
 	INIT_LIST_HEAD(&sock->recvq_any);
+	INIT_LIST_HEAD(&sock->sendq_suspending);
 
 	return sock;
 }
@@ -49,6 +52,21 @@ int setup_dummy_con(void **state)
     return 0;
 }
 
+
+int setup_dummy_con_pair(void **state)
+{
+	dummy_con_pair_t *con_pair = (dummy_con_pair_t*)malloc(sizeof(dummy_con_pair_t));
+
+	setup_dummy_con(&con_pair->send_con);
+	setup_dummy_con(&con_pair->recv_con);
+
+	*state = (void*)con_pair;
+
+	return 0;
+}
+
+
+
 int teardown_dummy_con(void **state)
 {
 	pscom_con_t *con = (pscom_con_t*)(*state);
@@ -59,6 +77,19 @@ int teardown_dummy_con(void **state)
 
 	/* destroy the dummy socket */
 	destroy_dummy_sock(sock);
+
+	return 0;
+}
+
+
+int teardown_dummy_con_pair(void **state)
+{
+	dummy_con_pair_t *con_pair = (dummy_con_pair_t*)(*state);
+
+	teardown_dummy_con(&con_pair->send_con);
+	teardown_dummy_con(&con_pair->recv_con);
+
+	free(con_pair);
 
 	return 0;
 }

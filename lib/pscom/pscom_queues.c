@@ -127,11 +127,13 @@ void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
 		_pscom_pendingio_enq(con, req);
 
 		/*
-		 * keep reading on the connection for user requests with pending io
+		 * Keep reading on the connection for send and receive
+		 * requests with pending io. Don't count for generated
+		 * requests.
 		 * -> increase the recv requests counter
 		 */
 		if (!(req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST)) {
-				_pscom_recv_req_cnt_inc(con);
+			_pscom_recv_req_cnt_inc(con);
 		}
 	}
 }
@@ -143,11 +145,11 @@ int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
 	int done = !(--req->pending_io);
 	if (done) {
 		/*
-		 * decrease the recv requests counter for user requests
-		 * (cf. _pscom_pendingio_cnt_inc()
+		 * Decrease the recv requests counter.
+		 * cf. _pscom_pendingio_cnt_inc()
 		 */
 		if (!(req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST)) {
-				_pscom_recv_req_cnt_dec(con);
+			_pscom_recv_req_cnt_dec(con);
 		}
 
 		_pscom_pendingio_deq(con, req);
@@ -694,6 +696,16 @@ int _pscom_recvq_rma_contains(pscom_con_t *con, pscom_req_t *req_needle)
 		}
 	}
 	return 0;
+}
+
+
+int _pscom_recvq_rma_empty(pscom_con_t *con) {
+	return list_empty(&con->recvq_rma);
+}
+
+
+pscom_req_t *_pscom_recvq_rma_head(pscom_con_t *con) {
+	return list_entry(con->recvq_rma.next, pscom_req_t, next);
 }
 
 

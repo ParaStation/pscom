@@ -60,6 +60,14 @@ int main(void)
 			test_post_recv_genreq_state,
 			setup_dummy_con,
 			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_pscom_get_rma_read_receiver_failing_rma_write,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_rndv_recv_read_error,
+			setup_dummy_con_pair,
+			teardown_dummy_con_pair),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
