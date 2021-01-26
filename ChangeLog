@@ -1,4 +1,7 @@
+2021-01-26  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.7-1
+
 2021-01-25  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.7-0rc2
+
 2021-01-25  Jens Hauke  <hauke@par-tec.com>
 
 	* Fix: Error propagation on the rendezvous path including errors
