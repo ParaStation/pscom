@@ -74,7 +74,7 @@ static
 struct list_head mallocs = LIST_HEAD_INIT(mallocs);
 
 
-void *pscom_malloc(unsigned int size)
+void *pscom_malloc(size_t size)
 {
 	void *ptr;
 	pscom_malloc_t *m;
