@@ -556,6 +556,13 @@ err_send:
 }
 
 
+void psucp_progress(void)
+{
+	hca_info_t *hca_info = &default_hca;
+	ucp_worker_progress(hca_info->ucp_worker);
+}
+
+
 size_t psucp_probe(psucp_msg_t *msg)
 {
 	hca_info_t *hca_info = &default_hca;

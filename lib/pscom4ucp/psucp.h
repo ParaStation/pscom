@@ -93,6 +93,10 @@ typedef struct {
 size_t psucp_probe(psucp_msg_t *msg);
 ssize_t psucp_recv(psucp_msg_t *msg, void *buf, size_t size);
 
+/* Flush the notification queue and make progress. */
+void psucp_progress(void);
+
+
 /* Suggest a value for psucp_pending_tokens. Result depends on psucp_recvq_size. */
 unsigned psucp_pending_tokens_suggestion(void);
 

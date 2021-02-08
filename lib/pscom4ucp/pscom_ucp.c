@@ -150,8 +150,6 @@ void pscom_psucp_sendv_done(void *req_priv)
 	assert(req != NULL);
 	assert(req->magic == MAGIC_REQUEST);
 
-	reader_dec();
-
 	pscom_write_pending_done(get_con(req->pub.connection), req);
 }
 
@@ -176,7 +174,6 @@ int pscom_ucp_do_write(pscom_poll_t *poll)
 
 		if (rlen >= 0) {
 			assert((size_t)rlen == len);
-			reader_inc();
 			// pscom_write_done(con, req, rlen);
 		} else if ((rlen == -EINTR) || (rlen == -EAGAIN)) {
 			// Busy: Retry later.
@@ -188,6 +185,12 @@ int pscom_ucp_do_write(pscom_poll_t *poll)
 			pscom_con_error(con, PSCOM_OP_WRITE, PSCOM_ERR_STDERROR);
 		}
 	}
+
+	/* make progress if the connection is closed for reading */
+	if (!pscom_ucp.reader_user) {
+		psucp_progress();
+	}
+
 	return 0;
 }
 
