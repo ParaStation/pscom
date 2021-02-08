@@ -109,6 +109,22 @@ int main(void)
 			test_rndv_recv_read_error,
 			setup_dummy_con_pair,
 			teardown_dummy_con_pair),
+		cmocka_unit_test_setup_teardown(
+			test_write_pending_first_io_con_closed,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_write_pending_first_io_con_open,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_write_pending_done_last_io,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_write_pending_done_second_last_io,
+			setup_dummy_con,
+			teardown_dummy_con),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
