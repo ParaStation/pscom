@@ -1,6 +1,14 @@
 
-find_path(PSM2_INCLUDE_DIR psm2.h psm2_mq.h)
-find_library(PSM2_LIBRARY psm2)
+set(PSM2_HOME "/usr" CACHE STRING "Default location where to search PSM2 library.")
+
+find_path(PSM2_INCLUDE_DIR
+  NAMES psm2.h psm2_mq.h
+  HINTS ${PSM2_HOME} ENV PSM2_HOME
+  PATH_SUFFIXES include)
+find_library(PSM2_LIBRARY
+  NAMES psm2
+  HINTS ${PSM2_HOME} ENV PSM2_HOME
+  PATH_SUFFIXES lib lib64)
 
 set(PSM2_LIBRARIES ${PSM2_LIBRARY})
 set(PSM2_INCLUDE_DIRS ${PSM2_INCLUDE_DIR})
