@@ -282,7 +282,8 @@ void io_done_msg_ordering(pscom_request_t *req)
 	assert((req->xheader.user.tag == req->user->req.msg_ordering.tag)
 	       || !pscom_req_successful(req));
 	// guard ok?
-	assert(memcmp(&req->user->req.msg_ordering.data[req->data_len], &guard, sizeof(guard)) == 0);
+	int *guard_sent = (void*)((uint64_t)&req->user->req.msg_ordering.data + req->data_len);
+	assert(memcmp(guard_sent, &guard, sizeof(guard)) == 0);
 
 	pscom_request_free(req);
 	msg_ordering_jobs--;
@@ -320,7 +321,8 @@ void server_msg_ordering(pscom_connection_t *con)
 
 		req->user->req.msg_ordering.tag = n[i].tag;
 		req->user->req.msg_ordering.index = i;
-		memcpy(&req->user->req.msg_ordering.data[n[i].data_len], &guard, sizeof(guard));
+		void *data_ptr = (void*)((uint64_t)&req->user->req.msg_ordering.data + n[i].data_len);
+		memcpy(data_ptr, &guard, sizeof(guard));
 
 		req->connection = n[i].con;
 		req->socket = con->socket;
@@ -365,7 +367,8 @@ void client_msg_ordering(pscom_connection_t *con)
 		req->xheader.user.tag = n[i].tag;
 		req->user->req.msg_ordering.tag = n[i].tag;
 		req->user->req.msg_ordering.index = i;
-		memcpy(&req->user->req.msg_ordering.data[n[i].data_len], &guard, sizeof(guard));
+		void *data_ptr =  (void*)((uint64_t)&req->user->req.msg_ordering.data + n[i].data_len);
+		memcpy(data_ptr, &guard, sizeof(guard));
 
 		req->connection = con;
 
