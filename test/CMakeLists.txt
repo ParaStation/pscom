@@ -101,7 +101,6 @@ add_executable(		pscom_utest
   pscom_utest.c
   pscom/test_io.c
   util/test_utils_con.c
-  util/test_utils_cuda.c
   )
 
 # Mocked functions
@@ -152,8 +151,9 @@ if(CUDA_ENABLED)
 
   target_sources(	pscom_utest
     PRIVATE
-    pscom/test_cuda.c
     mocks/cuda_mocks.c
+    pscom/test_cuda.c
+    util/test_utils_cuda.c
     )
 
   target_add_cuda(pscom_utest)
