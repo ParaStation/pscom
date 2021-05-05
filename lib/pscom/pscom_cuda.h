@@ -63,7 +63,6 @@ int _pscom_buffer_needs_staging(const void* ptr, pscom_con_t* con)
 static inline
 void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 {
-	CUresult ret;
 	pscom_con_t *con = req->pub.connection? get_con(req->pub.connection) : NULL;
 
 	if (_pscom_buffer_needs_staging(req->pub.data, con)) {
@@ -81,8 +80,6 @@ void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
 static inline
 void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
 {
-	CUresult ret;
-
 	if (req->stage_buf != NULL) {
 
 		/* we only have to copy in case of recv requests */
