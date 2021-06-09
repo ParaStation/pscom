@@ -135,7 +135,10 @@ void test_post_recv_genreq_state(void **state)
 	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
 
 	/* create generated requests and enqueue to the list of net requests */
-	pscom_header_net_t nh;
+	pscom_header_net_t nh = {
+		.xheader_len = 0,
+		.data_len = 0,
+	};
 	pscom_req_t *gen_req = _pscom_generate_recv_req(NULL, &nh);
 	gen_req->pub.connection = &recv_con->pub;
 	_pscom_net_recvq_user_enq(recv_con, gen_req);
@@ -208,7 +211,6 @@ void test_req_prepare_send_pending_truncate_data_len(void **state)
 {
 	(void) state;
 
-	const uint16_t xheader_len = 42;
 	const size_t data_len = PSCOM_DATA_LEN_MASK + 1024;
 	pscom_req_t req = {
 		.magic = MAGIC_REQUEST,

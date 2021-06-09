@@ -209,8 +209,6 @@ void pscom_poll_read_stop(pscom_con_t *con)
 PSCOM_PLUGIN_API_EXPORT
 int pscom_progress(int timeout)
 {
-	struct list_head *pos, *next;
-
 	pscom_poll(&pscom.poll_write);
 
 	if (pscom_poll(&pscom.poll_read)) {

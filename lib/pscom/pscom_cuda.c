@@ -312,8 +312,6 @@ int pscom_is_gpu_mem(const void* ptr)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 {
-	CUresult ret;
-
 	if (_pscom_is_gpu_mem(src, len)) {
 		pscom_memcpy_device2host(dst, src, len);
 	} else {
@@ -332,8 +330,6 @@ void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 {
-	CUresult ret;
-
 	if (_pscom_is_gpu_mem(dst, len)) {
 		pscom_memcpy_host2device(dst, src, len);
 	} else {
@@ -352,8 +348,6 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len)
 {
-	CUresult ret;
-
 	if (_pscom_is_gpu_mem(dst, len) || _pscom_is_gpu_mem(src, len)) {
 		pscom_memcpy_any_dir(dst, src, len);
 	} else {
