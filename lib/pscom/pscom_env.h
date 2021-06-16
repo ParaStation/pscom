@@ -65,6 +65,7 @@
 
 /* UCP */
 #define ENV_UCP_MAX_RECV "PSP_UCP_MAX_RECV"
+#define ENV_UCP_FASTINIT "PSP_UCP_FASTINIT"
 
 /* MXM */
 #define ENV_MXM_DEVCHECK "PSP_MXM_DEVCHECK"
@@ -223,6 +224,7 @@ struct PSCOM_env {
 	unsigned int	psm_fastinit;
 	unsigned int	psm_close_delay;
 	unsigned int	ucp_max_recv;
+	unsigned int	ucp_fastinit;
 	int		sigquit;
 	int		sigsuspend;
 	int		sigsegv;
@@ -296,6 +298,7 @@ struct PSCOM_env {
 	.psm_fastinit = 1,						\
 	.psm_close_delay = 1000,					\
 	.ucp_max_recv = ~0U,						\
+	.ucp_fastinit = 1,						\
 	.sigquit = 0,							\
 	.sigsuspend = 0,						\
 	.sigsegv = 1,							\
