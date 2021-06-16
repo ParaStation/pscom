@@ -84,26 +84,6 @@ endif(CUDA_ENABLED)
 install(TARGETS pscom DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 
 
-#
 # Static libpscom for utests
-#
-get_target_property(PSCOM_SOURCES		pscom SOURCES)
-get_target_property(PSCOM_INCLUDE_DIRECTORIES	pscom INCLUDE_DIRECTORIES)
-get_target_property(PSCOM_COMPILE_DEFINITIONS	pscom COMPILE_DEFINITIONS)
-get_target_property(PSCOM_LINK_LIBRARIES	pscom LINK_LIBRARIES)
-
-add_library(pscom-static STATIC
-  EXCLUDE_FROM_ALL
-  ${PSCOM_SOURCES}
-  )
+add_static_target(pscom)
 add_dependencies(pscom-static vc_version)
-target_include_directories(pscom-static PRIVATE ${PSCOM_INCLUDE_DIRECTORIES})
-target_compile_definitions(pscom-static PRIVATE ${PSCOM_COMPILE_DEFINITIONS})
-target_link_libraries(pscom-static PRIVATE ${PSCOM_LINK_LIBRARIES})
-if(CUDA_ENABLED)
-  target_add_cuda(pscom-static)
-endif(CUDA_ENABLED)
-if(COVERAGE_ENABLED)
-  target_compile_options(pscom-static PRIVATE --coverage)
-  target_link_options(pscom-static PRIVATE --coverage)
-endif(COVERAGE_ENABLED)
