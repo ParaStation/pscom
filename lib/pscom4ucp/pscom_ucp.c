@@ -239,7 +239,8 @@ void pscom_ucp_init(void)
 	pscom_ucp.reader_user = 0;
 
 	/* ensure the initialization of the UCP memory cache */
-	psucp_init();
+	pscom_env_get_uint(&pscom.env.ucp_fastinit, ENV_UCP_FASTINIT);
+	if (pscom.env.ucp_fastinit) psucp_init();
 }
 
 

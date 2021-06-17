@@ -127,6 +127,13 @@ void pscom_env_psm_fastinit_set(unsigned int psm_fastinit)
 }
 
 
+PSCOM_API_EXPORT
+void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit)
+{
+	pscom.env.ucp_fastinit = ucp_fastinit;
+}
+
+
 void pscom_env_init(void)
 {
 	pscom_pslib_read_config(ENV_CONFIG_FILES);

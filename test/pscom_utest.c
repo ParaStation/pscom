@@ -21,6 +21,9 @@
 #include "pscom_utest.h"
 #include "pscom/test_cuda.h"
 #include "pscom/test_io.h"
+
+#include "pscom4ucp/test_pscom4ucp.h"
+
 #include "util/test_utils_con.h"
 #include "util/test_utils_cuda.h"
 
@@ -71,6 +74,18 @@ int main(void)
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
+
+
+	/* pscom4ucp tests */
+	const struct CMUnitTest pscom4ucp_tests[] = {
+		cmocka_unit_test(test_ucp_disable_fast_initialization),
+		cmocka_unit_test(test_ucp_disable_fast_initialization_via_environment),
+		/* this has has to go last due to the static varaiable in psucp_init() */
+		cmocka_unit_test(test_ucp_is_initialized_within_plugin),
+	};
+	total_tests += TEST_GROUP_SIZE(pscom4ucp_tests);
+	failed_tests += cmocka_run_group_tests(pscom4ucp_tests, NULL, NULL);
+
 
 #ifdef PSCOM_CUDA_AWARENESS
 	/* CUDA-related tests */
