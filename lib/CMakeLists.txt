@@ -56,6 +56,31 @@ function(plugin_common plugin)
 endfunction()
 
 
+function(add_static_target target)
+  string(TOUPPER ${target} uc_target)
+
+  get_target_property(${uc_target}_SOURCES	${target} SOURCES)
+  get_target_property(${uc_target}_INCLUDE_DIRECTORIES	${target} INCLUDE_DIRECTORIES)
+  get_target_property(${uc_target}_COMPILE_DEFINITIONS	${target} COMPILE_DEFINITIONS)
+  get_target_property(${uc_target}_LINK_LIBRARIES	${target} LINK_LIBRARIES)
+
+  add_library(${target}-static STATIC
+    EXCLUDE_FROM_ALL
+    ${${uc_target}_SOURCES}
+    )
+  target_include_directories(${target}-static PRIVATE ${${uc_target}_INCLUDE_DIRECTORIES})
+  target_compile_definitions(${target}-static PRIVATE ${${uc_target}_COMPILE_DEFINITIONS})
+  target_link_libraries(${target}-static PRIVATE ${${uc_target}_LINK_LIBRARIES})
+  if(CUDA_ENABLED)
+    target_add_cuda(${target}-static)
+  endif(CUDA_ENABLED)
+  if(COVERAGE_ENABLED)
+    target_compile_options(${target}-static PRIVATE --coverage)
+    target_link_options(${target}-static PRIVATE --coverage)
+  endif(COVERAGE_ENABLED)
+endfunction()
+
+
 add_subdirectory(pscom)
 link_to_lib(pscom)
 
