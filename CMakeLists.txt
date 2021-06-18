@@ -48,7 +48,7 @@ set(_buildtypeEnum RelWithDebInfo Release MinSizeRel Debug)
 set(trafficLight Green CACHE STRING "Status of something")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_buildtypeEnum})
 
-add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused -Wno-unused-parameter)
+add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion -Wno-unused-parameter)
 
 include(CheckVisibilityProtected)
 if(NOT VISIBILITY_PROTECTED)
