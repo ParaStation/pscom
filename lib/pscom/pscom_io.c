@@ -30,7 +30,6 @@ static        void _pscom_rendezvous_read_data_abort_arch(pscom_req_t *rendezvou
 static        void         pscom_req_prepare_send(pscom_req_t *req, pscom_msgtype_t msg_type);
 static        void         pscom_req_prepare_rma_write(pscom_req_t *req);
 static        void         _check_readahead(pscom_con_t *con, size_t len);
-static inline void         _pscom_req_bcast_done(pscom_req_t *req);
 static        void         _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq);
 static        pscom_req_t *pscom_get_default_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
 static inline pscom_req_t *_pscom_get_user_receiver(pscom_con_t *con, pscom_header_net_t *nh);
@@ -197,18 +196,6 @@ void _pscom_update_in_recv_req(pscom_con_t *con, pscom_req_t *req)
 		if (!req->pending_io) _pscom_recv_req_done(req);
 		pscom_con_check_read_stop(con);
 	}
-}
-
-
-static inline
-void _pscom_req_bcast_done(pscom_req_t *req)
-{
-	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
-		    pscom_debug_req_str(req)));
-
-	req->pub.state |= PSCOM_REQ_STATE_DONE;
-	_pscom_step();
-	pscom_req_free(req);
 }
 
 

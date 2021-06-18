@@ -94,6 +94,20 @@ void _pscom_grecv_req_done(pscom_req_t *req)
 }
 
 
+#if 0
+static inline
+void _pscom_req_bcast_done(pscom_req_t *req)
+{
+	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+		    pscom_debug_req_str(req)));
+
+	req->pub.state |= PSCOM_REQ_STATE_DONE;
+	_pscom_step();
+	pscom_req_free(req);
+}
+#endif
+
+
 void pscom_greq_check_free(pscom_con_t *con, pscom_req_t *greq);
 
 /* call _pscom_recv_req_done() and return 1 if req received all data. return 0 else.

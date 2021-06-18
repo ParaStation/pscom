@@ -95,15 +95,6 @@ void parse_opt(int argc, char **argv)
 
 #include <sys/time.h>
 
-static inline
-unsigned long getusec(void)
-{
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return (tv.tv_usec+tv.tv_sec*1000000);
-}
-
-
 static
 void exit_on_error(pscom_err_t rc, char *fmt, ...)
 	__attribute__ ((__format__ (__printf__, 2, 3)));
