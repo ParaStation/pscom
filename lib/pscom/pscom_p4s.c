@@ -84,6 +84,7 @@ pscom_con_t *p4s_get_con(p4s_sock_t *sock, int p4s_idx)
 }
 
 
+__attribute__((unused))
 static inline
 int p4s_recvmsg(int fd, struct iovec *iov, uint16_t iovlen, uint16_t flags, int *from)
 {

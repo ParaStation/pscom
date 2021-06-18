@@ -134,17 +134,6 @@ char *dumpstr(void *buf, int size)
 }
 
 
-
-static inline
-unsigned long getusec(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return (tv.tv_usec+tv.tv_sec*1000000);
-}
-
-
-
 static
 int bind_port(int sock, int portno)
 {
