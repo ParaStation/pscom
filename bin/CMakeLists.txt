@@ -13,45 +13,55 @@ include_directories(
   )
 
 
-add_executable(		pscom_pp	pscom_pp.c)
-target_link_libraries(	pscom_pp	PRIVATE pscom popt)
-install(TARGETS		pscom_pp	DESTINATION "${CMAKE_INSTALL_BINDIR}")
+add_executable(             pscom_pp	pscom_pp.c)
+target_include_directories( pscom_pp	PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_pp	PRIVATE pscom ${POPT_LIBRARIES})
+install(TARGETS             pscom_pp	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-add_executable(		pscom_dispatch	examples/pscom_dispatch.c)
-target_link_libraries(	pscom_dispatch	PRIVATE pscom popt)
+add_executable(             pscom_dispatch	examples/pscom_dispatch.c)
+target_include_directories( pscom_dispatch	PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_dispatch	PRIVATE pscom ${POPT_LIBRARIES})
 
-add_executable(		pscom_test	pscom_test.c)
-target_link_libraries(	pscom_test	PRIVATE pscom popt)
+add_executable(             pscom_test	pscom_test.c)
+target_include_directories( pscom_test	PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_test	PRIVATE pscom ${POPT_LIBRARIES})
 
 
-add_executable(		pscom_ondemand	pscom_ondemand.c)
-target_link_libraries(	pscom_ondemand	PRIVATE pscom popt)
+add_executable(             pscom_ondemand	pscom_ondemand.c)
+target_include_directories( pscom_ondemand	PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_ondemand	PRIVATE pscom ${POPT_LIBRARIES})
 #install(TARGETS	pscom_ondemand	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-add_executable(		pscom_bcast_test pscom_bcast_test.c)
-target_link_libraries(	pscom_bcast_test PRIVATE pscom popt)
+add_executable(             pscom_bcast_test pscom_bcast_test.c)
+target_include_directories( pscom_bcast_test PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_bcast_test PRIVATE pscom ${POPT_LIBRARIES})
 #install(TARGETS	pscom_bcast_test DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-add_executable(		pscom_request_create pscom_request_create.c)
-target_link_libraries(	pscom_request_create PRIVATE pscom popt)
+add_executable(             pscom_request_create pscom_request_create.c)
+target_include_directories( pscom_request_create PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_request_create PRIVATE pscom ${POPT_LIBRARIES})
 #install(TARGETS	pscom_request_create DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-add_executable(		pscom_bcast_pp	pscom_bcast_pp.c)
-target_link_libraries(	pscom_bcast_pp	PRIVATE pscom popt)
+add_executable(             pscom_bcast_pp pscom_bcast_pp.c)
+target_include_directories( pscom_bcast_pp PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_bcast_pp PRIVATE pscom ${POPT_LIBRARIES})
 #install(TARGETS	pscom_bcast_pp	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-add_executable(		pscom_maxcon	pscom_maxcon.c)
-target_link_libraries(	pscom_maxcon	PRIVATE pscom)
+add_executable(             pscom_maxcon pscom_maxcon.c)
+target_include_directories( pscom_maxcon PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_maxcon PRIVATE pscom ${POP_LIBRARIES})
 #install(TARGETS	pscom_maxcon	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
-add_executable(		pscom_test_fault pscom_test_fault.c)
-target_link_libraries(	pscom_test_fault PRIVATE pscom popt)
+add_executable(             pscom_test_fault pscom_test_fault.c)
+target_include_directories( pscom_test_fault PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      pscom_test_fault PRIVATE pscom ${POPT_LIBRARIES})
 #install(TARGETS	pscom_test_fault DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 
-add_executable(		test_nodes	test_nodes.c)
-target_link_libraries(	test_nodes	PRIVATE pscom popt)
-install(TARGETS		test_nodes	DESTINATION "${CMAKE_INSTALL_BINDIR}")
+add_executable(             test_nodes test_nodes.c)
+target_include_directories( test_nodes PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(      test_nodes PRIVATE pscom ${POPT_LIBRARIES})
+install(TARGETS             test_nodes	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 if(PSMGMT_ENABLED)
   target_add_psmgmt(	test_nodes)
 endif(PSMGMT_ENABLED)
@@ -133,13 +143,14 @@ if (OPENIB_ENABLED)
     target_link_libraries(
       ${target}
       PRIVATE ${IBVERBS_LIBRARIES}
-      PRIVATE popt
+      PRIVATE ${POPT_LIBRARIES}
       PRIVATE dl
       )
 
     target_include_directories(
       ${target}
       PRIVATE ${IBVERBS_INCLUDE_DIRS}
+      PRIVATE ${POPT_INCLUDE_DIRS}
       PRIVATE ${PROJECT_BINARY_DIR}/include
       PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
       PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4openib
@@ -196,6 +207,7 @@ if (UCP_ENABLED)
   target_include_directories(
     ucp_pp
     PRIVATE ${UCP_INCLUDE_DIRS}
+    PRIVATE ${POPT_INCLUDE_DIRS}
     PRIVATE ${PROJECT_BINARY_DIR}/include
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4ucp
@@ -204,7 +216,7 @@ if (UCP_ENABLED)
   target_link_libraries(
     ucp_pp
     PRIVATE ${UCP_LIBRARIES}
-    PRIVATE popt
+    PRIVATE ${POPT_LIBRARIES}
     )
 endif (UCP_ENABLED)
 
@@ -222,18 +234,20 @@ if (PSM2_ENABLED)
   target_include_directories(
     psm2_pp
     PRIVATE ${PSM2_INCLUDE_DIRS}
+    PRIVATE ${POPT_INCLUDE_DIRS}
     )
 
   target_link_libraries(
     psm2_pp
     PRIVATE ${PSM2_LIBRARIES}
-    PRIVATE popt
+    PRIVATE ${POPT_LIBRARIES}
     )
 
   add_executable(pscom4psm_pp psm/pscom4psm_pp.c)
   target_include_directories(
     pscom4psm_pp
     PRIVATE ${PSM2_INCLUDE_DIRS}
+    PRIVATE ${POPT_INCLUDE_DIRS}
     PRIVATE ${PROJECT_BINARY_DIR}/include
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
     PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4psm
@@ -242,7 +256,7 @@ if (PSM2_ENABLED)
   target_link_libraries(
     pscom4psm_pp
     PRIVATE ${PSM2_LIBRARIES}
-    PRIVATE popt
+    PRIVATE ${POPT_LIBRARIES}
     )
 endif (PSM2_ENABLED)
 
@@ -281,33 +295,36 @@ if (EXTOLL_ENABLED)
   target_include_directories(
     extoll_pp_lowlevel
     PRIVATE  ${EXTOLL_INCLUDE_DIRS}
+    PRIVATE ${POPT_INCLUDE_DIRS}
     )
   target_link_libraries(
     extoll_pp_lowlevel
     PRIVATE ${EXTOLL_RMA2_LIBRARY}
-    PRIVATE popt
+    PRIVATE ${POPT_LIBRARIES}
     )
 
   add_executable(extoll_pp_velo extoll/extoll_pp_velo.c)
   target_include_directories(
     extoll_pp_velo
     PRIVATE  ${EXTOLL_INCLUDE_DIRS}
+    PRIVATE ${POPT_INCLUDE_DIRS}
     )
   target_link_libraries(
     extoll_pp_velo
     PRIVATE ${EXTOLL_VELO2_LIBRARY}
-    PRIVATE popt
+    PRIVATE ${POPT_LIBRARIES}
     )
 
   add_executable(extoll_one_message extoll/extoll_one_message.c)
   target_include_directories(
     extoll_one_message
     PRIVATE  ${EXTOLL_INCLUDE_DIRS}
+    PRIVATE ${POPT_INCLUDE_DIRS}
     )
   target_link_libraries(
     extoll_one_message
     PRIVATE ${EXTOLL_RMA2_LIBRARY}
-    PRIVATE popt
+    PRIVATE ${POPT_LIBRARIES}
     )
 
   add_executable(pscom_memusage_extoll pscom_memusage.c)

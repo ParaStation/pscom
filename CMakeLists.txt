@@ -55,6 +55,8 @@ if(NOT VISIBILITY_PROTECTED)
   add_compile_definitions(NO_PROTECTED_FUNC=1)
 endif(NOT VISIBILITY_PROTECTED)
 
+find_package(Popt REQUIRED)
+
 find_package(IbVerbs)
 option_conditional(OPENIB_ENABLED "Enable pscom4openib" TRUE "IBVERBS_FOUND" FALSE)
 option_conditional(OFED_ENABLED "Enable pscom4ofed" TRUE "IBVERBS_FOUND" FALSE)
