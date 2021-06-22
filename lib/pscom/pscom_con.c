@@ -255,12 +255,10 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		pscom_poll_cleanup_init(&con->poll_read);
 		pscom_poll_cleanup_init(&con->poll_write);
 
-		_pscom_con_terminate_net_queues(con);
-
 		assert(con->pub.state == PSCOM_CON_STATE_CLOSE_WAIT);
 		assert(list_empty(&con->sendq));
 		assert(list_empty(&con->recvq_user));
-		assert(list_empty(&con->net_recvq_user));
+		assert(list_empty(&con->net_recvq_user) || !con->state.close_called);
 		assert(con->in.req == NULL);
 		// ToDo: check for group requests?
 		// assert(list_empty(&group->???->recvq_bcast));
@@ -269,7 +267,7 @@ void _pscom_con_cleanup(pscom_con_t *con)
 
 		if (!list_empty(&con->sendq) ||
 		    !list_empty(&con->recvq_user) ||
-		    !list_empty(&con->net_recvq_user) ||
+		    (!list_empty(&con->net_recvq_user) && con->state.close_called) ||
 		    // !list_empty(&con->recvq_bcast) ||
 		    // !list_empty(&con->net_recvq_bcast) ||
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
@@ -433,6 +431,14 @@ void pscom_con_close(pscom_con_t *con)
 {
 	int close_called = con->state.close_called;
 	con->state.close_called = 1;
+
+	/* Terminate the net queues right here and not in pscom_con_closing()
+	   since the latter also handles remotely initiated closing via EOF
+	   where the net queues are to be kept so that once generated net
+	   requests may still be matched even after the disconnect.
+	*/
+	_pscom_con_terminate_net_queues(con);
+
 	if (!close_called) pscom_con_closing(con);
 }
 
