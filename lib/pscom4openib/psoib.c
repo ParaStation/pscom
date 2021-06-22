@@ -1361,7 +1361,6 @@ static
 void psoib_rma_reqs_enq(psoib_rma_req_t *req)
 {
 	hca_info_t *hca_info = req->ci->hca_info;
-	int first = list_empty(&hca_info->rma_reqs);
 
 	list_add_tail(&req->next, &hca_info->rma_reqs);
 }
