@@ -131,6 +131,7 @@ target_include_directories(	pscom_utest
   ${PROJECT_SOURCE_DIR}/lib/pscom
   ${PROJECT_SOURCE_DIR}/lib/pscom4ucp
   ${PROJECT_SOURCE_DIR}/include
+  ${UCP_INCLUDE_DIRS}
   ${CMOCKA_INCLUDE_DIR}
   )
 
