@@ -98,10 +98,8 @@ endif(COVERAGE_ENABLED)
 add_executable(		pscom_utest
   EXCLUDE_FROM_ALL
   mocks/misc_mocks.c
-  mocks/ucx_mocks.c
   pscom_utest.c
   pscom/test_io.c
-  pscom4ucp/test_pscom4ucp.c
   util/test_utils_con.c
   )
 
@@ -109,19 +107,12 @@ add_executable(		pscom_utest
 target_link_options(	pscom_utest
   PRIVATE
   -Wl,--wrap=memcpy
-  -Wl,--wrap=ucp_config_read
-  -Wl,--wrap=ucp_config_release
-  -Wl,--wrap=ucp_init_version
-  -Wl,--wrap=ucp_worker_create
-  -Wl,--wrap=ucp_worker_get_address
-  -Wl,--wrap=ucs_status_string
 #  -static
 )
 
 target_link_libraries(	pscom_utest
   PRIVATE
   pscom-static
-  pscom4ucp-static
   ${CMOCKA_LIBRARIES}
   )
 
@@ -129,12 +120,42 @@ target_include_directories(	pscom_utest
   PRIVATE
   .
   ${PROJECT_SOURCE_DIR}/lib/pscom
-  ${PROJECT_SOURCE_DIR}/lib/pscom4ucp
   ${PROJECT_SOURCE_DIR}/include
-  ${UCP_INCLUDE_DIRS}
   ${CMOCKA_INCLUDE_DIR}
   )
 
+if(UCP_ENABLED)
+  target_link_options(pscom_utest
+    PRIVATE
+    -Wl,--wrap=ucp_config_read
+    -Wl,--wrap=ucp_config_release
+    -Wl,--wrap=ucp_init_version
+    -Wl,--wrap=ucp_worker_create
+    -Wl,--wrap=ucp_worker_get_address
+    -Wl,--wrap=ucs_status_string
+  )
+
+  target_include_directories(pscom_utest
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/lib/pscom4ucp
+    ${UCP_INCLUDE_DIRS}
+  )
+
+  target_sources(pscom_utest
+    PRIVATE
+    mocks/ucx_mocks.c
+    pscom4ucp/test_pscom4ucp.c
+  )
+
+  target_link_libraries(pscom_utest
+    PRIVATE
+    pscom4ucp-static
+  )
+
+  target_compile_definitions(pscom_utest
+    PRIVATE UCP_ENABLED
+  )
+endif(UCP_ENABLED)
 
 if(CUDA_ENABLED)
   # CUDA-related configuration
