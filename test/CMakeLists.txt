@@ -157,8 +157,8 @@ if(UCP_ENABLED)
   )
 endif(UCP_ENABLED)
 
+# CUDA-related configuration
 if(CUDA_ENABLED)
-  # CUDA-related configuration
   target_link_options(	pscom_utest
     PRIVATE
     -Wl,--wrap=cuInit

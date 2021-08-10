@@ -153,7 +153,7 @@ int main(void)
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_cuda_tests);
 	failed_tests += cmocka_run_group_tests(pscom_cuda_tests, NULL, NULL);
-#endif
+#endif /* PSCOM_CUDA_AWARENESS */
 
 	printf("\n\n");
 	printf("Total tests      : %lu\n", total_tests);
