@@ -76,6 +76,7 @@ int main(void)
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
 
 
+#ifdef UCP_ENABLED
 	/* pscom4ucp tests */
 	const struct CMUnitTest pscom4ucp_tests[] = {
 		cmocka_unit_test(test_ucp_disable_fast_initialization),
@@ -85,6 +86,7 @@ int main(void)
 	};
 	total_tests += TEST_GROUP_SIZE(pscom4ucp_tests);
 	failed_tests += cmocka_run_group_tests(pscom4ucp_tests, NULL, NULL);
+#endif /* UCP_ENABLED */
 
 
 #ifdef PSCOM_CUDA_AWARENESS
@@ -151,7 +153,7 @@ int main(void)
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_cuda_tests);
 	failed_tests += cmocka_run_group_tests(pscom_cuda_tests, NULL, NULL);
-#endif
+#endif /* PSCOM_CUDA_AWARENESS */
 
 	printf("\n\n");
 	printf("Total tests      : %lu\n", total_tests);
