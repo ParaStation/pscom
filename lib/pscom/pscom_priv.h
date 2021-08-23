@@ -464,6 +464,7 @@ struct PSCOM
 
 	pthread_mutex_t		backlog_lock;	// Lock for backlog
 
+	struct list_head	env_config; // List of environment configuration tables
 	struct PSCOM_env	env;
 
 	struct {

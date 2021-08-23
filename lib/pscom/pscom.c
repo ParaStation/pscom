@@ -67,7 +67,8 @@ pscom_t pscom = {
 	.backlog_lock = PTHREAD_MUTEX_INITIALIZER,
 
 	/* parameter from environment */
-	.env = PSCOM_ENV_defaults,
+	.env_config = LIST_HEAD_INIT(pscom.env_config),
+	.env        = PSCOM_ENV_defaults,
 
 	/* statistic */
 	.stat = {
@@ -256,6 +257,9 @@ void pscom_cleanup(void)
 	pscom_pslib_cleanup();
 	if (pscom.env.debug >= D_STATS) pscom_dump_reqstat(pscom_debug_stream());
 	perf_print();
+
+	pscom_env_cleanup();
+
 	DPRINT(D_INFO, "Byee.");
 }
 

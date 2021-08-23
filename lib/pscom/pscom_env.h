@@ -12,6 +12,8 @@
 #ifndef _PSCOM_ENV_H_
 #define _PSCOM_ENV_H_
 
+#include "pscom.h"
+#include "list.h"
 
 /* Set debuglevel */
 #define ENV_DEBUG     "PSP_DEBUG"
@@ -197,12 +199,127 @@
 /* make progress every count itteration in iprobe */
 #define ENV_IPROBE_COUNT "PSP_IPROBE_COUNT"
 
-#define ENV_UINT_AUTO ((unsigned)~0U)
-#define ENV_SIZE_T_AUTO ((size_t)~0LLU)
+#define PSCOM_ENV_SIZE_T_AUTO ((size_t)-1)
+
+#define PSCOM_ENV_UINT_AUTO ((unsigned)-1)
+#define PSCOM_ENV_UINT_INF  ((unsigned)-2)
+
+#define PSCOM_ENV_UINT_AUTO_STR "auto"
+#define PSCOM_ENV_UINT_INF_STR  "inf"
+
+/* definitions w.r.t. environment variables */
+#define PSCOM_ENV_MAX_ENV_LEN    (128)
+#define PSCOM_ENV_MAX_VAL_LEN    (32)
+#define PSCOM_ENV_MAX_PREFIX_LEN (32)
+
+#define PSCOM_ENV_GLOBAL_PREFIX  "PSP_"
+
+/* forward declarations */
+typedef struct pscom_env_table_entry pscom_env_table_entry_t;
+typedef struct pscom_env_list_entry pscom_env_list_entry_t;
+
+typedef enum {
+	PSCOM_ENV_PRINT_CONFIG         = (1ul << 0),
+	PSCOM_ENV_PRINT_DEFAULT_VALUE  = (1ul << 1),
+	PSCOM_ENV_PRINT_DOC            = (1ul << 2),
+	PSCOM_ENV_PRINT_HIDDEN         = (1ul << 3)
+} pscom_env_print_flags_t;
+
+/**
+ * @brief Flags influencing the parsing of environment configuration entries
+ */
+typedef enum pscom_env_table_entry_flags {
+	PSCOM_ENV_ENTRY_FLAGS_EMPTY = 0,          /**< No flags set */
+	PSCOM_ENV_ENTRY_HAS_PARENT  = (1ul << 0), /**< Entry listens to a parent
+	                                               with the same name but no
+						       prefix */
+	PSCOM_ENV_ENTRY_HIDDEN      = (1ul << 1)  /**< Entry shall not be printed
+	                                               by pscom_info without
+						       further measures */
+} pscom_env_table_entry_flags_t;
+
+
+/**
+ * @brief A routine for setting a configuration variable
+ *
+ * This routine parses a given string w.r.t. the definitions made in
+ * @a env_entry and sets the corresponding configuration variable. It has to be
+ * capable of dealing with NULL pointers to the default value.
+ *
+ * @param [in] buf         Address of the configuration variable to be set.
+ * @param [in] config_val  The string value to be parsed.
+ *
+ * @return 0 If @a config_val could be parsed successfully.
+ */
+typedef int (*pscom_env_parser_set_t)(void *buf, const char *config_val);
+
+/**
+ * @brief A routine for reading a configuration variable
+ *
+ * This routine parses a given string w.r.t. the definitions made in
+ * @a env_entry. It has to be capable of dealing with NULL pointers to the
+ * default value.
+ *
+ * @param [in]  buf     Address of the configuration variable
+ *                      definition table.
+ * @param [out] val     A string representing the current value of the
+ *                      configuration variable.
+ * @param [in]  max_len The maximum length of the output buffers.
+ *
+ * @return 0 If @a config_val could be parsed successfully.
+ */
+typedef int (*pscom_env_parser_get_t)(void *buf, char *val, size_t max_len);
+
+/**
+ * @brief Object for parsing configuration value strings.
+ *
+ * Each member corresponds to an operation of the parser.
+ *
+ */
+typedef struct pscom_env_parser {
+	pscom_env_parser_set_t set; /**< Set the variable corresponding to the
+	                                 environment variable */
+	pscom_env_parser_get_t get; /**< Get the value of the variable
+	                                 corresponding to the environment
+					 variable */
+} pscom_env_parser_t;
+
+/**
+ * @brief An entry of a configuration definition table.
+ */
+struct pscom_env_table_entry {
+	const char *name;                    /**< Name of the environment
+	                                          variable excluding the
+						  prefix */
+	const char *default_val;             /**< Default value */
+	const char *help_str;                /**< Documentation of the
+	                                          environment variable */
+	void *config_var;                    /**< A pointer to the configuration
+	                                          variable */
+	pscom_env_table_entry_flags_t flags; /**< Flags affecting the parsing */
+	pscom_env_parser_t parser;           /**< The parse to be used for
+	                                          parsing this configuration
+						  parameter */
+};
+
+/**
+ * @brief An entry in a list of configuration definition tables
+ *
+ */
+struct pscom_env_list_entry {
+	const char *name;               /**< Name of the configuration table */
+	const char *prefix;             /**< Prefix to be prepended to the table
+	                                     entries */
+	pscom_env_table_entry_t *table; /**< The actual configuration definition
+	                                     table */
+	struct list_head next;          /**< Next configuration definition table
+	                                     in the list */
+};
 
 struct PSCOM_env {
 	int		debug;
 	int		debug_req;
+	char		*debug_out;
 	unsigned int	so_sndbuf;
 	unsigned int	so_rcvbuf;
 	int		tcp_nodelay;
@@ -322,5 +439,117 @@ struct PSCOM_env {
 
 
 void pscom_env_init(void);
+void pscom_env_table_list_clear(void);
 
+
+void pscom_env_cleanup(void);
+
+pscom_err_t pscom_env_parser_set_config_uint(void *buf,
+					     const char *config_val);
+pscom_err_t pscom_env_parser_set_config_int(void *env_entry,
+					    const char *config_val);
+pscom_err_t pscom_env_parser_set_config_str(void *env_entry,
+					    const char *config_val);
+pscom_err_t pscom_env_parser_set_config_dir(void *env_entry,
+					    const char *config_val);
+pscom_err_t pscom_env_parser_set_config_size_t(void *env_entry,
+					       const char *config_val);
+
+pscom_err_t pscom_env_parser_get_config_uint(void *env_entry,
+					     char *val, size_t max_len);
+pscom_err_t pscom_env_parser_get_config_int(void *env_entry,
+					    char *val, size_t max_len);
+pscom_err_t pscom_env_parser_get_config_str(void *env_entry,
+					    char *val, size_t max_len);
+pscom_err_t pscom_env_parser_get_config_dir(void *env_entry,
+					    char *val, size_t max_len);
+pscom_err_t pscom_env_parser_get_config_size_t(void *env_entry,
+					       char *val, size_t max_len);
+
+
+#define PSCOM_ENV_PARSER_UINT	{pscom_env_parser_set_config_uint, \
+				 pscom_env_parser_get_config_uint}
+
+#define PSCOM_ENV_PARSER_INT	{pscom_env_parser_set_config_int, \
+				 pscom_env_parser_get_config_int}
+
+#define PSCOM_ENV_PARSER_STR	{pscom_env_parser_set_config_str, \
+				 pscom_env_parser_get_config_str}
+
+#define PSCOM_ENV_PARSER_DIR	{pscom_env_parser_set_config_dir, \
+				 pscom_env_parser_get_config_dir}
+
+#define PSCOM_ENV_PARSER_SIZE_T {pscom_env_parser_set_config_size_t, \
+				 pscom_env_parser_get_config_size_t}
+
+/**
+ * @brief Parse an environment definition table
+ *
+ * This routine cycles through a NULL-terminated array of
+ * @ref pscom_env_table_entry_t and parses the specified configuration
+ * parameters.
+ *
+ * @param [in] table       The configuration defintion table to be parsed.
+ * @param [in] prefix      A prefix that is prepended to the environment names.
+ * @param [in] sub_prefix  A prefix that is appended to the @a prefix
+ *                         (optional).
+ * @param [in] name        A name used for specifying the table in debug
+ *                         outputs.
+ *
+ * @return PSCOM_SUCCESS     If all table fields could be parsed successfully.
+ *
+ * @return PSCOM_ERR_INVALID If @a table is an invalid parameter
+ */
+pscom_err_t pscom_env_table_parse(pscom_env_table_entry_t *table,
+				  const char *prefix,
+				  const char *sub_prefix,
+				  const char *name);
+
+/**
+ * @brief Register a configuration definition table with the global list
+ *
+ * This routine registers a configuration definition table with the global list
+ * of configuration definitions stored within the pscom structure.
+ *
+ * @param [in] name   Name of the table
+ * @param [in] prefix Prefix to be prepended to the environment variables
+ * @param [in] table  The table containing the configuration definitions
+ *
+ * @return PSCOM_SUCCESS      If the table could be registered successfully.
+ * @return PSCOM_ERR_STDERROR If an error occurred during initialization; errno
+ *                            will be set appropriately.
+ */
+pscom_err_t pscom_env_table_register(const char *name, const char *prefix,
+				     pscom_env_table_entry_t *table);
+
+/**
+ * @brief Register and parse a configuration definition table
+ *
+ * This convenience routine first registers a given configuration definition
+ * table and subsequently parses its entries to set the respective configuration
+ * parameters.
+ *
+ * @param [in] name   Name of the table
+ * @param [in] prefix Prefix to be prepended to the environment variables
+ * @param [in] table  The table containing the configuration definitions
+ *
+ * @return PSCOM_SUCCESS      If the table could be registered and parsed
+ *                            successfully.
+ * @return PSCOM_ERR_STDERROR If an error occurred during initialization; errno
+ *                            will be set appropriately.
+ * @return PSCOM_ERR_INVALID  If @a table is an invalid parameter
+ */
+pscom_err_t pscom_env_table_register_and_parse(const char *name,
+					       const char *prefix,
+					       pscom_env_table_entry_t *table);
+
+/**
+ * @brief Clears the global list of configuration tables
+ */
+void pscom_env_table_list_clear(void);
+
+/**
+ * @brief Print the global table list
+ */
+void pscom_env_table_list_print(pscom_env_print_flags_t flags);
 #endif /* _PSCOM_ENV_H_ */
