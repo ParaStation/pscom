@@ -54,7 +54,10 @@ size_t round_up8(size_t val)
 
 #if USE_PSCOM_MALLOC
 // Malloc cache for PSCOM_MALLOC_SIZE mallocs
-#define PSCOM_MALLOC_SIZE (sizeof(pscom_req_t) + 50)
+#ifndef PSCOM_MALLOC_EXTRA_SIZE
+#define PSCOM_MALLOC_EXTRA_SIZE 50
+#endif
+#define PSCOM_MALLOC_SIZE (sizeof(pscom_req_t) + PSCOM_MALLOC_EXTRA_SIZE)
 
 typedef struct PSCOM_malloc {
 	union {
@@ -74,7 +77,7 @@ static
 struct list_head mallocs = LIST_HEAD_INIT(mallocs);
 
 
-void *pscom_malloc(unsigned int size)
+void *pscom_malloc(size_t size)
 {
 	void *ptr;
 	pscom_malloc_t *m;
