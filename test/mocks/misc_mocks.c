@@ -32,3 +32,17 @@ void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
 
 	return __real_memcpy(dst, src, nbytes);
 }
+
+
+/**
+ * \brief Mocking function for malloc()
+ */
+void *__wrap_malloc(size_t size)
+{
+	/* only mock malloc if this is set for the current test */
+	if (pscom_utest.mock_functions.malloc) {
+		return NULL;
+	}
+
+	return __real_malloc(size);
+}

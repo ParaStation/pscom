@@ -100,14 +100,17 @@ add_executable(		pscom_utest
   EXCLUDE_FROM_ALL
   mocks/misc_mocks.c
   pscom_utest.c
+  pscom/test_env.c
   pscom/test_io.c
   util/test_utils_con.c
+  util/test_utils_env.c
   )
 
 # Mocked functions
 target_link_options(	pscom_utest
   PRIVATE
   -Wl,--wrap=memcpy
+  -Wl,--wrap=malloc
 #  -static
 )
 
