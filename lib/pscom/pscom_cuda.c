@@ -25,6 +25,41 @@ int pscom_is_cuda_enabled(void)
 
 CUstream pscom_cuda_stream_set[PSCOM_COPY_DIR_COUNT] = {0};
 
+pscom_env_table_entry_t pscom_env_table_cuda [] = {
+	{"SYNC_MEMOPS", "1",
+	 "Enforce synchronization of memory operations on device buffers "
+	 "(important for GPUDirect).",
+	 &pscom.env.cuda_sync_memops, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"ENFORCE_STAGING", "0",
+	 "Enable/Disable the CUDA awareness on the plugin-level, i.e., enforce "
+	 "a pscom-internal staging.",
+	 &pscom.env.cuda_enforce_staging, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"AWARE_SHM", "1",
+	 "Enable/Disable the CUDA awareness of the pscom4shm plugin.",
+	 &pscom.env.cuda_aware_shm, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"AWARE_OPENIB", "1",
+	 "Enable/Disable the CUDA awareness of the pscom4openib plugin.",
+	 &pscom.env.cuda_aware_openib, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"AWARE_UCP", "1",
+	 "Enable/Disable the CUDA awareness of the pscom4ucp plugin.",
+	 &pscom.env.cuda_aware_ucp, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"AWARE_VELO", "1",
+	 "Enable/Disable the CUDA awareness of the pscom4velo plugin.",
+	 &pscom.env.cuda_aware_velo, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"AWARE_EXTOLL", "1",
+	 "Enable/Disable the CUDA awareness of the pscom4extoll plugin.",
+	 &pscom.env.cuda_aware_extoll, 0, PSCOM_ENV_PARSER_UINT},
+
+	{NULL},
+};
+
+
 /**
  * \brief Prints a diagnostic string base on a CUresult
  *
@@ -201,6 +236,24 @@ void pscom_memcpy_any_dir(void* dst, const void* src, size_t len)
 }
 
 
+static inline
+void pscom_cuda_init_env(void)
+{
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom CUDA", "CUDA_",
+					   pscom_env_table_cuda);
+
+	/* enforce stating means disabling CUDA awareness of all plugins */
+	if (pscom.env.cuda_enforce_staging == 1) {
+		pscom.env.cuda_aware_shm    = 0;
+		pscom.env.cuda_aware_openib = 0;
+		pscom.env.cuda_aware_ucp    = 0;
+		pscom.env.cuda_aware_velo   = 0;
+		pscom.env.cuda_aware_extoll = 0;
+	}
+}
+
+
 void pscom_memcpy_device2host(void* dst, const void* src, size_t len)
 {
 	CUresult ret;
@@ -234,6 +287,9 @@ pscom_err_t pscom_cuda_init(void)
 {
 	CUresult ret;
 	int dev_cnt, i, uva_support;
+
+	/* initialize CUDA-related environment configuration */
+	pscom_cuda_init_env();
 
 	if (pscom_cuda_init_driver_api() != PSCOM_SUCCESS) goto err_out;
 
