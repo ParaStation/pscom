@@ -45,10 +45,10 @@ ParaStation Cluster Communication drivers and libraries.
 export CFLAGS="%(echo %{optflags}|sed -e 's,-O.,,')"
 echo "CFLAGS:$CFLAGS"
 %{?cmake:%cmake}%{!?cmake:%{?cmake3:%cmake3}%{!?cmake3:cmake}} . %{?enable_cuda:-DCUDA_ENABLED=ON}
-%make_build
+%{?cmake_build:%cmake_build}%{!?cmake_build:%make_build}
 
 %install
-%make_install
+%{?cmake_install:%cmake_install}%{!?cmake_install:%make_install}
 
 %clean
 rm -rf %{buildroot}
