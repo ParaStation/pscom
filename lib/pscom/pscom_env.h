@@ -15,40 +15,12 @@
 #include "pscom.h"
 #include "list.h"
 
-/* Set debuglevel */
-#define ENV_DEBUG     "PSP_DEBUG"
-/* output filename */
-#define ENV_DEBUG_OUT "PSP_DEBUG_OUT"
 
-/* Add timing to debug output:
-   0		off (default),
-   1,"us"	"ssss.uuuuuu" seconds and microseconds since pscom_init
-   "date"	"YYYY-MM-DD_hh:mm:ss.uuuuuu" in localtime
-   "wall"	"ssss.uuuuuu" seconds and microseconds since the Epoch
-   "delta"	"ssss.uuuuuu" seconds and microseconds since last log
-*/
-#define ENV_DEBUG_TIMING "PSP_DEBUG_TIMING"
-#define ENV_INFO "PSP_INFO"
 
 #define ENV_CONFIG_FILES "/dev/environment:.parastation:$HOME/.parastation:/etc/pscom.conf"
 
-#define ENV_NETWORK "PSP_NETWORK"
+#define ENV_INFO "PSP_INFO"
 
-/* Socket options */
-#define ENV_SO_SNDBUF "PSP_SO_SNDBUF"
-#define ENV_SO_RCVBUF "PSP_SO_RCVBUF"
-#define ENV_TCP_NODELAY "PSP_TCP_NODELAY"
-#define ENV_TCP_BACKLOG "PSP_TCP_BACKLOG"
-#define ENV_TCP_ACCEPT_BACKLOG "PSP_TCP_ACCEPT_BACKLOG"
-
-/* Receive from a connection without receives posted? 0: No 1: Yes */
-#define ENV_UNEXPECTED_RECEIVES "PSP_UNEXPECTED_RECEIVES"
-/* Call sched_yield() inside idle loop? 0: No 1: Yes. Default: 0 */
-#define ENV_SCHED_YIELD "PSP_SCHED_YIELD"
-/* Start rendezvous at messagesize x. Default ~0 = never */
-#define ENV_RENDEZVOUS "PSP_RENDEZVOUS"
-/* ENV_RENDEZVOUS_xxx: Messagesize for arch xxx.
-   Default to ENV_RENDEZVOUS */
 #define ENV_RENDEZVOUS_SHM "PSP_RENDEZVOUS_SHM"
 #define ENV_RENDEZVOUS_DAPL "PSP_RENDEZVOUS_DAPL"
 #define ENV_RENDEZVOUS_ELAN "PSP_RENDEZVOUS_ELAN"
@@ -57,37 +29,17 @@
 #define ENV_RENDEZVOUS_OPENIB "PSP_RENDEZVOUS_OPENIB"
 #define ENV_RENDEZVOUS_UCP "PSP_RENDEZVOUS_UCP"
 
-/* Used in constructing the UUID for QLogic */
 #define ENV_PSM_UNIQ_ID "PSP_PSM_UNIQ_ID"
 #define ENV_PSM_DEVCHECK "PSP_PSM_DEVCHECK"
 #define ENV_PSM_FASTINIT "PSP_PSM_FASTINIT"
 #define ENV_PSM_CLOSE_DELAY "PSP_PSM_CLOSE_DELAY"
-#define ENV_PMI_ID "PMI_ID"
 
-/* UCP */
-#define ENV_UCP_MAX_RECV "PSP_UCP_MAX_RECV"
 #define ENV_UCP_FASTINIT "PSP_UCP_FASTINIT"
 
-/* MXM */
-#define ENV_MXM_DEVCHECK "PSP_MXM_DEVCHECK"
-
-/* Debugoutput on signal SIGQUIT (i386:3) (key: ^\) */
-#define ENV_SIGQUIT "PSP_SIGQUIT"
-/* signal number to listen on for connection suspend */
-#define ENV_SIGSUSPEND "PSP_SIGSUSPEND"
-/* Dump stack backtrace on SIGSEGV */
-#define ENV_SIGSEGV "PSP_SIGSEGV"
-#define ENV_READAHEAD "PSP_READAHEAD"
-#define ENV_RETRY "PSP_RETRY"
-/* reconnect a precon after a connect() error after PSP_RECONNECT_TIMEOUT [ms] */
-#define ENV_RECONNECT_TIMEOUT	"PSP_RECONNECT_TIMEOUT"
-/* Declare after (PSP_CONNECT_STALLED * PSP_RECONNECT_TIMEOUT)[ms] without any received bytes the connect() as failed. Retry. */
-#define ENV_CONNECT_STALLED_MAX	"PSP_CONNECT_STALLED"
-
-/* Enable/Disable the connection guard */
-#define ENV_GUARD "PSP_GUARD"
+#define ENV_PMI_ID "PMI_ID"
 
 #define ENV_PLUGINDIR "PSP_PLUGINDIR"
+
 #define ENV_ARCH_PREFIX "PSP_"
 
 /* Use this, if ENV_ARCH_NEW_SHM is not set */
@@ -166,38 +118,6 @@
 #define ENV_SHM_DIRECT "PSP_SHM_DIRECT" /* min message size to use shm direct */
 #define ENV_SHM_INDIRECT "PSP_SHM_INDIRECT" /* min message size for indirect shm (when direct shm fails) */
 
-/* CUDA */
-#define ENV_CUDA "PSP_CUDA"
-#define ENV_MEMCACHE "PSP_MEMCACHE"
-#define ENV_CUDA_SYNC_MEMOPS "PSP_CUDA_SYNC_MEMOPS"
-#define ENV_CUDA_ENFORCE_STAGING "PSP_CUDA_ENFORCE_STAGING"
-#define ENV_CUDA_AWARE_SHM "PSP_CUDA_AWARE_SHM"
-#define ENV_CUDA_AWARE_OPENIB "PSP_CUDA_AWARE_OPENIB"
-#define ENV_CUDA_AWARE_UCP "PSP_CUDA_AWARE_UCP"
-#define ENV_CUDA_AWARE_VELO "PSP_CUDA_AWARE_VELO"
-#define ENV_CUDA_AWARE_EXTOLL "PSP_CUDA_AWARE_EXTOLL"
-
-/* Manage a list of all requests for debug dumps (decrease performance!) */
-#define ENV_DEBUG_REQ     "PSP_DEBUG_REQ"
-
-/* Show pscom version */
-#define ENV_DEBUG_VERSION "PSP_DEBUG_VERSION"
-
-/* Print statistic at the end. */
-#define ENV_DEBUG_STATS   "PSP_DEBUG_STATS"
-
-/* Show connection types */
-#define ENV_DEBUG_CONTYPE "PSP_DEBUG_CONTYPE"
-
-/* Show suspend/resume signals and messages */
-#define ENV_DEBUG_SUSPEND "PSP_DEBUG_SUSPEND"
-
-/* Trace precon calls */
-#define ENV_DEBUG_PRECON "PSP_DEBUG_PRECON"
-
-
-/* make progress every count itteration in iprobe */
-#define ENV_IPROBE_COUNT "PSP_IPROBE_COUNT"
 
 #define PSCOM_ENV_SIZE_T_AUTO ((size_t)-1)
 
@@ -372,70 +292,6 @@ struct PSCOM_env {
 	unsigned int 	cuda_aware_extoll;
 #endif
 };
-
-
-#ifdef PSCOM_CUDA_AWARENESS
-#define PSCOM_ENV_CUDA		 \
-	.cuda                 = 0, \
-	.cuda_sync_memops     = 1, \
-	.cuda_enforce_staging = 0, \
-	.cuda_aware_shm       = 1, \
-	.cuda_aware_openib    = 1, \
-	.cuda_aware_ucp       = 1, \
-	.cuda_aware_velo      = 1, \
-	.cuda_aware_extoll    = 1
-#else
-#define PSCOM_ENV_CUDA
-#endif
-
-
-#define PSCOM_ENV_defaults {						\
-	.debug = -1, /* default D_ERR set in pscom_env_init()! */	\
-	.debug_req = 0,							\
-									\
-	.so_sndbuf = 32768,						\
-	.so_rcvbuf = 32768,						\
-	.tcp_nodelay = 1,						\
-	.tcp_backlog = 262144 /*SOMAXCONN = 128 */,			\
-	.precon_reconnect_timeout = 2000, /* try reconnect in [ms] */	\
-	.precon_connect_stalled_max = 6,				\
-									\
-	.unexpected_receives = 0,					\
-	.sched_yield = 0,						\
-	.rendezvous_size = ~0U,						\
-	.rendezvous_size_shm = ~0U, /* default rendezvous_size for shm */ \
-	.rendezvous_size_dapl = ~0U, /* default rendezvous_size for dapl */ \
-	.rendezvous_size_elan = ~0U, /* default rendezvous_size for elan */ \
-	.rendezvous_size_extoll = ~0U, /* default rendezvous_size for extoll */ \
-	.rendezvous_size_velo = 1024, /* default rendezvous_size for velo */ \
-	.rendezvous_size_openib = 40000, /* default rendezvous_size for openib */ \
-	.rendezvous_size_ucp = ~0U, /* default rendezvous_size for ucp */ \
-	.psm_uniq_id = 0,						\
-	.psm_fastinit = 1,						\
-	.psm_close_delay = 1000,					\
-	.ucp_max_recv = ~0U,						\
-	.ucp_fastinit = 1,						\
-	.sigquit = 0,							\
-	.sigsuspend = 0,						\
-	.sigsegv = 1,							\
-	.readahead = 350,						\
-	.skipblocksize = 8192,						\
-	.retry = 10,							\
-	.guard = 1,							\
-	.iprobe_count = 0,						\
-									\
-	.network = NULL,						\
-	.info = NULL,							\
-	.plugindir = "",						\
-									\
-	.debug_timing = NULL,						\
-	.debug_version = 0,						\
-	.debug_stats = 0,						\
-	.debug_contype = 0,						\
-	.debug_suspend = 0,						\
-	.debug_precon = 0,						\
-	 PSCOM_ENV_CUDA                                                 \
-}
 
 
 void pscom_env_init(void);

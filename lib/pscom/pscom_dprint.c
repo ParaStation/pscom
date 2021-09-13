@@ -140,7 +140,7 @@ void pscom_dtime_init(void) {
 		   (0 == strcmp(mode, "us"))) {
 		pscom_debug_time_mode = TIME_US;
 	} else {
-		DPRINT(D_WARN, "Unknown " ENV_DEBUG_TIMING ". Expecting '0', '1', 'us', 'date', 'wall' or 'delta'.");
+		DPRINT(D_WARN, "Unknown PSP_DEBUG_TIMING. Expecting '0', '1', 'us', 'date', 'wall' or 'delta'.");
 		pscom_debug_time_mode = TIME_US;
 	}
 
@@ -302,12 +302,12 @@ void pscom_debug_set_filename(const char *filename, int expand)
 					// No error and only one result
 					pscom_strncpy0(pscom_debug_filename, p.we_wordv[0], sizeof(pscom_debug_filename));
 				} else {
-					DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %d words",
+					DPRINT(D_FATAL, "wordexp(PSP_DEBUG_OUT=\"%s\", WRDE_NOCMD) : %d words",
 					       filename, (int)p.we_wordc);
 				}
 				wordfree(&p);
 			} else {
-				DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %s",
+				DPRINT(D_FATAL, "wordexp(PSP_DEBUG_OUT=\"%s\", WRDE_NOCMD) : %s",
 				       filename, __wordexp_error(rc));
 			}
 		}

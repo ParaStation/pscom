@@ -68,7 +68,6 @@ pscom_t pscom = {
 
 	/* parameter from environment */
 	.env_config = LIST_HEAD_INIT(pscom.env_config),
-	.env        = PSCOM_ENV_defaults,
 
 	/* statistic */
 	.stat = {
