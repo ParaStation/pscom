@@ -64,10 +64,20 @@ void test_ucp_disable_fast_initialization(void **state)
 {
 	(void) state;
 
+        /* save original value of PSP_UCP_FASTINIT */
+        char *orig_fastinit = getenv("PSP_UCP_FASTINIT");
+
         pscom_env_ucp_fastinit_set(0);
 
         /* initialize the pscom4ucp plugin */
         pscom_plugin.init();
+
+        /* restore original value of PSP_UCP_FASTINIT */
+        if (orig_fastinit) {
+                setenv("PSP_UCP_FASTINIT", orig_fastinit, 1);
+        } else {
+                unsetenv("PSP_UCP_FASTINIT");
+        }
 }
 
 

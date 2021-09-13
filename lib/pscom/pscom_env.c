@@ -95,10 +95,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 "The rendezvous threshold for pscom4openib.",
 	 &pscom.env.rendezvous_size_openib, PSCOM_ENV_PARSER_UINT},
 
-	{"RENDEZVOUS_UCP", "inf",
-	 "The rendezvous threshold for pscom4ucp.",
-	 &pscom.env.rendezvous_size_ucp, PSCOM_ENV_PARSER_UINT},
-
 	{"PSM_UNIQ_ID", "0",
 	 "Unsigned integer used to seed the PSM UUID. If unset or zero, PMI_ID "
 	 "is checked. If also unset or zero, a constant seed is used.",
@@ -126,18 +122,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	{"PSM_CLOSE_DELAY", "1000",
 	 "Delayed call to psm2_ep_disconnect2() in milliseconds.",
 	 &pscom.env.psm_close_delay, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"UCP_MAX_RECV", "inf",
-	 "Limit the number of outstanding receive requests that are handled by "
-	 "the pscom4ucp plugin concurrently.",
-	 &pscom.env.ucp_max_recv, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"UCP_FASTINIT", "1",
-	 "If enabled, ucp_init() is called from within pscom4ucp plugin init, "
-	 "otherwise on first usage of a pscom4ucp connection.",
-	 &pscom.env.ucp_fastinit, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
 	{"SIGQUIT", "0",
@@ -501,7 +485,10 @@ void pscom_env_psm_fastinit_set(unsigned int psm_fastinit)
 PSCOM_API_EXPORT
 void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit)
 {
-	pscom.env.ucp_fastinit = ucp_fastinit;
+	char val_str[2];
+	snprintf(val_str, 2, "%d", ucp_fastinit);
+
+	setenv("PSP_UCP_FASTINIT", val_str, 1);
 }
 
 
@@ -555,10 +542,6 @@ void pscom_env_init(void)
 	if (pscom.env.rendezvous_size != (unsigned)~0)
 		pscom.env.rendezvous_size_openib = pscom.env.rendezvous_size;
 	pscom_env_get_uint(&pscom.env.rendezvous_size_openib, ENV_RENDEZVOUS_OPENIB);
-
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_ucp = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_ucp, ENV_RENDEZVOUS_UCP);
 
 	/* the readahead buffer has to store the pscom_header_net  at least*/
 	pscom.env.readahead = pscom_max(pscom.env.readahead,

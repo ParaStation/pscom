@@ -28,6 +28,34 @@
 #include "pscom_precon.h"
 #include "pscom_ucp.h"
 
+pscom_env_table_entry_t pscom_env_table_ucp [] = {
+	{"MAX_RECV", PSCOM_ENV_UINT_INF_STR,
+	 "Limit the number of outstanding receive requests that are handled by "
+	 "the pscom4ucp plugin concurrently.",
+	 &psucp_max_recv, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"FASTINIT", "1",
+	 "If enabled, ucp_init() is called from within pscom4ucp plugin init, "
+	 "otherwise on first usage of a pscom4ucp connection.",
+	 &pscom.env.ucp_fastinit, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RENDEZVOUS", PSCOM_ENV_UINT_INF_STR,
+	 "The rendezvous threshold for pscom4ucp.",
+	 &pscom.env.rendezvous_size_ucp,
+	 (PSCOM_ENV_ENTRY_HAS_PARENT | PSCOM_ENV_ENTRY_HIDDEN),
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"SMALL_MSG_LEN", "350",
+	 "The threshold for buffered sending of small messages.",
+	 &psucp_small_msg_len, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{NULL},
+};
+
+
 static struct {
 	pscom_poll_t poll_read; // pscom_ucp_do_read
 	unsigned reader_user;
@@ -230,17 +258,18 @@ void pscom_ucp_init(void)
 	psucp_debug = pscom.env.debug;
 	psucp_debug_stream = pscom_debug_stream();
 
-	// pscom_env_get_uint(&psucp_recvq_size, ENV_UCP_RECVQ_SIZE);
-	// pscom_env_get_int(&psucp_global_sendq, ENV_UCP_GLOBAL_SENDQ);
-	// pscom_env_get_uint(&psucp_sendq_size, ENV_UCP_SENDQ_SIZE);
-	psucp_small_msg_len = pscom.env.readahead;
-	psucp_max_recv = pscom.env.ucp_max_recv;
+	/* set the rendezvous threshold based on the global configuration */
+	if (pscom.env.rendezvous_size != (unsigned)~0)
+		pscom.env.rendezvous_size_ucp = pscom.env.rendezvous_size;
+
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom UCP", "UCP_",
+					   pscom_env_table_ucp);
 
 	pscom_poll_init(&pscom_ucp.poll_read);
 	pscom_ucp.reader_user = 0;
 
 	/* ensure the initialization of the UCP memory cache */
-	pscom_env_get_uint(&pscom.env.ucp_fastinit, ENV_UCP_FASTINIT);
 	if (pscom.env.ucp_fastinit) psucp_init();
 }
 
