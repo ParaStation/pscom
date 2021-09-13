@@ -74,6 +74,7 @@ cmake/Modules/FindCuda.cmake \
 cmake/Modules/FindDapl.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindIbVerbs.cmake \
+cmake/Modules/FindPopt.cmake \
 cmake/Modules/FindPsm2.cmake \
 cmake/Modules/FindPsmgmt.cmake \
 cmake/Modules/FindUcp.cmake \
