@@ -91,10 +91,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.rendezvous_size_velo, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{"RENDEZVOUS_OPENIB", "40000",
-	 "The rendezvous threshold for pscom4openib.",
-	 &pscom.env.rendezvous_size_openib, PSCOM_ENV_PARSER_UINT},
-
 	{"PSM_UNIQ_ID", "0",
 	 "Unsigned integer used to seed the PSM UUID. If unset or zero, PMI_ID "
 	 "is checked. If also unset or zero, a constant seed is used.",
@@ -538,10 +534,6 @@ void pscom_env_init(void)
 	if (pscom.env.rendezvous_size != (unsigned)~0)
 		pscom.env.rendezvous_size_velo = pscom.env.rendezvous_size;
 	pscom_env_get_uint(&pscom.env.rendezvous_size_velo, ENV_RENDEZVOUS_VELO);
-
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_openib = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_openib, ENV_RENDEZVOUS_OPENIB);
 
 	/* the readahead buffer has to store the pscom_header_net  at least*/
 	pscom.env.readahead = pscom_max(pscom.env.readahead,

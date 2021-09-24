@@ -240,6 +240,13 @@ unsigned psoib_pending_tokens_suggestion(void)
     return res;
 }
 
+char *psoib_pending_tokens_suggestion_str(void) {
+	static char res[16];
+
+	snprintf(res, sizeof(res)-1, "%u", psoib_pending_tokens_suggestion());
+
+	return res;
+}
 
 static
 const char *port_state_str(enum ibv_port_state port_state)

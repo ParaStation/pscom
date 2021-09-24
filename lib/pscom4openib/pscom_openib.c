@@ -34,6 +34,126 @@
 #include "pscom_req.h"
 #include "pscom_util.h"
 
+static pscom_err_t
+pscom_openib_env_parser_set_pending_tokens(void *buf,
+					   const char *config_val)
+{
+	const char *set_val =
+		config_val ? config_val : psoib_pending_tokens_suggestion_str();
+
+	return pscom_env_parser_set_config_uint(buf, set_val);
+}
+
+
+static pscom_err_t
+pscom_openib_env_parser_set_sendq_size(void *buf, const char *config_val)
+{
+	pscom_err_t ret;
+	ret = pscom_env_parser_set_config_uint(buf, config_val);
+
+	if (psoib_global_sendq) {
+		/* one sendq for all connection. limit sendq to compq size */
+		psoib_sendq_size = psoib_compq_size;
+	} else {
+		/* One sendq for each connection. limit sendq to recvq size */
+		psoib_sendq_size = pscom_min(psoib_sendq_size, psoib_recvq_size);
+	}
+
+	return ret;
+}
+
+
+#define PSCOM_OPENIB_ENV_PARSER_PENDING_TOKENS {pscom_openib_env_parser_set_pending_tokens, \
+					        pscom_env_parser_get_config_int}
+
+#define PSCOM_OPENIB_ENV_PARSER_SENDQ_SIZE {pscom_openib_env_parser_set_sendq_size, \
+					    pscom_env_parser_get_config_uint}
+
+
+pscom_env_table_entry_t pscom_env_table_openib [] = {
+	{"HCA", NULL,
+	 "Name of the hca to use. (default to the name of the first active "
+	 "hca).",
+	 &psoib_hca, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_STR},
+
+	{"PORT", "0",
+	 "Port to use (default is first active port).",
+	 &psoib_port, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"PATH_MTU", "3",
+	 "MTU of the IB packets. (1:256, 2:512, 3:1024)",
+	 &psoib_path_mtu, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RECVQ_SIZE", "16",
+	 "Number of receive buffers per connection.",
+	 &psoib_recvq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"GLOBAL_SENDQ", "0",
+	 "Enable/disable global send queue.",
+	 &psoib_global_sendq, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"COMPQ_SIZE", "128",
+	 "Size of the completion queue. This likewise corresponds to the size "
+	 "of the global send queue (if enabled).",
+	 &psoib_compq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"SENDQ_SIZE", "16",
+	 "Number of send buffers per connection.",
+	 &psoib_sendq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_OPENIB_ENV_PARSER_SENDQ_SIZE},
+
+	{"EVENT_CNT", "1",
+	 "Enable/disable busy polling if outstanding_cq_entries is to high.",
+	 &psoib_event_count, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"IGNORE_WRONG_OPCODES", "0",
+	 "If enabled, terminate all IB connections when receiving a wrong CQ "
+	 "opcode",
+	 &psoib_ignore_wrong_opcodes, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"LID_OFFSET", "0",
+	 "Offset to base LID (adaptive routing).",
+	 &psoib_lid_offset, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"RENDEZVOUS", "40000",
+	 "The rendezvous threshold for pscom4openib.",
+	 &pscom.env.rendezvous_size_openib, PSCOM_ENV_ENTRY_HAS_PARENT,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RNDV_FALLBACKS", "1",
+	 "Enable/disable usage of eager/sw-rndv if memory cannot be registered "
+	 "for rendezvous communication.",
+	 &psoib_rndv_fallbacks, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"PENDING_TOKENS", NULL,
+	 "Number of tokens for incoming packets.",
+	 &psoib_pending_tokens, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_OPENIB_ENV_PARSER_PENDING_TOKENS},
+
+#if PSOIB_USE_MREGION_CACHE
+	{"MCACHE_SIZE", "8",
+	 "Maximum number of entries in the memory registration cache. Disables "
+	 "the cache if set to 0.",
+	 &psoib_mregion_cache_max_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"MALLOC_OPTS", "1",
+	 "Enable/disable the usage of mallopt() in the pscom4open RNDV case.",
+	 &psoib_mregion_malloc_options, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+#endif
+	{NULL},
+};
 
 static
 pscom_poll_t pscom_poll_cq;
@@ -449,40 +569,14 @@ void pscom_openib_init(void)
 {
 	psoib_debug = pscom.env.debug;
 	psoib_debug_stream = pscom_debug_stream();
-	pscom_env_get_str(&psoib_hca, ENV_OPENIB_HCA);
-	pscom_env_get_uint(&psoib_port, ENV_OPENIB_PORT);
-	pscom_env_get_uint(&psoib_path_mtu, ENV_OPENIB_PATH_MTU);
 
-	pscom_env_get_uint(&psoib_recvq_size, ENV_OPENIB_RECVQ_SIZE);
-
-	pscom_env_get_int(&psoib_global_sendq, ENV_OPENIB_GLOBAL_SENDQ);
-	pscom_env_get_uint(&psoib_compq_size, ENV_OPENIB_COMPQ_SIZE);
-	if (psoib_global_sendq) {
-		// One sendq for all connection. limit sendq to compq size.
-		psoib_sendq_size = psoib_compq_size;
-	} else {
-		// One sendq for each connection. limit sendq to recvq size.
-		psoib_sendq_size = pscom_min(psoib_sendq_size, psoib_recvq_size);
-	}
-	pscom_env_get_uint(&psoib_sendq_size, ENV_OPENIB_SENDQ_SIZE);
-
-	psoib_pending_tokens = psoib_pending_tokens_suggestion();
-	pscom_env_get_uint(&psoib_pending_tokens, ENV_OPENIB_PENDING_TOKENS);
-
-//	if (!psoib_global_sendq && psoib_sendq_size == psoib_recvq_size) {
-//		// Disable event counting:
-//		psoib_event_count = 0;
-//	}
-	pscom_env_get_int(&psoib_event_count, ENV_OPENIB_EVENT_CNT);
-	pscom_env_get_int(&psoib_ignore_wrong_opcodes, ENV_OPENIB_IGNORE_WRONG_OPCODES);
-	pscom_env_get_int(&psoib_lid_offset, ENV_OPENIB_LID_OFFSET);
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom OPENIB", "OPENIB_",
+					   pscom_env_table_openib);
 
 #if PSOIB_USE_MREGION_CACHE
-	pscom_env_get_uint(&psoib_mregion_cache_max_size, ENV_OPENIB_MCACHE_SIZE);
-	pscom_env_get_int (&psoib_mregion_malloc_options, ENV_OPENIB_MALLOC_OPTS);
 	psoib_mregion_cache_init();
 #endif
-	pscom_env_get_int(&psoib_rndv_fallbacks, ENV_OPENIB_RNDV_FALLBACKS);
 
 	pscom_poll_init(&pscom_poll_cq);
 }
