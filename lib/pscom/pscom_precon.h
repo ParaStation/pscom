@@ -76,6 +76,8 @@ typedef struct {
 	pscom_con_info_t	con_info;
 } pscom_info_con_info_t;
 
+/* initialize the precon module */
+void pscom_precon_init(void);
 
 /* Create a precon object */
 precon_t *pscom_precon_create(pscom_con_t *con);

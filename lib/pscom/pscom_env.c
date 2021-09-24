@@ -44,35 +44,9 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.debug_req, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
 
-	{"SO_SNDBUF", "32768",
-	 "The SO_SNDBUF size of the precon.",
-	 &pscom.env.so_sndbuf, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"SO_RCVBUF", "32768",
-	 "The SO_RCVBUF size of the precon.",
-	 &pscom.env.so_rcvbuf, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"TCP_NODELAY", "1",
-	 "Enable/disable TCP_NODELAY for the precon.",
-	 &pscom.env.tcp_nodelay, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_INT},
-
 	{"TCP_BACKLOG", "262144",
 	 "The TCP backlog of the listening socket.",
 	 &pscom.env.tcp_backlog, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"RECONNECT_TIMEOUT", "2000",
-	 "The reconnect timeout for the precon in milliseconds.",
-	 &pscom.env.precon_reconnect_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"CONNECT_STALLED_MAX", "6",
-	 "Declare after (PSP_CONNECT_STALLED * PSP_RECONNECT_TIMEOUT)[ms] "
-	 "without any received bytes the connect() as failed. Retry.",
-	 &pscom.env.precon_connect_stalled_max, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
 	{"UNEXPECTED_RECEIVES", "0",
