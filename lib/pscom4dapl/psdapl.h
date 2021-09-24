@@ -95,6 +95,7 @@ int psdapl_recvlook(psdapl_con_info_t *ci, void **buf);
 void psdapl_recvdone(psdapl_con_info_t *ci);
 
 extern int psdapl_debug;
+extern char psdapl_provider[128];
 extern FILE *psdapl_debug_stream;
 
 void psdapl_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */);

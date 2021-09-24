@@ -26,6 +26,17 @@
 #include "pscom_io.h"
 #include "pscom_elan.h"
 
+
+static pscom_env_table_entry_t pscom_env_table_elan [] = {
+	{"RENDEZVOUS", PSCOM_ENV_UINT_INF_STR,
+	 "The rendezvous threshold for pscom4elan.",
+	 &pscom.env.rendezvous_size_elan, PSCOM_ENV_ENTRY_HAS_PARENT,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{NULL},
+};
+
+
 typedef struct pselan_info_msg {
 	u_int	destvp;
 	void	*remote_ptr;
@@ -255,6 +266,11 @@ static
 void pscom_elan_init(void)
 {
 	pselan_debug = pscom.env.debug;
+
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom ELAN", "ELAN_",
+					   pscom_env_table_elan);
+
 	pselan_init();
 }
 

@@ -29,6 +29,19 @@
 #include "pscom_dapl.h"
 
 
+pscom_env_table_entry_t pscom_env_table_dapl [] = {
+	{"RENDEZVOUS", PSCOM_ENV_UINT_INF_STR,
+	 "The rendezvous threshold for pscom4dapl.",
+	 &pscom.env.rendezvous_size_dapl, PSCOM_ENV_ENTRY_HAS_PARENT,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"PROVIDER", "<query>",
+	 "The rendezvous threshold for pscom4dapl.",
+	 &dapl_provider, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_STR},
+
+	{NULL},
+};
+
 static
 int _pscom_dapl_do_read(pscom_con_t *con, psdapl_con_info_t *ci)
 {
@@ -257,6 +270,10 @@ void pscom_dapl_init(void)
 {
 	psdapl_debug = pscom.env.debug;
 	psdapl_debug_stream = pscom_debug_stream();
+
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom DAPL", "DAPL_",
+					   pscom_env_table_dapl);
 }
 
 

@@ -66,60 +66,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.rendezvous_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{"RENDEZVOUS_SHM", "inf",
-	 "The rendezvous threshold for pscom4shm.",
-	 &pscom.env.rendezvous_size_shm, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"RENDEZVOUS_DAPL", "inf",
-	 "The rendezvous threshold for pscom4dapl.",
-	 &pscom.env.rendezvous_size_dapl, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"RENDEZVOUS_ELAN", "inf",
-	 "The rendezvous threshold for pscom4elan.",
-	 &pscom.env.rendezvous_size_elan, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"RENDEZVOUS_EXTOLL", "inf",
-	 "The rendezvous threshold for pscom4extoll.",
-	 &pscom.env.rendezvous_size_extoll, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"RENDEZVOUS_VELO", "1024",
-	 "The rendezvous threshold for pscom4velo.",
-	 &pscom.env.rendezvous_size_velo, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"PSM_UNIQ_ID", "0",
-	 "Unsigned integer used to seed the PSM UUID. If unset or zero, PMI_ID "
-	 "is checked. If also unset or zero, a constant seed is used.",
-	 &pscom.env.psm_uniq_id, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-/*
-	{"PSM_DEVCHECK", "1",
-	 "Enable/disable checking for any of the following device files:"
-	 "/dev/ipath{,0,1},/dev/hfi{1,2}{,_0,_1,_2}",
-	 NULL, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"MXM_DEVCHECK", "1",
-	 "Enable/disable checking for any of the following device files:"
-	 "/sys/class/infiniband/mlx5_{0,1,2}",
-	 NULL, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-*/
-	{"PSM_FASTINIT", "1",
-	 "If enabled, psm2_init() is called from within pscom4psm plugin init, "
-	 "otherwise on first usage of a pscom4psm connection.",
-	 &pscom.env.psm_fastinit, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
-	{"PSM_CLOSE_DELAY", "1000",
-	 "Delayed call to psm2_ep_disconnect2() in milliseconds.",
-	 &pscom.env.psm_close_delay, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
 	{"SIGQUIT", "0",
 	 "Debug output on signal SIGQUIT.",
 	 &pscom.env.sigquit, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
@@ -509,31 +455,6 @@ void pscom_env_init(void)
 #endif
 	       ,__DATE__, VC_VERSION);
 
-
-
-	/* TODO:
-	 * Move pluging-specific configuration parameters to the respective
-	 * plugins. Then we can avoid reading these environment variables again
-	 */
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_shm = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_shm, ENV_RENDEZVOUS_SHM);
-
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_dapl = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_dapl, ENV_RENDEZVOUS_DAPL);
-
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_elan = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_elan, ENV_RENDEZVOUS_ELAN);
-
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_extoll = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_extoll, ENV_RENDEZVOUS_EXTOLL);
-
-	if (pscom.env.rendezvous_size != (unsigned)~0)
-		pscom.env.rendezvous_size_velo = pscom.env.rendezvous_size;
-	pscom_env_get_uint(&pscom.env.rendezvous_size_velo, ENV_RENDEZVOUS_VELO);
 
 	/* the readahead buffer has to store the pscom_header_net  at least*/
 	pscom.env.readahead = pscom_max(pscom.env.readahead,

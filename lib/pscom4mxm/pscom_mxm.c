@@ -18,6 +18,17 @@
 #include <errno.h>
 
 
+static pscom_env_table_entry_t pscom_env_table_mxm [] = {
+	{"MXM_DEVCHECK", "1",
+	 "Enable/disable checking for any of the following device files:"
+	 "/sys/class/infiniband/mlx5_{0,1,2}",
+	 &psmxm_devcheck, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	 {NULL},
+};
+
+
 typedef struct {
 	struct pscom_poll_reader poll;
 	unsigned poll_user; // count the users which wait for progress
@@ -186,10 +197,13 @@ void pscom_mxm_init(void)
 	psmxm_debug = pscom.env.debug;
 	psmxm_debug_stream = pscom_debug_stream();
 
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom MXM", "MXM_",
+					   pscom_env_table_mxm);
+
 	INIT_LIST_HEAD(&psmxm_poll.poll.next);
 	psmxm_poll.poll.do_read = pscom_mxm_make_progress;
 
-	pscom_env_get_uint(&psmxm_devcheck, ENV_MXM_DEVCHECK);
 
 /*
   Disabled. Init will be called with the first connect.
