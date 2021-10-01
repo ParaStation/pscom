@@ -1,8 +1,18 @@
 #!/usr/bin/gawk -f
+#
+# ParaStation
+#
+# Copyright (C) 2002-2005 ParTec AG, Karlsruhe
+# Copyright (C) 2012-2021 ParTec Cluster Competence Center GmbH, Munich
+# Copyright (C) 2021      ParTec AG, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
 
 # Translate tcpdump output for p4sock:
 # tcpdump -l -Xx ether proto 0x0815 or 0x0814 or 0x813 or 0x812
-# 2002-10-08 Jens Hauke <hauke@wtal.de>
 
 BEGIN{
  debug=0;

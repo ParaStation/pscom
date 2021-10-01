@@ -1,7 +1,15 @@
 #!/bin/bash
 #
-# (c) 2009-07-02 Jens Hauke <hauke@par-tec.com>
+# ParaStation
 #
+# Copyright (C) 2009-2021 ParTec Cluster Competence Center GmbH, Munich
+# Copyright (C) 2021      ParTec AG, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+
 PSIADMIN="@bindir@/psiadmin"
 
 arg_cmd='ssh -n $host gdb --batch -x @configdir@/pscom.gdb -ex bt -ex print_all -p $pid'

@@ -43,4 +43,5 @@ SEE ALSO
   p4stat(8)
 
 COPYRIGHT
-  (c) 2004-2009 ParTec CCC GmbH, Munich.
+  (c) 2004-2021 ParTec CCC GmbH, Munich.
+  (c) 2021      ParTec AG, Munich.
