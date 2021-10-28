@@ -15,19 +15,12 @@
 #include <string.h>
 
 #include "perf.h"
+#include "pscom_util.h"
 
 #ifdef ENABLE_PERF
 #include "ps_perf.h"
 
 #include <sys/time.h>
-
-static
-unsigned long perf_getusec(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return tv.tv_sec*1000000+tv.tv_usec;
-}
 
 
 double cycles_us;
@@ -36,12 +29,12 @@ static
 void cycles_cal(void)
 {
     unsigned long t1, t2, rt1, rt2;
-    t1 = perf_getusec();
+    t1 = pscom_wtime_usec();
     GET_CPU_CYCLES(rt1);
     /* usleep call kapm-idled and slowdown the cpu! */
-    while (perf_getusec() - 1000 < t1);
+    while (pscom_wtime_usec() - 1000 < t1);
     GET_CPU_CYCLES(rt2);
-    t2 = perf_getusec();
+    t2 = pscom_wtime_usec();
 
     t2 -= t1;
     rt2 -= rt1;

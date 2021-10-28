@@ -14,6 +14,7 @@
 #include "pscom_io.h"
 #include "pslib.h"
 #include "pscom_precon.h"
+#include "pscom_util.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>

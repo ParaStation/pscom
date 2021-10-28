@@ -12,6 +12,7 @@
 #include "pscom_precon.h"
 #include "pscom_str_util.h"
 #include "pscom_con.h"
+#include "pscom_util.h"
 #include <netinet/tcp.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -354,15 +355,6 @@ void plugin_connect_first(pscom_con_t *con)
 	_plugin_connect_next(con, 1);
 }
 
-
-
-static
-unsigned long getusec(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return tv.tv_sec*1000000+tv.tv_usec;
-}
 
 /************************************************************************
  * pscom_precon functions
@@ -1000,7 +992,7 @@ int pscom_precon_do_read_poll(pscom_poll_t *poll)
 {
 	precon_t *pre = list_entry(poll, precon_t, poll_read);
 	assert(pre->magic == MAGIC_PRECON);
-	unsigned long now = getusec();
+	unsigned long now = pscom_wtime_usec();
 
 	if (pscom.env.debug >= D_PRECON_TRACE) {
 		if (now - pre->last_print_stat > 1500 /* ms */ * 1000) {
@@ -1076,7 +1068,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 	pre->ufd_info.pollfd_idx = -1;
 
 	pre->last_reconnect =
-		pre->last_print_stat = getusec();
+		pre->last_print_stat = pscom_wtime_usec();
 
 	pscom_poll_init(&pre->poll_read);
 

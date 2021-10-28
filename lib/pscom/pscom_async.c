@@ -23,6 +23,7 @@
 #include "pscom_debug.h"
 #include "pscom_io.h"
 #include "pscom_priv.h"
+#include "pscom_util.h"
 
 typedef struct pscom_async_ipc_s pscom_async_ipc_t;
 
@@ -227,15 +228,6 @@ void pscom_async_msg_detach(pscom_async_ipc_t *ipc, int fd, async_cb_t async_cb,
 }
 
 
-static
-unsigned long getmsec(void)
-{
-    struct timeval tv;
-    gettimeofday(&tv,NULL);
-    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
-}
-
-
 long pscom_time_diff(unsigned long t1, unsigned long t2) {
 	return t2 - t1;
 }
@@ -266,7 +258,7 @@ void pscom_timer_del(pscom_timer_t *timer) {
 static
 int pscom_timer_exec(void) {
 	struct list_head *pos, *next;
-	unsigned long now = getmsec();
+	unsigned long now = pscom_wtime_msec();
 	int timeout = -1;
 
 	list_for_each_safe(pos, next, &pscom_timerq) {
@@ -294,7 +286,7 @@ void pscom_async_msg_timer(pscom_async_ipc_t *ipc, unsigned msec, pscom_timer_cb
 
 	DPRINT(D_TRACE, "pscom_async_msg_timer msec:%u priv:%p", msec, priv);
 
-	timer->timeout = getmsec() + msec;
+	timer->timeout = pscom_wtime_msec() + msec;
 	timer->timer_cb = timer_cb;
 	timer->priv = priv;
 

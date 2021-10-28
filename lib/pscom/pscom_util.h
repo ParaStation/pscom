@@ -13,6 +13,7 @@
 #define _PSCOM_UTIL_H_
 
 #include <sys/uio.h>
+#include <sys/time.h>
 
 #include "pscom_types.h"
 
@@ -205,6 +206,38 @@ char *pscom_strncpy0(char *dest, const char *src, size_t n)
     strncpy(dest, src, n - 1);
     dest[n - 1] = 0;
     return dest;
+}
+
+static inline
+void pscom_gettimeofday(struct timeval *tv) {
+	if (gettimeofday(tv, NULL)) {
+		// Error
+		tv->tv_sec = tv->tv_usec = 0;
+	}
+}
+
+static inline
+unsigned long pscom_wtime_usec(void)
+{
+    struct timeval tv;
+    pscom_gettimeofday(&tv);
+    return tv.tv_sec*1000000+tv.tv_usec;
+}
+
+static inline
+unsigned long pscom_wtime_msec(void)
+{
+    struct timeval tv;
+    pscom_gettimeofday(&tv);
+    return tv.tv_sec * 1000 + tv.tv_usec / 1000;
+}
+
+static inline
+unsigned long pscom_wtime_sec(void)
+{
+    struct timeval tv;
+    pscom_gettimeofday(&tv);
+    return tv.tv_sec;
 }
 
 #endif /* _PSCOM_UTIL_H_ */
