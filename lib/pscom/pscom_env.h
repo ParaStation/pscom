@@ -128,6 +128,7 @@
 #define PSCOM_ENV_MAX_ENV_LEN    (128)
 #define PSCOM_ENV_MAX_VAL_LEN    (32)
 #define PSCOM_ENV_MAX_PREFIX_LEN (32)
+#define PSCOM_ENV_ARCH_COUNT     (0x14) /* number of entries in pscom_con_type_t */
 
 #define PSCOM_ENV_GLOBAL_PREFIX  "PSP_"
 
@@ -278,6 +279,7 @@ struct PSCOM_env {
 	int		debug_contype;
 	int		debug_suspend;
 	int		debug_precon;
+	unsigned int	user_prio[PSCOM_ENV_ARCH_COUNT];
 #ifdef PSCOM_CUDA_AWARENESS
 	int             cuda;
 	unsigned int 	cuda_sync_memops;

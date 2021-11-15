@@ -23,91 +23,43 @@
 LIST_HEAD(pscom_plugins);
 
 static
-char *strtoupper(char *name)
+unsigned int pscom_plugin_uprio(const pscom_con_type_t con_type)
 {
-	while (*name) {
-		*name = (char)toupper(*name);
-		name++;
-	}
-	return name;
-}
-
-
-static
-unsigned int pscom_plugin_uprio(const char *arch)
-{
-	char env_name[100];
 	unsigned res;
 #define ENV_EX_UNSET ((unsigned)~0U)
 	static int env_extoll_initialized = 0;
 	static unsigned env_extoll;
 	static unsigned env_velo;
 
-	strcpy(env_name, ENV_ARCH_PREFIX);
-	strcat(env_name, arch);
-	strtoupper(env_name);
-
-	res = 1;
-	if (strcmp(arch, "elan") == 0 ||
-	    strcmp(arch, "mxm") == 0 ||
-	    strcmp(arch, "ucp") == 0 ||
-	    strcmp(arch, "ofed") == 0) {
-		/* default of ELAN is 'off'. mpiexec will switch
-		   it on, after setting up the elan environment.*/
-		/* ToDo: Check for ELAN environment variables inside
-		   elan plugin! And remove this if. */
-		/* default for MXM is 'off', but with a higher minor
-		   priority than OPENIB. With PSP_MXM=1 mxm will be used
-		   preferred. */
-		/* default for UCP is 'off', but with a higher minor
-		   priority than OPENIB. With PSP_UCP=1 ucp will be used
-		   preferred. */
-		/* default for ofed is 'off'. Until ofed support
-		   resends for lost messages. */
-		res = 0;
-	}
-	if ((strcmp(env_name, ENV_ARCH_NEW_SHM) == 0) &&
-	    !getenv(ENV_ARCH_NEW_SHM) && getenv(ENV_ARCH_OLD_SHM)) {
-		/* old style shm var */
-		pscom_env_get_uint(&res, ENV_ARCH_OLD_SHM);
-	} else if ((strcmp(env_name, ENV_ARCH_NEW_P4S) == 0) &&
-		   !getenv(ENV_ARCH_NEW_P4S) && getenv(ENV_ARCH_OLD_P4S)) {
-		/* old style p4s var */
-		pscom_env_get_uint(&res, ENV_ARCH_OLD_P4S);
-	} else if ((strcmp(env_name, ENV_ARCH_PREFIX "EXTOLL") == 0) ||
-		   (strcmp(env_name, ENV_ARCH_PREFIX "VELO") == 0)) {
+	if ((con_type == PSCOM_CON_TYPE_EXTOLL) ||
+	    (con_type == PSCOM_CON_TYPE_VELO)) {
 		/* Extoll rma or velo? */
 		if (!env_extoll_initialized) {
 			env_extoll_initialized = 1;
 
-			env_velo = ENV_UINT_AUTO;
-			pscom_env_get_uint(&env_velo, ENV_ARCH_PREFIX "VELO");
+			env_velo = pscom.env.user_prio[PSCOM_CON_TYPE_VELO];
+			env_extoll = pscom.env.user_prio[PSCOM_CON_TYPE_EXTOLL];
 
-			env_extoll = ENV_UINT_AUTO;
-			pscom_env_get_uint(&env_extoll, ENV_ARCH_PREFIX "EXTOLL");
-
-			if (env_extoll == ENV_UINT_AUTO) {
+			if (env_extoll == PSCOM_ENV_UINT_AUTO) {
 				// auto: enable "extoll" only if "velo" is disabled.
 				env_extoll = (env_velo == 0) ? 1 : 0;
 			}
-			if (env_velo == ENV_UINT_AUTO) {
+			if (env_velo == PSCOM_ENV_UINT_AUTO) {
 				// auto: enable "velo" only if "extoll" is disabled (or was auto).
 				env_velo = (env_extoll == 0) ? 1 : 0;
 			}
 			if (env_extoll && env_velo) {
-				DPRINT(D_WARN, "'" ENV_ARCH_PREFIX "VELO' and '"
-				       ENV_ARCH_PREFIX "EXTOLL' are mutually exclusive! Disabling '"
-				       ENV_ARCH_PREFIX "EXTOLL'");
+				DPRINT(D_WARN, "'PSP_VELO' and 'PSP_EXTOLL' are mutually exclusive! Disabling 'PSP_EXTOLL'");
 				env_extoll = 0;
 			}
 		}
-		if ((strcmp(env_name, ENV_ARCH_PREFIX "EXTOLL") == 0)) {
+		if (con_type == PSCOM_CON_TYPE_EXTOLL) {
 			res = env_extoll;
 		} else {
 			res = env_velo;
 		}
 	} else {
-		pscom_env_get_uint(&res, env_name);
+		res = pscom.env.user_prio[con_type];
 	}
 	return res;
 }
@@ -221,9 +173,10 @@ const char *pscom_libdir_self(void) {
 }
 
 static
-void pscom_plugin_load(const char *arch)
+void pscom_plugin_load(const pscom_con_type_t con_type)
 {
-	unsigned int uprio = pscom_plugin_uprio(arch);
+	unsigned int uprio = pscom_plugin_uprio(con_type);
+	const char *arch = pscom_con_type_str(con_type);
 	if (!uprio) {
 		DPRINT(D_DBG_V, "Arch %s is disabled", arch);
 		return; // disabled arch
@@ -308,44 +261,44 @@ void pscom_plugins_init(void)
 	if (plugins_loaded) return;
 	plugins_loaded = 1;
 
-	pscom_plugin_register(&pscom_plugin_tcp, pscom_plugin_uprio("tcp"));
-	pscom_plugin_register(&pscom_plugin_shm, pscom_plugin_uprio("shm"));
-	pscom_plugin_register(&pscom_plugin_p4s, pscom_plugin_uprio("p4s"));
+	pscom_plugin_register(&pscom_plugin_tcp, pscom_plugin_uprio(PSCOM_CON_TYPE_TCP));
+	pscom_plugin_register(&pscom_plugin_shm, pscom_plugin_uprio(PSCOM_CON_TYPE_SHM));
+	pscom_plugin_register(&pscom_plugin_p4s, pscom_plugin_uprio(PSCOM_CON_TYPE_P4S));
 #ifdef PSCOM_ALLIN_PSM2
-	pscom_plugin_register(&pscom_plugin_psm, pscom_plugin_uprio("psm"));
+	pscom_plugin_register(&pscom_plugin_psm, pscom_plugin_uprio(PSCOM_CON_TYPE_PSM));
 #endif
 #ifdef PSCOM_ALLIN_OPENIB
-	pscom_plugin_register(&pscom_plugin_openib, pscom_plugin_uprio("openib"));
+	pscom_plugin_register(&pscom_plugin_openib, pscom_plugin_uprio(PSCOM_CON_TYPE_OPENIB));
 #endif
 #ifdef PSCOM_ALLIN_GATEWAY
-	pscom_plugin_register(&pscom_plugin_gateway, pscom_plugin_uprio("gateway"));
+	pscom_plugin_register(&pscom_plugin_gateway, pscom_plugin_uprio(PSCOM_CON_TYPE_GW));
 #endif
 
 #if ENABLE_PLUGIN_LOADING
 	// ToDo: Use file globbing!
-	char *pls[] = {
+	pscom_con_type_t pls[] = {
 #ifndef PSCOM_ALLIN_PSM2
-		"psm",
+		PSCOM_CON_TYPE_PSM,
 #endif
 #ifndef PSCOM_ALLIN_OPENIB
-		"openib",
+		PSCOM_CON_TYPE_OPENIB,
 #endif
-		"ofed",
-		"mvapi",
-		"gm",
-		"elan",
-		"extoll",
-		"velo",
-		"dapl",
-		"mxm",
-		"ucp",
+		PSCOM_CON_TYPE_OFED,
+		PSCOM_CON_TYPE_MVAPI,
+		PSCOM_CON_TYPE_GM,
+		PSCOM_CON_TYPE_ELAN,
+		PSCOM_CON_TYPE_EXTOLL,
+		PSCOM_CON_TYPE_VELO,
+		PSCOM_CON_TYPE_DAPL,
+		PSCOM_CON_TYPE_MXM,
+		PSCOM_CON_TYPE_UCP,
 #ifndef PSCOM_ALLIN_GATEWAY
-		"gateway",
+		PSCOM_CON_TYPE_GW,
 #endif
-		NULL };
-	char **tmp;
+		PSCOM_CON_TYPE_NONE };
+	pscom_con_type_t *tmp;
 
-	for (tmp = pls; *tmp; tmp++) {
+	for (tmp = pls; *tmp != PSCOM_CON_TYPE_NONE; tmp++) {
 		pscom_plugin_load(*tmp);
 	}
 #endif

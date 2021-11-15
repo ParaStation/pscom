@@ -165,6 +165,83 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 PSCOM_ENV_PARSER_INT},
 #endif /* PSCOM_CUDA_AWARENESS */
 
+	{"TCP", "1",
+	 "The user priority of the pscom4tcp plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_TCP], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"SHM", "1",
+	 "The user priority of the pscom4shm plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_SHM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"P4S", "1",
+	 "The user priority of the pscom4p4s plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_P4S], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"GATEWAY", "1",
+	 "The user priority of the pscom4gateway plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_GW], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"DAPL", "1",
+	 "The user priority of the pscom4dapl plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_DAPL], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"ELAN", "0",
+	 "The user priority of the pscom4elan plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_ELAN], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"EXTOLL", PSCOM_ENV_UINT_AUTO_STR,
+	 "The user priority of the pscom4extoll plugin. This is mutually "
+	 "with pscom4velo (pscom4velo has precedence over pscom4extoll).",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_EXTOLL], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"MXM", "0",
+	 "The user priority of the pscom4mxm plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_MXM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"OFED", "0",
+	 "The user priority of the pscom4ofed plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_OFED], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"MVAPI", "1",
+	 "The user priority of the pscom4mvapi plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_MVAPI], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"GM", "1",
+	 "The user priority of the pscom4gm plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_GM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"OPENIB", "1",
+	 "The user priority of the pscom4open plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_OPENIB], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"PSM", "1",
+	 "The user priority of the pscom4psm plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_PSM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"UCP", "0",
+	 "The user priority of the pscom4ucp plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_UCP], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"VELO", PSCOM_ENV_UINT_AUTO_STR,
+	 "The user priority of the pscom4velo plugin. This is mutually "
+	 "with pscom4extoll (pscom4velo has precedence over pscom4extoll).",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_VELO], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
 	{NULL},
 };
 
