@@ -409,14 +409,27 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 }
 
 
+static inline
+void _pscom_close_and_destroy_sock(pscom_sock_t *sock)
+{
+	assert(sock->magic == MAGIC_SOCKET);
+	pscom_sock_close(sock);
+	pscom_sock_destroy(sock);
+}
+
+
 PSCOM_API_EXPORT
 void pscom_close_socket(pscom_socket_t *socket)
 {
 	pscom_lock(); {
-		pscom_sock_t *sock = get_sock(socket);
-		assert(sock->magic == MAGIC_SOCKET);
-		pscom_sock_close(sock);
-		pscom_sock_destroy(sock);
+		if (!socket) { // Close _all_ sockets:
+			while (!list_empty(&pscom.sockets)) {
+				pscom_sock_t *sock = list_entry(pscom.sockets.next, pscom_sock_t, next);
+				_pscom_close_and_destroy_sock(sock);
+			}
+		} else {
+			_pscom_close_and_destroy_sock(get_sock(socket));
+		}
 	} pscom_unlock();
 }
 

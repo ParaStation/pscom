@@ -557,6 +557,8 @@ void pscom_close_connection(pscom_connection_t *connection);
  * This call stops listening on the given socket and closes all associated
  * connections on that socket (cf. @ref pscom_close_connection()). Afterwards,
  * the socket handle must not be used with any pscom API call.
+ * If no specific socket is given but NULL as the passed argument, then all
+ * sockets known to pscom as maintained within an internal list are closed.
  *
  * @param [in] socket The socket to close.
  */
