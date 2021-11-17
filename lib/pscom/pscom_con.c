@@ -442,6 +442,10 @@ void pscom_con_close(pscom_con_t *con)
 	int close_called = con->state.close_called;
 	con->state.close_called = 1;
 
+	if (con->con_guard.fd != -1) {
+		pscom_con_guard_stop(con);
+	}
+
 	/* Terminate the net queues right here and not in pscom_con_closing()
 	   since the latter also handles remotely initiated closing via EOF
 	   where the net queues are to be kept so that once generated net
@@ -772,10 +776,6 @@ void _pscom_con_destroy(pscom_con_t *con)
 
 	if(con->in.readahead.iov_base) {
 		free(con->in.readahead.iov_base);
-	}
-
-	if (con->con_guard.fd != -1) {
-		pscom_con_guard_stop(con);
 	}
 
 	_pscom_con_ref_release(con);
