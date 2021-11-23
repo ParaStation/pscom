@@ -65,6 +65,9 @@ option_conditional(OFED_ENABLED "Enable pscom4ofed" TRUE "IBVERBS_FOUND" FALSE)
 find_package(Ucp)
 option_conditional(UCP_ENABLED "Enable pscom4ucp" TRUE "UCP_FOUND" FALSE)
 
+find_package(Portals4)
+option_conditional(PORTALS4_ENABLED "Enable pscom4portals" TRUE "PORTALS4_FOUND" FALSE)
+
 find_package(Psm2)
 option_conditional(PSM2_ENABLED "Enable pscom4psm" TRUE "PSM2_FOUND" FALSE)
 
@@ -144,6 +147,7 @@ endif(EXTOLL_ENABLED)
 message(STATUS "OPENIB_ENABLED:       ${OPENIB_ENABLED}")
 message(STATUS "OFED_ENABLED:         ${OFED_ENABLED}")
 message(STATUS "UCP_ENABLED:          ${UCP_ENABLED}")
+message(STATUS "PORTALS4_ENABLED:     ${PORTALS4_ENABLED}")
 message(STATUS "PSM2_ENABLED:         ${PSM2_ENABLED}")
 message(STATUS "EXTOLL_ENABLED:       ${EXTOLL_ENABLED}  ${EXTOLL_OPTIONS}")
 message(STATUS "DAPL_ENABLED:         ${DAPL_ENABLED}")
