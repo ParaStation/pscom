@@ -82,7 +82,23 @@ int main(void)
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
-			test_post_any_recv_on_sock_after_recv_on_con,
+			test_post_recv_on_con_after_any_recv_on_global_queue,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_any_recvs_on_sock_and_global_after_recv_on_con,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_recv_on_con_and_cancel,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_any_recv_on_sock_and_cancel,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_any_recv_on_global_queue_and_cancel,
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
