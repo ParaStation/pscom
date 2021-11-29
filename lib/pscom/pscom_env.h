@@ -265,6 +265,7 @@ struct PSCOM_env {
 	unsigned int	readahead;
 	unsigned int	retry;
 	unsigned int	connect_timeout;
+	unsigned int    shutdown_timeout;
 	unsigned int	guard;
 	unsigned int	skipblocksize;
 	unsigned int	iprobe_count;
