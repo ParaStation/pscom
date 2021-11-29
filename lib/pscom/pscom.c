@@ -259,7 +259,7 @@ void pscom_cleanup(void)
 
 	pscom_env_cleanup();
 
-	DPRINT(D_INFO, "Byee.");
+	DPRINT(D_BYE_MSG, "Byee.");
 }
 
 

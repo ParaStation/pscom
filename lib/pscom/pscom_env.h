@@ -278,6 +278,7 @@ struct PSCOM_env {
 	int		debug_version;
 	int		debug_stats;
 	int		debug_contype;
+	int		debug_bye_msg;
 	int		debug_suspend;
 	int		debug_param;
 	int		debug_precon;
