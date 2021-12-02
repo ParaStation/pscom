@@ -69,6 +69,9 @@ void pscom_sock_close(pscom_sock_t *sock)
 	int retry_cnt = 0;
 	unsigned long last_progress_time = pscom_wtime_sec();
 	unsigned long last_stalled_con_cnt = (unsigned long)-1;
+
+	sock->state.close_called = 1;
+
 retry:
 	assert(sock->magic == MAGIC_SOCKET);
 
@@ -141,6 +144,7 @@ fn_exit:
 
 fn_timeout:
 	DPRINT(D_ERR, "pscom_sock_close() forced closing of all connections failed.");
+	sock->state.close_timeout = 1;
 	goto fn_exit;
 }
 
@@ -200,6 +204,10 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size)
 
 	pscom_sock_init_con_info(sock);
 
+	sock->state.close_called = 0;
+	sock->state.close_timeout = 0;
+	sock->state.destroyed = 0;
+
 	pscom_plugins_sock_init(sock);
 
 	return sock;
@@ -210,15 +218,20 @@ static
 void pscom_sock_destroy(pscom_sock_t *sock)
 {
 	assert(sock->magic == MAGIC_SOCKET);
-#if 0
-	// In a timeout case, these lists may still not be empty!
-	assert(list_empty(&sock->next));
-	assert(list_empty(&sock->connections));
-	assert(list_empty(&sock->genrecvq_any));
-	assert(list_empty(&sock->recvq_any));
 
-	assert(sock->pub.listen_portno == -1);
-#endif
+	if (sock->state.destroyed) return; // Already destroyed (why?)
+	sock->state.destroyed = 1;
+
+	if (!sock->state.close_timeout) {
+		// In a timeout case, these lists may still not be empty!
+		assert(list_empty(&sock->next));
+		assert(list_empty(&sock->connections));
+		assert(list_empty(&sock->genrecvq_any));
+		assert(list_empty(&sock->recvq_any));
+
+		assert(sock->pub.listen_portno == -1);
+	}
+
 	pscom_plugins_sock_destroy(sock);
 
 	sock->magic = 0;
