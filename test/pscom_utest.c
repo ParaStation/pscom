@@ -66,6 +66,26 @@ int main(void)
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
+			test_post_recv_on_con,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_any_recv_on_sock,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_any_recv_on_global_queue,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_recv_on_con_after_any_recv_on_sock,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_post_any_recv_on_sock_after_recv_on_con,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
 			test_pscom_get_rma_read_receiver_failing_rma_write,
 			setup_dummy_con,
 			teardown_dummy_con),
