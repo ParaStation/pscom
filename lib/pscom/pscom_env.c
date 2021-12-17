@@ -153,6 +153,13 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.debug_suspend, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
 
+	{"DEBUG_PARAM", "0",
+	 "Show the available configuration parameters:\n"
+	 "  1: Only show parameters affected by the environment\n"
+	 "  2: Show all configuration parameters (available during runtime)\n",
+	 &pscom.env.debug_param, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
 	{"DEBUG_PRECON", "0",
 	 "Trace the pre-connection handshake.",
 	 &pscom.env.debug_precon, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
@@ -260,9 +267,9 @@ void pscom_env_get_int(int *val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = atoi(aval);
-		DPRINT(D_DBG, "set %s = %d", name, *val);
+		DPRINT(D_PARAM, "set %s = %d", name, *val);
 	} else {
-		DPRINT(D_DBG_V, "default %s = %d", name, *val);
+		DPRINT(D_PARAM_DEFAULT, "default %s = %d", name, *val);
 	}
 	pscom_info_set_int(name, *val);
 }
@@ -302,12 +309,12 @@ void pscom_env_get_uint(unsigned int *val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = atoi(aval);
-		DPRINT(D_DBG, "set %s = %u", name, *val);
+		DPRINT(D_PARAM, "set %s = %u", name, *val);
 	} else {
 		if (*val != PSCOM_ENV_UINT_AUTO) {
-			DPRINT(D_DBG_V, "default %s = %u", name, *val);
+			DPRINT(D_PARAM_DEFAULT, "default %s = %u", name, *val);
 		} else {
-			DPRINT(D_DBG_V, "default %s = auto", name);
+			DPRINT(D_PARAM_DEFAULT, "default %s = auto", name);
 		}
 	}
 	pscom_info_set_uint(name, *val);
@@ -361,12 +368,12 @@ void pscom_env_get_size_t(size_t *val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = atoll(aval);
-		DPRINT(D_DBG, "set %s = %zu", name, *val);
+		DPRINT(D_PARAM, "set %s = %zu", name, *val);
 	} else {
 		if (*val != PSCOM_ENV_SIZE_T_AUTO) {
-			DPRINT(D_DBG_V, "default %s = %zu", name, *val);
+			DPRINT(D_PARAM_DEFAULT, "default %s = %zu", name, *val);
 		} else {
-			DPRINT(D_DBG_V, "default %s = auto", name);
+			DPRINT(D_PARAM_DEFAULT, "default %s = auto", name);
 		}
 	}
 	pscom_info_set_size_t(name, *val);
@@ -407,9 +414,9 @@ void pscom_env_get_str(char **val, const char *name)
 	aval = pscom_env_get(name);
 	if (aval) {
 		*val = aval;
-		DPRINT(D_DBG, "set %s = %s", name, *val);
+		DPRINT(D_PARAM, "set %s = %s", name, *val);
 	} else {
-		DPRINT(D_DBG_V, "default %s = %s", name, *val ? *val : "<null>");
+		DPRINT(D_PARAM_DEFAULT, "default %s = %s", name, *val ? *val : "<null>");
 	}
 	pscom_info_set(name, *val);
 }
@@ -455,10 +462,11 @@ void pscom_env_get_dir(char **val, const char *name)
 			*val = strdup(aval);
 		}
 
-		DPRINT(D_DBG, "set %s = %s", name, *val);
+		DPRINT(D_PARAM, "set %s = %s", name, *val);
 	} else {
-		DPRINT(D_DBG_V, "default %s = %s", name, *val ? *val : "<null>");
-	}
+		DPRINT(D_PARAM_DEFAULT, "default %s = %s", name,
+		      *val ? *val : "<null>");
+        }
 	pscom_info_set(name, *val);
 }
 
@@ -648,15 +656,15 @@ pscom_err_t pscom_env_table_parse(pscom_env_table_entry_t *table,
 		    !(env_val || env_val_parent)) {
 			parse_ret = pscom_env_entry_parse(cur_entry, NULL);
 
-			DPRINT(D_DBG_V, "default %s = %s", env_var,
-					cur_entry->default_val);
-		} else {
+                        DPRINT(D_PARAM_DEFAULT, "default %s = %s", env_var,
+                               cur_entry->default_val);
+                } else {
 			/* retrieve the actual value */
 			char val_str[PSCOM_ENV_MAX_VAL_LEN];
 			cur_entry->parser.get((void *)cur_entry->config_var,
 					      val_str, PSCOM_ENV_MAX_VAL_LEN);
 
-			DPRINT(D_DBG, "set %s = %s (%sdefault: %s)", env_var,
+			DPRINT(D_PARAM, "set %s = %s (%sdefault: %s)", env_var,
 			       val_str,
 			       env_val ? "" : "via parent; ",
 			       cur_entry->default_val);

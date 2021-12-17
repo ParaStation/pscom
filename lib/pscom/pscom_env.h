@@ -278,6 +278,7 @@ struct PSCOM_env {
 	int		debug_stats;
 	int		debug_contype;
 	int		debug_suspend;
+	int		debug_param;
 	int		debug_precon;
 	unsigned int	user_prio[PSCOM_ENV_ARCH_COUNT];
 #ifdef PSCOM_CUDA_AWARENESS
