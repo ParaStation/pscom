@@ -69,6 +69,15 @@ void check_read_stop_called(pscom_con_t *con)
 	connection_state(TESTCON_OP_STOP_READ);
 }
 
+static
+void init_gen_req(pscom_connection_t *connection, pscom_req_t *gen_req)
+{
+	gen_req->pub.connection = connection;
+	gen_req->cur_data.iov_base = NULL;
+	gen_req->partner_req = NULL;
+	pscom_header_net_prepare(&gen_req->pub.header, PSCOM_MSGTYPE_USER, 0, 0);
+}
+
 /**
  * \brief Test pscom_post_recv() for partially received message
  *
@@ -84,7 +93,7 @@ void test_post_recv_partial_genreq(void **state)
 
 	/* create generated requests and enqueue to the list of net requests */
 	pscom_req_t *gen_req = pscom_req_create(0, 100);
-	gen_req->pub.connection = &recv_con->pub;
+	init_gen_req(&recv_con->pub, gen_req);
 	_pscom_net_recvq_user_enq(recv_con, gen_req);
 
 	/* set the read_start()/read_stop() functions */
@@ -139,7 +148,7 @@ void test_post_recv_genreq_state(void **state)
 		.data_len = 0,
 	};
 	pscom_req_t *gen_req = _pscom_generate_recv_req(NULL, &nh);
-	gen_req->pub.connection = &recv_con->pub;
+	init_gen_req(&recv_con->pub, gen_req);
 	_pscom_net_recvq_user_enq(recv_con, gen_req);
 
 	/*

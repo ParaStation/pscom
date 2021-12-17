@@ -19,17 +19,10 @@
 static
 pscom_sock_t* create_dummy_sock(void)
 {
-	pscom_sock_t *sock = malloc(sizeof(pscom_sock_t));
+	INIT_LIST_HEAD(&pscom.sockets);
+	INIT_LIST_HEAD(&pscom.recvq_any_global);
 
-	sock->magic = MAGIC_SOCKET;
-	sock->recv_req_cnt_any = 0;
-
-	INIT_LIST_HEAD(&sock->connections);
-	INIT_LIST_HEAD(&sock->genrecvq_any);
-	INIT_LIST_HEAD(&sock->recvq_any);
-	INIT_LIST_HEAD(&sock->sendq_suspending);
-
-	return sock;
+	return pscom_open_sock(0, 0);
 }
 
 static
