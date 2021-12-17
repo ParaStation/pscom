@@ -45,6 +45,7 @@ bin/pscom.gdb \
 bin/pscom_bcast_pp.c \
 bin/pscom_bcast_test.c \
 bin/pscom_debug.sh \
+bin/pscom_info.c \
 bin/pscom_maxcon.c \
 bin/pscom_memusage.c \
 bin/pscom_ondemand.c \
@@ -248,6 +249,8 @@ test/mocks/misc_mocks.h \
 test/mocks/ucx_mocks.c \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
+test/pscom/test_env.c \
+test/pscom/test_env.h \
 test/pscom/test_io.c \
 test/pscom/test_io.h \
 test/pscom4ucp/test_pscom4ucp.c \
@@ -257,4 +260,6 @@ test/pscom_utest.h \
 test/util/test_utils_con.c \
 test/util/test_utils_con.h \
 test/util/test_utils_cuda.c \
-test/util/test_utils_cuda.h
+test/util/test_utils_cuda.h \
+test/util/test_utils_env.c \
+test/util/test_utils_env.h
