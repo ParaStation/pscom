@@ -19,16 +19,19 @@
 
 #include "pscom_utest.h"
 #include "pscom/test_cuda.h"
+#include "pscom/test_env.h"
 #include "pscom/test_io.h"
 
 #include "pscom4ucp/test_pscom4ucp.h"
 
 #include "util/test_utils_con.h"
 #include "util/test_utils_cuda.h"
+#include "util/test_utils_env.h"
 
 pscom_utest_t pscom_utest = {
 	.mock_functions = {
 		.memcpy = 0,
+		.malloc = 0,
 	},
 };
 
@@ -74,6 +77,108 @@ int main(void)
 	total_tests += TEST_GROUP_SIZE(pscom_io_tests);
 	failed_tests += cmocka_run_group_tests(pscom_io_tests, NULL, NULL);
 
+	/* pscom_env tests */
+	const struct CMUnitTest pscom_env_tests[] = {
+		cmocka_unit_test(test_env_table_parse_empty_table),
+		cmocka_unit_test(test_env_table_parse_null_table),
+		cmocka_unit_test(test_env_table_parse_null_var),
+		cmocka_unit_test(test_env_table_parse_null_parser),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_uint_default,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_uint,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_uint_inf,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_uint_auto,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_uint_typo,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_int_default,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_int,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_int_empty,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_size_t_default,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_size_t,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_size_t_typo,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_str_default,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_str,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_dir_default,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_dir,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_multi_entry,
+			backup_three_test_val_env,
+			restore_three_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_multi_entry_failing_entry,
+			backup_three_test_val_env,
+			restore_three_test_val_env),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_size_t_parent_set,
+			backup_test_val_env_and_parent,
+			restore_test_val_env_and_parent),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_parse_single_size_t_parent_set_and_env_set,
+			backup_test_val_env_and_parent,
+			restore_test_val_env_and_parent),
+		cmocka_unit_test(test_env_parser_get_int),
+		cmocka_unit_test(test_env_parser_get_uint),
+		cmocka_unit_test(test_env_parser_get_uint_inf),
+		cmocka_unit_test(test_env_parser_get_uint_auto),
+		cmocka_unit_test(test_env_parser_get_size_t),
+		cmocka_unit_test(test_env_parser_get_str),
+		cmocka_unit_test(test_env_parser_get_dir),
+		cmocka_unit_test(test_env_table_register_simple),
+		cmocka_unit_test(test_env_table_register_no_mem),
+		cmocka_unit_test(test_env_table_register_and_parse_no_mem),
+		cmocka_unit_test(test_env_table_register_and_parse_simple),
+		cmocka_unit_test_setup_teardown(
+			test_env_table_register_and_parse_env_var,
+			backup_test_val_env,
+			restore_test_val_env),
+		cmocka_unit_test(test_env_clear_table_list_empty),
+		cmocka_unit_test(test_env_clear_table_list_filled),
+	};
+	total_tests += TEST_GROUP_SIZE(pscom_env_tests);
+	failed_tests += cmocka_run_group_tests(pscom_env_tests, NULL, NULL);
 
 #ifdef UCP_ENABLED
 	/* pscom4ucp tests */

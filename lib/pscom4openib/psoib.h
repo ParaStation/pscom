@@ -133,6 +133,7 @@ void psoib_progress(void);
 
 /* Suggest a value for psoib_pending_tokens. Result depends on psoib_recvq_size. */
 unsigned psoib_pending_tokens_suggestion(void);
+char *psoib_pending_tokens_suggestion_str(void);
 
 /*
  * Configuration

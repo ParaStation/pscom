@@ -37,23 +37,6 @@ char pscom_debug_filename[FILENAME_MAX] = "";
 struct timeval pscom_debug_time_start;
 enum { TIME_NONE, TIME_US, TIME_WALL, TIME_DATE, TIME_DELTA } pscom_debug_time_mode = TIME_NONE;
 
-static
-char *_pscom_debug_linefmt(void)
-{
-	if (!__pscom_debug_linefmt[0]) {
-		// initialize linefmt.
-		char hostname[32];
-		if (gethostname(hostname, sizeof(hostname)) < 0 || !hostname[0]) {
-			hostname[0] = 0;
-		}
-
-		snprintf(__pscom_debug_linefmt, sizeof(__pscom_debug_linefmt),
-			 "<PSP:%%s%s:%d:%%s>\n", hostname, getpid());
-	}
-
-	return __pscom_debug_linefmt;
-}
-
 
 static
 void pscom_gettimeofday(struct timeval *tv) {
@@ -108,6 +91,39 @@ char *pscom_dtimestr(void) {
 }
 
 
+char *_pscom_debug_linefmt_disabled()
+{
+	return "%s%s\n";
+}
+
+
+char *_pscom_debug_linefmt(void)
+{
+	if (!__pscom_debug_linefmt[0]) {
+		// initialize linefmt.
+		char hostname[32];
+		if (gethostname(hostname, sizeof(hostname)) < 0 || !hostname[0]) {
+			hostname[0] = 0;
+		}
+
+		snprintf(__pscom_debug_linefmt, sizeof(__pscom_debug_linefmt),
+			 "<PSP:%%s%s:%d:%%s>\n", hostname, getpid());
+	}
+
+	return __pscom_debug_linefmt;
+}
+
+
+char *_pscom_debug_linefmt_custom(const char *prefix, const char *postfix)
+{
+	static char line_fmt[100] = "";
+	snprintf(line_fmt, sizeof(line_fmt), "%s%%s%%s%s\n",
+		 prefix ? prefix : "", postfix ? postfix : "");
+
+	return line_fmt;
+}
+
+
 void pscom_dtime_init(void) {
 	const char *mode = pscom.env.debug_timing;
 
@@ -124,7 +140,7 @@ void pscom_dtime_init(void) {
 		   (0 == strcmp(mode, "us"))) {
 		pscom_debug_time_mode = TIME_US;
 	} else {
-		DPRINT(D_WARN, "Unknown " ENV_DEBUG_TIMING ". Expecting '0', '1', 'us', 'date', 'wall' or 'delta'.");
+		DPRINT(D_WARN, "Unknown PSP_DEBUG_TIMING. Expecting '0', '1', 'us', 'date', 'wall' or 'delta'.");
 		pscom_debug_time_mode = TIME_US;
 	}
 
@@ -182,17 +198,16 @@ FILE *_pscom_debug_file()
 }
 
 
-int pscom_dwrite(const char *_msg, size_t len)
+int pscom_dwrite(FILE *out, const char *_msg, size_t len, char *line_fmt)
 {
 	int ret = 0;
 	char *saveptr = NULL;
 	char *line;
 	char *msg = strndup(_msg, len);
-	FILE *out = _pscom_debug_file();
 
 	for (line = strtok_r(msg, "\n", &saveptr); line; line = strtok_r(NULL, "\n", &saveptr)) {
 		// foreach line do:
-		int rc = fprintf(out, _pscom_debug_linefmt(), pscom_dtimestr(), line);
+		int rc = fprintf(out, line_fmt, pscom_dtimestr(), line);
 		if (rc < 0) { ret = rc; break; /* error */ }
 		ret += rc;
 	}
@@ -218,13 +233,13 @@ int pscom_dprintf(const char *fmt, ...)
 
 	if (ret < 0) return ret; // error
 
-	return pscom_dwrite(msg, strlen(msg));
+	return pscom_dwrite(_pscom_debug_file(), msg, strlen(msg), _pscom_debug_linefmt());
 }
 
 
 ssize_t pscom_cookie_write(void *cookie, const char *buf, size_t len)
 {
-	return pscom_dwrite(buf, len);
+	return pscom_dwrite(_pscom_debug_file(), buf, len, _pscom_debug_linefmt());
 }
 
 
@@ -287,12 +302,12 @@ void pscom_debug_set_filename(const char *filename, int expand)
 					// No error and only one result
 					pscom_strncpy0(pscom_debug_filename, p.we_wordv[0], sizeof(pscom_debug_filename));
 				} else {
-					DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %d words",
+					DPRINT(D_FATAL, "wordexp(PSP_DEBUG_OUT=\"%s\", WRDE_NOCMD) : %d words",
 					       filename, (int)p.we_wordc);
 				}
 				wordfree(&p);
 			} else {
-				DPRINT(D_FATAL, "wordexp(" ENV_DEBUG_OUT "=\"%s\", WRDE_NOCMD) : %s",
+				DPRINT(D_FATAL, "wordexp(PSP_DEBUG_OUT=\"%s\", WRDE_NOCMD) : %s",
 				       filename, __wordexp_error(rc));
 			}
 		}

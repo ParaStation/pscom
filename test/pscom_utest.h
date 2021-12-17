@@ -15,6 +15,7 @@
 typedef struct pscom_utest {
     struct {
         unsigned int memcpy;
+        unsigned int malloc;
     } mock_functions;
 } pscom_utest_t;
 

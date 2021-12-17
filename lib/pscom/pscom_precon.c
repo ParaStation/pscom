@@ -19,6 +19,31 @@
 #include <errno.h>
 #include <sys/time.h>
 
+pscom_env_table_entry_t pscom_env_table_precon [] = {
+	{"SO_SNDBUF", "32768",
+	 "The SO_SNDBUF size of the precon/TCP connections.",
+	 &pscom.env.so_sndbuf, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"SO_RCVBUF", "32768",
+	 "The SO_RCVBUF size of the precon/TCP connections.",
+	 &pscom.env.so_rcvbuf, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"TCP_NODELAY", "1",
+	 "Enable/disable TCP_NODELAY for the precon/TCP connections.",
+	 &pscom.env.tcp_nodelay, 0, PSCOM_ENV_PARSER_INT},
+
+	{"RECONNECT_TIMEOUT", "2000",
+	 "The reconnect timeout for the precon in milliseconds.",
+	 &pscom.env.precon_reconnect_timeout, 0, PSCOM_ENV_PARSER_UINT},
+
+	{"CONNECT_STALLED_MAX", "6",
+	 "Declare after (PSP_CONNECT_STALLED * PSP_RECONNECT_TIMEOUT)[ms] "
+	 "without any received bytes the connect() as failed. Retry.",
+	 &pscom.env.precon_connect_stalled_max, 0, PSCOM_ENV_PARSER_UINT},
+
+	{NULL},
+};
+
 
 typedef struct {
 	/* supported version range from sender,
@@ -1125,4 +1150,11 @@ void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 	}
 
 	return;
+}
+
+
+void pscom_precon_init(void)
+{
+	pscom_env_table_register_and_parse("pscom PRECON", "PRECON_",
+					   pscom_env_table_precon);
 }

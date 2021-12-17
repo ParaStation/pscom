@@ -28,6 +28,23 @@
 #include "pscom_precon.h"
 #include "pscom_extoll.h"
 
+static pscom_env_table_entry_t pscom_env_table_velo [] = {
+	{"RENDEZVOUS", "1024",
+	 "The rendezvous threshold for pscom4velo.",
+	 &pscom.env.rendezvous_size_velo, PSCOM_ENV_ENTRY_HAS_PARENT,
+	 PSCOM_ENV_PARSER_UINT},
+
+#ifdef PSEX_USE_MREGION_CACHE
+	{"MCACHE_SIZE", "6",
+	 "Maximum number of entries in the memory registration cache. Minimum "
+	 "1, i.e., cannot be disabled at runtime.",
+	 &psex_mregion_cache_max_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+#endif
+	{NULL},
+};
+
+
 static struct {
 	pscom_poll_t  poll_read; // pscom_extoll_velo2_do_read
 	unsigned      reader_user;
@@ -363,6 +380,10 @@ void pscom_extoll_init(void)
 	psex_debug = pscom.env.debug;
 	psex_debug_stream = pscom_debug_stream();
 
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom VELO", "VELO_",
+					   pscom_env_table_velo);
+
 #ifndef DISABLE_RMA2
 	pscom_env_get_uint(&psex_recvq_size, ENV_EXTOLL_RECVQ_SIZE);
 
@@ -388,7 +409,6 @@ void pscom_extoll_init(void)
 #endif
 
 #ifdef PSEX_USE_MREGION_CACHE
-	pscom_env_get_uint(&psex_mregion_cache_max_size, ENV_EXTOLL_MCACHE_SIZE);
 	if (!psex_mregion_cache_max_size) psex_mregion_cache_max_size = 1; // 0 not allowed.
 #endif
 

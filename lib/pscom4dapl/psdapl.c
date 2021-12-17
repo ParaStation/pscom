@@ -47,6 +47,8 @@
 #define PSDAPL_DATA_OFFSET(pos, psdapllen) ((pos) * DAPL_BUFSIZE + DAPL_BUFSIZE_PAYLOAD - (psdapllen))
 
 int psdapl_debug = 2;
+char psdapl_provider[128];
+
 FILE *psdapl_debug_stream = NULL;
 
 static
@@ -266,17 +268,11 @@ err_dat_ia_open:
 static
 int psdapl_ia_open(DAT_IA_HANDLE *ia_handlep)
 {
-	char *dapl_provider = "<query>";
+	snprintf(psdapl_provider, sizeof(psdapl_provider)-1, "<query>");
 	DAT_RETURN dat_rc;
 	int ret;
 
-	static int get_called = 0;
-	if (!get_called) {
-		get_called = 1;
-		pscom_env_get_str(&dapl_provider, ENV_DAPL_PROVIDER);
-	}
-
-	if (strcmp(dapl_provider, "<query>")) {
+	if (strcmp(psdapl_provider, "<query>")) {
 		ret = psdapl_ia_open_name(ia_handlep, dapl_provider);
 	} else {
 		const unsigned max_providers = 64;

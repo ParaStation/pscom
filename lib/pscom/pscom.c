@@ -67,7 +67,7 @@ pscom_t pscom = {
 	.backlog_lock = PTHREAD_MUTEX_INITIALIZER,
 
 	/* parameter from environment */
-	.env = PSCOM_ENV_defaults,
+	.env_config = LIST_HEAD_INIT(pscom.env_config),
 
 	/* statistic */
 	.stat = {
@@ -256,6 +256,9 @@ void pscom_cleanup(void)
 	pscom_pslib_cleanup();
 	if (pscom.env.debug >= D_STATS) pscom_dump_reqstat(pscom_debug_stream());
 	perf_print();
+
+	pscom_env_cleanup();
+
 	DPRINT(D_INFO, "Byee.");
 }
 
@@ -339,6 +342,7 @@ pscom_err_t pscom_init(int pscom_version)
 	pscom_pslib_init();
 	pscom_env_init();
 	pscom_debug_init();
+	pscom_precon_init();
 
 #ifdef PSCOM_CUDA_AWARENESS
 	if ((init = pscom_cuda_init()) != PSCOM_SUCCESS)  goto out;

@@ -28,6 +28,89 @@
 #include "pscom_precon.h"
 #include "pscom_ofed.h"
 
+static pscom_err_t
+pscom_ofed_env_parser_set_pending_tokens(void *buf,
+					 const char *config_val)
+{
+	const char *set_val =
+		config_val ? config_val : psofed_pending_tokens_suggestion_str();
+
+	return pscom_env_parser_set_config_uint(buf, set_val);
+}
+
+
+#define PSCOM_OFED_ENV_PARSER_PENDING_TOKENS {pscom_ofed_env_parser_set_pending_tokens, \
+					      pscom_env_parser_get_config_int}
+
+
+static pscom_env_table_entry_t pscom_env_table_ofed [] = {
+	{"HCA", NULL,
+	 "Name of the hca to use. (default to the name of the first active "
+	 "hca).",
+	 &psofed_hca, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_STR},
+
+	{"PORT", NULL,
+	 "Port to use (default is first active port).",
+	 &psofed_port, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"PATH_MTU", "3",
+	 "MTU of the IB packets. (1:256, 2:512, 3:1024.",
+	 &psofed_path_mtu, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"COMPQ_SIZE", "2048",
+	 "Size of the completion queue queue.",
+	 &psofed_compq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RECVQ_SIZE", "1024",
+	 "Number of receive buffers per connection.",
+	 &psofed_recvq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"SENDQ_SIZE", "1024",
+	 "Number of send buffers per connection.",
+	 &psofed_sendq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"PENDING_TOKENS", NULL,
+	 "Number of tokens for incoming packets.",
+	 &psofed_pending_tokens, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_OFED_ENV_PARSER_PENDING_TOKENS},
+
+	{"WINSIZE", "512",
+	 "Maximum number of unacked packets.",
+	 &psofed_winsize, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RESEND_TIMEOUT", "10000",
+	 "Resend in usec. 4 times the timeout on each resend starting with "
+	 "psofed_resend_timeout maximal wait: 10000 << 11 =  20.48 sec.",
+	 &psofed_resend_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RESEND_TIMEOUT_SHIFT", "11",
+	 "Never wait longer than: "
+	 "psofed_resend_timeout << psofed_resend_timeout_shift",
+	 &psofed_resend_timeout_shift, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"EVENT_CNT", "1",
+	 "Enable/disable busy polling if outstanding_cq_entries is to high.",
+	 &psofed_event_count, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"LID_OFFSET", "0",
+	 "Offset to base LID (adaptive routing).",
+	 &psofed_lid_offset, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{NULL},
+};
+
+
 static struct {
 	pscom_poll_t	poll_read;
 	unsigned	reader_user;
@@ -189,29 +272,10 @@ void pscom_ofed_init(void)
 {
 	psofed_debug = pscom.env.debug;
 	psofed_debug_stream = pscom_debug_stream();
-	pscom_env_get_str(&psofed_hca, ENV_OFED_HCA);
-	pscom_env_get_uint(&psofed_port, ENV_OFED_PORT);
-	pscom_env_get_uint(&psofed_path_mtu, ENV_OFED_PATH_MTU);
 
-	pscom_env_get_uint(&psofed_compq_size, ENV_OFED_COMPQ_SIZE);
-	pscom_env_get_uint(&psofed_sendq_size, ENV_OFED_SENDQ_SIZE);
-	pscom_env_get_uint(&psofed_recvq_size, ENV_OFED_RECVQ_SIZE);
-
-	psofed_pending_tokens = psofed_pending_tokens_suggestion();
-	pscom_env_get_uint(&psofed_pending_tokens, ENV_OFED_PENDING_TOKENS);
-
-	pscom_env_get_uint(&psofed_winsize, ENV_OFED_WINSIZE);
-
-	{
-		unsigned int auint;
-		auint = (unsigned)psofed_resend_timeout;
-		pscom_env_get_uint(&auint, ENV_OFED_RESEND_TIMEOUT);
-		psofed_resend_timeout = auint;
-	}
-
-	pscom_env_get_uint(&psofed_resend_timeout_shift, ENV_OFED_RESEND_TIMEOUT_SHIFT);
-	pscom_env_get_int(&psofed_event_count, ENV_OFED_EVENT_CNT);
-	pscom_env_get_int(&psofed_lid_offset, ENV_OFED_LID_OFFSET);
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom OFED", "OFED_",
+					   pscom_env_table_ofed);
 
 	pscom_poll_init(&pscom_ofed.poll_read);
 	pscom_ofed.reader_user = 0;

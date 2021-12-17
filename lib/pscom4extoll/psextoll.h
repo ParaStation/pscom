@@ -100,6 +100,7 @@ void psex_progress(void);
 
 /* Suggest a value for psex_pending_tokens. Result depends on psex_recvq_size. */
 unsigned psex_pending_tokens_suggestion(void);
+char *psex_pending_tokens_suggestion_str(void);
 
 /*
  * Configuration

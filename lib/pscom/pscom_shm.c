@@ -28,6 +28,16 @@
 #include "psshmalloc.h"
 #include "pscom_cuda.h"
 
+pscom_env_table_entry_t pscom_env_table_shm [] = {
+	{"RENDEZVOUS", PSCOM_ENV_UINT_INF_STR,
+	 "The rendezvous threshold for pscom4shm.",
+	 &pscom.env.rendezvous_size_shm, PSCOM_ENV_ENTRY_HAS_PARENT,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{NULL},
+};
+
+
 #if defined(__x86_64__) && !(defined(__KNC__) || defined(__MIC__))
 /* We need memory barriers only for x86_64 (?) */
 #define shm_mb()    asm volatile("mfence":::"memory")
@@ -568,6 +578,11 @@ int shm_is_local(pscom_con_t *con)
 static
 void pscom_shm_sock_init(pscom_sock_t *sock)
 {
+
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom SHM", "SHM_",
+					   pscom_env_table_shm);
+
 	if (psshm_info.size) {
 		DPRINT(D_INFO, "PSP_MALLOC = 1 : size = %lu\n", psshm_info.size);
 		pscom_env_get_uint(&shm_direct, ENV_SHM_DIRECT);

@@ -28,6 +28,79 @@
 #include "pscom_precon.h"
 #include "pscom_extoll.h"
 
+static pscom_err_t
+pscom_extoll_parser_set_pending_tokens(void *buf,
+				       const char *config_val)
+{
+	const char *set_val =
+		config_val ? config_val : psex_pending_tokens_suggestion_str();
+
+	return pscom_env_parser_set_config_uint(buf, set_val);
+}
+
+
+static pscom_err_t
+pscom_extoll_parser_set_sendq_size(void *buf, const char *config_val)
+{
+	pscom_err_t ret;
+	ret = pscom_env_parser_set_config_uint(buf, config_val);
+
+	if (psex_global_sendq) {
+		/* one sendq for all connection; buffers for 1024 connections */
+		psex_sendq_size = 1024 * pscom_min(psex_sendq_size, psex_recvq_size);
+	} else {
+		/* one sendq for each connection. limit sendq to recvq size */
+		psex_sendq_size = pscom_min(psex_sendq_size, psex_recvq_size);
+	}
+
+	return ret;
+}
+
+
+#define PSCOM_EXTOLL_PARSER_PENDING_TOKENS {pscom_extoll_parser_set_pending_tokens, \
+					    pscom_env_parser_get_config_int}
+
+#define PSCOM_EXTOLL_PARSER_SENDQ_SIZE {pscom_extoll_parser_set_sendq_size, \
+					pscom_env_parser_get_config_uint}
+
+
+
+
+static pscom_env_table_entry_t pscom_env_table_extoll [] = {
+	{"RENDEZVOUS", PSCOM_ENV_UINT_INF_STR,
+	 "The rendezvous threshold for pscom4extoll.",
+	 &pscom.env.rendezvous_size_extoll, PSCOM_ENV_ENTRY_HAS_PARENT,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"RECVQ_SIZE", "16",
+	 "Number of receive buffers per connection.",
+	 &psex_recvq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"GLOBAL_SENDQ", "0",
+	 "Enable/disable global send queue.",
+	 &psex_global_sendq, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"SENDQ_SIZE", "16",
+	 "Number of send buffers per connection.",
+	 &psex_sendq_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_EXTOLL_PARSER_SENDQ_SIZE},
+
+	{"EVENT_CNT", "0",
+	 "Enable/disable busy polling if psex_pending_global_sends is to high.",
+	 &psex_event_count, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"PENDING_TOKENS", NULL,
+	 "Number of tokens for incoming packets.",
+	 &psex_pending_tokens, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_EXTOLL_PARSER_PENDING_TOKENS},
+
+	 {NULL},
+};
+
+
 static struct {
 	pscom_poll_t	poll_read; // pscom_extoll_make_progress
 	unsigned	reader_user;
@@ -206,27 +279,9 @@ void pscom_extoll_init(void)
 	psex_debug = pscom.env.debug;
 	psex_debug_stream = pscom_debug_stream();
 
-	pscom_env_get_uint(&psex_recvq_size, ENV_EXTOLL_RECVQ_SIZE);
-
-	pscom_env_get_int(&psex_global_sendq, ENV_EXTOLL_GLOBAL_SENDQ);
-
-	if (psex_global_sendq) {
-		// One sendq for all connection. Allocate buffers for 1024 connections
-		psex_sendq_size = 1024 * pscom_min(psex_sendq_size, psex_recvq_size);
-	} else {
-		// One sendq for each connection. limit sendq to recvq size.
-		psex_sendq_size = pscom_min(psex_sendq_size, psex_recvq_size);
-	}
-	pscom_env_get_uint(&psex_sendq_size, ENV_EXTOLL_SENDQ_SIZE);
-
-	psex_pending_tokens = psex_pending_tokens_suggestion();
-	pscom_env_get_uint(&psex_pending_tokens, ENV_EXTOLL_PENDING_TOKENS);
-
-//	if (!psex_global_sendq && psex_sendq_size == psex_recvq_size) {
-//		// Disable event counting:
-//		psex_event_count = 0;
-//	}
-	pscom_env_get_int(&psex_event_count, ENV_EXTOLL_EVENT_CNT);
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom EXTOLL", "EXTOLL_",
+					   pscom_env_table_extoll);
 
 	pscom_poll_init(&pscom_extoll.poll_read);
 	pscom_extoll.reader_user = 0;

@@ -227,6 +227,15 @@ unsigned psex_pending_tokens_suggestion(void)
 }
 
 
+char *psex_pending_tokens_suggestion_str(void) {
+	static char res[8];
+
+	snprintf(res, sizeof(res)-1, "%u", psex_pending_tokens_suggestion());
+
+	return res;
+}
+
+
 static
 void psex_rma2_free(hca_info_t *hca_info, mem_info_t *mem_info)
 {

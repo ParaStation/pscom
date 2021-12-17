@@ -138,8 +138,6 @@ void pscom_free(void *ptr) {
 #define IB_DONT_USE_ZERO_COPY
 #include "psoib.c"
 pscom_t pscom = {
-	/* parameter from environment */
-	.env = PSCOM_ENV_defaults,
 	/* statistic */
 	.stat = {
 		.reqs = 0,
@@ -512,7 +510,6 @@ void pscom_openib_init(FILE *peer)
 	psoib_info_msg_t lmsg, rmsg;
 	int rc;
 	pscom.env.debug = arg_verbose;
-	pscom_env_get_int(&pscom.env.debug, ENV_DEBUG);
 	psoib_debug = pscom.env.debug;
 
 	pscom_env_get_str(&psoib_hca, ENV_OPENIB_HCA);

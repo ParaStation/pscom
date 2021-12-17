@@ -21,6 +21,32 @@
 #include <unistd.h>
 #include "pspsm.h"
 
+pscom_env_table_entry_t pscom_env_table_psm [] = {
+	{"FASTINIT", "1",
+	 "If enabled, psm2_init() is called from within pscom4psm plugin init, "
+	 "otherwise on first usage of a pscom4psm connection.",
+	 &pscom.env.psm_fastinit, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"CLOSE_DELAY", "1000",
+	 "Delayed call to psm2_ep_disconnect2() in milliseconds.",
+	 &pscom.env.psm_close_delay, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"PSM_UNIQ_ID", "0",
+	 "Unsigned integer used to seed the PSM UUID. If unset or zero, PMI_ID "
+	 "is checked. If also unset or zero, a constant seed is used.",
+	 &pscom.env.psm_uniq_id, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{"DEVCHECK", "1",
+	 "Enable/disable checking for any of the following device files:"
+	 "/dev/ipath{,0,1},/dev/hfi{1,2}{,_0,_1,_2}",
+	 &pspsm_devcheck, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
+	{NULL},
+};
 
 typedef struct {
 	pscom_poll_t	poll_read;
@@ -226,22 +252,22 @@ void pscom_psm_init(void)
 	pspsm_debug = pscom.env.debug;
 	pspsm_debug_stream = pscom_debug_stream();
 
+	/* register the environment configuration table */
+	pscom_env_table_register_and_parse("pscom PSM", "PSM_",
+					   pscom_env_table_psm);
+
 	/* see comment in pspsm_init() */
-	pscom_env_get_uint(&pscom.env.psm_uniq_id, ENV_PSM_UNIQ_ID);
 	if (!pscom.env.psm_uniq_id) {
+		/* TODO: Support overwrites with different name */
 		pscom_env_get_uint(&pscom.env.psm_uniq_id, ENV_PMI_ID);
 	}
-	pscom_env_get_uint(&pspsm_devcheck, ENV_PSM_DEVCHECK);
 
 	pscom_poll_init(&pspsm_poll.poll_read);
 	pspsm_poll.poll_user = 0;
 
 	// Preinitialize pspsm. Ignore errors. pspsm_connect will see the error again.
 
-	pscom_env_get_uint(&pscom.env.psm_fastinit, ENV_PSM_FASTINIT);
 	if (pscom.env.psm_fastinit) pspsm_init();
-
-	pscom_env_get_uint(&pscom.env.psm_close_delay, ENV_PSM_CLOSE_DELAY);
 }
 
 

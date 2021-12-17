@@ -111,6 +111,7 @@ int psofed_progress(context_info_t *context); //, int blocking);
 
 /* Suggest a value for psofed_pending_tokens. Result depends on psofed_recvq_size. */
 unsigned psofed_pending_tokens_suggestion(void);
+char *psofed_pending_tokens_suggestion_str(void);
 
 
 /*

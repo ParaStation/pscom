@@ -23,6 +23,9 @@
 #define pscom_max(a,b)      (((a)>(b))?(a):(b))
 #endif
 
+/* preprocessor helpers */
+#define _PSCOM_MAKE_STRING(x) #x
+#define PSCOM_MAKE_STRING(x)  _PSCOM_MAKE_STRING(x)
 
 /* Somewhere in the middle of the GCC 2.96 development cycle, we implemented
    a mechanism by which the user can annotate likely branch directions and

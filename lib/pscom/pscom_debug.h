@@ -21,7 +21,7 @@
 int pscom_dprintf(const char *fmt, ...)
 	__attribute__ ((__format__ (__printf__, 1, 2)));
 
-int pscom_dwrite(const char *_msg, size_t len);
+int pscom_dwrite(FILE *out, const char *_msg, size_t len, char *line_fmt);
 
 #ifndef DPRINT
 #define DPRINT(level,fmt,arg... ) do{		\
@@ -56,6 +56,40 @@ char *pscom_debug_req_str(pscom_req_t *req);
 #define D_TR(code) do { code; } while (0)
 #endif
 
+/**
+ * @brief Return a line format for non-formated debug output
+ *
+ * This routine generates a line format that can be used for disabling the
+ * standard line format when using pscom_dwrite().
+ *
+ * @return The line format string.
+ */
+char *_pscom_debug_linefmt_disabled();
+
+
+/**
+ * @brief Return the default line format for debug output.
+ *
+ * This routine generates the default line format used when writing debug output
+ * with pscom_dwrite().
+ *
+ * @return The line format string.
+ */
+char *_pscom_debug_linefmt(void);
+
+
+/**
+ * @brief Return a line format for customized debug output
+ *
+ * This routine generates a line format that can be used to generate a custom
+ * line format when using pscom_dwrite().
+ *
+ * @param [in] prefix  The prefix to be prepended to the line to be printed.
+ * @param [in] postfix The postfix to be appended to the line to be printed.
+ *
+ * @return The line format string.
+ */
+char *_pscom_debug_linefmt_custom(const char *prefix, const char *postfix);
 
 void pscom_debug_init(void);
 void pscom_dtime_init(void);
@@ -81,6 +115,8 @@ void pscom_dtime_init(void);
 /* Debug topic masks */
 #define D_VERSION	(D_INFO * !pscom.env.debug_version)
 #define D_CONTYPE	(D_INFO * !pscom.env.debug_contype)
+#define D_PARAM		(D_DBG * !pscom.env.debug_param)
+#define D_PARAM_DEFAULT	(D_DBG_V * (pscom.env.debug_param < 2))
 #define D_SUSPEND	(D_INFO * !pscom.env.debug_precon)
 #define D_SUSPEND_DBG	(D_DBG * (pscom.env.debug_precon < 2))
 #define D_PRECON_TRACE	(D_TRACE * !pscom.env.debug_precon)
