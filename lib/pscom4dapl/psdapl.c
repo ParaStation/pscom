@@ -273,7 +273,7 @@ int psdapl_ia_open(DAT_IA_HANDLE *ia_handlep)
 	int ret;
 
 	if (strcmp(psdapl_provider, "<query>")) {
-		ret = psdapl_ia_open_name(ia_handlep, dapl_provider);
+		ret = psdapl_ia_open_name(ia_handlep, psdapl_provider);
 	} else {
 		const unsigned max_providers = 64;
 		DAT_PROVIDER_INFO _providers[max_providers];

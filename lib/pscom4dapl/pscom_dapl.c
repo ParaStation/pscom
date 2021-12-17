@@ -37,7 +37,7 @@ pscom_env_table_entry_t pscom_env_table_dapl [] = {
 
 	{"PROVIDER", "<query>",
 	 "The rendezvous threshold for pscom4dapl.",
-	 &dapl_provider, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_STR},
+	 &psdapl_provider, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_STR},
 
 	{NULL},
 };
