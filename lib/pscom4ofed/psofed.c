@@ -262,16 +262,6 @@ static inline int psofed_seqcmp(psofed_seqno_t a, psofed_seqno_t b)
 
 
 static inline
-unsigned long get_timestamp(void)
-{
-	// ToDo: Use RTC instead of gettimeofday()
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return (tv.tv_usec+tv.tv_sec*1000000);
-}
-
-
-static inline
 int timestamp_expired(unsigned long timestamp, unsigned long now, unsigned resendcnt)
 {
 	unsigned long delta = now - timestamp;
@@ -1191,7 +1181,7 @@ void resend(context_info_t *context)
 	unsigned long now;
 	if (list_empty(&context->con_resendq)) return;
 
-	now = get_timestamp();
+	now = pscom_wtime_usec();
 
 	list_for_each(pos, &context->con_resendq) {
 		psofed_con_info_t *con_info = list_entry(pos, psofed_con_info_t, next_resend);
@@ -1443,7 +1433,7 @@ void check_resend(psofed_con_info_t *con_info)
 		   -> Move connection to the tail of the con_resendq */
 		list_del(&con_info->next_resend);
 		list_add_tail(&con_info->next_resend, &con_info->context->con_resendq);
-		con_info->last_send = get_timestamp();
+		con_info->last_send = pscom_wtime_usec();
 	}
 }
 

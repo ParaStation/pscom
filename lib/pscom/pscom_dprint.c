@@ -39,14 +39,6 @@ enum { TIME_NONE, TIME_US, TIME_WALL, TIME_DATE, TIME_DELTA } pscom_debug_time_m
 
 
 static
-void pscom_gettimeofday(struct timeval *tv) {
-	if (gettimeofday(tv, NULL)) {
-		// Error
-		tv->tv_sec = tv->tv_usec = 0;
-	}
-}
-
-static
 char *pscom_dtimestr(void) {
 	static char timestr[30];
 	struct timeval time;

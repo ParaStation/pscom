@@ -243,6 +243,15 @@ void _pscom_con_cleanup(pscom_con_t *con)
 	if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
 		D_TR(printf("%s:%u:%s(con:%p) : state: %s\n", __FILE__, __LINE__, __func__,
 			    con, pscom_con_state_str(con->pub.state)));
+
+		if (!list_empty(&con->net_recvq_user) && con->state.close_called) {
+			// This case shouldn't be possible with a valid MPI program not aborting
+			// abnormally but with MPI_Finalize() due to the rules of the standard.
+			// Nevertheless, in an error case and/or when calling MPI_Abort(), we may
+			// very well have the situation where unexpected messages still arrive
+			// after actively closing the connection.
+			_pscom_con_terminate_net_queues(con);
+		}
 	retry:
 		pscom_con_end_write(con);
 		pscom_con_end_read(con);
@@ -257,16 +266,18 @@ void _pscom_con_cleanup(pscom_con_t *con)
 		assert(con->pub.state == PSCOM_CON_STATE_CLOSE_WAIT);
 		assert(list_empty(&con->sendq));
 		assert(list_empty(&con->recvq_user));
-		assert(list_empty(&con->net_recvq_user) || !con->state.close_called);
 		assert(con->in.req == NULL);
 		// ToDo: check for group requests?
 		// assert(list_empty(&group->???->recvq_bcast));
 		// assert(list_empty(&group->???->net_recvq_bcast));
 		pscom_call_io_done();
 
+		// At this point, the list of unexpected messages must be empty if the connection
+		// was actively closed. (See also the related comment above the retry label.)
+		assert(list_empty(&con->net_recvq_user) || !con->state.close_called);
+
 		if (!list_empty(&con->sendq) ||
 		    !list_empty(&con->recvq_user) ||
-		    (!list_empty(&con->net_recvq_user) && con->state.close_called) ||
 		    // !list_empty(&con->recvq_bcast) ||
 		    // !list_empty(&con->net_recvq_bcast) ||
 		    con->in.req) goto retry; // in the case the io_doneq callbacks post more work
@@ -430,6 +441,10 @@ void pscom_con_close(pscom_con_t *con)
 {
 	int close_called = con->state.close_called;
 	con->state.close_called = 1;
+
+	if (con->con_guard.fd != -1) {
+		pscom_con_guard_stop(con);
+	}
 
 	/* Terminate the net queues right here and not in pscom_con_closing()
 	   since the latter also handles remotely initiated closing via EOF
@@ -761,10 +776,6 @@ void _pscom_con_destroy(pscom_con_t *con)
 
 	if(con->in.readahead.iov_base) {
 		free(con->in.readahead.iov_base);
-	}
-
-	if (con->con_guard.fd != -1) {
-		pscom_con_guard_stop(con);
 	}
 
 	_pscom_con_ref_release(con);

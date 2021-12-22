@@ -117,6 +117,7 @@ void pscom_dtime_init(void);
 #define D_CONTYPE	(D_INFO * !pscom.env.debug_contype)
 #define D_PARAM		(D_DBG * !pscom.env.debug_param)
 #define D_PARAM_DEFAULT	(D_DBG_V * (pscom.env.debug_param < 2))
+#define D_BYE_MSG	(D_INFO * !pscom.env.debug_bye_msg)
 #define D_SUSPEND	(D_INFO * !pscom.env.debug_precon)
 #define D_SUSPEND_DBG	(D_DBG * (pscom.env.debug_precon < 2))
 #define D_PRECON_TRACE	(D_TRACE * !pscom.env.debug_precon)

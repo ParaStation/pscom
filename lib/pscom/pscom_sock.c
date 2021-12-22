@@ -14,11 +14,13 @@
 #include "pscom_io.h"
 #include "pslib.h"
 #include "pscom_precon.h"
+#include "pscom_util.h"
 #include <stdlib.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <errno.h>
 #include <string.h>
+#include <sys/time.h>
 
 static
 void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
@@ -65,6 +67,11 @@ void pscom_sock_close(pscom_sock_t *sock)
 {
 	struct list_head *pos, *next;
 	int retry_cnt = 0;
+	unsigned long last_progress_time = pscom_wtime_sec();
+	unsigned long last_stalled_con_cnt = (unsigned long)-1;
+
+	sock->state.close_called = 1;
+
 retry:
 	assert(sock->magic == MAGIC_SOCKET);
 
@@ -76,22 +83,36 @@ retry:
 
 	pscom_sock_stop_listen(sock);
 
+	// Wait until all connections are closed. If there is no progress made
+	// on any conncetion within the given timeout of PSP_SHUTDOWN_TIMEOUT
+	// seconds (e.g., because one or more of the other sides do not react)
+	// while loop and function are aborted.
 	while (1) {
-		int all_closed = 1;
+		unsigned long stalled_con_cnt = 0;
 		list_for_each_safe(pos, next, &sock->connections) {
 			pscom_con_t *con = list_entry(pos, pscom_con_t, next);
 			assert(con->magic == MAGIC_CONNECTION);
 			if (con->pub.state != PSCOM_CON_STATE_CLOSED) {
-				all_closed = 0;
-				break;
+				stalled_con_cnt++;
 			}
 		}
 
-		if (all_closed) break;
+		if (!stalled_con_cnt) break;
 
 		// Proceed
 		pscom_call_io_done();
 		pscom_progress(0);
+
+		if (stalled_con_cnt < last_stalled_con_cnt) {
+			// Progress! Reset timer and continue:
+			last_stalled_con_cnt = stalled_con_cnt;
+			last_progress_time = pscom_wtime_sec();
+			continue;
+		}
+
+		if (pscom.env.shutdown_timeout && (pscom_wtime_sec() - last_progress_time > pscom.env.shutdown_timeout)) {
+			goto fn_timeout;
+		}
 	}
 
 	_pscom_sock_terminate_all_recvs(sock);
@@ -107,16 +128,24 @@ retry:
 
 		if (retry_cnt >= 10) sleep(1);
 
-		if (retry_cnt < 20) {
-			goto retry; // in the case the io_doneq callbacks post more work
+		if (pscom.env.shutdown_timeout && (pscom_wtime_sec() - last_progress_time > pscom.env.shutdown_timeout)) {
+			goto fn_timeout;
 		}
-		DPRINT(D_ERR, "pscom_sock_close() forced closing of all connections failed.");
 
+		goto retry; // in the case the io_doneq callbacks post more work
 	}
 
+fn_exit:
 	if (!list_empty(&sock->next)) {
 		list_del_init(&sock->next);
 	}
+
+	return;
+
+fn_timeout:
+	DPRINT(D_ERR, "pscom_sock_close() forced closing of all connections failed.");
+	sock->state.close_timeout = 1;
+	goto fn_exit;
 }
 
 
@@ -175,6 +204,10 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size)
 
 	pscom_sock_init_con_info(sock);
 
+	sock->state.close_called = 0;
+	sock->state.close_timeout = 0;
+	sock->state.destroyed = 0;
+
 	pscom_plugins_sock_init(sock);
 
 	return sock;
@@ -185,12 +218,19 @@ static
 void pscom_sock_destroy(pscom_sock_t *sock)
 {
 	assert(sock->magic == MAGIC_SOCKET);
-	assert(list_empty(&sock->next));
-	assert(list_empty(&sock->connections));
-	assert(list_empty(&sock->genrecvq_any));
-	assert(list_empty(&sock->recvq_any));
 
-	assert(sock->pub.listen_portno == -1);
+	if (sock->state.destroyed) return; // Already destroyed (why?)
+	sock->state.destroyed = 1;
+
+	if (!sock->state.close_timeout) {
+		// In a timeout case, these lists may still not be empty!
+		assert(list_empty(&sock->next));
+		assert(list_empty(&sock->connections));
+		assert(list_empty(&sock->genrecvq_any));
+		assert(list_empty(&sock->recvq_any));
+
+		assert(sock->pub.listen_portno == -1);
+	}
 
 	pscom_plugins_sock_destroy(sock);
 
@@ -382,14 +422,27 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 }
 
 
+static inline
+void _pscom_close_and_destroy_sock(pscom_sock_t *sock)
+{
+	assert(sock->magic == MAGIC_SOCKET);
+	pscom_sock_close(sock);
+	pscom_sock_destroy(sock);
+}
+
+
 PSCOM_API_EXPORT
 void pscom_close_socket(pscom_socket_t *socket)
 {
 	pscom_lock(); {
-		pscom_sock_t *sock = get_sock(socket);
-		assert(sock->magic == MAGIC_SOCKET);
-		pscom_sock_close(sock);
-		pscom_sock_destroy(sock);
+		if (!socket) { // Close _all_ sockets:
+			while (!list_empty(&pscom.sockets)) {
+				pscom_sock_t *sock = list_entry(pscom.sockets.next, pscom_sock_t, next);
+				_pscom_close_and_destroy_sock(sock);
+			}
+		} else {
+			_pscom_close_and_destroy_sock(get_sock(socket));
+		}
 	} pscom_unlock();
 }
 

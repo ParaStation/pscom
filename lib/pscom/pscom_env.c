@@ -96,6 +96,13 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.retry, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
+	{"SHUTDOWN_TIMEOUT", "0",
+	 "Timeout value in seconds after which the attempt to close all "
+	 "connections of a socket is aborted if there is no more progress.\n"
+	 "A timeout value of 0 means an infinite timeout.",
+	 &pscom.env.shutdown_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
 	{"GUARD", "1",
 	 "Enable/disable the connection guards for the detection of failing "
 	 "peer processes",
@@ -141,6 +148,11 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	{"DEBUG_STATS", "0",
 	 "Collect and print statistics on exit.",
 	 &pscom.env.debug_stats, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_INT},
+
+	{"DEBUG_BYE_MSG", "0",
+	 "Show the notorious \"Byee\" message at the end.",
+	 &pscom.env.debug_bye_msg, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
 
 	{"DEBUG_CONTYPE", "0",
@@ -856,5 +868,4 @@ void pscom_env_table_list_print(pscom_env_print_flags_t flags)
 		pscom_env_table_print(list_entry->name, list_entry->prefix,
 				      list_entry->table, flags);
 	}
-
 }

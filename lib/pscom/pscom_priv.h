@@ -438,6 +438,12 @@ struct PSCOM_sock
 //	psextoll_sock_t		extoll;
 //	psgw_sock_t		gateway;
 
+	struct {
+		unsigned	close_called : 1;
+		unsigned	close_timeout : 1;
+		unsigned	destroyed : 1;
+	}			state;
+
 	pscom_socket_t		pub;
 };
 
