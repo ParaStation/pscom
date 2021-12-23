@@ -169,6 +169,207 @@ void test_post_recv_genreq_state(void **state)
 	assert_false(recv_req->state & PSCOM_REQ_STATE_GRECV_REQUEST);
 }
 
+/**
+ * \brief Test pscom_post_recv() with a regular recv request with a given connection
+ *
+ * Given: A public recv request handle with an associated connection but without a socket
+ * When: pscom_post_recv() is called with this request
+ * Then: the request is enqueued on the recvq_user of the connection
+ */
+void test_post_recv_on_con(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* assume that all queues are empty */
+	assert_true(list_empty(&recv_con->recvq_user));
+	assert_true(list_empty(&pscom.recvq_any_global));
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* create and post a regular recv request on the connection */
+	pscom_request_t *recv_req = pscom_request_create(0, 0);
+	recv_req->connection = &recv_con->pub;
+	recv_req->socket = NULL;
+
+	pscom_post_recv(recv_req);
+
+	/* assume that the request is now enqueued on the recvq_user of the connection */
+	assert_int_equal(list_count(&recv_con->recvq_user), 1);
+	assert_ptr_equal(list_entry(recv_con->recvq_user.next, pscom_req_t, next), get_req(recv_req));
+
+	/* assume that the request's socket has been set properly */
+	assert_ptr_equal(recv_req->socket, recv_con->pub.socket);
+
+	recv_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_req);
+}
+
+/**
+ * \brief Test pscom_post_recv() with an any-source recv request with a given socket
+ *
+ * Given: A public recv request handle with an associated socket but without a connection
+ * When: pscom_post_recv() is called with this any-source request
+ * Then: the any-source request is enqueued on the recvq_any queue of the socket
+ */
+void test_post_any_recv_on_sock(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* assume that all queues are empty */
+	assert_true(list_empty(&recv_con->recvq_user));
+	assert_true(list_empty(&pscom.recvq_any_global));
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* create and post an any recv request on the socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = recv_con->pub.socket;
+
+	pscom_post_recv(recv_any_req);
+
+	/* assume that the request as been enqueued to the socket and that the
+	   global any-source queue is still empty */
+	assert_int_equal(list_count(&get_sock(recv_con->pub.socket)->recvq_any), 1);
+	assert_true(list_empty(&pscom.recvq_any_global));
+
+	recv_any_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_any_req);
+}
+
+/**
+ * \brief Test pscom_post_recv() with an any-source recv request without a socket
+ *
+ * Given: A public recv request handle with no socket and no connection given
+ * When: pscom_post_recv() is called with this any-source request
+ * Then: the any-source request is enqueued on the recvq_any_global queue
+ */
+void test_post_any_recv_on_global_queue(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* assume that all queues are empty */
+	assert_true(list_empty(&recv_con->recvq_user));
+	assert_true(list_empty(&pscom.recvq_any_global));
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* create and post an any recv request without a given socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = NULL;
+
+	pscom_post_recv(recv_any_req);
+
+	/* assume that the request as been enqueued to the global any-source queue
+	   and that the socket's any-source queue is still empty */
+	assert_int_equal(list_count(&pscom.recvq_any_global), 1);
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	recv_any_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_any_req);
+}
+
+/**
+ * \brief Test pscom_post_recv() with a regular recv request after an any-source request
+ *
+ * Given: An any-source request is enqueued on the recvq_any queue of a socket
+ * When: pscom_post_recv() is called with a subsequent regular receive request
+ * Then: both requests are enqueued on the recvq_any of the socket
+ */
+void test_post_recv_on_con_after_any_recv_on_sock(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* assume that all queues are empty */
+	assert_true(list_empty(&recv_con->recvq_user));
+	assert_true(list_empty(&pscom.recvq_any_global));
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* create and post an any recv request on the socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = recv_con->pub.socket;
+
+	pscom_post_recv(recv_any_req);
+
+	/* assume that the request as been enqueued to the socket and that the
+	   global any-source queue is still empty */
+	assert_int_equal(list_count(&get_sock(recv_con->pub.socket)->recvq_any), 1);
+	assert_true(list_empty(&pscom.recvq_any_global));
+
+	/* create and post a regular recv request on the connection */
+	pscom_request_t *recv_req = pscom_request_create(0, 0);
+	recv_req->connection = &recv_con->pub;
+	recv_req->socket = recv_con->pub.socket;
+
+	pscom_post_recv(recv_req);
+
+	/* assume that both requests are now enqueued on the recvq_any of the socket */
+	assert_int_equal(list_count(&get_sock(recv_con->pub.socket)->recvq_any), 2);
+	assert_true(list_empty(&recv_con->recvq_user));
+
+	/* assume that the global any-source queue is still empty */
+	assert_true(list_empty(&pscom.recvq_any_global));
+
+	recv_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_req);
+
+	recv_any_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_any_req);
+}
+
+/**
+ * \brief Test pscom_post_recv() with an any-source recv following a regular recv request
+ *
+ * Given: A regular request is enqueued on the recvq_user queue of a connection
+ * When: pscom_post_recv() is called with a subsequent any-source request
+ * Then: both requests are enqueued to the two separate queues (con and sock)
+ */
+void test_post_any_recv_on_sock_after_recv_on_con(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* assume that all queues are empty */
+	assert_true(list_empty(&recv_con->recvq_user));
+	assert_true(list_empty(&pscom.recvq_any_global));
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* create and post a regular recv request on the connection */
+	pscom_request_t *recv_req = pscom_request_create(0, 0);
+	recv_req->connection = &recv_con->pub;
+	recv_req->socket = recv_con->pub.socket;
+
+	pscom_post_recv(recv_req);
+
+	/* assume that the request as been enqueued to the connection queue and that the
+	   any-source queues are is still empty */
+	assert_int_equal(list_count(&recv_con->recvq_user), 1);
+	assert_true(list_empty(&pscom.recvq_any_global));
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* create and post an any recv request on the socket */
+	pscom_request_t *recv_any_req_sock = pscom_request_create(0, 0);
+	recv_any_req_sock->connection = NULL;
+	recv_any_req_sock->socket = recv_con->pub.socket;
+
+	pscom_post_recv(recv_any_req_sock);
+
+	/* assume that the request as been enqueued to the socket and that the
+	   global any-source queue is still empty */
+	assert_int_equal(list_count(&recv_con->recvq_user), 1);
+	assert_int_equal(list_count(&get_sock(recv_con->pub.socket)->recvq_any), 1);
+	assert_true(list_empty(&pscom.recvq_any_global));
+
+	recv_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_req);
+
+	recv_any_req_sock->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_any_req_sock);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_req_prepare_send_pending()
 ////////////////////////////////////////////////////////////////////////////////
