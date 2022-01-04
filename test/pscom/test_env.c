@@ -54,7 +54,7 @@ void test_env_table_parse_empty_table(void **state)
  */
 void test_env_table_parse_null_table(void **state)
 {
-	int ret = pscom_env_table_parse(NULL, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(NULL, NULL, NULL, NULL);
 
 	assert_true(ret == PSCOM_ERR_INVALID);
 }
@@ -75,7 +75,7 @@ void test_env_table_parse_null_var(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 
 	assert_true(ret == PSCOM_ERR_INVALID);
 }
@@ -103,7 +103,7 @@ void test_env_table_parse_null_parser(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 
 	assert_true(ret == PSCOM_ERR_INVALID);
 }
@@ -128,7 +128,8 @@ void test_env_table_parse_single_uint_default(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 3);
@@ -158,7 +159,8 @@ void test_env_table_parse_single_uint(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 42);
@@ -185,7 +187,8 @@ void test_env_table_parse_single_uint_inf(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, PSCOM_ENV_UINT_INF);
@@ -212,7 +215,8 @@ void test_env_table_parse_single_uint_auto(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, PSCOM_ENV_UINT_AUTO);
@@ -242,7 +246,8 @@ void test_env_table_parse_single_uint_typo(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_ERR_INVALID);
 
 	assert_int_equal(test_var, 3);
@@ -269,7 +274,8 @@ void test_env_table_parse_single_int_default(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_int, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, -1);
@@ -299,7 +305,8 @@ void test_env_table_parse_single_int(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_int, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 13);
@@ -329,7 +336,8 @@ void test_env_table_parse_single_int_empty(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_int, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_ERR_INVALID);
 
 	assert_int_equal(test_var, 3);
@@ -356,7 +364,8 @@ void test_env_table_parse_single_size_t_default(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_size_t, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 8589934592);
@@ -386,7 +395,8 @@ void test_env_table_parse_single_size_t(void **state)
 		{NULL},
 	};
 
-	size_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 8589934592);
@@ -416,7 +426,8 @@ void test_env_table_parse_single_size_t_typo(void **state)
 		{NULL},
 	};
 
-	size_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_ERR_INVALID);
 
 	assert_int_equal(test_var, 3);
@@ -443,7 +454,8 @@ void test_env_table_parse_single_str_default(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_str, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_string_equal(test_var, "testval");
@@ -473,7 +485,8 @@ void test_env_table_parse_single_str(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_str, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_string_equal(test_var, "World");
@@ -499,7 +512,8 @@ void test_env_table_parse_single_dir_default(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_dir, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_dir, NULL, NULL,
+						NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_string_equal(test_var, "/path/to/testdir/");
@@ -530,8 +544,9 @@ void test_env_table_parse_single_dir(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table_dir, NULL, NULL, NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+        pscom_err_t ret =
+            pscom_env_table_parse(env_table_dir, NULL, NULL, NULL);
+        assert_true(ret == PSCOM_SUCCESS);
 
 	assert_string_equal(test_var, "/path/to/world/");
 }
@@ -568,7 +583,7 @@ void test_env_table_parse_multi_entry(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var_int, -42);
@@ -613,7 +628,7 @@ void test_env_table_parse_multi_entry_failing_entry(void **state)
 		{NULL},
 	};
 
-	int ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 	assert_true(ret == PSCOM_ERR_INVALID);
 
 	assert_int_equal(test_var_int, -42);
@@ -644,8 +659,8 @@ void test_env_table_parse_single_size_t_parent_set(void **state)
 		{NULL},
 	};
 
-	size_t ret = pscom_env_table_parse(env_table_size_t, NULL, "SUBTABLE_",
-					   NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
+						"SUBTABLE_", NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 8589934592);
@@ -682,8 +697,8 @@ void test_env_table_parse_single_size_t_parent_set_and_env_set(void **state)
 		{NULL},
 	};
 
-	size_t ret = pscom_env_table_parse(env_table_size_t, NULL,
-					   env_var->prefix, NULL);
+	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
+						env_var->prefix, NULL);
 	assert_true(ret == PSCOM_SUCCESS);
 
 	assert_int_equal(test_var, 10000000000);
