@@ -10,6 +10,7 @@
  */
 
 #include "pscom_con.h"
+#include "pscom_io.h"
 #include "pscom_queues.h"
 
 
@@ -383,6 +384,25 @@ void _pscom_recvq_user_deq_any_global(pscom_req_t *req)
 	_pscom_recv_req_cnt_any_global_dec();
 }
 
+
+static
+void _pscom_recvq_terminate_any_global()
+{
+	while (!list_empty(&pscom.recvq_any_global)) {
+		pscom_req_t *req = list_entry(pscom.recvq_any_global.next, pscom_req_t, next);
+
+		list_del(&req->next);
+		req->pub.state |= PSCOM_REQ_STATE_ERROR;
+		_pscom_recv_req_done(req); // done
+	}
+}
+
+void pscom_recvq_terminate_any_global()
+{
+	pscom_lock(); {
+		_pscom_recvq_terminate_any_global();
+	} pscom_unlock();
+}
 
 void _pscom_recvq_user_enq(pscom_req_t *req)
 {

@@ -37,7 +37,7 @@ void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 	}
 
 
-	// RecvAny Queue:
+	// Socket RecvAny Queue: (the global any-source queue is terminated in pscom_cleanup())
 	while (!list_empty(&sock->recvq_any)) {
 		pscom_req_t *req = list_entry(sock->recvq_any.next, pscom_req_t, next);
 
