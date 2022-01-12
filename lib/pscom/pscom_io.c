@@ -1315,7 +1315,13 @@ int _pscom_cancel_recv(pscom_req_t *req)
 	assert(_pscom_recvq_user_is_inside(req));
 
 	_pscom_recvq_user_deq(req);
-	_pscom_recvq_any_cleanup(get_sock(req->pub.socket));
+
+	if (req->pub.socket) {
+		pscom_sock_t *sock = get_sock(req->pub.socket);
+		_pscom_recvq_any_cleanup(&sock->recvq_any);
+	} else {
+		_pscom_recvq_any_cleanup(&pscom.recvq_any_global);
+	}
 
 	req->pub.state |= PSCOM_REQ_STATE_CANCELED;
 	_pscom_recv_req_done(req); // done
