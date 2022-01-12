@@ -27,6 +27,7 @@
 
 /* we need to access some static functions */
 #include "pscom_io.c"
+#include "pscom_sock.c"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Helper for keeping track of the connection state
@@ -561,6 +562,205 @@ void test_post_any_recv_on_global_queue_and_cancel(void **state)
 	recv_req->state |= PSCOM_REQ_STATE_DONE;
 	pscom_request_free(recv_req);
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Termination of connection and any-source receive queues
+////////////////////////////////////////////////////////////////////////////////
+
+/**
+ * \brief Test pscom_con_terminate_recvq() regarding specific-source requests
+ *
+ * Given: A posted receive request on a connection
+ * When: pscom_con_terminate_recvq() is called on the receive queue of this connection
+ * Then: the request has been removed from the recvq_user queue of the connection and
+ *       the request's status has been set to error state
+ */
+ void test_post_recv_on_con_and_terminate_recvq(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create and post a regular recv request on the connection */
+	pscom_request_t *recv_req = pscom_request_create(0, 0);
+	recv_req->connection = &recv_con->pub;
+	recv_req->socket = NULL;
+	pscom_post_recv(recv_req);
+
+	/* terminate the recvq of the con */
+	pscom_con_terminate_recvq(recv_con);
+
+	/* assume that the request has been removed from the queue */
+	assert_true(list_empty(&recv_con->recvq_user));
+
+	/* assume that the request status has been set to error state */
+	assert_true(recv_req->state & PSCOM_REQ_STATE_ERROR);
+
+	pscom_request_free(recv_req);
+}
+
+/**
+ * \brief Test pscom_con_terminate_recvq() regarding socket-local any-source requests
+ *
+ * Given: A posted any-source recv request on a socket plus a subsequent recv
+ *        request posted on a connection
+ * When: pscom_con_terminate_recvq() is called on the receive queue of this connection
+ * Then: only the connection-related request is removed from the any-source queue of
+ *       the socket and the request's status has been set to error state
+ */
+void test_post_any_recv_on_sock_and_terminate_recvq(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create and post an any recv request on the socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = recv_con->pub.socket;
+	pscom_post_recv(recv_any_req);
+
+	/* create and post a regular recv request on the connection */
+	pscom_request_t *recv_req = pscom_request_create(0, 0);
+	recv_req->connection = &recv_con->pub;
+	recv_req->socket = recv_con->pub.socket;
+	pscom_post_recv(recv_req);
+
+	/* assume that both requests are now enqueued on the recvq_any of the socket */
+	assert_int_equal(list_count(&get_sock(recv_con->pub.socket)->recvq_any), 2);
+	assert_true(list_empty(&recv_con->recvq_user));
+
+	/* terminate the recvq of the con */
+	pscom_con_terminate_recvq(recv_con);
+
+	/* assume that the con request has been removed from the socket's any-source queue
+	   and that the remaining request in this queueu is the any-source request */
+	assert_int_equal(list_count(&get_sock(recv_con->pub.socket)->recvq_any), 1);
+	assert_ptr_equal(&list_entry(get_sock(recv_con->pub.socket)->recvq_any.next, pscom_req_t, next)->pub, recv_any_req);
+
+	/* assume that the con request status has been set to error state */
+	assert_true(recv_req->state & PSCOM_REQ_STATE_ERROR);
+
+	pscom_request_free(recv_req);
+
+	recv_any_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_any_req);
+}
+
+/**
+ * \brief Test pscom_con_terminate_recvq() regarding global any-source requests
+ *
+ * Given: A posted any-source recv request on the global queue plus a subsequent recv
+ *        request posted on a connection
+ * When: pscom_con_terminate_recvq() is called on the receive queue of this connection
+ * Then: only the connection-related request is removed from the global any-source
+ *       queue and the request's status has been set to error state
+ */
+void test_post_any_recv_on_global_queue_and_terminate_recvq(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create and post an any recv request without a given socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = NULL;
+	pscom_post_recv(recv_any_req);
+
+	/* create and post a regular recv request on the connection */
+	pscom_request_t *recv_req = pscom_request_create(0, 0);
+	recv_req->connection = &recv_con->pub;
+	recv_req->socket = NULL;
+	pscom_post_recv(recv_req);
+
+	/* assume that both requests are now enqueued on the recvq_any_global queue */
+	assert_int_equal(list_count(&pscom.recvq_any_global), 2);
+	assert_true(list_empty(&recv_con->recvq_user));
+
+	/* terminate the recvq of the con */
+	pscom_con_terminate_recvq(recv_con);
+
+	/* assume that the con request has been removed from the global any-source queue
+	   and that the remaining request in this queueu is the any-source request */
+	assert_int_equal(list_count(&pscom.recvq_any_global), 1);
+	assert_ptr_equal(&list_entry(pscom.recvq_any_global.next, pscom_req_t, next)->pub, recv_any_req);
+
+	/* assume that the con request status has been set to error state */
+	assert_true(recv_req->state & PSCOM_REQ_STATE_ERROR);
+
+	pscom_request_free(recv_req);
+
+	recv_any_req->state |= PSCOM_REQ_STATE_DONE;
+	pscom_request_free(recv_any_req);
+}
+
+/**
+ * \brief Test _pscom_sock_terminate_all_recvs()
+ *
+ * Given: An any-source recv request on a socket-local any-source queue
+ * When: _pscom_sock_terminate_all_recvs() is called
+ * Then: the posted request is removed from the socket's any-source queue and the
+ *       request's status has been set to error state
+ */
+void test_post_any_recv_on_sock_and_terminate_sock_queue(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create and post an any recv request on the socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = recv_con->pub.socket;
+	pscom_post_recv(recv_any_req);
+
+	/* assume that the requests is now enqueued on the recvq_any of the socket */
+	assert_ptr_equal(&list_entry(get_sock(recv_con->pub.socket)->recvq_any.next, pscom_req_t, next)->pub, recv_any_req);
+
+	/* terminate also the any-source queue of the socket */
+	_pscom_sock_terminate_all_recvs(get_sock(recv_con->pub.socket));
+ 
+	/* assume that the any-source request has been removed from the socket queue */
+	assert_true(list_empty(&get_sock(recv_con->pub.socket)->recvq_any));
+
+	/* assume that the any-source request status has been set to error state */
+	assert_true(recv_any_req->state & PSCOM_REQ_STATE_ERROR);
+
+	pscom_request_free(recv_any_req);
+}
+
+/**
+ * \brief Test pscom_recvq_terminate_any_global()
+ *
+ * Given: A posted any-source recv request on the global queue
+ * When: pscom_recvq_terminate_any_global() is called
+ * Then: the posted request is removed from the global any-source queue and the
+ *       request's status has been set to error state
+ */
+void test_post_any_recv_on_global_queue_and_terminate_global_queue(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create and post an any recv request without a given socket */
+	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
+	recv_any_req->connection = NULL;
+	recv_any_req->socket = NULL;
+	pscom_post_recv(recv_any_req);
+
+	/* assume that the request is now enqueued on the recvq_any_global queue */
+	assert_ptr_equal(&list_entry(pscom.recvq_any_global.next, pscom_req_t, next)->pub, recv_any_req);
+
+	/* terminate the global any-source queue */
+	pscom_recvq_terminate_any_global();
+
+	/* assume that the any-source request has been removed from the global queue */
+	assert_true(list_empty(&pscom.recvq_any_global));
+
+	/* assume that the any-source request status has been set to error state */
+	assert_true(recv_any_req->state & PSCOM_REQ_STATE_ERROR);
+
+	pscom_request_free(recv_any_req);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_req_prepare_send_pending()
