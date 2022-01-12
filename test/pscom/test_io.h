@@ -26,6 +26,7 @@ void test_post_recv_on_con_and_terminate_recvq(void **state);
 void test_post_any_recv_on_sock_and_terminate_recvq(void **state);
 void test_post_any_recv_on_global_queue_and_terminate_recvq(void **state);
 void test_post_any_recv_on_sock_and_terminate_sock_queue(void **state);
+void test_post_any_recv_on_global_queue_and_terminate_global_queue(void **state);
 void test_req_prepare_send_pending_valid_send_request(void **state);
 void test_req_prepare_send_pending_truncate_data_len(void **state);
 void test_pscom_get_rma_read_receiver_failing_rma_write(void **state);
