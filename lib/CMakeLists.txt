@@ -86,8 +86,10 @@ add_subdirectory(pscom)
 link_to_lib(pscom)
 
 
-add_subdirectory(psmalloc)
-link_to_lib(psmalloc)
+if (PSSHMALLOC_ENABLED)
+  add_subdirectory(psmalloc)
+  link_to_lib(psmalloc)
+endif (PSSHMALLOC_ENABLED)
 
 
 if (OPENIB_ENABLED)

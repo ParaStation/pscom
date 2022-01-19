@@ -87,6 +87,18 @@ option_conditional(PSMGMT_ENABLED "Enable psmgmt" TRUE "PSMGMT_FOUND" FALSE)
 find_package(CMocka)
 option_conditional(UTEST_ENABLED "Enable unit tests ('ctest' or Target 'utest')" TRUE "CMOCKA_FOUND" FALSE)
 
+
+#
+# Build direct shared memory communication (default: no)
+#
+option(PSSHMALLOC_ENABLED "Enable psshmalloc" OFF)
+
+if(PSSHMALLOC_ENABLED)
+  add_compile_definitions(PSCOM_PSSHMALLOC_ENABLED=1)
+endif(PSSHMALLOC_ENABLED)
+
+
+
 add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(bin)
@@ -136,6 +148,7 @@ message(STATUS "PSM2_ENABLED:         ${PSM2_ENABLED}")
 message(STATUS "EXTOLL_ENABLED:       ${EXTOLL_ENABLED}  ${EXTOLL_OPTIONS}")
 message(STATUS "DAPL_ENABLED:         ${DAPL_ENABLED}")
 message(STATUS "CUDA_ENABLED:         ${CUDA_ENABLED}")
+message(STATUS "PSSHMALLOC_ENABLED:   ${PSSHMALLOC_ENABLED}")
 message(STATUS "")
 message(STATUS "PSMGMT_ENABLED:       ${PSMGMT_ENABLED}")
 message(STATUS "UTEST_ENABLED:        ${UTEST_ENABLED}")
