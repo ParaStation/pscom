@@ -240,7 +240,7 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_GM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{"OPENIB", "1",
+	{"OPENIB", "0",
 	 "The user priority of the pscom4open plugin.",
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_OPENIB], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
@@ -250,7 +250,7 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_PSM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{"UCP", "0",
+	{"UCP", "1",
 	 "The user priority of the pscom4ucp plugin.",
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_UCP], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},

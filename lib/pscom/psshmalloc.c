@@ -32,6 +32,7 @@ struct Psshm psshm_info = {
 };
 
 
+#ifdef PSCOM_PSSHMALLOC_ENABLED
 struct Psshm_config {
 	size_t	min_size;
 	size_t	max_size;
@@ -176,3 +177,4 @@ err_init_base:
 	// fprintf(stderr, "psshm_init failed : %s\n", strerror(errno));
 	return;
 }
+#endif /* PSCOM_PSSHMALLOC_ENABLED */
