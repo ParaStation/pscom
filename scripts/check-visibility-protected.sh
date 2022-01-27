@@ -9,17 +9,19 @@ cat > "$checkvisibility1c" <<EOF
 
 		__attribute__ ((visibility ("protected")))
 		int bla(void) { return bar; };
+
+		int foo(void) { return bla(); }
 EOF
 
 cat > "$checkvisibility2c" <<EOF
 		  extern int bar;
-		  int bla(void);
-		  int main (void) { return bar + bla(); }
+		  int foo(void);
+		  int main (void) { return bar + foo(); }
 EOF
 # echo "Check for working '__attribute__ ((visibility ("protected")))': ${CC}"
 
 set -x
-"${CC}" -nostdlib -nostartfiles -fPIC -shared "${checkvisibility1c}" -o "${checkvisibility1c}.so"
+"${CC}" -O0 -nostdlib -nostartfiles -fPIC -shared "${checkvisibility1c}" -o "${checkvisibility1c}.so"
 "${CC}" "${checkvisibility2c}" "${checkvisibility1c}.so" -o "${checkvisibility2c}.x"
 
 ret=$?
