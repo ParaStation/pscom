@@ -40,14 +40,14 @@ pscom_env_table_entry_t pscom_env_table_shm [] = {
 
 #if defined(__x86_64__) && !(defined(__KNC__) || defined(__MIC__))
 /* We need memory barriers only for x86_64 (?) */
-#define shm_mb()    asm volatile("mfence":::"memory")
+#define shm_mb()    __asm__ volatile("mfence":::"memory")
 #elif defined(__aarch64__)
-#define shm_mb()    asm volatile("dsb sy" ::: "memory")
+#define shm_mb()    __asm__ volatile("dsb sy" ::: "memory")
 #elif defined(__ia64__)
-#define shm_mb()    asm volatile ("mf" ::: "memory")
+#define shm_mb()    __asm__ volatile ("mf" ::: "memory")
 #else
 /* Dont need it for ia32, alpha (?) */
-#define shm_mb()    asm volatile ("" :::"memory")
+#define shm_mb()    __asm__ volatile ("" :::"memory")
 #endif
 
 #define SHM_DIRECT	400

@@ -20,6 +20,7 @@
 #include "../pscom/pscom.c"
 #include "../pscom/pscom_async.c"
 #include "../pscom/pscom_con.c"
+#include "../pscom/pscom_cuda.c"
 #include "../pscom/pscom_debug.c"
 #include "../pscom/pscom_dprint.c"
 #include "../pscom/pscom_env.c"
@@ -34,6 +35,11 @@
 #ifdef PSCOM_ALLIN_PSM2
 #include "../pscom4psm/pscom_psm.c"
 // ../pscom4psm/pspsm.c is included by pscom_psm.c
+#endif
+
+#ifdef PSCOM_ALLIN_UCP
+#include "../pscom4ucp/pscom_ucp.c"
+#include "../pscom4ucp/psucp.c"
 #endif
 
 #ifdef PSCOM_ALLIN_OPENIB

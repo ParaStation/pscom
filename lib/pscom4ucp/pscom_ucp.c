@@ -340,8 +340,12 @@ error_con_init:
 }
 
 
+#ifndef PSCOM_ALLIN_UCP
 PSCOM_PLUGIN_API_EXPORT
 pscom_plugin_t pscom_plugin = {
+#else
+pscom_plugin_t pscom_plugin_ucp = {
+#endif
 	.name		= "ucp",
 	.version	= PSCOM_PLUGIN_VERSION,
 	.arch_id	= PSCOM_ARCH_UCP,
