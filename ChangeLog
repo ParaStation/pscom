@@ -1,3 +1,41 @@
+2022-02-01  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-0rc1
+
+	* Enhancement: Add "allin" support for the pscom4ucp plugin.
+
+	* Fix: Compilation issues with the icc compiler.
+
+	* New: Make pscom4ucp the default plugin for InfiniBand communication
+	and disable the building of pscom4openib by default.
+
+	* Fix: Building of pscom with newer GLIBC versions (>= 2.34) by adding
+	a CMake switch for enabling disabling the building of psshmalloc.
+
+2022-01-12  Carsten Clauss  <clauss@par-tec.com>
+
+	* Fix: Handling of the global any-source queue for message ordering
+	and w.r.t. MPI_Cancel().
+
+	* Enhancement: Add `PSP_DEBUG_BYE_MSG` environment variable for an
+	explicit printing of "Byee." messages during connection shutdown.
+
+	* Fix: Revise the shutdown behavior of the pscom by:
+	- Adding an optional shutdown timeout `PSP_SHUTDOWN_TIMEOUT`
+	- Properly handling unexpected messages during the connection shutdown
+	- Stopping connection guards _before_ the connection shutdown
+
+2021-12-18  Simon Pickartz  <pickartz@par-tec.com>
+
+	* New: Refactor the runtime configuration of the pscom and add the
+	`pscom_info` binary for documenting the corresponding environment
+	variables.
+
+	* Documentation: Add documentation to the pscom API.
+
+2021-08-23  Carsten Clauss  <clauss@par-tec.com>
+
+	* Enhancement: Tuning of PSCOM_MALLOC_SIZE during compile time via
+	pre-processor defines.
+
 2021-08-11  Simon Pickartz  <pickartz@par-tec.com>	-	5.4.8-1
 
 	* Fix: Only build pscom4ucp tests if UCX could be found.
