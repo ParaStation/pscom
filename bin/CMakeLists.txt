@@ -76,25 +76,25 @@ endif(PSMGMT_ENABLED)
 #
 # p4sock tools
 #
-add_executable(		p4stat		p4stat.c)
-target_link_libraries(	p4stat		PRIVATE popt)
-#install(TARGETS	p4stat		DESTINATION bin)
+add_executable(			p4stat 		p4stat.c)
+target_include_directories(	p4stat		PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(		p4stat		PRIVATE ${POPT_LIBRARIES})
 
-add_executable(		p4tcp		p4tcp.c)
-target_link_libraries(	p4tcp		PRIVATE popt)
-#install(TARGETS	p4tcp		DESTINATION bin)
+add_executable(			p4tcp		p4tcp.c)
+target_include_directories(	p4tcp		PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(		p4tcp		PRIVATE ${POPT_LIBRARIES})
 
-add_executable(		p4logd		p4logd.c)
-target_link_libraries(	p4logd		PRIVATE popt)
-#install(TARGETS	p4logd		DESTINATION bin)
+add_executable(			p4logd		p4logd.c)
+target_include_directories(	p4logd		PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(		p4logd		PRIVATE ${POPT_LIBRARIES})
 
-add_executable(		psock_pp	psock_pp.c)
-target_link_libraries(	psock_pp	PRIVATE popt)
-#install(TARGETS	psock_pp	DESTINATION bin)
+add_executable(			psock_pp	psock_pp.c)
+target_include_directories(	psock_pp	PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(		psock_pp	PRIVATE ${POPT_LIBRARIES})
 
-add_executable(		psock_test	psock_test.c)
-target_link_libraries(	psock_test	PRIVATE popt)
-#install(TARGETS	psock_test	DESTINATION bin)
+add_executable(			psock_test	psock_test.c)
+target_include_directories(	psock_test	PRIVATE ${POPT_INCLUDE_DIRS})
+target_link_libraries(		psock_test	PRIVATE ${POPT_LIBRARIES})
 
 
 
