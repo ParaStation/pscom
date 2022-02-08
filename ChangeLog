@@ -1,3 +1,8 @@
+2022-02-08  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-0rc3
+
+	* Fix: Build dependencies of some test applications and utilities to
+	the popt library.
+
 2022-02-08  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-0rc2
 
 	* Documentation: Update the copyright headers.
