@@ -44,4 +44,4 @@ SEE ALSO
 
 COPYRIGHT
   (c) 2004-2021 ParTec CCC GmbH, Munich.
-  (c) 2021      ParTec AG, Munich.
+  (c) 2021-2022 ParTec AG, Munich.

@@ -1,3 +1,7 @@
+2022-02-08  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-0rc2
+
+	* Documentation: Update the copyright headers.
+
 2022-02-01  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-0rc1
 
 	* Enhancement: Add "allin" support for the pscom4ucp plugin.
