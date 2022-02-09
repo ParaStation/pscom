@@ -1,3 +1,7 @@
+2022-02-09  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-1
+
+	* Fix: Translation from the arch ID to string.
+
 2022-02-08  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-0rc3
 
 	* Fix: Build dependencies of some test applications and utilities to
