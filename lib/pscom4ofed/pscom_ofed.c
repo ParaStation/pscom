@@ -107,7 +107,7 @@ static pscom_env_table_entry_t pscom_env_table_ofed [] = {
 	 &psofed_lid_offset, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
 
-	{NULL},
+	{0},
 };
 
 

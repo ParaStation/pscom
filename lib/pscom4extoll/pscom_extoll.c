@@ -97,7 +97,7 @@ static pscom_env_table_entry_t pscom_env_table_extoll [] = {
 	 &psex_pending_tokens, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_EXTOLL_PARSER_PENDING_TOKENS},
 
-	 {NULL},
+	 {0},
 };
 
 

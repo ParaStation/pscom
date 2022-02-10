@@ -152,7 +152,7 @@ pscom_env_table_entry_t pscom_env_table_openib [] = {
 	 &psoib_mregion_malloc_options, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
 #endif
-	{NULL},
+	{0},
 };
 
 static

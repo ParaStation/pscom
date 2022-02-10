@@ -45,7 +45,7 @@ pscom_env_table_entry_t pscom_env_table_psm [] = {
 	 &pspsm_devcheck, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{NULL},
+	{0},
 };
 
 typedef struct {

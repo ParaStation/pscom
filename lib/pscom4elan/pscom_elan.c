@@ -33,7 +33,7 @@ static pscom_env_table_entry_t pscom_env_table_elan [] = {
 	 &pscom.env.rendezvous_size_elan, PSCOM_ENV_ENTRY_HAS_PARENT,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{NULL},
+	{0},
 };
 
 

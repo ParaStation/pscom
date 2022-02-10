@@ -289,7 +289,7 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_VELO], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{NULL},
+	{0},
 };
 
 PSCOM_API_EXPORT

@@ -37,7 +37,7 @@
  */
 void test_env_table_parse_empty_table(void **state)
 {
-	pscom_env_table_entry_t env_table[] = {{NULL}};
+	pscom_env_table_entry_t env_table[] = {{0}};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 
@@ -72,7 +72,7 @@ void test_env_table_parse_null_var(void **state)
 		{"TEST_VAR", "3", NULL, NULL, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
@@ -100,7 +100,7 @@ void test_env_table_parse_null_parser(void **state)
 		{"TEST_VAR_TWO", "-42", NULL, &test_var_two, 0,
 		 {NULL, NULL}},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
@@ -125,7 +125,7 @@ void test_env_table_parse_single_uint_default(void **state)
 		{"TEST_VAR", "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
@@ -156,7 +156,7 @@ void test_env_table_parse_single_uint(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
@@ -184,7 +184,7 @@ void test_env_table_parse_single_uint_inf(void **state)
 		{env_var, PSCOM_ENV_UINT_INF_STR, NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
@@ -212,7 +212,7 @@ void test_env_table_parse_single_uint_auto(void **state)
 		{env_var, PSCOM_ENV_UINT_AUTO_STR, NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
@@ -243,7 +243,7 @@ void test_env_table_parse_single_uint_typo(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
@@ -271,7 +271,7 @@ void test_env_table_parse_single_int_default(void **state)
 		{env_var, "-1", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
@@ -302,7 +302,7 @@ void test_env_table_parse_single_int(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
@@ -333,7 +333,7 @@ void test_env_table_parse_single_int_empty(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
@@ -361,7 +361,7 @@ void test_env_table_parse_single_size_t_default(void **state)
 		{"TEST_VAR", "8589934592", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_SIZE_T},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
@@ -392,7 +392,7 @@ void test_env_table_parse_single_size_t(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_SIZE_T},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
@@ -423,7 +423,7 @@ void test_env_table_parse_single_size_t_typo(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_SIZE_T},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
@@ -451,7 +451,7 @@ void test_env_table_parse_single_str_default(void **state)
 		{"TEST_VAR", "testval", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_STR},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL,
@@ -482,7 +482,7 @@ void test_env_table_parse_single_str(void **state)
 		{env_var, "dummy text", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_STR},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL,
@@ -509,7 +509,7 @@ void test_env_table_parse_single_dir_default(void **state)
 		{"TEST_VAR", "/path/to/testdir/", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_DIR},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_dir, NULL, NULL,
@@ -541,7 +541,7 @@ void test_env_table_parse_single_dir(void **state)
 		{env_var, "dummy text", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_DIR},
 
-		{NULL},
+		{0},
 	};
 
         pscom_err_t ret =
@@ -580,7 +580,7 @@ void test_env_table_parse_multi_entry(void **state)
 		{env_var_backup[2].name, "wrong string", NULL, &test_var_str, 0,
 		 PSCOM_ENV_PARSER_STR},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
@@ -625,7 +625,7 @@ void test_env_table_parse_multi_entry_failing_entry(void **state)
 		{env_var_backup[2].name, "wrong string", NULL, &test_var_str, 0,
 		 PSCOM_ENV_PARSER_STR},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
@@ -656,7 +656,7 @@ void test_env_table_parse_single_size_t_parent_set(void **state)
 		{env_var, "3", NULL, &test_var, 1,
 		 PSCOM_ENV_PARSER_SIZE_T},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
@@ -694,7 +694,7 @@ void test_env_table_parse_single_size_t_parent_set_and_env_set(void **state)
 		{env_var->name, "3", NULL, &test_var, 1,
 		 PSCOM_ENV_PARSER_SIZE_T},
 
-		{NULL},
+		{0},
 	};
 
 	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
@@ -729,7 +729,7 @@ void test_env_table_register_simple(void **state)
 		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	ret = pscom_env_table_register(table_name, table_prefix, env_table);
@@ -773,7 +773,7 @@ void test_env_table_register_no_mem(void **state)
 		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	enable_malloc_mock();
@@ -1006,7 +1006,7 @@ void test_env_table_register_and_parse_no_mem(void **state)
 		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	enable_malloc_mock();
@@ -1047,7 +1047,7 @@ void test_env_table_register_and_parse_simple(void **state)
 		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	ret = pscom_env_table_register_and_parse(table_name, table_prefix,
@@ -1102,7 +1102,7 @@ void test_env_table_register_and_parse_env_var(void **state)
 		{env_var, "3", NULL, &test_var, 0,
 		 PSCOM_ENV_PARSER_UINT},
 
-		{NULL},
+		{0},
 	};
 
 	ret = pscom_env_table_register_and_parse(table_name, NULL,
@@ -1171,7 +1171,7 @@ void test_env_clear_table_list_filled(void **state)
 		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
 		 PSCOM_ENV_PARSER_INT},
 
-		{NULL},
+		{0},
 	};
 
 	ret = pscom_env_table_register(table_name, table_prefix, env_table);

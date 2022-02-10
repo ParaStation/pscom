@@ -42,7 +42,7 @@ pscom_env_table_entry_t pscom_env_table_precon [] = {
 	 "without any received bytes the connect() as failed. Retry.",
 	 &pscom.env.precon_connect_stalled_max, 0, PSCOM_ENV_PARSER_UINT},
 
-	{NULL},
+	{0},
 };
 
 
