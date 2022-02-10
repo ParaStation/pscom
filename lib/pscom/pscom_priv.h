@@ -329,6 +329,8 @@ struct PSCOM_con
 
 	unsigned int		rendezvous_size;
 	unsigned int		recv_req_cnt;	// count all receive requests on this connection
+
+	unsigned int		write_pending_io_cnt;	// count all send requests with pending I/O
 #ifdef PSCOM_CUDA_AWARENESS
 	unsigned int		is_gpu_aware; // we can safely pass pointers to GPU buffers to this connection
 #endif

@@ -29,16 +29,17 @@
 #include "pscom_io.c"
 
 ////////////////////////////////////////////////////////////////////////////////
-/// pscom_post_recv()
+/// Helper for keeping track of the connection state
 ////////////////////////////////////////////////////////////////////////////////
 
 typedef enum { TESTCON_STATE_CLOSED=0, TESTCON_STATE_OPENED } connection_state_t;
-typedef enum { TESTCON_OP_NOP=0, TESTCON_OP_STOP_READ, TESTCON_OP_START_READ } connection_action_t;
+typedef enum { TESTCON_OP_NOP=0, TESTCON_OP_STOP_RW, TESTCON_OP_START_RW } connection_action_t;
 
 connection_state_t transition_table[2][3] = {
 	{TESTCON_STATE_CLOSED, TESTCON_STATE_CLOSED, TESTCON_STATE_OPENED},
 	{TESTCON_STATE_OPENED, TESTCON_STATE_CLOSED, TESTCON_STATE_OPENED}
 };
+
 
 static
 int connection_state(connection_action_t action)
@@ -51,22 +52,24 @@ int connection_state(connection_action_t action)
 	return old_state;
 }
 
+
 static
-void check_read_start_called(pscom_con_t *con)
+void check_rw_start_called(pscom_con_t *con)
 {
 	function_called();
 	check_expected(con);
 
-	connection_state(TESTCON_OP_START_READ);
+	connection_state(TESTCON_OP_START_RW);
 }
 
+
 static
-void check_read_stop_called(pscom_con_t *con)
+void check_rw_stop_called(pscom_con_t *con)
 {
 	function_called();
 	check_expected(con);
 
-	connection_state(TESTCON_OP_STOP_READ);
+	connection_state(TESTCON_OP_STOP_RW);
 }
 
 static
@@ -78,6 +81,10 @@ void init_gen_req(pscom_connection_t *connection, pscom_req_t *gen_req)
 	pscom_header_net_prepare(&gen_req->pub.header, PSCOM_MSGTYPE_USER, 0, 0);
 }
 
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_post_recv()
+////////////////////////////////////////////////////////////////////////////////
 /**
  * \brief Test pscom_post_recv() for partially received message
  *
@@ -97,8 +104,8 @@ void test_post_recv_partial_genreq(void **state)
 	_pscom_net_recvq_user_enq(recv_con, gen_req);
 
 	/* set the read_start()/read_stop() functions */
-	recv_con->read_start = &check_read_start_called;
-	recv_con->read_stop = &check_read_stop_called;
+	recv_con->read_start = &check_rw_start_called;
+	recv_con->read_stop = &check_rw_stop_called;
 
 	/*
 	 * set the appropriate request state:
@@ -116,8 +123,8 @@ void test_post_recv_partial_genreq(void **state)
 	recv_req->connection = &recv_con->pub;
 
 	/* read_start() should be called at least once */
-	expect_function_call_any(check_read_start_called);
-	expect_value(check_read_start_called, con, recv_con);
+	expect_function_call_any(check_rw_start_called);
+	expect_value(check_rw_start_called, con, recv_con);
 
 	/* post the actual receive request */
 	pscom_post_recv(recv_req);
@@ -661,7 +668,7 @@ void test_pscom_get_rma_read_receiver_failing_rma_write(void **state)
 	user_req->pub.connection = &recv_con->pub;
 
 	pscom_lock(); {
-		_pscom_pendingio_cnt_inc(recv_con, user_req);
+		_pscom_write_pendingio_cnt_inc(recv_con, user_req);
 		_pscom_get_rma_read_receiver(recv_con, &nh);
 	} pscom_unlock();
 
@@ -734,4 +741,237 @@ void test_rndv_recv_read_error(void **state)
 	/* check request and conection state */
 	assert_true(user_recv_req->state & PSCOM_REQ_STATE_ERROR);
 	assert_false(recv_con->pub.state & PSCOM_CON_STATE_R);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_write_peding()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_write_pending() for first IO on this request and connection
+ *
+ * Given: A send request with no pending IO and connection closed for writing
+ * When: pscom_write_peding() is called
+ * Then: the connection is opened for writing
+ */
+void test_write_pending_first_io_con_closed(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *send_con =  (pscom_con_t*)(*state);
+
+	/* create send requests and enqueue to send queue */
+	pscom_req_t *send_req = pscom_req_create(0, 100);
+	send_req->pub.connection = &send_con->pub;
+	send_req->pub.data_len = 42;
+	_pscom_sendq_enq(send_con, send_req);
+
+	/* set the read_start()/read_stop() functions */
+	send_con->write_start = &check_rw_start_called;
+	send_con->write_stop = &check_rw_stop_called;
+
+	/* start pending write on the request and connection */
+	expect_function_calls(check_rw_start_called, 1);
+	expect_value(check_rw_start_called, con, send_con);
+	pscom_write_pending(send_con, send_req, 42);
+
+
+	/*
+	 * write_start() should be called lastly, i.e., the connection should be
+	 * open for writing.
+	 *
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
+	assert_int_equal(send_req->pending_io, 1);
+	assert_true(pscom_con_should_write(send_con));
+}
+
+/**
+ * \brief Test pscom_write_pending() for first IO on this request
+ *
+ * Given: A send request with no pending IO and connection open for writing
+ * When: pscom_write_peding() is called
+ * Then: the connection state remains unchanged
+ */
+void test_write_pending_first_io_con_open(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *send_con =  (pscom_con_t*)(*state);
+
+	/* there is pending I/O on the connection, i.e., it is writing */
+	send_con->write_pending_io_cnt = 1;
+
+	/* create send requests and enqueue to send queue */
+	pscom_req_t *send_req = pscom_req_create(0, 100);
+	send_req->pub.connection = &send_con->pub;
+	send_req->pub.data_len = 42;
+	_pscom_sendq_enq(send_con, send_req);
+
+	/* set the rw_start()/rw_stop() functions */
+	send_con->write_start = &check_rw_start_called;
+	send_con->write_stop = &check_rw_stop_called;
+
+	/* open connection for writing */
+	connection_state(TESTCON_OP_START_RW);
+
+
+	/* start pending write on the request and connection */
+	pscom_write_pending(send_con, send_req, 42);
+
+
+	/*
+	 * the connection should be still open for writing
+	 *
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
+	assert_int_equal(send_req->pending_io, 1);
+	assert_true(pscom_con_should_write(send_con));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_write_peding_done()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_write_pending_done() for last pending IO
+ *
+ * Given: A send request with a single pending IO and a connection with a single
+ *        send request
+ * When: pscom_write_peding_done() is called
+ * Then: the connection should be closed
+ */
+void test_write_pending_done_last_io(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *send_con =  (pscom_con_t*)(*state);
+	send_con->write_pending_io_cnt = 1;
+
+	/* create send requests and enqueue to send queue */
+	pscom_req_t *send_req = pscom_req_create(0, 100);
+	send_req->pub.connection = &send_con->pub;
+	send_req->pending_io = 1;
+
+	/* add to pending_io queue mimic _pscom_pendingio_enq() */
+	if (!pscom.env.debug_req) list_add_tail(&send_req->all_req_next, &pscom.requests);
+
+	/* set the rw_start()/rw_stop() functions */
+	send_con->write_start = &check_rw_start_called;
+	send_con->write_stop = &check_rw_stop_called;
+
+	/* open connection for writing */
+	connection_state(TESTCON_OP_START_RW);
+
+	expect_function_calls(check_rw_stop_called, 1);
+	expect_value(check_rw_stop_called, con, send_con);
+
+	/* pending write is done */
+	pscom_write_pending_done(send_con, send_req);
+
+	/*
+	 * the connection should be closed for writing
+	 *
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_CLOSED);
+	assert_int_equal(send_req->pending_io, 0);
+	assert_false(pscom_con_should_write(send_con));
+}
+
+/**
+ * \brief Test pscom_write_pending_done() for second last IO
+ *
+ * Given: A send request with a single pending IO and a connection with two
+ *        send requests
+ * When: pscom_write_peding_done() is called
+ * Then: the connection state remains unchanged
+ */
+void test_write_pending_done_second_last_io(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *send_con =  (pscom_con_t*)(*state);
+
+	/* create send requests and enqueue to send queue */
+	pscom_req_t *send_req = pscom_req_create(0, 100);
+	send_req->pub.connection = &send_con->pub;
+	send_req->pending_io = 1;
+
+	/* add to pending_io queue mimic _pscom_pendingio_enq() */
+	if (!pscom.env.debug_req) list_add_tail(&send_req->all_req_next, &pscom.requests);
+
+	/* set the rw_start()/rw_stop() functions */
+	send_con->write_start = &check_rw_start_called;
+	send_con->write_stop = &check_rw_stop_called;
+
+	/* open connection for writing */
+	connection_state(TESTCON_OP_START_RW);
+
+	/* pending write is done */
+	pscom_write_pending_done(send_con, send_req);
+
+	/*
+	 * the connection should be closed for writing
+	 *
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
+	assert_int_equal(send_req->pending_io, 0);
+	assert_true(pscom_con_should_write(send_con));
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_read_peding_done()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_read_pending_done() for open generated request
+ *
+ * Given: A generated request that is currently processed (i.e., con->in.req)
+ * When: pscom_read_peding_done() is called on another unrelated request
+ * Then: the state of the generated request should remain unchanged
+ */
+void test_read_pending_done_unrelated_genreq(void **state)
+{
+	/* obtain the dummy connection from the test setup */
+	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
+
+	/* create generated requests and enqueue to the list of net requests */
+	pscom_req_t *gen_req = pscom_req_create(0, 100);
+	gen_req->pub.connection = &recv_con->pub;
+	_pscom_net_recvq_user_enq(recv_con, gen_req);
+
+	/* set the read_start()/read_stop() functions */
+	recv_con->read_start = &check_rw_start_called;
+	recv_con->read_stop = &check_rw_stop_called;
+
+	/* create another receive request and start pending read */
+	pscom_req_t *recv_req = pscom_req_create(0, 100);
+	recv_req->pub.connection = &recv_con->pub;
+	recv_con->in.req = recv_req;
+
+	/* read_start() should be called at least once */
+	expect_function_calls(check_rw_start_called, 1);
+	expect_value(check_rw_start_called, con, recv_con);
+
+	assert_int_equal(recv_req, pscom_read_pending(recv_con, 0));
+
+
+	/*
+	 * set the appropriate request state:
+	 * -> generated requests
+	 * -> IO has been started
+	 */
+	gen_req->pub.state = PSCOM_REQ_STATE_GRECV_REQUEST;
+	gen_req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
+
+	/* the request shall be the current request of the connection */
+	recv_con->in.req = gen_req;
+
+	/* post the actual receive request */
+	pscom_read_pending_done(recv_con, recv_req);
+
+	/*
+	 * read_start() should be called lastly
+	 * TODO: check connection state, once this is available within the pscom
+	 */
+	assert_int_equal(recv_con->in.req, gen_req);
+	assert_int_equal(connection_state(TESTCON_OP_NOP), TESTCON_STATE_OPENED);
 }

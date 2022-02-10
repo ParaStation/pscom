@@ -69,10 +69,9 @@ void _pscom_sendq_deq(pscom_con_t *con, pscom_req_t *req)
 	       !(req->pub.state & PSCOM_REQ_STATE_IO_STARTED));      /* io not started */
 
 	list_del(&req->next); // dequeue
-	if (list_empty(&con->sendq)) {
-		con->write_stop(con);
-	}
-}
+
+	pscom_con_check_write_stop(con);
+ }
 
 void _pscom_sendq_steal(pscom_con_t *con, pscom_req_t *req)
 {
@@ -120,7 +119,7 @@ void _pscom_pendingio_abort(pscom_con_t *con, pscom_req_t *req)
 }
 
 
-void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
+void _pscom_read_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
 {
 	if (!req->pending_io++) {
 		_pscom_pendingio_enq(con, req);
@@ -139,7 +138,7 @@ void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
 
 
 /* return 1, if cnt dropped to 0. */
-int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
+int _pscom_read_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
 {
 	int done = !(--req->pending_io);
 	if (done) {
@@ -157,6 +156,34 @@ int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
 }
 
 
+void _pscom_write_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req)
+{
+	if (!req->pending_io++) {
+		_pscom_pendingio_enq(con, req);
+
+		/* keep writing on the connection */
+		int start = !con->write_pending_io_cnt++;
+
+		/* only start writing if there is no pending I/O */
+		if (start) {
+			pscom_con_check_write_start(con);
+		}
+	}
+}
+
+
+/* return 1, if cnt dropped to 0. */
+int _pscom_write_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req)
+{
+	int done = !(--req->pending_io);
+	if (done) {
+		con->write_pending_io_cnt--;
+		_pscom_pendingio_deq(con, req);
+
+		pscom_con_check_write_stop(con);
+	}
+	return done;
+}
 /*************
  * Sendq for suspending connections
  */

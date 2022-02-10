@@ -284,7 +284,7 @@ void genreq_pending_io_done(pscom_req_t *greq)
 		genreq_copy_data_done(ureq, greq);
 
 		greq->pending_io_req = NULL;
-		_pscom_pendingio_cnt_dec(con, ureq);
+		_pscom_read_pendingio_cnt_dec(con, ureq);
 
 		_pscom_update_recv_req(ureq);
 		_pscom_grecv_req_done(greq);
@@ -326,7 +326,7 @@ void _genreq_merge(pscom_req_t *newreq, pscom_req_t *genreq)
 		genreq_copy_data_prepare(newreq, genreq);
 		/* genreq_copy_data_done() in genreq_pending_io_done() */
 		genreq->pending_io_req = newreq;
-		_pscom_pendingio_cnt_inc(con, newreq);
+		_pscom_read_pendingio_cnt_inc(con, newreq);
 	} else {
 		/* copy already received data: */
 		genreq_copy_data(newreq, genreq);
@@ -758,7 +758,7 @@ pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con, pscom_header_n
 	pscom_request_free(&req->pub);
 
 	perf_add("rndv_send_done");
-	_pscom_pendingio_cnt_dec(con, user_req); // inc in pscom_prepare_send_rendezvous_inline()
+	_pscom_read_pendingio_cnt_dec(con, user_req); // inc in pscom_prepare_send_rendezvous_inline()
 
 	_pscom_send_req_done(user_req); // done
 
@@ -952,8 +952,14 @@ pscom_read_pending_done(pscom_con_t *con, pscom_req_t *req)
 		assert(!(req->pub.state & PSCOM_REQ_STATE_IO_DONE));
 		assert(req->pending_io != 0);
 
-		if (_pscom_pendingio_cnt_dec(con, req)) {
+		if (_pscom_read_pendingio_cnt_dec(con, req)) {
+			/*
+			 * check if all pending IO is done without updating
+			 * con->in.req (i.e., this has already been done in
+			 * pscom_read_pending())
+			 */
 			_pscom_update_recv_req(req);
+
 			if (req->pub.state & PSCOM_REQ_STATE_GRECV_REQUEST) {
 				genreq_pending_io_done(req);
 			}
@@ -975,7 +981,7 @@ pscom_read_pending(pscom_con_t *con, size_t len)
 		_len = pscom_req_forward(req, len);
 		assert(_len == len);
 
-		_pscom_pendingio_cnt_inc(con, req);
+		_pscom_read_pendingio_cnt_inc(con, req);
 		_pscom_update_in_recv_req(con, req);
 	}
 	return req;
@@ -1103,16 +1109,12 @@ pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2])
 		if (req->cur_data.iov_len || req->cur_header.iov_len) {
 			req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
 			return req;
-		} else {
-			/* Nothing to send. Wait for more data (up
-			   to req->skip bytes) */
-			con->write_stop(con);
-			return 0;
 		}
-	} else {
-		con->write_stop(con);
-		return 0;
 	}
+
+	/* Nothing to send. Wait for more data (up to req->skip bytes) */
+	pscom_con_check_write_stop(con);
+	return 0;
 }
 
 
@@ -1140,7 +1142,7 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 {
 	pscom_forward_iov(&req->cur_header, len);
 
-	_pscom_pendingio_cnt_inc(con, req);
+	_pscom_write_pendingio_cnt_inc(con, req);
 
 	if (send_req_all_io_started(req)) {
 		// Remove req from sendq. The req is still not done yet (has pending io)!
@@ -1152,7 +1154,7 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_write_pending_done(pscom_con_t *con, pscom_req_t *req)
 {
-	if (_pscom_pendingio_cnt_dec(con, req) &&
+	if (_pscom_write_pendingio_cnt_dec(con, req) &&
 	    send_req_all_io_started(req) &&
 	    !(req->pub.state & PSCOM_REQ_STATE_IO_DONE)) {
 		_pscom_send_req_done(req); // done
@@ -1395,7 +1397,7 @@ pscom_req_t *pscom_prepare_send_rendezvous_inline(pscom_req_t *user_req, pscom_m
 	user_req->pub.state = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
 		PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
 
-	_pscom_pendingio_cnt_inc(con, user_req); // Pending rendezvous. Dec in _pscom_get_rendezvous_fin_receiver() or _pscom_con_terminate_sendq()
+	_pscom_read_pendingio_cnt_inc(con, user_req); // Pending rendezvous. Dec in _pscom_get_rendezvous_fin_receiver() or _pscom_con_terminate_sendq()
 
 	return rndv_req;
 

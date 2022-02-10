@@ -27,9 +27,34 @@ void _pscom_sendq_steal(pscom_con_t *con, pscom_req_t *req);
  * Pending io queue
  */
 
-void _pscom_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req);
+void _pscom_read_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req);
 /* return 1, if cnt dropped to 0. */
-int _pscom_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req);
+int _pscom_read_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req);
+
+/**
+ * @brief Increments the counter for pending IO on send requests
+
+This function increments the pending IO counter for send requets and appends it
+to the connection's pending IO queue if appropriate.
+ *
+ * @param [in] con The connection on which the request is processed
+ * @param [in] req The request with pending write IO
+ */
+void _pscom_write_pendingio_cnt_inc(pscom_con_t *con, pscom_req_t *req);
+
+/**
+ * @brief Decrements the counter for pending IO on send requests
+
+This function decrements the pending IO counter for send requets. If this was
+the last pending IO on that requests, it is removed from the connection's
+pending IO queue.
+ *
+ * @param [in] con The connection on which the request is processed
+ * @param [in] req The request with pending write IO
+ *
+ * @return 1 if the counter for pending IO dropped to zero; 0 otherwise.
+ */
+int _pscom_write_pendingio_cnt_dec(pscom_con_t *con, pscom_req_t *req);
 
 void _pscom_pendingio_abort(pscom_con_t *con, pscom_req_t *req);
 
@@ -49,6 +74,13 @@ void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock);
 void _pscom_recv_req_cnt_any_dec(pscom_sock_t *sock);
 void _pscom_recv_req_cnt_any_global_inc();
 void _pscom_recv_req_cnt_any_global_dec();
+
+
+/*************
+ * Send requests
+ */
+void _pscom_send_req_cnt_inc(pscom_con_t *con);
+void _pscom_send_req_cnt_dec(pscom_con_t *con);
 
 
 /*************
