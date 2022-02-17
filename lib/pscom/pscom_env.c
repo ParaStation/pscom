@@ -48,6 +48,12 @@ pscom_env_parser_set_debug_out(void *buf,
 
 
 static pscom_env_table_entry_t pscom_env_table [] = {
+	{"DEBUG_OUT", NULL,
+	 "Debug file name with shell-like expansion of the value (wordexp(8)). "
+	 "(e.g., 'log_${PMI_RANK}_$$')",
+	 &pscom.env.debug_out, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_DEBUG_OUT},
+
 	{"DEBUG",  PSCOM_MAKE_STRING(D_ERR),
 	 "Logging level defining which messages will be printed:\n"
 	 "  PSP_DEBUG=0 only fatal conditions (like detected bugs)\n"
@@ -59,12 +65,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 "  PSP_DEBUG=6 + tracing calls\n",
 	 &pscom.env.debug, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
-
-	{"DEBUG_OUT", NULL,
-	 "Debug file name with shell-like expansion of the value (wordexp(8)). "
-	 "(e.g., 'log_${PMI_RANK}_$$')",
-	 &pscom.env.debug_out, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_DEBUG_OUT},
 
 	{"DEBUG_REQ", "0",
 	 "Manage a list of all requests for debug dumps. This has a "
