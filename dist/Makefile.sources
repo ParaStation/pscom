@@ -249,6 +249,8 @@ test/mocks/misc_mocks.h \
 test/mocks/ucx_mocks.c \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
+test/pscom/test_debug.c \
+test/pscom/test_debug.h \
 test/pscom/test_env.c \
 test/pscom/test_env.h \
 test/pscom/test_io.c \
@@ -261,5 +263,7 @@ test/util/test_utils_con.c \
 test/util/test_utils_con.h \
 test/util/test_utils_cuda.c \
 test/util/test_utils_cuda.h \
+test/util/test_utils_debug.c \
+test/util/test_utils_debug.h \
 test/util/test_utils_env.c \
 test/util/test_utils_env.h
