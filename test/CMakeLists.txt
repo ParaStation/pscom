@@ -100,9 +100,11 @@ add_executable(		pscom_utest
   EXCLUDE_FROM_ALL
   mocks/misc_mocks.c
   pscom_utest.c
+  pscom/test_debug.c
   pscom/test_env.c
   pscom/test_io.c
   util/test_utils_con.c
+  util/test_utils_debug.c
   util/test_utils_env.c
   )
 
