@@ -19,7 +19,41 @@
 #include "pslib.h"
 
 
+/**
+ * @brief Dedicated setter for parsing PSP_DEBUG_OUT
+ *
+ * PSP_DEBUG_OUT has to be handled separately and _before_ the other environment
+ * variables to ensure everything printed with D_PARAM goes to the file
+ * PSP_DEBUG_OUT is pointing to.
+ *
+ * @param [in] buf         Address of the configuration variable to be set.
+ * @param [in] config_val  The string value to be parsed.
+ *
+ * @return 0 If @a config_val could be parsed successfully.
+ */
+static pscom_err_t
+pscom_env_parser_set_debug_out(void *buf,
+			       const char *config_val)
+{
+	pscom_err_t ret = pscom_env_parser_set_config_str(buf, config_val);
+
+	pscom_debug_set_filename(pscom.env.debug_out, 1);
+
+	return ret;
+}
+
+
+#define PSCOM_ENV_PARSER_DEBUG_OUT {pscom_env_parser_set_debug_out, \
+				    pscom_env_parser_get_config_str}
+
+
 static pscom_env_table_entry_t pscom_env_table [] = {
+	{"DEBUG_OUT", NULL,
+	 "Debug file name with shell-like expansion of the value (wordexp(8)). "
+	 "(e.g., 'log_${PMI_RANK}_$$')",
+	 &pscom.env.debug_out, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_DEBUG_OUT},
+
 	{"DEBUG",  PSCOM_MAKE_STRING(D_ERR),
 	 "Logging level defining which messages will be printed:\n"
 	 "  PSP_DEBUG=0 only fatal conditions (like detected bugs)\n"
@@ -31,12 +65,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 "  PSP_DEBUG=6 + tracing calls\n",
 	 &pscom.env.debug, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_INT},
-
-	{"DEBUG_OUT", NULL,
-	 "Debug file name with shell-like expansion of the value (wordexp(8)). "
-	 "(e.g., 'log_${PMI_RANK}_$$')",
-	 &pscom.env.debug_out, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_STR},
 
 	{"DEBUG_REQ", "0",
 	 "Manage a list of all requests for debug dumps. This has a "
@@ -537,7 +565,6 @@ void pscom_env_init(void)
 
 	pscom_env_table_register_and_parse("pscom general", NULL,
 					   pscom_env_table);
-	pscom_debug_set_filename(pscom.env.debug_out, 1);
 
 	pscom_dtime_init();
 

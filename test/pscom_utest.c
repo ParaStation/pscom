@@ -19,6 +19,7 @@
 
 #include "pscom_utest.h"
 #include "pscom/test_cuda.h"
+#include "pscom/test_debug.h"
 #include "pscom/test_env.h"
 #include "pscom/test_io.h"
 
@@ -26,6 +27,7 @@
 
 #include "util/test_utils_con.h"
 #include "util/test_utils_cuda.h"
+#include "util/test_utils_debug.h"
 #include "util/test_utils_env.h"
 
 pscom_utest_t pscom_utest = {
@@ -235,6 +237,17 @@ int main(void)
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_env_tests);
 	failed_tests += cmocka_run_group_tests(pscom_env_tests, NULL, NULL);
+
+	/* pscom_env tests */
+	const struct CMUnitTest pscom_debug_tests[] = {
+		cmocka_unit_test_setup_teardown(
+			test_debug_psp_debug_out_max_debug_level,
+			backup_env_vars,
+			restore_env_vars),
+
+	};
+	total_tests += TEST_GROUP_SIZE(pscom_debug_tests);
+	failed_tests += cmocka_run_group_tests(pscom_debug_tests, NULL, NULL);
 
 #ifdef UCP_ENABLED
 	/* pscom4ucp tests */
