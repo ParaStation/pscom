@@ -304,6 +304,7 @@ void pscom_plugins_init(void)
 #ifndef PSCOM_ALLIN_GATEWAY
 		PSCOM_CON_TYPE_GW,
 #endif
+		PSCOM_CON_TYPE_PORTALS,
 		PSCOM_CON_TYPE_NONE };
 	pscom_con_type_t *tmp;
 

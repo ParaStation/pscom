@@ -145,5 +145,9 @@ if (MXM_ENABLED)
 endif (MXM_ENABLED)
 
 
+if (PORTALS4_ENABLED)
+  add_subdirectory(pscom4portals)
+endif (PORTALS4_ENABLED)
+
 
 # SUBDIRS += p4tcp

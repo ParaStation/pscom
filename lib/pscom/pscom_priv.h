@@ -145,6 +145,11 @@ typedef struct psucp_conn {
 	unsigned		reading : 1;
 } psucp_conn_t;
 
+typedef struct psptl_conn {
+	struct psptl_con_info	*ci;
+	unsigned		reading : 1;
+} psptl_conn_t;
+
 typedef struct psgw_conn {
 	struct psgw_con_info	*ci;
 	unsigned		reading : 1;
@@ -379,8 +384,9 @@ struct PSCOM_con
 		psmxm_conn_t	mxm;
 		psucp_conn_t	ucp;
 		psgw_conn_t	gateway;
-		ondemand_conn_t ondemand;
-		pspsm_conn_t    psm;
+		ondemand_conn_t	ondemand;
+		pspsm_conn_t   	psm;
+		psptl_conn_t	portals;
 		user_conn_t	user; // Future usage (new plugins)
 	}			arch;
 
@@ -529,6 +535,7 @@ extern pscom_t pscom;
 #define PSCOM_ARCH_SUSPEND	/* 118 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_SUSPEND)
 #define PSCOM_ARCH_UCP		/* 119 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_UCP)
 #define PSCOM_ARCH_GW		/* 120 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_GW)
+#define PSCOM_ARCH_PORTALS	/* 121 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_PORTALS)
 
 
 #define PSCOM_TCP_PRIO		2
@@ -545,6 +552,7 @@ extern pscom_t pscom;
 #define PSCOM_MXM_PRIO		30
 #define PSCOM_UCP_PRIO		30
 #define PSCOM_GW_PRIO		10
+#define PSCOM_PORTALS_PRIO	40
 
 typedef uint8_t pscom_msgtype_t;
 

@@ -107,6 +107,7 @@ typedef enum PSCOM_con_type {
 	PSCOM_CON_TYPE_SUSPENDED= 0x11, /**< A suspended connection */
 	PSCOM_CON_TYPE_UCP      = 0x12, /**< UCP communication (e.g., for InfiniBand) */
 	PSCOM_CON_TYPE_GW	= 0x13, /**< Communication via a gateway node */
+	PSCOM_CON_TYPE_PORTALS	= 0x14, /**< Portals4 communication (e.g., for BXI) */
 } pscom_con_type_t;
 
 /**
