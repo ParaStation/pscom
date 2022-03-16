@@ -381,7 +381,7 @@ error_accept:
 
 
 PSCOM_PLUGIN_API_EXPORT
-pscom_plugin_t pscom_plugin = {
+pscom_plugin_t pscom_plugin_dapl = {
 	.name		= "dapl",
 	.version	= PSCOM_PLUGIN_VERSION,
 	.arch_id	= PSCOM_ARCH_DAPL,

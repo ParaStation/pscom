@@ -292,7 +292,7 @@ out_nogm:
 }
 
 PSCOM_PLUGIN_API_EXPORT
-pscom_plugin_t pscom_plugin = {
+pscom_plugin_t pscom_plugin_gm = {
 	.name		= "gm",
 	.version	= PSCOM_PLUGIN_VERSION,
 	.arch_id	= PSCOM_ARCH_GM,

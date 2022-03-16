@@ -115,7 +115,7 @@ void pscom_plugin_register(pscom_plugin_t *plugin, unsigned int user_prio)
 
 #if ENABLE_PLUGIN_LOADING
 static
-pscom_plugin_t *load_plugin_lib(char *lib)
+pscom_plugin_t *load_plugin_lib(char *lib, const char *arch)
 {
 	void *libh;
 	char *errstr;
@@ -123,7 +123,10 @@ pscom_plugin_t *load_plugin_lib(char *lib)
 	libh = dlopen(lib, RTLD_NOW | RTLD_GLOBAL);
 
 	if (libh) {
-		pscom_plugin_t *plugin = dlsym(libh, "pscom_plugin");
+		char plugin_name[128];
+		snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s",
+			 arch);
+		pscom_plugin_t *plugin = dlsym(libh, plugin_name);
 
 		if (plugin) {
 			if (plugin->version == PSCOM_PLUGIN_VERSION) {
@@ -138,7 +141,8 @@ pscom_plugin_t *load_plugin_lib(char *lib)
 			}
 		} else {
 			// Error
-			DPRINT(D_ERR, "Loading %s failed : No symbol 'pscom_plugin'", lib);
+			DPRINT(D_ERR, "Loading %s failed : No symbol '%s'", lib,
+			       plugin_name);
 		}
 		// all errors
 		dlclose(libh);
@@ -202,7 +206,7 @@ void pscom_plugin_load(const pscom_con_type_t con_type)
 			continue;
 		}
 		cnt++;
-		plugin = load_plugin_lib(libpath);
+		plugin = load_plugin_lib(libpath, arch);
 
 		if (plugin) {
 			assert(strcmp(arch, plugin->name) == 0);
