@@ -168,6 +168,48 @@ if(UCP_ENABLED)
   )
 endif(UCP_ENABLED)
 
+if(PORTALS4_ENABLED)
+  target_link_options(pscom_utest
+    PRIVATE
+    -Wl,--wrap=PtlNIInit
+    -Wl,--wrap=PtlNIFini
+    -Wl,--wrap=PtlInit
+    -Wl,--wrap=PtlFini
+    -Wl,--wrap=PtlGetPhysId
+    -Wl,--wrap=PtlEQAlloc
+    -Wl,--wrap=PtlEQFree
+    -Wl,--wrap=PtlEQGet
+    -Wl,--wrap=PtlMDBind
+    -Wl,--wrap=PtlMDRelease
+    -Wl,--wrap=PtlPTAlloc
+    -Wl,--wrap=PtlPTFree
+    -Wl,--wrap=PtlPut
+    -Wl,--wrap=PtlMEAppend
+    -Wl,--wrap=PtlMEUnlink
+  )
+
+  target_include_directories(pscom_utest
+    PRIVATE
+    ${PROJECT_SOURCE_DIR}/lib/pscom4portals
+    ${PORTALS4_INCLUDE_DIRS}
+  )
+
+  target_sources(pscom_utest
+    PRIVATE
+    mocks/portals4_mocks.c
+    pscom4portals/test_pscom4portals.c
+  )
+
+  target_link_libraries(pscom_utest
+    PRIVATE
+    pscom4portals-static
+  )
+
+  target_compile_definitions(pscom_utest
+    PRIVATE PORTALS4_ENABLED
+  )
+endif(PORTALS4_ENABLED)
+
 # CUDA-related configuration
 if(CUDA_ENABLED)
   target_link_options(	pscom_utest
