@@ -25,3 +25,6 @@ target_link_libraries(
 )
 
 plugin_common(pscom4portals)
+
+# Static libpscom4portals for utests
+add_static_target(pscom4portals)
