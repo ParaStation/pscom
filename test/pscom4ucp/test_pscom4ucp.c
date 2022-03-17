@@ -26,7 +26,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// Some forward declarations
 ////////////////////////////////////////////////////////////////////////////////
-extern pscom_plugin_t pscom_plugin;
+extern pscom_plugin_t pscom_plugin_ucp;
 void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit);
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +49,7 @@ void test_ucp_is_initialized_within_plugin(void **state)
 	expect_function_calls(__wrap_ucp_init_version, 1);
 
         /* initialize the pscom4ucp plugin */
-        pscom_plugin.init();
+        pscom_plugin_ucp.init();
 }
 
 
@@ -70,7 +70,7 @@ void test_ucp_disable_fast_initialization(void **state)
         pscom_env_ucp_fastinit_set(0);
 
         /* initialize the pscom4ucp plugin */
-        pscom_plugin.init();
+        pscom_plugin_ucp.init();
 
         /* restore original value of PSP_UCP_FASTINIT */
         if (orig_fastinit) {
@@ -98,7 +98,7 @@ void test_ucp_disable_fast_initialization_via_environment(void **state)
         setenv("PSP_UCP_FASTINIT", "0", 1);
 
         /* initialize the pscom4ucp plugin */
-        pscom_plugin.init();
+        pscom_plugin_ucp.init();
 
         /* restore original value of PSP_UCP_FASTINIT */
         if (orig_fastinit) {

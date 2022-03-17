@@ -347,10 +347,8 @@ void pscom_psm_finalize(void){
 
 #ifndef PSCOM_ALLIN_PSM2
 PSCOM_PLUGIN_API_EXPORT
-pscom_plugin_t pscom_plugin =
-#else
-pscom_plugin_t pscom_plugin_psm =
 #endif
+pscom_plugin_t pscom_plugin_psm =
 {
 	.name		= "psm",
 	.version	= PSCOM_PLUGIN_VERSION,

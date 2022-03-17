@@ -366,7 +366,7 @@ out_noelan:
 
 
 PSCOM_PLUGIN_API_EXPORT
-pscom_plugin_t pscom_plugin = {
+pscom_plugin_t pscom_plugin_elan = {
 	.name		= "elan",
 	.version	= PSCOM_PLUGIN_VERSION,
 	.arch_id	= PSCOM_ARCH_ELAN,

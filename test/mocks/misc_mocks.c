@@ -13,6 +13,7 @@
 #include <stddef.h>
 #include <setjmp.h>
 #include <cmocka.h>
+#include <dlfcn.h>
 
 #include "mocks/misc_mocks.h"
 #include "pscom_utest.h"
@@ -45,4 +46,44 @@ void *__wrap_malloc(size_t size)
 	}
 
 	return __real_malloc(size);
+}
+
+
+/**
+ * \brief Mocking function for dlsym()
+ */
+void *__wrap_dlsym(void *restrict handle, const char *restrict symbol)
+{
+	check_expected(symbol);
+
+	return mock_type(void *);
+}
+
+
+/**
+ * \brief Mocking function for dlopen()
+ */
+void *__wrap_dlopen(const char *filename, int flags)
+{
+	check_expected(filename);
+
+	return mock_type(void *);
+}
+
+
+/**
+ * \brief Mocking function for dlclose()
+ */
+int __wrap_dlclose(void *handle)
+{
+	return 0;
+}
+
+
+/**
+ * \brief Mocking function for dlerror()
+ */
+char *__wrap_dlerror(void)
+{
+	return NULL;
 }
