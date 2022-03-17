@@ -255,6 +255,8 @@ test/pscom/test_env.c \
 test/pscom/test_env.h \
 test/pscom/test_io.c \
 test/pscom/test_io.h \
+test/pscom/test_plugin.c \
+test/pscom/test_plugin.h \
 test/pscom4ucp/test_pscom4ucp.c \
 test/pscom4ucp/test_pscom4ucp.h \
 test/pscom_utest.c \
