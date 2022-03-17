@@ -103,6 +103,7 @@ add_executable(		pscom_utest
   pscom/test_debug.c
   pscom/test_env.c
   pscom/test_io.c
+  pscom/test_plugin.c
   util/test_utils_con.c
   util/test_utils_debug.c
   util/test_utils_env.c
@@ -111,6 +112,10 @@ add_executable(		pscom_utest
 # Mocked functions
 target_link_options(	pscom_utest
   PRIVATE
+  -Wl,--wrap=dlsym
+  -Wl,--wrap=dlopen
+  -Wl,--wrap=dlerror
+  -Wl,--wrap=dlclose
   -Wl,--wrap=memcpy
   -Wl,--wrap=malloc
 #  -static

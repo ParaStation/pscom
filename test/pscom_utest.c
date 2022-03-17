@@ -22,6 +22,7 @@
 #include "pscom/test_debug.h"
 #include "pscom/test_env.h"
 #include "pscom/test_io.h"
+#include "pscom/test_plugin.h"
 
 #include "pscom4ucp/test_pscom4ucp.h"
 
@@ -237,6 +238,16 @@ int main(void)
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_env_tests);
 	failed_tests += cmocka_run_group_tests(pscom_env_tests, NULL, NULL);
+
+	/* pscom_plugin tests */
+	const struct CMUnitTest pscom_plugin_tests[] = {
+		cmocka_unit_test(test_load_plugin_lib),
+		cmocka_unit_test(test_load_plugin_lib_invalid_version),
+		cmocka_unit_test(test_load_plugin_lib_invalid_name),
+		cmocka_unit_test(test_load_plugin_lib_invalid_path),
+	};
+	total_tests += TEST_GROUP_SIZE(pscom_plugin_tests);
+	failed_tests += cmocka_run_group_tests(pscom_plugin_tests, NULL, NULL);
 
 	/* pscom_env tests */
 	const struct CMUnitTest pscom_debug_tests[] = {
