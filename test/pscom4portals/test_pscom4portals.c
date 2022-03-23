@@ -284,22 +284,24 @@ void test_portals_read_on_event_put(void **state)
     /* receive ACK */
     uint64_t seq_id = 0x42;
     char *buf[128];
+    psptl_hca_info_t hca_info = {0};
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
         .recv_seq_id   = seq_id,
         .pending_recvs = LIST_HEAD_INIT(con_info.pending_recvs),
+        .hca_info      = &hca_info,
     };
     psptl_bucket_t bucket = {
         .con_info = &con_info,
         .buf      = (void *)&buf,
     };
-    will_return(__wrap_PtlEQGet, &bucket); /* put events expect a bucket */
-    will_return(__wrap_PtlEQGet, seq_id);  /* expected sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_PUT); /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);     /* no failure */
-    will_return(__wrap_PtlEQGet, sizeof(buf));   /* mlength */
-    will_return(__wrap_PtlEQGet, sizeof(buf));   /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK);        /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bucket); /* put events expect a bucket */
+    will_return(__wrap_PtlEQPoll, seq_id);  /* expected sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT); /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
+    will_return(__wrap_PtlEQPoll, sizeof(buf));   /* mlength */
+    will_return(__wrap_PtlEQPoll, sizeof(buf));   /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK);        /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* ensure pscom4portals is in reading state */
@@ -340,22 +342,24 @@ void test_portals_read_out_of_order_receive(void **state)
 
     /* receive the payload (seq ID: 1) */
     char buf[128]             = "This is the payload";
+    psptl_hca_info_t hca_info = {0};
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
         .recv_seq_id   = 0,
         .pending_recvs = LIST_HEAD_INIT(con_info.pending_recvs),
+        .hca_info      = &hca_info,
     };
     psptl_bucket_t bucket_payload = {
         .con_info = &con_info,
         .buf      = (void *)&buf,
     };
-    will_return(__wrap_PtlEQGet, &bucket_payload); /* bucket for put event */
-    will_return(__wrap_PtlEQGet, 1);               /* unexpected sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_PUT);   /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);       /* no failure */
-    will_return(__wrap_PtlEQGet, strlen(buf));     /* mlength */
-    will_return(__wrap_PtlEQGet, strlen(buf));     /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK);          /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bucket_payload); /* bucket for put event */
+    will_return(__wrap_PtlEQPoll, 1);               /* unexpected sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT);   /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);       /* no failure */
+    will_return(__wrap_PtlEQPoll, strlen(buf));     /* mlength */
+    will_return(__wrap_PtlEQPoll, strlen(buf));     /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK);          /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* receive the header (seq ID: 0) */
@@ -368,13 +372,13 @@ void test_portals_read_out_of_order_receive(void **state)
         .con_info = &con_info,
         .buf      = (void *)&header_net,
     };
-    will_return(__wrap_PtlEQGet, &bucket_header);     /* bucket for put event */
-    will_return(__wrap_PtlEQGet, 0);                  /* expected sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_PUT);      /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);          /* no failure */
-    will_return(__wrap_PtlEQGet, sizeof(header_net)); /* mlength */
-    will_return(__wrap_PtlEQGet, sizeof(header_net)); /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK); /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bucket_header); /* bucket for put event */
+    will_return(__wrap_PtlEQPoll, 0);              /* expected sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT);  /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);      /* no failure */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* mlength */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK); /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
 
@@ -417,22 +421,24 @@ void test_portals_read_three_out_of_order_receive(void **state)
     char buf_one[128]  = "This is the first part of the payload; This is the "
                          "second part of the payload";
     char *buf_two      = buf_one + buf_one_len;
+    psptl_hca_info_t hca_info = {0};
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
         .recv_seq_id   = 0,
         .pending_recvs = LIST_HEAD_INIT(con_info.pending_recvs),
+        .hca_info      = &hca_info,
     };
     psptl_bucket_t bckt_payload_two = {
         .con_info = &con_info,
         .buf      = (void *)buf_two,
     };
-    will_return(__wrap_PtlEQGet, &bckt_payload_two); /* bucket for put event */
-    will_return(__wrap_PtlEQGet, 2);             /* unexpected sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_PUT); /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);     /* no failure */
-    will_return(__wrap_PtlEQGet, strlen(buf_one) - buf_one_len); /* mlength */
-    will_return(__wrap_PtlEQGet, strlen(buf_one) - buf_one_len); /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK); /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bckt_payload_two); /* bucket for put event */
+    will_return(__wrap_PtlEQPoll, 2);             /* unexpected sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT); /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
+    will_return(__wrap_PtlEQPoll, strlen(buf_one) - buf_one_len); /* mlength */
+    will_return(__wrap_PtlEQPoll, strlen(buf_one) - buf_one_len); /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK); /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* receive the payload part one (seq ID: 1) */
@@ -440,13 +446,13 @@ void test_portals_read_three_out_of_order_receive(void **state)
         .con_info = &con_info,
         .buf      = (void *)&buf_one,
     };
-    will_return(__wrap_PtlEQGet, &bckt_payload_one); /* bucket for put event */
-    will_return(__wrap_PtlEQGet, 1);             /* unexpected sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_PUT); /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);     /* no failure */
-    will_return(__wrap_PtlEQGet, buf_one_len);   /* mlength */
-    will_return(__wrap_PtlEQGet, buf_one_len);   /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK);        /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bckt_payload_one); /* bucket for put event */
+    will_return(__wrap_PtlEQPoll, 1);             /* unexpected sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT); /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
+    will_return(__wrap_PtlEQPoll, buf_one_len);   /* mlength */
+    will_return(__wrap_PtlEQPoll, buf_one_len);   /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK);        /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* receive the header (seq ID: 0) */
@@ -459,13 +465,13 @@ void test_portals_read_three_out_of_order_receive(void **state)
         .con_info = &con_info,
         .buf      = (void *)&header_net,
     };
-    will_return(__wrap_PtlEQGet, &bucket_header);     /* bucket for put event */
-    will_return(__wrap_PtlEQGet, 0);                  /* expected sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_PUT);      /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);          /* no failure */
-    will_return(__wrap_PtlEQGet, sizeof(header_net)); /* mlength */
-    will_return(__wrap_PtlEQGet, sizeof(header_net)); /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK); /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bucket_header); /* bucket for put event */
+    will_return(__wrap_PtlEQPoll, 0);              /* expected sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT);  /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);      /* no failure */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* mlength */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK); /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
 
@@ -547,13 +553,13 @@ void test_portals_defer_close_with_outstanding_put_requests(void **state)
     pscom_poll(&pscom.poll_write);
 
     /* ACK not yet received */
-    will_return(__wrap_PtlEQGet, NULL);          /* use saved user pointer */
-    will_return(__wrap_PtlEQGet, 0);             /* sequence ID not important */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_ACK); /* just mock something */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);     /* no failed request */
-    will_return(__wrap_PtlEQGet, 0);             /* mlength */
-    will_return(__wrap_PtlEQGet, 0);             /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_EQ_EMPTY);  /* do not issue an event */
+    will_return(__wrap_PtlEQPoll, NULL); /* use saved user pointer */
+    will_return(__wrap_PtlEQPoll, 0);    /* sequence ID not important */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK); /* just mock something */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failed request */
+    will_return(__wrap_PtlEQPoll, 0);             /* mlength */
+    will_return(__wrap_PtlEQPoll, 0);             /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_EQ_EMPTY);  /* do not issue an event */
     pscom_poll(&pscom.poll_read);
 
     /* stop writing and cleanup polling list */
@@ -591,13 +597,13 @@ void test_portals_close_with_no_outstanding_put_requests(void **state)
     pscom_poll(&pscom.poll_write);
 
     /* receive ACK */
-    will_return(__wrap_PtlEQGet, NULL);          /* use saved user pointer */
-    will_return(__wrap_PtlEQGet, 0);             /* sequence ID not important */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_ACK); /* generate an ACK event */
-    will_return(__wrap_PtlEQGet, PTL_NI_OK);     /* no failed request */
-    will_return(__wrap_PtlEQGet, 0);             /* mlength */
-    will_return(__wrap_PtlEQGet, 0);             /* rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK); /* an event has been generated */
+    will_return(__wrap_PtlEQPoll, NULL); /* use saved user pointer */
+    will_return(__wrap_PtlEQPoll, 0);    /* sequence ID not important */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK); /* generate an ACK event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failed request */
+    will_return(__wrap_PtlEQPoll, 0);             /* mlength */
+    will_return(__wrap_PtlEQPoll, 0);             /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
     pscom_poll(&pscom.poll_read);
 
 
@@ -647,13 +653,13 @@ void test_portals_handle_message_drop(void **state)
         .con_info = &con_info,
         .buf      = (void *)&buf,
     };
-    will_return(__wrap_PtlEQGet, &bucket);        /* bucket for ACK event */
-    will_return(__wrap_PtlEQGet, 0x42);           /* arbitrary sequence ID */
-    will_return(__wrap_PtlEQGet, PTL_EVENT_ACK);  /* issue a PUT event */
-    will_return(__wrap_PtlEQGet, PTL_NI_DROPPED); /* message dropped by recv */
-    will_return(__wrap_PtlEQGet, strlen(buf));    /* arbitrary mlength */
-    will_return(__wrap_PtlEQGet, strlen(buf));    /* arbitrary rlength */
-    will_return(__wrap_PtlEQGet, PTL_OK);         /* event queue not empty */
+    will_return(__wrap_PtlEQPoll, &bucket);        /* bucket for ACK event */
+    will_return(__wrap_PtlEQPoll, 0x42);           /* arbitrary sequence ID */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);  /* issue a PUT event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_DROPPED); /* message dropped by recv */
+    will_return(__wrap_PtlEQPoll, strlen(buf));    /* arbitrary mlength */
+    will_return(__wrap_PtlEQPoll, strlen(buf));    /* arbitrary rlength */
+    will_return(__wrap_PtlEQPoll, PTL_OK);         /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* ensure there is an outstanding put operation */

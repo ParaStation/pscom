@@ -102,6 +102,30 @@ int __wrap_PtlEQGet(ptl_handle_eq_t eq_handle, ptl_event_t *event)
     event->mlength      = mock_type(uint64_t);
     event->rlength      = mock_type(uint64_t);
     event->user_ptr     = user_ptr ? user_ptr : save_user_ptr;
+    event->pt_index     = 0;
+    return mock_type(int);
+}
+
+
+/**
+ * \brief Mocking function for PtlEQPoll()
+ */
+int __wrap_PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
+                     ptl_time_t timeout, ptl_event_t *event,
+                     unsigned int *which)
+{
+    void *user_ptr = mock_type(void *);
+
+    event->hdr_data     = mock_type(uint64_t);
+    event->type         = mock_type(ptl_event_kind_t);
+    event->ni_fail_type = mock_type(ptl_ni_fail_t);
+    event->mlength      = mock_type(uint64_t);
+    event->rlength      = mock_type(uint64_t);
+    event->user_ptr     = user_ptr ? user_ptr : save_user_ptr;
+    event->pt_index     = 0;
+
+    *which = 0;
+
     return mock_type(int);
 }
 

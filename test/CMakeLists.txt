@@ -179,6 +179,7 @@ if(PORTALS4_ENABLED)
     -Wl,--wrap=PtlEQAlloc
     -Wl,--wrap=PtlEQFree
     -Wl,--wrap=PtlEQGet
+    -Wl,--wrap=PtlEQPoll
     -Wl,--wrap=PtlMDBind
     -Wl,--wrap=PtlMDRelease
     -Wl,--wrap=PtlPTAlloc
