@@ -253,6 +253,7 @@ struct PSCOM_env {
 	unsigned int	rendezvous_size_extoll;
 	unsigned int	rendezvous_size_velo;
 	unsigned int	rendezvous_size_openib;
+	unsigned int	rendezvous_size_portals;
 	unsigned int	rendezvous_size_ucp;
 	unsigned int	psm_uniq_id;
 	unsigned int	psm_fastinit;

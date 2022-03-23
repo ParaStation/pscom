@@ -31,9 +31,17 @@ typedef enum psptl_init_state {
 /*
  * Contact endpoint info
  */
+
+typedef enum psptl_prot_type {
+    PSPTL_PROT_EAGER,
+    PSPTL_PROT_RNDV,
+    PSPTL_PROT_COUNT,
+} psptl_prot_type_t;
+
+
 typedef struct psptl_info_msg {
     uint64_t pid;
-    uint32_t pti;
+    uint32_t pti[PSPTL_PROT_COUNT];
 } psptl_info_msg_t;
 
 /* lower level configuration */
@@ -48,15 +56,30 @@ typedef struct psptl {
         size_t bufsize;
         uint32_t sendq_size;
         uint32_t recvq_size;
+        uint32_t max_rndv_reqs;
     } con_params;
     struct {
         uint64_t retry_cnt;
         uint64_t outstanding_put_ops;
+        uint64_t rndv_write;
     } stats;
     psptl_init_state_t init_state;
     struct list_head cleanup_cons;
 } psptl_t;
 
+
+/* memory region for receiving RMA puts (i.e., PtlPut()) */
+typedef struct psptl_rma_mreg {
+    void *priv;
+    uint64_t match_bits;
+} psptl_rma_mreg_t;
+
+typedef struct psptl_rma_req {
+    void (*io_done)(void *priv, int err);
+    void *priv;
+    void *mdh;
+    uint64_t match_bits;
+} psptl_rma_req_t;
 
 extern psptl_t psptl;
 
@@ -83,5 +106,12 @@ void psptl_print_stats(void);
 /* callbacks implemented by upper layer */
 void pscom_portals_sendv_done(void);
 void pscom_portals_recv_done(void *priv, void *buf, size_t len);
+
+/* rendezvous-related interface */
+int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
+                           psptl_rma_mreg_t *rma_mreg);
+void psptl_rma_mem_deregister(psptl_rma_mreg_t *rma_mreg);
+int psptl_post_rma_put(psptl_con_info_t *con_info, void *data, size_t data_len,
+                       psptl_rma_req_t *rma_req);
 
 #endif /* _PSPORTALS_H_ */

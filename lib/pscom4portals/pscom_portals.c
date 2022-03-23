@@ -15,6 +15,7 @@
 
 #include <assert.h>
 #include <errno.h>
+#include <stdlib.h>
 #include <sys/stat.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -37,6 +38,15 @@ pscom_env_table_entry_t pscom_env_table_portals[] = {
     {"EQ_SIZE", "65536", "Size of the event queue.", &psptl.eq_size,
      PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_UINT},
 
+    {"MAX_RNDV_REQS", "4096",
+     "Maximum number of outstanding rendezvous requests per connection.",
+     &psptl.con_params.max_rndv_reqs, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
+
+    {"RENDEZVOUS", "40000", "The rendezvous threshold for pscom4portals.",
+     &pscom.env.rendezvous_size_portals, PSCOM_ENV_ENTRY_HAS_PARENT,
+     PSCOM_ENV_PARSER_UINT},
+
     {0},
 };
 
@@ -48,6 +58,20 @@ static struct {
     pscom_poll_t poll_read;
     unsigned reader_user;
 } pscom_portals_poll;
+
+typedef union pscom_rendezvous_data_portals {
+    /* RMA write: receiver side */
+    struct {
+        psptl_rma_mreg_t rma_mreg; /* descriptor for the RMA region */
+    } rma_write_rx;
+    /* RMA write: sender side */
+    struct {
+        psptl_rma_req_t rma_req;              /* RMA request object */
+        void (*io_done)(void *priv, int err); /* upper layer io_done cb */
+        void *priv;                           /* argument to io_done cb */
+
+    } rma_write_tx;
+} pscom_rendezvous_data_portals_t;
 
 static int pscom_portals_make_progress(pscom_poll_t *poll);
 
@@ -139,6 +163,97 @@ static int pscom_portals_do_write(pscom_poll_t *poll)
     return 0;
 }
 
+static inline pscom_rendezvous_data_portals_t *
+get_req_data(pscom_rendezvous_data_t *rd)
+{
+    _pscom_rendezvous_data_portals_t *data = &rd->arch.portals;
+    pscom_rendezvous_data_portals_t *res   = (pscom_rendezvous_data_portals_t *)
+        data;
+    assert(sizeof(*res) <= sizeof(*data));
+    return res;
+}
+
+
+static unsigned int
+pscom_portals_rma_mem_register(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+{
+    int err = 0;
+
+    pscom_rendezvous_data_portals_t *rd_portals = get_req_data(rd);
+    psptl_rma_mreg_t *psptl_rma_mreg = &rd_portals->rma_write_rx.rma_mreg;
+
+    /* register the RMA region */
+    err = psptl_rma_mem_register(con->arch.portals.ci, rd->msg.data,
+                                 rd->msg.data_len, psptl_rma_mreg);
+    if (err < 0) goto err_out;
+
+    /* provide match bits to the peer */
+    rd->msg.arch.portals.match_bits = psptl_rma_mreg->match_bits;
+
+    return sizeof(rd->msg.arch.portals);
+    /* --- */
+err_out:
+    return 0;
+}
+
+
+static void
+pscom_portals_rma_mem_deregister(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+{
+    pscom_rendezvous_data_portals_t *rd_portals = get_req_data(rd);
+    psptl_rma_mreg_t *psptl_rma_mreg = &rd_portals->rma_write_rx.rma_mreg;
+
+    /* deregister the RMA region */
+    psptl_rma_mem_deregister(psptl_rma_mreg);
+}
+
+
+static void pscom_portals_rma_write_io_done(void *priv, int err)
+{
+    pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)priv;
+    pscom_rendezvous_data_portals_t *rd_portals = get_req_data(rd);
+
+    /* trigger the upper layer io_cone callback */
+    rd_portals->rma_write_tx.io_done(rd_portals->rma_write_tx.priv, err);
+
+    /* free the rendezvous data (allocated in pscom_portals_rma_write()) */
+    free(rd);
+}
+
+
+static int pscom_portals_rma_write(pscom_con_t *con, void *src,
+                                   pscom_rendezvous_msg_t *rndv_msg,
+                                   void (*io_done)(void *priv, int err),
+                                   void *priv)
+{
+    int err;
+    psptl_con_info_t *con_info  = con->arch.portals.ci;
+    pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)malloc(
+        sizeof(*rd));
+    pscom_rendezvous_data_portals_t *rd_portals = get_req_data(rd);
+    psptl_rma_req_t *psptl_rma_req = &rd_portals->rma_write_tx.rma_req;
+
+    /* prepare the internal RMA request */
+    psptl_rma_req->io_done    = pscom_portals_rma_write_io_done;
+    psptl_rma_req->priv       = rd;
+    psptl_rma_req->match_bits = rndv_msg->arch.portals.match_bits;
+
+    /* store the io_done callback information */
+    rd_portals->rma_write_tx.io_done = io_done;
+    rd_portals->rma_write_tx.priv    = priv;
+
+    /* write to the RMA region */
+    err = psptl_post_rma_put(con_info, rndv_msg->data, rndv_msg->data_len,
+                             psptl_rma_req);
+    if (err < 0) goto err_out;
+
+    return 0;
+    /* --- */
+err_out:
+    return -1;
+}
+
+
 static void pscom_portals_con_cleanup(pscom_con_t *con)
 {
     psptl_con_info_t *ci = con->arch.portals.ci;
@@ -163,15 +278,41 @@ static void pscom_poll_write_start_portals(pscom_con_t *con)
     pscom_poll_write_start(con, pscom_portals_do_write);
 }
 
-static void pscom_portals_init_con(pscom_con_t *con)
-{
-    con->pub.type = PSCOM_CON_TYPE_PORTALS;
 
+static void pscom_portals_configure_eager(pscom_con_t *con)
+{
     con->write_start = pscom_poll_write_start_portals;
     con->write_stop  = pscom_poll_write_stop;
 
     con->read_start = pscom_portals_read_start;
     con->read_stop  = pscom_portals_read_stop;
+}
+
+
+static void pscom_portals_configure_rndv_write(pscom_con_t *con)
+{
+    /* memor (de-)registration */
+    con->rma_mem_register       = pscom_portals_rma_mem_register;
+    con->rma_mem_deregister     = pscom_portals_rma_mem_deregister;
+    con->rma_mem_register_check = NULL;
+
+    /* communication */
+    con->rma_write = pscom_portals_rma_write;
+
+    /* the rendezvous threshold */
+    con->rendezvous_size = pscom.env.rendezvous_size_portals;
+}
+
+
+static void pscom_portals_init_con(pscom_con_t *con)
+{
+    con->pub.type = PSCOM_CON_TYPE_PORTALS;
+
+    /* eager communication */
+    pscom_portals_configure_eager(con);
+
+    /* rendezvous RMA write interface */
+    pscom_portals_configure_rndv_write(con);
 
     con->close = pscom_portals_con_close;
 

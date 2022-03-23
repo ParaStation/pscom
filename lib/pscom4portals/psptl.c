@@ -25,6 +25,8 @@
 #define PSPTL_PUT_FLAGS                                                        \
     (PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE | PTL_ME_OP_PUT)
 #define PSPTL_USE_ONCE (PTL_ME_USE_ONCE)
+#define PSPTL_RMA_WRITE_FLAGS                                                  \
+    (PSPTL_PUT_FLAGS | PTL_ME_EVENT_COMM_DISABLE | PTL_ME_USE_ONCE)
 
 #define psptl_dprint(debug_level, fmt, arg...)                                 \
     do {                                                                       \
@@ -38,9 +40,9 @@ typedef struct psptl_bucket psptl_bucket_t;
 
 struct psptl_hca_info {
     ptl_handle_ni_t nih;
-    ptl_handle_eq_t eqh;
-    ptl_handle_md_t mdh;
-    ptl_pt_index_t pti;
+    ptl_handle_eq_t eqh[PSPTL_PROT_COUNT];
+    ptl_handle_md_t mdh[PSPTL_PROT_COUNT];
+    ptl_pt_index_t pti[PSPTL_PROT_COUNT];
     union {
         ptl_process_t ptl_pid;
         uint64_t raw;
@@ -52,7 +54,7 @@ typedef struct psptl_remote_con_info {
         ptl_process_t ptl_pid;
         uint64_t raw;
     } pid;
-    ptl_pt_index_t pti;
+    ptl_pt_index_t pti[PSPTL_PROT_COUNT];
 } psptl_remote_con_info_t;
 
 struct psptl_con_info {
@@ -60,7 +62,9 @@ struct psptl_con_info {
     psptl_remote_con_info_t remote_ci;
     uint64_t send_seq_id;
     uint64_t recv_seq_id;
+    uint64_t rndv_seq_id;
     uint64_t outstanding_put_ops;
+    uint32_t outstanding_rndv_reqs;
     struct {
         void *mem;
         psptl_bucket_t *buckets;
@@ -81,6 +85,8 @@ typedef struct psptl_bucket {
     void *buf;
     size_t len;
     uint64_t seq_id;
+    uint64_t match_bits;
+    uint64_t ignore_bits;
     uint8_t in_use;
     ptl_handle_me_t meh;
     struct list_head next;
@@ -99,6 +105,7 @@ psptl_t psptl = {
         {
             .retry_cnt           = 0,
             .outstanding_put_ops = 0,
+            .rndv_write          = 0,
         },
     .init_state   = PSPORTALS_NOT_INITIALIZED,
     .cleanup_cons = LIST_HEAD_INIT(psptl.cleanup_cons),
@@ -140,6 +147,21 @@ static inline void psptl_pending_bucket_insert(psptl_bucket_t *bucket)
 
     /* insert the bucket */
     list_add_tail(&bucket->next, pos);
+}
+
+
+static const char *psptl_prot_str(psptl_prot_type_t protocol)
+{
+    static char buf[100];
+
+    switch (protocol) {
+    case PSPTL_PROT_EAGER: return "PSPTL_PROT_EAGER";
+    case PSPTL_PROT_RNDV: return "PSPTL_PROT_RNDV";
+    default: {
+        snprintf(buf, sizeof(buf), "unknown protocol (%d)", protocol);
+        return buf;
+    }
+    }
 }
 
 
@@ -211,7 +233,8 @@ static const char *psptl_event_str(ptl_event_t event)
 
 
 static int psptl_register_recv_buffer(psptl_bucket_t *recv_bucket,
-                                      uint32_t options, int32_t list)
+                                      uint32_t options, int32_t list,
+                                      ptl_pt_index_t pti, size_t len)
 {
     int ret;
     psptl_hca_info_t *hca_info = psptl.hca_info;
@@ -219,18 +242,18 @@ static int psptl_register_recv_buffer(psptl_bucket_t *recv_bucket,
 
     /* create a list entry for the receive buffer */
     ptl_me_t me = {
-        .start      = recv_bucket->buf,         /* start address */
-        .length     = psptl.con_params.bufsize, /* size of the mem region*/
-        .uid        = PTL_UID_ANY,              /* any usage ID */
-        .options    = options,                  /* ME-related flags */
-        .match_bits = 0,                        /* disable matching for now */
+        .start      = recv_bucket->buf,        /* start address */
+        .length     = len,                     /* size of the mem region*/
+        .uid        = PTL_UID_ANY,             /* any usage ID */
+        .options    = options,                 /* ME-related flags */
+        .match_bits = recv_bucket->match_bits, /* bits to be matched */
         .match_id =
             con_info->remote_ci.pid.ptl_pid, /* only messages from the peer */
-        .ignore_bits = ~0,                   /* disable matching for now */
+        .ignore_bits = recv_bucket->ignore_bits, /* bits to be ignored */
     };
 
     /* append it to the matching list */
-    ret = PtlMEAppend(hca_info->nih, hca_info->pti, &me, list, recv_bucket,
+    ret = PtlMEAppend(hca_info->nih, pti, &me, list, recv_bucket,
                       &recv_bucket->meh);
     if (ret != PTL_OK) goto err_out;
 
@@ -268,6 +291,7 @@ static int psptl_create_recv_queue(uint32_t num_bufs, size_t buf_len,
 {
     uint32_t i;
     ssize_t ret;
+    psptl_hca_info_t *hca_info = con_info->hca_info;
 
     /* allocate memory for the receive buffers */
     con_info->recv_buffers.mem = malloc(num_bufs * buf_len);
@@ -283,12 +307,16 @@ static int psptl_create_recv_queue(uint32_t num_bufs, size_t buf_len,
         psptl_bucket_t *cur_bucket = &con_info->recv_buffers.buckets[i];
         uint32_t flags             = (PSPTL_PUT_FLAGS | PSPTL_USE_ONCE);
 
-        cur_bucket->buf      = buf;
-        cur_bucket->con_info = con_info;
+        cur_bucket->buf         = buf;
+        cur_bucket->con_info    = con_info;
+        cur_bucket->match_bits  = 0;
+        cur_bucket->ignore_bits = ~0;
         INIT_LIST_HEAD(&cur_bucket->next);
 
         /* register the memory region */
-        ret = psptl_register_recv_buffer(cur_bucket, flags, PTL_PRIORITY_LIST);
+        ret = psptl_register_recv_buffer(cur_bucket, flags, PTL_PRIORITY_LIST,
+                                         hca_info->pti[PSPTL_PROT_EAGER],
+                                         buf_len);
         if (ret < 0) goto err_out;
     }
 
@@ -389,17 +417,22 @@ int psptl_con_connect(psptl_con_info_t *con_info, psptl_info_msg_t *info_msg)
 
     /* set the remote connection information */
     con_info->remote_ci.pid.raw = info_msg->pid;
-    con_info->remote_ci.pti     = info_msg->pti;
+    memcpy(con_info->remote_ci.pti, info_msg->pti,
+           PSPTL_PROT_COUNT * sizeof(uint32_t));
 
     /* initialize the sequence IDs */
     con_info->send_seq_id = 0;
     con_info->recv_seq_id = 0;
+    con_info->rndv_seq_id = 0;
 
     /* initialize the counter for pending put operations */
-    con_info->outstanding_put_ops = 0;
+    con_info->outstanding_put_ops   = 0;
+    con_info->outstanding_rndv_reqs = 0;
 
-    psptl_dprint(D_DBG_V, "Remote con_info (pid: %lu, pti: %u)",
-                 con_info->remote_ci.pid.raw, con_info->remote_ci.pti);
+    psptl_dprint(D_DBG_V, "Remote con_info (pid: %lu, ptis: [%u,%u])",
+                 con_info->remote_ci.pid.raw,
+                 con_info->remote_ci.pti[PSPTL_PROT_EAGER],
+                 con_info->remote_ci.pti[PSPTL_PROT_RNDV]);
 
     /* create the send and receive queue */
     ret = psptl_create_recv_queue(psptl.con_params.recvq_size,
@@ -437,6 +470,7 @@ out:
 static void psptl_cleanup_hca(psptl_hca_info_t *hca_info)
 {
     int ret;
+    psptl_prot_type_t prot;
 
     /* now cleanup the connections that had pending put operations */
     struct list_head *pos, *next;
@@ -459,17 +493,19 @@ static void psptl_cleanup_hca(psptl_hca_info_t *hca_info)
         psptl_con_free(con_info);
     }
 
-    /* free the PT handle */
-    ret = PtlPTFree(hca_info->nih, hca_info->pti);
-    if (ret != PTL_OK) goto err_pt_free;
+    for (prot = 0; prot < PSPTL_PROT_COUNT; ++prot) {
+        /* free the PT handle */
+        ret = PtlPTFree(hca_info->nih, hca_info->pti[prot]);
+        if (ret != PTL_OK) goto err_pt_free;
 
-    /* release the MD handle */
-    ret = PtlMDRelease(hca_info->mdh);
-    if (ret != PTL_OK) goto err_md_release;
+        /* release the MD handle */
+        ret = PtlMDRelease(hca_info->mdh[prot]);
+        if (ret != PTL_OK) goto err_md_release;
 
-    /* free the event queue */
-    ret = PtlEQFree(hca_info->eqh);
-    if (ret != PTL_OK) goto err_eq_free;
+        /* free the event queue */
+        ret = PtlEQFree(hca_info->eqh[prot]);
+        if (ret != PTL_OK) goto err_eq_free;
+    }
 
     /* release NI resources */
     ret = PtlNIFini(hca_info->nih);
@@ -478,15 +514,18 @@ static void psptl_cleanup_hca(psptl_hca_info_t *hca_info)
     return;
     /* --- */
 err_pt_free:
-    psptl_dprint(D_ERR, "PtlPTFree() failed: '%s'", psptl_err_str(ret));
+    psptl_dprint(D_ERR, "PtlPTFree() failed (prot: %s): '%s'",
+                 psptl_prot_str(prot), psptl_err_str(ret));
     goto err_out;
     /* --- */
 err_md_release:
-    psptl_dprint(D_ERR, "PtlMDRelease() failed: '%s'", psptl_err_str(ret));
+    psptl_dprint(D_ERR, "PtlMDRelease() failed (prot: %s): '%s'",
+                 psptl_prot_str(prot), psptl_err_str(ret));
     goto err_out;
     /* --- */
 err_eq_free:
-    psptl_dprint(D_ERR, "PtlEQFree() failed: '%s'", psptl_err_str(ret));
+    psptl_dprint(D_ERR, "PtlEQFree() failed (prot: %s): '%s'",
+                 psptl_prot_str(prot), psptl_err_str(ret));
     goto err_out;
     /* --- */
 err_ni_fini:
@@ -501,6 +540,7 @@ err_out:
 static int psptl_init_hca(psptl_hca_info_t *hca_info)
 {
     int ret;
+    psptl_prot_type_t prot;
 
     /* initialize the network interface */
     int init_opts = (PTL_NI_MATCHING | PTL_NI_PHYSICAL);
@@ -517,38 +557,42 @@ static int psptl_init_hca(psptl_hca_info_t *hca_info)
     if (ret != PTL_OK) goto err_get_id;
 
     /* build the event queues */
-    ret = PtlEQAlloc(hca_info->nih, psptl.eq_size, &hca_info->eqh);
-    if (ret != PTL_OK) goto err_eq_alloc;
+    for (prot = 0; prot < PSPTL_PROT_COUNT; ++prot) {
+        ret = PtlEQAlloc(hca_info->nih, psptl.eq_size, &hca_info->eqh[prot]);
+        if (ret != PTL_OK) goto err_eq_alloc;
 
-    /* bind the whole VA to avoid regular calls to PtlMDBind */
-    ptl_md_t md = {
-        .start     = 0,
-        .length    = PTL_SIZE_MAX,
-        .options   = (PTL_MD_EVENT_SEND_DISABLE | PTL_MD_VOLATILE),
-        .eq_handle = hca_info->eqh,
-        .ct_handle = PTL_CT_NONE,
-    };
-    ret = PtlMDBind(hca_info->nih, &md, &hca_info->mdh);
-    if (ret != PTL_OK) goto err_md_bind;
+        /* bind the whole VA to avoid regular calls to PtlMDBind */
+        ptl_md_t md = {
+            .start     = 0,
+            .length    = PTL_SIZE_MAX,
+            .options   = (PTL_MD_EVENT_SEND_DISABLE | PTL_MD_VOLATILE),
+            .eq_handle = hca_info->eqh[prot],
+            .ct_handle = PTL_CT_NONE,
+        };
+        ret = PtlMDBind(hca_info->nih, &md, &hca_info->mdh[prot]);
+        if (ret != PTL_OK) goto err_md_bind;
 
-    /* request a portals index */
-    ret = PtlPTAlloc(hca_info->nih,   /* interface handle */
-                     0,               /* disable flow control */
-                     hca_info->eqh,   /* event queue handle */
-                     PTL_PT_ANY,      /* no specific PTI */
-                     &hca_info->pti); /* the assigned PTI */
-    if (ret != PTL_OK) goto err_pt_alloc;
+        /* request a portals index for the respective communication protocol */
+        ret = PtlPTAlloc(hca_info->nih,         /* interface handle */
+                         0,                     /* disable flow control */
+                         hca_info->eqh[prot],   /* event queue handle */
+                         PTL_PT_ANY,            /* no specific PTI */
+                         &hca_info->pti[prot]); /* the assigned PTI */
+        if (ret != PTL_OK) goto err_pt_alloc;
+    }
 
     psptl_dprint(D_DBG_V, "HCA initialized!");
 
     return 0;
     /* --- */
 err_pt_alloc:
-    psptl_dprint(D_ERR, "PtlPTAlloc() failed: '%s'", psptl_err_str(ret));
+    psptl_dprint(D_ERR, "PtlPTAlloc() failed (prot: %s): '%s'",
+                 psptl_prot_str(prot), psptl_err_str(ret));
     goto err_out;
     /* --- */
 err_md_bind:
-    psptl_dprint(D_ERR, "PtlMDBind() failed: '%s'", psptl_err_str(ret));
+    psptl_dprint(D_ERR, "PtlMDBind() failed (prot: %s): '%s'",
+                 psptl_prot_str(prot), psptl_err_str(ret));
     goto err_out;
     /* --- */
 err_get_id:
@@ -556,7 +600,8 @@ err_get_id:
     goto err_out;
     /* --- */
 err_eq_alloc:
-    psptl_dprint(D_ERR, "PtlEQAlloc() failed: '%s'", psptl_err_str(ret));
+    psptl_dprint(D_ERR, "PtlEQAlloc() failed (prot: %s): '%s'",
+                 psptl_prot_str(prot), psptl_err_str(ret));
     /* --- */
 err_out:
     psptl_cleanup_hca(hca_info);
@@ -626,6 +671,7 @@ static void psptl_bucket_send_done(psptl_bucket_t *send_bucket)
 static void psptl_req_recv_done(psptl_bucket_t *recv_bucket)
 {
     psptl_con_info_t *con_info = recv_bucket->con_info;
+    psptl_hca_info_t *hca_info = con_info->hca_info;
     size_t len                 = recv_bucket->len;
 
     /* tell the upper layer that some IO was done */
@@ -633,7 +679,9 @@ static void psptl_req_recv_done(psptl_bucket_t *recv_bucket)
 
     /* re-register the buffer */
     psptl_register_recv_buffer(recv_bucket, (PSPTL_PUT_FLAGS | PSPTL_USE_ONCE),
-                               PTL_PRIORITY_LIST);
+                               PTL_PRIORITY_LIST,
+                               hca_info->pti[PSPTL_PROT_EAGER],
+                               psptl.con_params.bufsize);
 
     con_info->recv_seq_id++;
 
@@ -692,16 +740,16 @@ static void psptl_bucket_send_retry(psptl_bucket_t *send_bucket)
     void *send_buf = send_bucket->buf;
 
     /* Transmit the messages via put operation */
-    ret = PtlPut(hca_info->mdh,          /* local memory handle */
-                 (uint64_t)send_buf,     /* local offset */
+    ret = PtlPut(hca_info->mdh[PSPTL_PROT_EAGER], /* local memory handle */
+                 (uint64_t)send_buf,              /* local offset */
                  len,                    /* amount of bytes to be sent */
                  PTL_ACK_REQ,            /* request a full event */
                  remote_ci->pid.ptl_pid, /* peer process ID */
-                 remote_ci->pti,         /* remote portals index */
-                 0,                      /* match bits */
-                 0,                      /* remote offset */
-                 send_bucket,            /* local user pointer */
-                 send_bucket->seq_id);   /* no header */
+                 remote_ci->pti[PSPTL_PROT_EAGER], /* remote portals index */
+                 0,                                /* match bits */
+                 0,                                /* remote offset */
+                 send_bucket,                      /* local user pointer */
+                 send_bucket->seq_id);             /* no header */
     if (ret != PTL_OK) goto err_put;
 
     /* increase some counters */
@@ -715,14 +763,37 @@ err_put:
     return;
 }
 
+static void psptl_handle_eager_ack(psptl_bucket_t *send_bucket, uint8_t done)
+{
+    psptl_con_info_t *con_info = send_bucket->con_info;
+
+    /* decrease the pending put counter */
+    con_info->outstanding_put_ops--;
+
+    if (done) {
+        psptl_bucket_send_done(send_bucket);
+    } else {
+        psptl_bucket_send_retry(send_bucket);
+    }
+}
+
+
+static void psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, int err)
+{
+    rma_req->io_done(rma_req->priv, err);
+
+    return;
+}
+
 
 int psptl_progress(void)
 {
     int ret;
+    unsigned int eqh_idx;
     ptl_event_t event;
     psptl_hca_info_t *hca_info = psptl.hca_info;
 
-    ret = PtlEQGet(hca_info->eqh, &event);
+    ret = PtlEQPoll(hca_info->eqh, 2, 0, &event, &eqh_idx);
 
     /* no progress */
     if (ret == PTL_EQ_EMPTY) {
@@ -733,26 +804,26 @@ int psptl_progress(void)
 
     switch (event.type) {
     case PTL_EVENT_ACK: {
-        psptl_bucket_t *send_bucket = (psptl_bucket_t *)(event.user_ptr);
-        psptl_con_info_t *con_info  = send_bucket->con_info;
-
-        /* decrease the pending put counter */
-        con_info->outstanding_put_ops--;
-
-        if (event.ni_fail_type == PTL_NI_OK) {
-            psptl_bucket_send_done(send_bucket);
+        if (eqh_idx == PSPTL_PROT_EAGER) {
+            psptl_handle_eager_ack((psptl_bucket_t *)(event.user_ptr),
+                                   (event.ni_fail_type == PTL_NI_OK));
         } else {
-            psptl_bucket_send_retry(send_bucket);
+            psptl_handle_rndv_ack((psptl_rma_req_t *)(event.user_ptr),
+                                  (event.ni_fail_type != PTL_NI_OK));
         }
         break;
     }
     case PTL_EVENT_PUT: {
+        /* PUT events are only generated for eager messages */
+        assert(event.pt_index == hca_info->pti[PSPTL_PROT_EAGER]);
+
         psptl_handle_put_event(event);
         break;
     }
     case PTL_EVENT_SEND: break;
     default:
-        psptl_dprint(D_ERR, "Unhandled event: %s!", psptl_event_str(event));
+        psptl_dprint(D_ERR, "Unhandled event: %s (eqh: %d)!",
+                     psptl_event_str(event), eqh_idx);
 
         break;
     }
@@ -792,16 +863,16 @@ ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len)
     pscom_memcpy_from_iov(send_buf, iov, len);
 
     /* transmit the messages via put operation */
-    ret = PtlPut(hca_info->mdh,          /* local memory handle */
-                 (uint64_t)send_buf,     /* local offset */
+    ret = PtlPut(hca_info->mdh[PSPTL_PROT_EAGER], /* local memory handle */
+                 (uint64_t)send_buf,              /* local offset */
                  len,                    /* amount of bytes to be sent */
                  PTL_ACK_REQ,            /* request a full event */
                  remote_ci->pid.ptl_pid, /* peer process ID */
-                 remote_ci->pti,         /* remote portals index */
-                 0,                      /* match bits */
-                 0,                      /* remote offset */
-                 send_bucket,            /* local user pointer */
-                 send_bucket->seq_id);   /* sequence number */
+                 remote_ci->pti[PSPTL_PROT_EAGER], /* remote portals index */
+                 0,                                /* match bits */
+                 0,                                /* remote offset */
+                 send_bucket,                      /* local user pointer */
+                 send_bucket->seq_id);             /* sequence number */
     if (ret != PTL_OK) goto err_put;
 
     /* increase the pending put counter */
@@ -841,10 +912,12 @@ void psptl_con_get_info_msg(psptl_con_info_t *con_info,
                             psptl_info_msg_t *info_msg)
 {
     info_msg->pid = (uint64_t)(con_info->hca_info->pid.raw);
-    info_msg->pti = (uint32_t)(con_info->hca_info->pti);
+    memcpy(info_msg->pti, con_info->hca_info->pti,
+           PSPTL_PROT_COUNT * sizeof(uint32_t));
 
-    psptl_dprint(D_DBG_V, "Local con_info (pid: %lu, pti: %u)", info_msg->pid,
-                 info_msg->pti);
+    psptl_dprint(D_DBG_V, "Local con_info (pid: %lu, ptis: [%u,%u])",
+                 info_msg->pid, info_msg->pti[PSPTL_PROT_EAGER],
+                 info_msg->pti[PSPTL_PROT_RNDV]);
 }
 
 
@@ -853,4 +926,91 @@ void psptl_print_stats(void)
     psptl_dprint(D_STATS, "retry_cnt           : %8lu", psptl.stats.retry_cnt);
     psptl_dprint(D_STATS, "outstanding_put_ops : %8lu",
                  psptl.stats.outstanding_put_ops);
+    psptl_dprint(D_STATS, "rndv_write          : %8lu", psptl.stats.rndv_write);
+}
+
+
+int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
+                           psptl_rma_mreg_t *rma_mreg)
+{
+    int ret;
+    psptl_hca_info_t *hca_info = con_info->hca_info;
+
+    if (con_info->outstanding_rndv_reqs >= psptl.con_params.max_rndv_reqs) {
+        goto err_out;
+    }
+
+    psptl_bucket_t *rndv_bucket = (psptl_bucket_t *)malloc(
+        sizeof(*rndv_bucket));
+
+    rndv_bucket->buf         = buf;
+    rndv_bucket->con_info    = con_info;
+    rndv_bucket->match_bits  = con_info->rndv_seq_id++; /* con-local seq ID */
+    rndv_bucket->ignore_bits = 0;
+
+    /* update the RMA request */
+    rma_mreg->match_bits = rndv_bucket->match_bits;
+    rma_mreg->priv       = rndv_bucket;
+
+    ret = psptl_register_recv_buffer(rndv_bucket, PSPTL_RMA_WRITE_FLAGS,
+                                     PTL_PRIORITY_LIST,
+                                     hca_info->pti[PSPTL_PROT_RNDV], len);
+    if (ret < 0) goto err_mem_register;
+
+    con_info->outstanding_rndv_reqs++;
+
+    return 0;
+    /* --- */
+err_mem_register:
+    psptl_dprint(D_ERR, "Failed to register rendezvous buffer %p\n", buf);
+err_out:
+    return -1;
+}
+
+
+void psptl_rma_mem_deregister(psptl_rma_mreg_t *rma_mreg)
+{
+    psptl_bucket_t *rndv_bucket = (psptl_bucket_t *)(rma_mreg->priv);
+    psptl_con_info_t *con_info  = rndv_bucket->con_info;
+
+    /* PtlMEUnlink not required due to PSPTL_USE_ONCE */
+    con_info->outstanding_rndv_reqs--;
+
+    /* free the corresponding bucket */
+    free(rma_mreg->priv);
+}
+
+
+int psptl_post_rma_put(psptl_con_info_t *con_info, void *data, size_t data_len,
+                       psptl_rma_req_t *rma_req)
+{
+    int ret;
+    psptl_hca_info_t *hca_info         = con_info->hca_info;
+    psptl_remote_con_info_t *remote_ci = &con_info->remote_ci;
+
+    /* Transmit the messages via put operation */
+    ret = PtlPut(hca_info->mdh[PSPTL_PROT_RNDV], /* local memory handle */
+                 (uint64_t)data,                 /* local offset */
+                 data_len,               /* amount of bytes to be sent */
+                 PTL_ACK_REQ,            /* request a full event */
+                 remote_ci->pid.ptl_pid, /* peer process ID */
+                 remote_ci->pti[PSPTL_PROT_RNDV], /* remote portals index */
+                 rma_req->match_bits,             /* match bits */
+                 0,                               /* do not ignore any bit */
+                 rma_req,                         /* local user pointer */
+                 0);                              /* no header */
+    if (ret != PTL_OK) goto err_put;
+
+    /* take some statistics */
+    psptl.stats.rndv_write++;
+    // TODO: Do we need to increase `outstanding_put_ops`?
+
+    return 0;
+    /* --- */
+err_put:
+    psptl_dprint(D_ERR, "PtlPut() failed: '%s'", psptl_err_str(ret));
+    goto err_out;
+    /* --- */
+err_out:
+    return -1;
 }

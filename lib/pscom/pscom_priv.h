@@ -219,6 +219,9 @@ typedef struct pscom_rendezvous_msg {
 			int  padding_size;
 			char padding_data[64]; // >= IB_RNDV_PADDING_SIZE (see psoib.h)
 		} openib;
+		struct {
+			uint64_t /* ptl_match_bits_t */	match_bits;
+		} portals;
 	}	arch;
 } pscom_rendezvous_msg_t;
 
@@ -265,6 +268,12 @@ typedef struct _pscom_rendezvous_data_openib {
 } _pscom_rendezvous_data_openib_t;
 
 
+typedef struct _pscom_rendezvous_data_portals {
+	/* placeholder for struct pscom_rendezvous_data_portals */
+	char /* struct psiob_rma_req */ _rma_req[128]; /* ??? */
+} _pscom_rendezvous_data_portals_t;
+
+
 typedef struct pscom_rendezvous_data {
 	pscom_rendezvous_msg_t	msg;
 	size_t			msg_arch_len;
@@ -273,6 +282,7 @@ typedef struct pscom_rendezvous_data {
 		_pscom_rendezvous_data_dapl_t	dapl;
 		_pscom_rendezvous_data_extoll_t	extoll;
 		_pscom_rendezvous_data_openib_t openib;
+		_pscom_rendezvous_data_portals_t portals;
 	}		arch;
 } pscom_rendezvous_data_t;
 
