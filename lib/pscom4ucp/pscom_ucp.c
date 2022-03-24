@@ -52,7 +52,7 @@ pscom_env_table_entry_t pscom_env_table_ucp [] = {
 	 &psucp_small_msg_len, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{NULL},
+	{0},
 };
 
 

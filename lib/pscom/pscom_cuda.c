@@ -56,7 +56,7 @@ pscom_env_table_entry_t pscom_env_table_cuda [] = {
 	 "Enable/Disable the CUDA awareness of the pscom4extoll plugin.",
 	 &pscom.env.cuda_aware_extoll, 0, PSCOM_ENV_PARSER_UINT},
 
-	{NULL},
+	{0},
 };
 
 

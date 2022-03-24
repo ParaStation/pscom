@@ -41,7 +41,7 @@ static pscom_env_table_entry_t pscom_env_table_velo [] = {
 	 &psex_mregion_cache_max_size, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 #endif
-	{NULL},
+	{0},
 };
 
 
