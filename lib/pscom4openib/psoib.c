@@ -58,7 +58,7 @@ typedef struct {
 } ringbuf_t;
 
 
-struct hca_info {
+struct psoib_hca_info {
     struct ibv_context *ctx;
     struct ibv_cq      *cq; /* handle to cq */
     struct ibv_pd      *pd; /* Protection domain */
@@ -82,7 +82,7 @@ static void psoib_rma_reqs_deq(psoib_rma_req_t *dreq);
 struct port_info {
     uint8_t	port_num;
     uint16_t	lid;
-    hca_info_t *hca_info;
+    psoib_hca_info_t *hca_info;
 };
 
 
@@ -92,9 +92,9 @@ struct psoib_con_info {
     unsigned long magic;
     /* low level */
     struct ibv_qp *qp;
-    struct ibv_context *ctx; // <- copy from hca_info_t
+    struct ibv_context *ctx; // <- copy from psoib_hca_info_t
     port_info_t *port_info;
-    hca_info_t *hca_info;
+    psoib_hca_info_t *hca_info;
 
     /* send */
     unsigned int remote_recv_pos; /* next to use receive buffer (= remote recv_pos) */
@@ -143,7 +143,7 @@ typedef struct {
  * static variables
  */
 
-static hca_info_t  default_hca;
+static psoib_hca_info_t  psoib_default_hca;
 static port_info_t default_port;
 unsigned psoib_outstanding_cq_entries = 0;
 
@@ -474,7 +474,7 @@ struct ibv_pd *psoib_open_pd(struct ibv_context *ctx)
 
 
 static
-void psoib_vapi_free(hca_info_t *hca_info, mem_info_t *mem_info)
+void psoib_vapi_free(psoib_hca_info_t *hca_info, mem_info_t *mem_info)
 {
     ibv_dereg_mr(/*hca_info->ctx,*/ mem_info->mr);
     mem_info->mr = NULL;
@@ -505,7 +505,7 @@ void print_mlock_help(size_t size)
 }
 
 static
-int psoib_vapi_alloc(hca_info_t *hca_info, int size, enum ibv_access_flags access_perm, mem_info_t *mem_info)
+int psoib_vapi_alloc(psoib_hca_info_t *hca_info, int size, enum ibv_access_flags access_perm, mem_info_t *mem_info)
 {
     mem_info->mr = NULL;
 
@@ -533,9 +533,9 @@ int psoib_vapi_alloc(hca_info_t *hca_info, int size, enum ibv_access_flags acces
 }
 
 
-void psoib_con_cleanup(psoib_con_info_t *con_info, hca_info_t *hca_info)
+void psoib_con_cleanup(psoib_con_info_t *con_info, psoib_hca_info_t *hca_info)
 {
-    if (!hca_info) hca_info = &default_hca;
+    if (!hca_info) hca_info = &psoib_default_hca;
 
     list_del_init(&con_info->next_con_info);
 
@@ -627,11 +627,11 @@ int move_to_rts(struct ibv_qp *qp)
 }
 
 
-int psoib_con_init(psoib_con_info_t *con_info, hca_info_t *hca_info, port_info_t *port_info)
+int psoib_con_init(psoib_con_info_t *con_info, psoib_hca_info_t *hca_info, port_info_t *port_info)
 {
     unsigned int i;
 
-    if (!hca_info) hca_info = &default_hca;
+    if (!hca_info) hca_info = &psoib_default_hca;
     if (!port_info) port_info = &default_port;
 
     con_info->ctx = hca_info->ctx;
@@ -761,7 +761,7 @@ int psoib_con_connect(psoib_con_info_t *con_info, psoib_info_msg_t *info_msg)
 }
 
 static
-void psoib_cleanup_hca(hca_info_t *hca_info)
+void psoib_cleanup_hca(psoib_hca_info_t *hca_info)
 {
     if (hca_info->send.bufs.mr) {
 	psoib_vapi_free(hca_info, &hca_info->send.bufs);
@@ -789,7 +789,7 @@ void psoib_cleanup_hca(hca_info_t *hca_info)
 
 
 static
-int psoib_init_hca(hca_info_t *hca_info)
+int psoib_init_hca(psoib_hca_info_t *hca_info)
 {
     struct ibv_device_attr device_attr;
 
@@ -845,7 +845,7 @@ err_hca:
 }
 
 static
-int psoib_init_port(hca_info_t *hca_info, port_info_t *port_info)
+int psoib_init_port(psoib_hca_info_t *hca_info, port_info_t *port_info)
 {
     port_info->hca_info = hca_info;
     port_info->port_num = (uint8_t)psoib_port;
@@ -888,16 +888,16 @@ int psoib_init(void)
 	memset(&psoib_stat, 0, sizeof(psoib_stat));
 	psoib_scan_all_ports();
 
-	if (psoib_init_hca(&default_hca)) goto err_hca;
+	if (psoib_init_hca(&psoib_default_hca)) goto err_hca;
 
-	if (psoib_init_port(&default_hca, &default_port)) goto err_port;
+	if (psoib_init_port(&psoib_default_hca, &default_port)) goto err_port;
 	init_state = 0;
     }
 
     return init_state; /* 0 = success, -1 = error */
     /* --- */
  err_port:
-    psoib_cleanup_hca(&default_hca);
+    psoib_cleanup_hca(&psoib_default_hca);
  err_hca:
     init_state = -1;
     psoib_dprint(D_INFO, "OPENIB disabled : %s", psoib_err_str);
@@ -905,7 +905,7 @@ int psoib_init(void)
 }
 
 static
-int psoib_poll(hca_info_t *hca_info, int blocking);
+int psoib_poll(psoib_hca_info_t *hca_info, int blocking);
 
 /* returnvalue like write(), except on error errno is negative return */
 
@@ -919,7 +919,7 @@ int _psoib_sendv(psoib_con_info_t *con_info, struct iovec *iov, size_t size, uns
     psoib_msg_t *_msg;
     int rc;
     psoib_msgheader_t *tail;
-    hca_info_t *hca_info = con_info->hca_info;
+    psoib_hca_info_t *hca_info = con_info->hca_info;
 
     if (con_info->con_broken) goto err_broken;
 
@@ -1138,7 +1138,7 @@ int psoib_recvlook(psoib_con_info_t *con_info, void **buf)
 
 /* Mark all connections of hca_info as broken */
 static
-void psoib_all_con_broken(hca_info_t *hca_info)
+void psoib_all_con_broken(psoib_hca_info_t *hca_info)
 {
     struct list_head *pos;
     list_for_each(pos, &hca_info->list_con_info) {
@@ -1150,7 +1150,7 @@ void psoib_all_con_broken(hca_info_t *hca_info)
 
 
 static
-int psoib_check_cq(hca_info_t *hca_info)
+int psoib_check_cq(psoib_hca_info_t *hca_info)
 {
     struct ibv_wc wc;
     int rc;
@@ -1257,7 +1257,7 @@ int psoib_check_cq(hca_info_t *hca_info)
 }
 
 static
-int psoib_poll(hca_info_t *hca_info, int blocking)
+int psoib_poll(psoib_hca_info_t *hca_info, int blocking)
 {
     int rc;
 
@@ -1277,7 +1277,7 @@ int psoib_poll(hca_info_t *hca_info, int blocking)
 
 void psoib_progress(void)
 {
-    psoib_poll(&default_hca, 0);
+    psoib_poll(&psoib_default_hca, 0);
 }
 
 
@@ -1311,12 +1311,12 @@ void psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_
 #ifdef IB_USE_RNDV
 
 static
-int psoib_poll(hca_info_t *hca_info, int blocking);
+int psoib_poll(psoib_hca_info_t *hca_info, int blocking);
 
 static
 int psoib_rma_mreg_register(psoib_rma_mreg_t *mreg, void *buf, size_t size, psoib_con_info_t *ci)
 {
-	hca_info_t *hca_info = ci->hca_info;
+	psoib_hca_info_t *hca_info = ci->hca_info;
 	mem_info_t *mem_info = &mreg->mem_info;
 
 	mem_info->mr = ibv_reg_mr(hca_info->pd, buf, size,
@@ -1366,7 +1366,7 @@ int psoib_release_rma_mreg(psoib_rma_mreg_t *mreg)
 static
 void psoib_rma_reqs_enq(psoib_rma_req_t *req)
 {
-	hca_info_t *hca_info = req->ci->hca_info;
+	psoib_hca_info_t *hca_info = req->ci->hca_info;
 
 	list_add_tail(&req->next, &hca_info->rma_reqs);
 }
@@ -1376,7 +1376,7 @@ void psoib_rma_reqs_deq(psoib_rma_req_t *dreq)
 {
 	struct list_head *pos;
 	psoib_rma_req_t *req = NULL;
-	hca_info_t *hca_info = dreq->ci->hca_info;
+	psoib_hca_info_t *hca_info = dreq->ci->hca_info;
 
 #if 1
 	// ToDo: disable this assert for more preformance.

@@ -26,7 +26,7 @@
 #define MIN(a,b)      (((a)<(b))?(a):(b))
 #define MAX(a,b)      (((a)>(b))?(a):(b))
 
-struct hca_info {
+struct psucp_hca_info {
 	ucp_worker_h	ucp_worker;
 	ucp_context_h	ucp_context;
 
@@ -44,7 +44,7 @@ struct psucp_con_info {
 	ucp_ep_h	ucp_ep;
 
 	/* low level */
-	hca_info_t	*hca_info;
+	psucp_hca_info_t	*hca_info;
 
 	uint64_t	remote_tag;
 	size_t		small_msg_len;		// Remote psucp_small_msg_len
@@ -60,7 +60,7 @@ struct psucp_con_info {
 #define PSUCP_COMPLETED_RECV 2
 
 struct psucp_req {
-	struct list_head	next;		// list struct hca_info.pending_requests.
+	struct list_head	next;		// list struct psucp_hca_info.pending_requests.
 	int			completed;	// PSUCP_COMPLETED_*
 	psucp_con_info_t	*con_info;
 	union {
@@ -75,7 +75,7 @@ struct psucp_req {
 };
 
 
-static hca_info_t  default_hca;
+static psucp_hca_info_t  psucp_default_hca;
 
 char *psucp_err_str = NULL; /* last error string */
 
@@ -157,7 +157,7 @@ void *psucp_small_msg_sendbuf_get_ownership(void)
 
 
 static
-void psucp_cleanup_hca(hca_info_t *hca_info)
+void psucp_cleanup_hca(psucp_hca_info_t *hca_info)
 {
 
 	if (hca_info->ucp_worker) {
@@ -199,7 +199,7 @@ void psucp_req_release(psucp_req_t *psucp_req) {
 
 static
 void psucp_pending_req_enqueue(psucp_req_t *psucp_req) {
-	hca_info_t *hca_info = &default_hca;
+	psucp_hca_info_t *hca_info = &psucp_default_hca;
 
 	list_add_tail(&psucp_req->next, &hca_info->pending_requests);
 }
@@ -207,7 +207,7 @@ void psucp_pending_req_enqueue(psucp_req_t *psucp_req) {
 
 static
 void psucp_pending_req_dequeue(psucp_req_t *psucp_req) {
-//	hca_info_t *hca_info = &default_hca;
+//	psucp_hca_info_t *hca_info = &psucp_default_hca;
 	list_del_init(&psucp_req->next);
 }
 
@@ -251,7 +251,7 @@ void psucp_req_send_small_done(void *request, ucs_status_t status) {
 
 
 static
-int psucp_init_hca(hca_info_t *hca_info)
+int psucp_init_hca(psucp_hca_info_t *hca_info)
 {
 	ucs_status_t status;
 	ucp_config_t *config;
@@ -323,7 +323,7 @@ int psucp_init(void)
 {
 	static int init_state = 1;
 	if (init_state == 1) {
-		if (psucp_init_hca(&default_hca)) goto err_hca;
+		if (psucp_init_hca(&psucp_default_hca)) goto err_hca;
 
 		init_state = 0;
 	}
@@ -340,7 +340,7 @@ err_hca:
 void psucp_con_cleanup(psucp_con_info_t *con_info)
 {
 	ucs_status_ptr_t request;
-	hca_info_t *hca_info = con_info->hca_info;
+	psucp_hca_info_t *hca_info = con_info->hca_info;
 	struct list_head *pos, *next;
 
 	list_for_each_safe(pos, next, &hca_info->pending_requests) {
@@ -380,9 +380,9 @@ err_close:
 }
 
 
-int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_priv)
+int psucp_con_init(psucp_con_info_t *con_info, psucp_hca_info_t *hca_info, void *con_priv)
 {
-	if (!hca_info) hca_info = &default_hca;
+	if (!hca_info) hca_info = &psucp_default_hca;
 	memset(con_info, 0, sizeof(*con_info));
 
 	con_info->hca_info = hca_info;
@@ -395,7 +395,7 @@ int psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_p
 
 int psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg)
 {
-	hca_info_t *hca_info = con_info->hca_info;
+	psucp_hca_info_t *hca_info = con_info->hca_info;
 	ucs_status_t status;
 	ucp_ep_params_t ep_params;
 
@@ -438,7 +438,7 @@ void psucp_con_free(psucp_con_info_t *con_info)
 psucp_info_msg_t *
 psucp_con_get_info_msg(psucp_con_info_t *con_info, unsigned long tag)
 {
-	hca_info_t *hca_info = con_info->hca_info;
+	psucp_hca_info_t *hca_info = con_info->hca_info;
 	psucp_info_msg_t *info_msg = malloc(sizeof(*info_msg) + hca_info->my_ucp_address_size);
 
 	assert(info_msg);
@@ -558,14 +558,14 @@ err_send:
 
 void psucp_progress(void)
 {
-	hca_info_t *hca_info = &default_hca;
+	psucp_hca_info_t *hca_info = &psucp_default_hca;
 	ucp_worker_progress(hca_info->ucp_worker);
 }
 
 
 size_t psucp_probe(psucp_msg_t *msg)
 {
-	hca_info_t *hca_info = &default_hca;
+	psucp_hca_info_t *hca_info = &psucp_default_hca;
 
 	if (psucp_recv_in_progress < psucp_max_recv) {
 		msg->msg_tag = ucp_tag_probe_nb(
@@ -613,7 +613,7 @@ void psucp_req_recv_done(void *request, ucs_status_t status, ucp_tag_recv_info_t
 
 ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf, size_t size)
 {
-	hca_info_t *hca_info = &default_hca;
+	psucp_hca_info_t *hca_info = &psucp_default_hca;
 	ucs_status_ptr_t request;
 	psucp_req_t *psucp_req;
 
