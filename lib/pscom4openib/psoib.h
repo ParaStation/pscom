@@ -21,7 +21,7 @@
 #include "list.h"
 
 typedef struct psoib_con_info psoib_con_info_t;
-typedef struct hca_info hca_info_t;
+typedef struct psoib_hca_info psoib_hca_info_t;
 typedef struct port_info port_info_t;
 
 // contact endpoint info
@@ -111,9 +111,9 @@ int psoib_init(void);
 psoib_con_info_t *psoib_con_create(void);
 void	psoib_con_free(psoib_con_info_t *con_info);
 
-int	psoib_con_init(psoib_con_info_t *con_info, hca_info_t *hca_info, port_info_t *port_info);
+int	psoib_con_init(psoib_con_info_t *con_info, psoib_hca_info_t *hca_info, port_info_t *port_info);
 int	psoib_con_connect(psoib_con_info_t *con_info, psoib_info_msg_t *info_msg);
-void	psoib_con_cleanup(psoib_con_info_t *con_info, hca_info_t *hca_info);
+void	psoib_con_cleanup(psoib_con_info_t *con_info, psoib_hca_info_t *hca_info);
 
 void	psoib_con_get_info_msg(psoib_con_info_t *con_info /* in */, psoib_info_msg_t *info /* out */);
 

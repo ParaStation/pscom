@@ -18,7 +18,7 @@
 
 
 typedef struct psucp_con_info psucp_con_info_t;
-typedef struct hca_info hca_info_t;
+typedef struct psucp_hca_info psucp_hca_info_t;
 
 // contact endpoint info
 typedef struct psucp_info_msg_s {
@@ -54,7 +54,7 @@ psucp_con_info_t *psucp_con_create(void);
 void	psucp_con_free(psucp_con_info_t *con_info);
 
 
-int	psucp_con_init(psucp_con_info_t *con_info, hca_info_t *hca_info, void *con_priv);
+int	psucp_con_init(psucp_con_info_t *con_info, psucp_hca_info_t *hca_info, void *con_priv);
 int	psucp_con_connect(psucp_con_info_t *con_info, psucp_info_msg_t *info_msg);
 void	psucp_con_cleanup(psucp_con_info_t *con_info);
 

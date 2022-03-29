@@ -246,7 +246,7 @@ void pp_post_recvs(void)
 static
 void pp_progress(void)
 {
-	hca_info_t *hca_info = &default_hca;
+	psoib_hca_info_t *hca_info = &psoib_default_hca;
 
 	struct ibv_wc wc;
 	int rc;
@@ -336,7 +336,7 @@ void pp_send(pp_con_t *con, void *data, unsigned len)
 }
 
 static
-void pp_init_endpoint(hca_info_t *hca_info, port_info_t *port_info)
+void pp_init_endpoint(psoib_hca_info_t *hca_info, port_info_t *port_info)
 {
 	int rc;
 	struct ibv_qp *qp;
@@ -427,7 +427,7 @@ void pp_connect(pp_con_t *con, uint16_t lid, uint32_t qp_num)
 	con->qp_num = qp_num;
 
 	{
-		hca_info_t *hca_info = &default_hca;
+		psoib_hca_info_t *hca_info = &psoib_default_hca;
 		port_info_t *port_info = &default_port;
 
 		struct ibv_ah_attr ah_attr = {
@@ -522,7 +522,7 @@ void pscom_openib_init(FILE *peer, pp_con_t *con)
 	if (rc) psoib_error("psoib_init()");
 
 	/* Initialize send and receive queues */
-	pp_init_endpoint(&default_hca, &default_port);
+	pp_init_endpoint(&psoib_default_hca, &default_port);
 
 	/* Get local peer information */
 	pp_info_get(&lmsg);

@@ -232,7 +232,7 @@ void x_send(unsigned msgsize)
 		struct ibv_wc wc;
 
 		do {
-			rc = ibv_poll_cq(default_hca.cq, 1, &wc);
+			rc = ibv_poll_cq(psoib_default_hca.cq, 1, &wc);
 			if (rc > 0) {
 				if (wc.status != IBV_WC_SUCCESS) {
 					fprintf(stderr, "Completion with error\n");
@@ -291,7 +291,7 @@ void x_send_read(unsigned msgsize)
 		unsigned waitcnt = 1;
 
 		do {
-			rc = ibv_poll_cq(default_hca.cq, 1, &wc);
+			rc = ibv_poll_cq(psoib_default_hca.cq, 1, &wc);
 			if (rc > 0) {
 				waitcnt--;
 				if (wc.status != IBV_WC_SUCCESS) {
@@ -532,14 +532,14 @@ void pscom_openib_init(FILE *peer)
 
 	if (arg_read) {
 		// RDMA Read require different MR permissions. Hack: Overwrite buffer allocations:
-		psoib_vapi_free(&default_hca, &mcon->send.bufs);
-		psoib_vapi_free(&default_hca, &mcon->recv.bufs);
+		psoib_vapi_free(&psoib_default_hca, &mcon->send.bufs);
+		psoib_vapi_free(&psoib_default_hca, &mcon->recv.bufs);
 
-		rc = psoib_vapi_alloc(&default_hca, IB_MTU * psoib_sendq_size,
+		rc = psoib_vapi_alloc(&psoib_default_hca, IB_MTU * psoib_sendq_size,
 				      IBV_ACCESS_LOCAL_WRITE, &mcon->send.bufs);
 		psoib_rc_check("psoib_vapi_alloc(IBV_ACCESS_LOCAL_WRITE, &mcon->send.bufs)", rc);
 
-		rc = psoib_vapi_alloc(&default_hca, IB_MTU * psoib_recvq_size,
+		rc = psoib_vapi_alloc(&psoib_default_hca, IB_MTU * psoib_recvq_size,
 				      IBV_ACCESS_REMOTE_READ, &mcon->recv.bufs);
 		psoib_rc_check("psoib_vapi_alloc(IBV_ACCESS_REMOTE_READ, &mcon->recv.bufs)", rc);
 	}
