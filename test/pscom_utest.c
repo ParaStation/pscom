@@ -36,6 +36,7 @@ pscom_utest_t pscom_utest = {
 	.mock_functions = {
 		.memcpy = 0,
 		.malloc = 0,
+		.free = 0,
 	},
 };
 
@@ -343,6 +344,30 @@ int main(void)
 			teardown_dummy_portals_con),
 		cmocka_unit_test_setup_teardown(
 			test_portals_handle_message_drop,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_memory_registration,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_failed_memory_registration,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_mem_deregister_releases_resources,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fail_put,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_completion,
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),
 	};

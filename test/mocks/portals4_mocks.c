@@ -121,10 +121,10 @@ int __wrap_PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
     event->ni_fail_type = mock_type(ptl_ni_fail_t);
     event->mlength      = mock_type(uint64_t);
     event->rlength      = mock_type(uint64_t);
+    event->pt_index     = mock_type(uint32_t);
     event->user_ptr     = user_ptr ? user_ptr : save_user_ptr;
-    event->pt_index     = 0;
 
-    *which = 0;
+    *which = mock_type(int);
 
     return mock_type(int);
 }
@@ -136,6 +136,7 @@ int __wrap_PtlEQPoll(const ptl_handle_eq_t *eq_handles, unsigned int size,
 int __wrap_PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md,
                      ptl_handle_md_t *md_handle)
 {
+    function_called();
     return PTL_OK;
 }
 
@@ -145,6 +146,7 @@ int __wrap_PtlMDBind(ptl_handle_ni_t ni_handle, const ptl_md_t *md,
  */
 int __wrap_PtlMDRelease(ptl_handle_md_t md_handle)
 {
+    function_called();
     return PTL_OK;
 }
 
@@ -178,9 +180,11 @@ int __wrap_PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
                   ptl_match_bits_t match_bits, ptl_size_t remote_offset,
                   void *user_ptr, ptl_hdr_data_t hdr_data)
 {
+    function_called();
+
     save_user_ptr = user_ptr;
 
-    return PTL_OK;
+    return mock_type(int);
 }
 
 
@@ -191,7 +195,9 @@ int __wrap_PtlMEAppend(ptl_handle_ni_t ni_handle, ptl_pt_index_t pt_index,
                        const ptl_me_t *me, ptl_list_t ptl_list, void *user_ptr,
                        ptl_handle_me_t *me_handle)
 {
-    return PTL_OK;
+    function_called();
+
+    return mock_type(int);
 }
 
 

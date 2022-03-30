@@ -20,6 +20,7 @@
 
 #include "pscom_priv.h"
 #include "pscom_utest.h"
+#include "mocks/misc_mocks.h"
 
 #include "pscom_portals.h"
 #include "psptl.h"
@@ -60,6 +61,10 @@ int setup_dummy_portals_con(void **state)
 
     /* initialize the lower pscom4portals layer */
     expect_function_calls(__wrap_PtlInit, 1);
+    expect_function_calls(__wrap_PtlMDBind, 2);
+    expect_function_call_any(__wrap_PtlMEAppend);
+    will_return_always(__wrap_PtlMEAppend, PTL_OK);
+
     pscom_plugin_portals.con_init(con);
 
     /* initialize the pscom4portals connection */
@@ -72,14 +77,13 @@ int setup_dummy_portals_con(void **state)
     psptl_con_get_info_msg(ci, &info_msg);
     psptl_con_connect(ci, &info_msg);
 
-
     con->pub.type = PSCOM_CON_TYPE_PORTALS;
 
-    con->write_start = pscom_poll_write_start_portals;
-    con->write_stop  = pscom_poll_write_stop;
+    /* eager communication */
+    pscom_portals_configure_eager(con);
 
-    con->read_start = pscom_portals_read_start;
-    con->read_stop  = pscom_portals_read_stop;
+    /* rendezvous RMA write interface */
+    pscom_portals_configure_rndv_write(con);
 
     con->close = pscom_portals_con_close;
 
@@ -93,6 +97,14 @@ int setup_dummy_portals_con(void **state)
     *state = (void *)con_state;
 
     return 0;
+}
+
+
+static void rma_write_completion_io_done(void *priv, int err)
+{
+    function_called();
+    check_expected(priv);
+    check_expected(err);
 }
 
 
@@ -116,6 +128,7 @@ int teardown_dummy_portals_con(void **state)
     if (!con_state->expect_me_unlink_on_close) {
         expect_function_call_any(__wrap_PtlMEUnlink);
     }
+    expect_function_calls(__wrap_PtlMDRelease, 2);
     pscom_plugin_portals.destroy();
 
     /* ensure the readers are actually removed */
@@ -146,6 +159,7 @@ void test_portals_first_initialization(void **state)
 
     /* PtlInit should be called once */
     expect_function_calls(__wrap_PtlInit, 1);
+    expect_function_calls(__wrap_PtlMDBind, 2);
 
     /* initialize the pscom4portals plugin */
     pscom_plugin_portals.con_init(dummy_con);
@@ -301,7 +315,15 @@ void test_portals_read_on_event_put(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
     will_return(__wrap_PtlEQPoll, sizeof(buf));   /* mlength */
     will_return(__wrap_PtlEQPoll, sizeof(buf));   /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK);        /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
+
+    /* bucket will be re-registered */
+    expect_function_call(__wrap_PtlMEAppend);
+    will_return(__wrap_PtlMEAppend, PTL_OK);
+
     pscom_poll(&pscom.poll_read);
 
     /* ensure pscom4portals is in reading state */
@@ -359,7 +381,10 @@ void test_portals_read_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);       /* no failure */
     will_return(__wrap_PtlEQPoll, strlen(buf));     /* mlength */
     will_return(__wrap_PtlEQPoll, strlen(buf));     /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK);          /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* receive the header (seq ID: 0) */
@@ -378,7 +403,15 @@ void test_portals_read_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);      /* no failure */
     will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* mlength */
     will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK); /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
+
+    /* buckets will be re-registered */
+    expect_function_calls(__wrap_PtlMEAppend, 2);
+    will_return_count(__wrap_PtlMEAppend, PTL_OK, 2);
+
     pscom_poll(&pscom.poll_read);
 
 
@@ -438,7 +471,10 @@ void test_portals_read_three_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
     will_return(__wrap_PtlEQPoll, strlen(buf_one) - buf_one_len); /* mlength */
     will_return(__wrap_PtlEQPoll, strlen(buf_one) - buf_one_len); /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK); /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* receive the payload part one (seq ID: 1) */
@@ -452,7 +488,10 @@ void test_portals_read_three_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
     will_return(__wrap_PtlEQPoll, buf_one_len);   /* mlength */
     will_return(__wrap_PtlEQPoll, buf_one_len);   /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK);        /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
     pscom_poll(&pscom.poll_read);
 
     /* receive the header (seq ID: 0) */
@@ -471,7 +510,15 @@ void test_portals_read_three_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);      /* no failure */
     will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* mlength */
     will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK); /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
+
+    /* buckets will be re-registered */
+    expect_function_calls(__wrap_PtlMEAppend, 3);
+    will_return_count(__wrap_PtlMEAppend, PTL_OK, 3);
+
     pscom_poll(&pscom.poll_read);
 
 
@@ -510,6 +557,8 @@ void test_portals_read_after_send_request(void **state)
     pscom_post_send(send_req);
 
     /* call the actual polling function */
+    will_return(__wrap_PtlPut, PTL_OK);
+    expect_function_call(__wrap_PtlPut);
     pscom_poll(&pscom.poll_write);
 
     /* ensure pscom4portals is in reading state */
@@ -538,6 +587,8 @@ void test_portals_defer_close_with_outstanding_put_requests(void **state)
 {
     dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
     pscom_con_t *dummy_con       = con_state->con;
+    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
+    uint32_t eager_pti           = con_info->hca_info->pti[PSPTL_PROT_EAGER];
 
     /* set the reading state */
     pscom_portals_poll.reader_user = 0;
@@ -549,17 +600,21 @@ void test_portals_defer_close_with_outstanding_put_requests(void **state)
     pscom_post_send(send_req);
 
     /* start writing on the connection */
+    will_return(__wrap_PtlPut, PTL_OK);
+    expect_function_call(__wrap_PtlPut);
     dummy_con->write_start(dummy_con);
     pscom_poll(&pscom.poll_write);
 
     /* ACK not yet received */
     will_return(__wrap_PtlEQPoll, NULL); /* use saved user pointer */
     will_return(__wrap_PtlEQPoll, 0);    /* sequence ID not important */
-    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK); /* just mock something */
-    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failed request */
-    will_return(__wrap_PtlEQPoll, 0);             /* mlength */
-    will_return(__wrap_PtlEQPoll, 0);             /* rlength */
-    will_return(__wrap_PtlEQPoll, PTL_EQ_EMPTY);  /* do not issue an event */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);    /* just mock something */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);        /* no failed request */
+    will_return(__wrap_PtlEQPoll, 0);                /* mlength */
+    will_return(__wrap_PtlEQPoll, 0);                /* rlength */
+    will_return(__wrap_PtlEQPoll, eager_pti);        /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_EQ_EMPTY);     /* do not issue an event */
     pscom_poll(&pscom.poll_read);
 
     /* stop writing and cleanup polling list */
@@ -582,6 +637,8 @@ void test_portals_close_with_no_outstanding_put_requests(void **state)
 {
     dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
     pscom_con_t *dummy_con       = con_state->con;
+    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
+    uint32_t eager_pti           = con_info->hca_info->pti[PSPTL_PROT_EAGER];
 
     /* set the reading state */
     pscom_portals_poll.reader_user = 0;
@@ -593,16 +650,20 @@ void test_portals_close_with_no_outstanding_put_requests(void **state)
     pscom_post_send(send_req);
 
     /* start writing on the connection */
+    will_return(__wrap_PtlPut, PTL_OK);
+    expect_function_call(__wrap_PtlPut);
     dummy_con->write_start(dummy_con);
     pscom_poll(&pscom.poll_write);
 
     /* receive ACK */
     will_return(__wrap_PtlEQPoll, NULL); /* use saved user pointer */
     will_return(__wrap_PtlEQPoll, 0);    /* sequence ID not important */
-    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK); /* generate an ACK event */
-    will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failed request */
-    will_return(__wrap_PtlEQPoll, 0);             /* mlength */
-    will_return(__wrap_PtlEQPoll, 0);             /* rlength */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);    /* generate an ACK event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);        /* no failed request */
+    will_return(__wrap_PtlEQPoll, 0);                /* mlength */
+    will_return(__wrap_PtlEQPoll, 0);                /* rlength */
+    will_return(__wrap_PtlEQPoll, eager_pti);        /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
     pscom_poll(&pscom.poll_read);
 
@@ -636,6 +697,8 @@ void test_portals_handle_message_drop(void **state)
     pscom_post_send(send_req);
 
     /* start writing on the connection */
+    will_return(__wrap_PtlPut, PTL_OK);
+    expect_function_call(__wrap_PtlPut);
     dummy_con->write_start(dummy_con);
     pscom_poll(&pscom.poll_write);
 
@@ -659,7 +722,15 @@ void test_portals_handle_message_drop(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_DROPPED); /* message dropped by recv */
     will_return(__wrap_PtlEQPoll, strlen(buf));    /* arbitrary mlength */
     will_return(__wrap_PtlEQPoll, strlen(buf));    /* arbitrary rlength */
-    will_return(__wrap_PtlEQPoll, PTL_OK);         /* event queue not empty */
+    will_return(__wrap_PtlEQPoll,
+                hca_info.pti[PSPTL_PROT_EAGER]);     /* eager PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
+
+    /* PtlPut will be called during retry */
+    will_return(__wrap_PtlPut, PTL_OK);
+    expect_function_call(__wrap_PtlPut);
+
     pscom_poll(&pscom.poll_read);
 
     /* ensure there is an outstanding put operation */
@@ -668,4 +739,200 @@ void test_portals_handle_message_drop(void **state)
 
     /* closing of the connection will be deferred until plugin destroy */
     con_state->expect_me_unlink_on_close = 0;
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// RMA write
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test memory registration
+ *
+ * Given: A memory region to be registered for receiving
+ * When: con->rma_mem_register is called
+ * Then: it is successfully registered with the low-level portals layer
+ */
+void test_portals_memory_registration(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+
+    /* register a memory region  */
+    char buf[42]               = {0};
+    pscom_rendezvous_data_t rd = {
+        .msg =
+            {
+                .data     = buf,
+                .data_len = 42,
+            },
+    };
+
+    expect_function_call(__wrap_PtlMEAppend);
+    will_return(__wrap_PtlMEAppend, PTL_OK);
+    assert_true(dummy_con->rma_mem_register(dummy_con, &rd) > 0);
+}
+
+
+/**
+ * \brief Test failing memory registration
+ *
+ * Given: A memory region to be registered for receiving
+ * When: con->rma_mem_register is called and the registration fails
+ * Then: zero is returned
+ */
+void test_portals_failed_memory_registration(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+
+    /* register a memory region  */
+    char buf[42]               = {0};
+    pscom_rendezvous_data_t rd = {
+        .msg =
+            {
+                .data     = buf,
+                .data_len = 42,
+            },
+    };
+
+    will_return(__wrap_PtlMEAppend, PTL_NO_SPACE);
+    expect_function_call(__wrap_PtlMEAppend);
+    assert_true(dummy_con->rma_mem_register(dummy_con, &rd) == 0);
+}
+
+
+/**
+ * \brief Test failing memory registration
+ *
+ * Given: A registered memory region with corresponding pscom_rendezvous_data_t
+ * When: con->rma_mem_deregister is called
+ * Then: the private data of the low-level layer should be released
+ */
+void test_portals_mem_deregister_releases_resources(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+
+    /* allocate a dummy priv object  */
+    psptl_con_info_t con_info;
+    psptl_bucket_t *bucket = (psptl_bucket_t *)malloc(sizeof(*bucket));
+    bucket->con_info       = &con_info;
+
+    pscom_rendezvous_data_t rd;
+    pscom_rendezvous_data_portals_t *rd_portals = get_req_data(&rd);
+    rd_portals->rma_write_rx.rma_mreg.priv      = bucket;
+
+    enable_free_mock();
+    expect_value(__wrap_free, ptr, bucket);
+    dummy_con->rma_mem_deregister(dummy_con, &rd);
+    disable_free_mock();
+}
+
+
+/**
+ * \brief Test RMA write
+ *
+ * Given: A rendezvous request
+ * When: con->rma_write is called with correct parameters
+ * Then: zero is returned
+ */
+void test_portals_rma_write(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+
+    /* register a memory region  */
+    char src_buf[42]                = {0};
+    pscom_rendezvous_msg_t rndv_msg = {
+        .data     = src_buf,
+        .data_len = 42,
+    };
+
+    expect_function_call(__wrap_PtlPut);
+    will_return(__wrap_PtlPut, PTL_OK);
+    assert_true(
+        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == 0);
+}
+
+
+/**
+ * \brief Test RMA write for failing put operations
+ *
+ * Given: A rendezvous request and con->rma_write is called
+ * When: PtlPut fails
+ * Then: it returns -1
+ */
+void test_portals_rma_write_fail_put(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+
+    /* register a memory region  */
+    char src_buf[42]                = {0};
+    pscom_rendezvous_msg_t rndv_msg = {
+        .data     = src_buf,
+        .data_len = 42,
+    };
+
+
+    expect_function_call(__wrap_PtlPut);
+    will_return(__wrap_PtlPut, PTL_ARG_INVALID);
+    assert_true(
+        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == -1);
+}
+
+
+/**
+ * \brief Test RMA write completion
+ *
+ * Given: A rendezvous request
+ * When: the according PTL_EVENT_ACK occurs
+ * Then: the io_done call is issued
+ */
+void test_portals_rma_write_completion(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
+    uint32_t rndv_pti            = con_info->hca_info->pti[PSPTL_PROT_RNDV];
+
+    /* register a memory region  */
+    char src_buf[42]                = {0};
+    pscom_rendezvous_msg_t rndv_msg = {
+        .data     = src_buf,
+        .data_len = 42,
+    };
+
+    /* start writing on the connection (will be ensured by the control msgs) */
+    dummy_con->read_start(dummy_con);
+
+    /* issue the RMA write operation */
+    expect_function_call(__wrap_PtlPut);
+    will_return(__wrap_PtlPut, PTL_OK);
+    void *priv = (void *)(0xDEADBEEF);
+    dummy_con->rma_write(dummy_con, src_buf, &rndv_msg,
+                         rma_write_completion_io_done, priv);
+
+
+    /* receive ACK */
+    will_return(__wrap_PtlEQPoll, NULL); /* use saved user pointer */
+    will_return(__wrap_PtlEQPoll, 0);    /* sequence ID not important */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);   /* generate an ACK event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);       /* no failed request */
+    will_return(__wrap_PtlEQPoll, 0);               /* mlength */
+    will_return(__wrap_PtlEQPoll, 0);               /* rlength */
+    will_return(__wrap_PtlEQPoll, rndv_pti);        /* rendezvous PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_RNDV); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
+
+    /*  io_done is called with our 'priv' parameter and no error */
+    expect_function_call(rma_write_completion_io_done);
+    expect_value(rma_write_completion_io_done, priv, priv);
+    expect_value(rma_write_completion_io_done, err, 0);
+
+    pscom_poll(&pscom.poll_read);
+
+    /* stop writing and cleanup polling list */
+    dummy_con->read_stop(dummy_con);
+    pscom_poll(&pscom.poll_read);
 }

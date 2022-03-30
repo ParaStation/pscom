@@ -116,6 +116,7 @@ target_link_options(	pscom_utest
   -Wl,--wrap=dlopen
   -Wl,--wrap=dlerror
   -Wl,--wrap=dlclose
+  -Wl,--wrap=free
   -Wl,--wrap=memcpy
   -Wl,--wrap=malloc
 #  -static

@@ -50,6 +50,25 @@ void *__wrap_malloc(size_t size)
 
 
 /**
+ * \brief Mocking function for free()
+ */
+void __wrap_free(void *ptr)
+{
+	/* only mock malloc if this is set for the current test */
+	if (pscom_utest.mock_functions.free) {
+		check_expected(ptr);
+	}
+
+	/* call the original free() */
+	__real_free(ptr);
+
+	return;
+}
+
+
+
+
+/**
  * \brief Mocking function for dlsym()
  */
 void *__wrap_dlsym(void *restrict handle, const char *restrict symbol)
