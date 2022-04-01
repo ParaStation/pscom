@@ -1020,6 +1020,43 @@ void test_pscom_unstage_buffer_dev_mem(void **state)
 }
 
 /**
+ * \brief Test _pscom_unstage_buffer() for error case
+ *
+ * Given: a request with stage_buf != NULL but with
+ *        PSCOM_REQ_STATE_ERROR set in pub.state
+ * When: _pscom_unstage_buffer() is called with copy = 1
+ * Then: req->pub.data still remains unchanged
+ */
+void test_pscom_unstage_buffer_dev_mem_err_req(void **state)
+{
+	(void) state;
+
+	/* enable CUDA support */
+	pscom.env.cuda = 1;
+
+	/* create a pscom request */
+	pscom_req_t *req = pscom_req_create(0, 0);
+	int buffer = 0xdeadbeef;
+	int *stage_buffer = (int*)malloc(sizeof(int));
+	*stage_buffer = 42;
+	req->pub.connection = NULL;
+	req->pub.data = (void*)stage_buffer;
+	req->pub.data_len = sizeof(buffer);
+	req->pub.header.data_len = sizeof(buffer);
+	req->stage_buf = (void*)&buffer;
+	req->pub.state |= PSCOM_REQ_STATE_ERROR;
+
+	_pscom_unstage_buffer(req, /*copy=*/1);
+	assert_true(req->stage_buf == NULL);
+	assert_int_equal(req->pub.data, &buffer);
+	int testval = 0xdeadbeef;
+	assert_memory_equal(&buffer, &testval, 4);
+
+	/* free the request */
+	pscom_req_free(req);
+}
+
+/**
  * \brief Test _pscom_unstage_buffer() for device memory
  *
  * Given: a request with stage_buf != NULL
@@ -1053,6 +1090,7 @@ void test_pscom_unstage_buffer_dev_mem_no_copy(void **state)
 	/* free the request */
 	pscom_req_free(req);
 }
+
 /**
  * \brief Test _pscom_unstage_buffer() for host memory
  *
