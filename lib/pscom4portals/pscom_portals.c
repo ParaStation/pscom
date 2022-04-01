@@ -22,6 +22,8 @@
 
 #include "psptl.h"
 
+uint8_t foster_progress = 0;
+
 typedef enum pscom_portals_sock_init_state {
     PSCOM_PORTALS_SOCK_NOT_INITIALIZED = 1,
     PSCOM_PORTALS_SOCK_INIT_DONE       = 0,
@@ -43,6 +45,11 @@ pscom_env_table_entry_t pscom_env_table_portals[] = {
 
     {"EQ_SIZE", "65536", "Size of the event queue.", &psptl.eq_size,
      PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_UINT},
+
+    {"FOSTER_PROGRESS", "0",
+     "Make additional progress on the completion of send operations "
+     "(when relying on SWPTL this may be required).",
+     &foster_progress, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_UINT},
 
     {"MAX_RNDV_REQS", "4096",
      "Maximum number of outstanding rendezvous requests per connection.",
@@ -128,7 +135,7 @@ static int pscom_portals_make_progress(pscom_poll_t *poll)
     return psptl_progress(sock->priv);
 }
 
-static void pscom_portals_sendv_done(void *con_priv)
+static inline void pscom_portals_sendv_done(void *con_priv)
 {
     pscom_con_t *con   = (pscom_con_t *)con_priv;
     psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
@@ -137,6 +144,18 @@ static void pscom_portals_sendv_done(void *con_priv)
 
     poll_reader_dec(sock);
 }
+
+static void pscom_portals_sendv_done_with_progress(void *con_priv)
+{
+    pscom_con_t *con   = (pscom_con_t *)con_priv;
+    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+
+    pscom_portals_sendv_done(con_priv);
+
+    /* trigger the progress engine once again */
+    if (!sock->reader_user) { psptl_progress(sock->priv); }
+}
+
 
 static void pscom_portals_recv_done(void *priv, void *buf, size_t len)
 {
@@ -344,8 +363,12 @@ static void pscom_portals_init(void)
                                        pscom_env_table_portals);
 
     /* set the callbacks to be called by the lowe layer */
-    psptl.callbacks.sendv_done = pscom_portals_sendv_done;
-    psptl.callbacks.recv_done  = pscom_portals_recv_done;
+    if (foster_progress) {
+        psptl.callbacks.sendv_done = pscom_portals_sendv_done_with_progress;
+    } else {
+        psptl.callbacks.sendv_done = pscom_portals_sendv_done;
+    }
+    psptl.callbacks.recv_done = pscom_portals_recv_done;
 }
 
 
