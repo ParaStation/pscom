@@ -106,6 +106,7 @@ psptl_t psptl = {
             .retry_cnt           = 0,
             .outstanding_put_ops = 0,
             .rndv_write          = 0,
+            .rndv_retry          = 0,
         },
     .init_state   = PSPORTALS_NOT_INITIALIZED,
     .cleanup_cons = LIST_HEAD_INIT(psptl.cleanup_cons),
@@ -780,9 +781,17 @@ static void psptl_handle_eager_ack(psptl_bucket_t *send_bucket, uint8_t done)
 
 static void psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, int err)
 {
-    rma_req->io_done(rma_req->priv, err);
+    if (err && (rma_req->retry_cnt < psptl.con_params.max_rndv_retry)) {
+        psptl_post_rma_put(rma_req);
 
-    return;
+        /* increase the retry counter */
+        rma_req->retry_cnt++;
+
+        /* take statistics */
+        psptl.stats.rndv_retry++;
+    } else {
+        rma_req->io_done(rma_req->priv, err);
+    }
 }
 
 
@@ -927,6 +936,7 @@ void psptl_print_stats(void)
     psptl_dprint(D_STATS, "outstanding_put_ops : %8lu",
                  psptl.stats.outstanding_put_ops);
     psptl_dprint(D_STATS, "rndv_write          : %8lu", psptl.stats.rndv_write);
+    psptl_dprint(D_STATS, "rndv_retry          : %8lu", psptl.stats.rndv_retry);
 }
 
 
@@ -981,10 +991,12 @@ void psptl_rma_mem_deregister(psptl_rma_mreg_t *rma_mreg)
 }
 
 
-int psptl_post_rma_put(psptl_con_info_t *con_info, void *data, size_t data_len,
-                       psptl_rma_req_t *rma_req)
+int psptl_post_rma_put(psptl_rma_req_t *rma_req)
 {
     int ret;
+    void *data                         = rma_req->data;
+    size_t data_len                    = rma_req->data_len;
+    psptl_con_info_t *con_info         = rma_req->con_info;
     psptl_hca_info_t *hca_info         = con_info->hca_info;
     psptl_remote_con_info_t *remote_ci = &con_info->remote_ci;
 

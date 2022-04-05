@@ -57,11 +57,13 @@ typedef struct psptl {
         uint32_t sendq_size;
         uint32_t recvq_size;
         uint32_t max_rndv_reqs;
+        uint32_t max_rndv_retry;
     } con_params;
     struct {
         uint64_t retry_cnt;
         uint64_t outstanding_put_ops;
         uint64_t rndv_write;
+        uint64_t rndv_retry;
     } stats;
     psptl_init_state_t init_state;
     struct list_head cleanup_cons;
@@ -78,7 +80,11 @@ typedef struct psptl_rma_req {
     void (*io_done)(void *priv, int err);
     void *priv;
     void *mdh;
+    psptl_con_info_t *con_info;
+    void *data;
+    size_t data_len;
     uint64_t match_bits;
+    uint8_t retry_cnt;
 } psptl_rma_req_t;
 
 extern psptl_t psptl;
@@ -111,7 +117,6 @@ void pscom_portals_recv_done(void *priv, void *buf, size_t len);
 int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
                            psptl_rma_mreg_t *rma_mreg);
 void psptl_rma_mem_deregister(psptl_rma_mreg_t *rma_mreg);
-int psptl_post_rma_put(psptl_con_info_t *con_info, void *data, size_t data_len,
-                       psptl_rma_req_t *rma_req);
+int psptl_post_rma_put(psptl_rma_req_t *rma_req);
 
 #endif /* _PSPORTALS_H_ */
