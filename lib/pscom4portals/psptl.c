@@ -663,7 +663,7 @@ static void psptl_bucket_send_done(psptl_bucket_t *send_bucket)
     send_bucket->in_use = 0;
 
     /* tell the upper layer the request is done */
-    pscom_portals_sendv_done();
+    pscom_portals_sendv_done(send_bucket->con_info->con_priv);
 
     return;
 }

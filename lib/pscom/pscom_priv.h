@@ -172,6 +172,12 @@ typedef struct user_conn {
 } user_conn_t;
 
 
+typedef struct psptl_sock {
+    pscom_poll_t poll_read;
+    unsigned reader_user;
+} psptl_sock_t;
+
+
 /* rendezvous message for RMA requests. */
 
 /*
@@ -451,6 +457,7 @@ struct PSCOM_sock
 //	psoib_sock_t		openib;
 //	psofed_sock_t		ofed;
 	psgm_sock_t		gm;
+	psptl_sock_t		portals;
 //	psdapl_sock_t		dapl;
 //	pselan_sock_t		elan;
 //	psextoll_sock_t		extoll;

@@ -110,7 +110,7 @@ void psptl_configure_debug(FILE *stream, int level);
 void psptl_print_stats(void);
 
 /* callbacks implemented by upper layer */
-void pscom_portals_sendv_done(void);
+void pscom_portals_sendv_done(void *con_priv);
 void pscom_portals_recv_done(void *priv, void *buf, size_t len);
 
 /* rendezvous-related interface */

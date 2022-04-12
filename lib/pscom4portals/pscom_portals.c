@@ -55,14 +55,6 @@ pscom_env_table_entry_t pscom_env_table_portals[] = {
     {0},
 };
 
-/*
- * maintain a plugin-wide reader counter, i.e., there is ony one reader for all
- * portals connections
- */
-static struct {
-    pscom_poll_t poll_read;
-    unsigned reader_user;
-} pscom_portals_poll;
 
 typedef union pscom_rendezvous_data_portals {
     /* RMA write: receiver side */
@@ -80,35 +72,35 @@ typedef union pscom_rendezvous_data_portals {
 
 static int pscom_portals_make_progress(pscom_poll_t *poll);
 
-static void poll_reader_inc(void)
+static void poll_reader_inc(psptl_sock_t *sock)
 {
     /* enqueue to polling reader if not enqueued yet */
-    if (!pscom_portals_poll.reader_user) {
-        pscom_poll_start(&pscom_portals_poll.poll_read,
-                         pscom_portals_make_progress, &pscom.poll_read);
+    if (!sock->reader_user) {
+        pscom_poll_start(&sock->poll_read, pscom_portals_make_progress,
+                         &pscom.poll_read);
     }
 
     /* increase the reader counter */
-    pscom_portals_poll.reader_user++;
+    sock->reader_user++;
 }
 
-static void poll_reader_dec(void)
+static void poll_reader_dec(psptl_sock_t *sock)
 {
     /* decrease the reader counter */
-    pscom_portals_poll.reader_user--;
+    sock->reader_user--;
 
     /* dequeue from polling reader if there are no readers left */
-    if (!pscom_portals_poll.reader_user) {
-        pscom_poll_stop(&pscom_portals_poll.poll_read);
-    }
+    if (!sock->reader_user) { pscom_poll_stop(&sock->poll_read); }
 }
 
 static void pscom_portals_read_start(pscom_con_t *con)
 {
     /* increment the reader counter if not yet reading */
     if (!con->arch.portals.reading) {
+        psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+
         con->arch.portals.reading = 1;
-        poll_reader_inc();
+        poll_reader_inc(sock);
     }
 }
 
@@ -116,19 +108,27 @@ static void pscom_portals_read_stop(pscom_con_t *con)
 {
     /* decrement the reader counter if this connection is still reading */
     if (con->arch.portals.reading) {
+        psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+
         con->arch.portals.reading = 0;
-        poll_reader_dec();
+        poll_reader_dec(sock);
     }
 }
 
 static int pscom_portals_make_progress(pscom_poll_t *poll)
 {
+
     return psptl_progress();
 }
 
-void pscom_portals_sendv_done(void)
+void pscom_portals_sendv_done(void *con_priv)
 {
-    poll_reader_dec();
+    pscom_con_t *con   = (pscom_con_t *)con_priv;
+    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+
+    assert(con->magic == MAGIC_CONNECTION);
+
+    poll_reader_dec(sock);
 }
 
 void pscom_portals_recv_done(void *priv, void *buf, size_t len)
@@ -144,7 +144,8 @@ static int pscom_portals_do_write(pscom_poll_t *poll)
     size_t len;
     struct iovec iov[2];
     pscom_req_t *req;
-    pscom_con_t *con = list_entry(poll, pscom_con_t, poll_write);
+    pscom_con_t *con   = list_entry(poll, pscom_con_t, poll_write);
+    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
 
     /* get a new iov for sending */
     req = pscom_write_get_iov(con, iov);
@@ -157,7 +158,7 @@ static int pscom_portals_do_write(pscom_poll_t *poll)
 
         if (slen >= 0) {
             /* ensure execution of the psptl progress engine */
-            poll_reader_inc();
+            poll_reader_inc(sock);
 
             pscom_write_done(con, req, slen);
         } else if (slen != -EAGAIN) {
@@ -334,9 +335,31 @@ static void pscom_portals_init(void)
     /* register the environment configuration table */
     pscom_env_table_register_and_parse("pscom PORTALS", "PORTALS_",
                                        pscom_env_table_portals);
+}
 
-    pscom_poll_init(&pscom_portals_poll.poll_read);
-    pscom_portals_poll.reader_user = 0;
+
+static void pscom_portals_sock_init(pscom_sock_t *sock)
+{
+    psptl_sock_t *portals_sock = &sock->portals;
+
+    pscom_poll_init(&portals_sock->poll_read);
+    portals_sock->reader_user = 0;
+}
+
+
+static void pscom_portals_sock_destroy(pscom_sock_t *sock)
+{
+    psptl_sock_t *portals_sock = &sock->portals;
+
+    if (portals_sock->reader_user) {
+        DPRINT(D_WARN,
+               "Closing the reader of sock %p but there are still %u "
+               "connections in reading state!",
+               sock, portals_sock->reader_user);
+    }
+
+    /* we do not want to make further progress on the Portals4 layer */
+    pscom_poll_stop(&portals_sock->poll_read);
 }
 
 
@@ -401,16 +424,6 @@ error_con_init:
 
 static void pscom_portals_destroy(void)
 {
-    if (pscom_portals_poll.reader_user) {
-        DPRINT(
-            D_WARN,
-            "Closing the pscom4portals plugin but there are still %u readers!",
-            pscom_portals_poll.reader_user);
-    }
-
-    /* we do not want to make further progress on the Portals4 layer */
-    pscom_poll_stop(&pscom_portals_poll.poll_read);
-
     psptl_finalize();
 }
 
@@ -423,8 +436,8 @@ pscom_plugin_t pscom_plugin_portals = {
 
     .init          = pscom_portals_init,
     .destroy       = pscom_portals_destroy,
-    .sock_init     = NULL,
-    .sock_destroy  = NULL,
+    .sock_init     = pscom_portals_sock_init,
+    .sock_destroy  = pscom_portals_sock_destroy,
     .con_init      = pscom_portals_con_init,
     .con_handshake = pscom_portals_handshake,
 };
