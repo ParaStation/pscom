@@ -22,6 +22,12 @@
 
 #include "psptl.h"
 
+typedef enum pscom_portals_sock_init_state {
+    PSCOM_PORTALS_SOCK_NOT_INITIALIZED = 1,
+    PSCOM_PORTALS_SOCK_INIT_DONE       = 0,
+    PSCOM_PORTALS_SOCK_INIT_FAILED     = -1
+} pscom_portals_sock_init_state_t;
+
 pscom_env_table_entry_t pscom_env_table_portals[] = {
     {"BUFFER_SIZE", "8192", "The size of the buffers in the send/recv queues.",
      &psptl.con_params.bufsize, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
@@ -117,8 +123,9 @@ static void pscom_portals_read_stop(pscom_con_t *con)
 
 static int pscom_portals_make_progress(pscom_poll_t *poll)
 {
+    psptl_sock_t *sock = list_entry(poll, psptl_sock_t, poll_read);
 
-    return psptl_progress();
+    return psptl_progress(sock->priv);
 }
 
 void pscom_portals_sendv_done(void *con_priv)
@@ -342,14 +349,23 @@ static void pscom_portals_sock_init(pscom_sock_t *sock)
 {
     psptl_sock_t *portals_sock = &sock->portals;
 
+    /* initialize the poll reader */
     pscom_poll_init(&portals_sock->poll_read);
     portals_sock->reader_user = 0;
+
+    /* set the initialization state */
+    portals_sock->init_state = PSCOM_PORTALS_SOCK_NOT_INITIALIZED;
 }
 
 
 static void pscom_portals_sock_destroy(pscom_sock_t *sock)
 {
     psptl_sock_t *portals_sock = &sock->portals;
+
+    if (portals_sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE) {
+        psptl_cleanup_ep(portals_sock->priv);
+        portals_sock->priv = NULL;
+    }
 
     if (portals_sock->reader_user) {
         DPRINT(D_WARN,
@@ -360,12 +376,37 @@ static void pscom_portals_sock_destroy(pscom_sock_t *sock)
 
     /* we do not want to make further progress on the Portals4 layer */
     pscom_poll_stop(&portals_sock->poll_read);
+
+    /* set the initialization state */
+    portals_sock->init_state = PSCOM_PORTALS_SOCK_NOT_INITIALIZED;
 }
 
 
 static int pscom_portals_con_init(pscom_con_t *con)
 {
-    return psptl_init();
+    int ret;
+    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+
+    /* initialize the psptl layer (once for all sockets) */
+    ret = psptl_init();
+    if (ret != PSPORTALS_INIT_DONE) goto err_out;
+
+    /*
+     * initialize one endpoint per sock
+     * (cleanup in pscom_portals_sock_destroy()!)
+     */
+    if (sock->init_state == PSCOM_PORTALS_SOCK_NOT_INITIALIZED) {
+        ret = psptl_init_ep(&sock->priv);
+        if (ret < 0) goto err_out;
+
+        sock->init_state = PSCOM_PORTALS_SOCK_INIT_DONE;
+    }
+
+    return sock->init_state;
+    /* --- */
+err_out:
+    sock->init_state = PSCOM_PORTALS_SOCK_INIT_FAILED;
+    return ret;
 }
 
 #define PSCOM_INFO_PORTALS_ID PSCOM_INFO_ARCH_STEP1
@@ -377,11 +418,12 @@ pscom_portals_handshake(pscom_con_t *con, int type, void *data, unsigned size)
     case PSCOM_INFO_ARCH_REQ: {
         psptl_info_msg_t msg = {0};
         psptl_con_info_t *ci = psptl_con_create();
+        psptl_sock_t *sock   = &get_sock(con->pub.socket)->portals;
 
         con->arch.portals.ci      = ci;
         con->arch.portals.reading = 0;
 
-        if (psptl_con_init(ci, con)) goto error_con_init;
+        if (psptl_con_init(ci, con, sock->priv)) goto error_con_init;
 
         /* send my connection id's */
         psptl_con_get_info_msg(ci, &msg);

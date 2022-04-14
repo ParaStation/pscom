@@ -19,7 +19,7 @@
 
 /* some forward declarations */
 typedef struct psptl_con_info psptl_con_info_t;
-typedef struct psptl_hca_info psptl_hca_info_t;
+typedef struct psptl_ep psptl_ep_t;
 
 typedef enum psptl_init_state {
     PSPORTALS_NOT_INITIALIZED = 1,
@@ -46,7 +46,6 @@ typedef struct psptl_info_msg {
 
 /* lower level configuration */
 typedef struct psptl {
-    psptl_hca_info_t *hca_info;
     struct {
         int level;
         FILE *stream;
@@ -93,8 +92,11 @@ extern psptl_t psptl;
 int psptl_init(void);
 void psptl_finalize(void);
 
+int psptl_init_ep(void **ep_priv);
+void psptl_cleanup_ep(void *ep_priv);
+
 psptl_con_info_t *psptl_con_create(void);
-int psptl_con_init(psptl_con_info_t *con_info, void *con_priv);
+int psptl_con_init(psptl_con_info_t *con_info, void *con_priv, void *ep_priv);
 int psptl_con_connect(psptl_con_info_t *con_info, psptl_info_msg_t *info_msg);
 void psptl_con_free(psptl_con_info_t *con_info);
 void psptl_con_cleanup(psptl_con_info_t *con_info);
@@ -102,7 +104,7 @@ void psptl_con_cleanup(psptl_con_info_t *con_info);
 void psptl_con_get_info_msg(psptl_con_info_t *con_info,
                             psptl_info_msg_t *info_msg);
 
-int psptl_progress(void);
+int psptl_progress(void *ep_priv);
 ssize_t
 psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len);
 

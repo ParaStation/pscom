@@ -174,6 +174,8 @@ typedef struct user_conn {
 
 typedef struct psptl_sock {
     pscom_poll_t poll_read;
+    void *priv;
+    int init_state;
     unsigned reader_user;
 } psptl_sock_t;
 
