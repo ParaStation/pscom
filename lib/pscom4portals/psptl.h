@@ -64,6 +64,11 @@ typedef struct psptl {
         uint64_t rndv_write;
         uint64_t rndv_retry;
     } stats;
+    struct {
+        void (*sendv_done)(void *con_priv);
+        void (*recv_done)(void *priv, void *buf, size_t len);
+    } callbacks;
+
     psptl_init_state_t init_state;
     struct list_head cleanup_cons;
 } psptl_t;
@@ -110,10 +115,6 @@ psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len);
 
 void psptl_configure_debug(FILE *stream, int level);
 void psptl_print_stats(void);
-
-/* callbacks implemented by upper layer */
-void pscom_portals_sendv_done(void *con_priv);
-void pscom_portals_recv_done(void *priv, void *buf, size_t len);
 
 /* rendezvous-related interface */
 int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,

@@ -669,7 +669,7 @@ static void psptl_bucket_send_done(psptl_bucket_t *send_bucket)
     send_bucket->in_use = 0;
 
     /* tell the upper layer the request is done */
-    pscom_portals_sendv_done(send_bucket->con_info->con_priv);
+    psptl.callbacks.sendv_done(send_bucket->con_info->con_priv);
 
     return;
 }
@@ -682,7 +682,7 @@ static void psptl_req_recv_done(psptl_bucket_t *recv_bucket)
     size_t len                 = recv_bucket->len;
 
     /* tell the upper layer that some IO was done */
-    pscom_portals_recv_done(con_info->con_priv, recv_bucket->buf, len);
+    psptl.callbacks.recv_done(con_info->con_priv, recv_bucket->buf, len);
 
     /* re-register the buffer */
     psptl_register_recv_buffer(recv_bucket, (PSPTL_PUT_FLAGS | PSPTL_USE_ONCE),

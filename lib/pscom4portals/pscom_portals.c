@@ -128,7 +128,7 @@ static int pscom_portals_make_progress(pscom_poll_t *poll)
     return psptl_progress(sock->priv);
 }
 
-void pscom_portals_sendv_done(void *con_priv)
+static void pscom_portals_sendv_done(void *con_priv)
 {
     pscom_con_t *con   = (pscom_con_t *)con_priv;
     psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
@@ -138,7 +138,7 @@ void pscom_portals_sendv_done(void *con_priv)
     poll_reader_dec(sock);
 }
 
-void pscom_portals_recv_done(void *priv, void *buf, size_t len)
+static void pscom_portals_recv_done(void *priv, void *buf, size_t len)
 {
     pscom_con_t *con = (pscom_con_t *)priv;
     assert(con->magic == MAGIC_CONNECTION);
@@ -342,6 +342,10 @@ static void pscom_portals_init(void)
     /* register the environment configuration table */
     pscom_env_table_register_and_parse("pscom PORTALS", "PORTALS_",
                                        pscom_env_table_portals);
+
+    /* set the callbacks to be called by the lowe layer */
+    psptl.callbacks.sendv_done = pscom_portals_sendv_done;
+    psptl.callbacks.recv_done  = pscom_portals_recv_done;
 }
 
 
