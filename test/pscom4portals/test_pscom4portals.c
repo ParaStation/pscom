@@ -665,6 +665,46 @@ void test_portals_read_after_send_request(void **state)
 
 
 /**
+ * \brief Test for PtlPut failure
+ *
+ * Given: A process starts writing on a pscom4portals connection
+ * When: PtlPut() fails
+ * Then: the connection's state is set to not reading
+ */
+void test_portals_put_fail(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+
+    /* set the reading and connection state */
+    dummy_sock->portals.reader_user = 0;
+    dummy_con->pub.state            = PSCOM_CON_STATE_RW;
+
+    /* post a send request on the connection */
+    pscom_request_t *send_req = pscom_request_create(0, 100);
+    send_req->connection      = &dummy_con->pub;
+    send_req->data_len        = 0;
+
+    /* post a send request (i.e., start writing) */
+    pscom_post_send(send_req);
+
+    /* call the actual polling function */
+    will_return(__wrap_PtlPut, PTL_ARG_INVALID);
+    expect_function_call(__wrap_PtlPut);
+
+    /* poll two times to ensure the reader is actually removed */
+    pscom_poll(&pscom.poll_write);
+    pscom_poll(&pscom.poll_write);
+
+    /* ensure pscom4portals is not reading state */
+    assert_true(dummy_sock->portals.reader_user == 0);
+    assert_int_equal(list_count(&pscom.poll_write.head), 0);
+    assert_false(dummy_con->pub.state & PSCOM_CON_STATE_W);
+}
+
+
+/**
  * \brief Ensure connections with outstanding put requests are not closed
  *
  * Given: A pscom4portals connection with outstanding put requests
@@ -1147,4 +1187,60 @@ void test_portals_rma_write_fragmentation_remainder(void **state)
     disable_extended_ptl_put_mock();
 
     free(src_buf);
+}
+
+
+/**
+ * \brief Test RMA write with NI failure
+ *
+ * Given: A rendezvous request being issued
+ * When: the PTL_EVENT_ACK returns a ptl_ni_fail_t != PTL_NI_OK
+ * Then: the failure is propagated to the upper layers
+ */
+void test_portals_rma_write_fail_ack(void **state)
+{
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
+    uint32_t rndv_pti            = con_info->ep->pti[PSPTL_PROT_RNDV];
+
+    /* register a memory region  */
+    char src_buf[42]                = {0};
+    pscom_rendezvous_msg_t rndv_msg = {
+        .data     = src_buf,
+        .data_len = 42,
+    };
+
+    /* start reading on the connection (will be ensured by the control msgs) */
+    dummy_con->read_start(dummy_con);
+
+    /* issue the RMA write operation */
+    expect_function_call(__wrap_PtlPut);
+    will_return(__wrap_PtlPut, PTL_OK);
+    void *priv = (void *)(0xDEADBEEF);
+    dummy_con->rma_write(dummy_con, src_buf, &rndv_msg,
+                         rma_write_completion_io_done, priv);
+
+
+    /* receive ACK */
+    will_return(__wrap_PtlEQPoll, NULL); /* use saved user pointer */
+    will_return(__wrap_PtlEQPoll, 0);    /* sequence ID not important */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);   /* generate an ACK event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_DROPPED);  /* request failed */
+    will_return(__wrap_PtlEQPoll, 0);               /* mlength */
+    will_return(__wrap_PtlEQPoll, 0);               /* rlength */
+    will_return(__wrap_PtlEQPoll, rndv_pti);        /* rendezvous PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_RNDV); /* eager EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
+
+    /*  io_done is called with our 'priv' parameter and no error */
+    expect_function_call(rma_write_completion_io_done);
+    expect_value(rma_write_completion_io_done, priv, priv);
+    expect_value(rma_write_completion_io_done, err, 1);
+
+    pscom_poll(&pscom.poll_read);
+
+    /* stop reading and cleanup polling list */
+    dummy_con->read_stop(dummy_con);
+    pscom_poll(&pscom.poll_read);
 }

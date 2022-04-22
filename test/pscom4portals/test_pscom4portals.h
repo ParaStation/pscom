@@ -27,6 +27,7 @@ void test_portals_read_out_of_order_receive(void **state);
 void test_portals_read_three_out_of_order_receive(void **state);
 
 void test_portals_read_after_send_request(void **state);
+void test_portals_put_fail(void **state);
 void test_portals_defer_close_with_outstanding_put_requests(void **state);
 void test_portals_close_with_no_outstanding_put_requests(void **state);
 void test_portals_handle_message_drop(void **state);
@@ -39,5 +40,6 @@ void test_portals_rma_write_fragmentation(void **state);
 void test_portals_rma_write_fragmentation_remainder(void **state);
 void test_portals_rma_write_fail_put(void **state);
 void test_portals_rma_write_completion(void **state);
+void test_portals_rma_write_fail_ack(void **state);
 
 #endif /* _TEST_PSCOM4PORTALS_H_ */

@@ -349,6 +349,10 @@ int main(void)
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),
 		cmocka_unit_test_setup_teardown(
+			test_portals_put_fail,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
 			test_portals_defer_close_with_outstanding_put_requests,
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),
@@ -390,6 +394,10 @@ int main(void)
 			teardown_dummy_portals_con),
 		cmocka_unit_test_setup_teardown(
 			test_portals_rma_write_completion,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fail_ack,
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),
 	};
