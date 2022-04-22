@@ -311,11 +311,19 @@ int main(void)
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
+			test_portals_initialization_after_socket_failure,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
 			test_portals_read_after_con_read,
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
 			test_portals_read_after_con_read_stop_out_of_two,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_one_reader_per_socket,
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(

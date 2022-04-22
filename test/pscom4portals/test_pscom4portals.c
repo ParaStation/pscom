@@ -223,6 +223,28 @@ void test_portals_initialization_after_failure(void **state)
 }
 
 
+/**
+ * \brief Test if connection initialization fails for failed socket
+ *
+ * Given: A pscom4portals socket already failed to initialize
+ * When: a connection is initialized
+ * Then: it fails to initialize
+ */
+void test_portals_initialization_after_socket_failure(void **state)
+{
+    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+    psptl_sock_t *sock     = &get_sock(dummy_con->pub.socket)->portals;
+
+    /* set the init state */
+    psptl.init_state = PSPORTALS_INIT_DONE;
+    sock->init_state = PSCOM_PORTALS_SOCK_INIT_FAILED;
+
+    /* initialize the second connection */
+    int ret = pscom_plugin_portals.con_init(dummy_con);
+
+    assert_true(ret == PSCOM_PORTALS_SOCK_INIT_FAILED);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Receiving
 ////////////////////////////////////////////////////////////////////////////////
@@ -279,6 +301,50 @@ void test_portals_read_after_con_read_stop_out_of_two(void **state)
     /* ensure pscom4portals is in reading state */
     assert_true(dummy_sock->portals.reader_user == 1);
     assert_true(dummy_con->arch.portals.reading == 0);
+}
+
+
+/**
+ * \brief Test if pscom4portals creates one reader per socket
+ *
+ * Given: a portals connection in reading state
+ * When: a new connection is created on new socket and starts reading
+ * Then: there should be two readers in the poll list
+ */
+void test_portals_one_reader_per_socket(void **state)
+{
+    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+
+    /* initialize as portals connection */
+    dummy_con->read_stop            = pscom_portals_read_stop;
+    dummy_con->read_start           = pscom_portals_read_start;
+    dummy_con->arch.portals.reading = 0;
+    pscom_plugin_portals.sock_init(get_sock(dummy_con->pub.socket));
+
+    /* start reading */
+    dummy_con->read_start(dummy_con);
+
+    /* create a new socket and a new connection */
+    pscom_sock_t *new_sock = pscom_open_sock(0, 0);
+    pscom_con_t *new_con   = pscom_con_create(new_sock);
+
+    /* initialize the new connection as portals connection */
+    new_con->read_stop            = pscom_portals_read_stop;
+    new_con->read_start           = pscom_portals_read_start;
+    new_con->arch.portals.reading = 0;
+    pscom_plugin_portals.sock_init(get_sock(new_con->pub.socket));
+
+
+    /* start reading */
+    new_con->read_start(new_con);
+
+    /* ensure pscom4portals is in reading state */
+    assert_int_equal(list_count(&pscom.poll_read.head), 2);
+
+    /* cleanup the readers */
+    new_con->read_stop(dummy_con);
+    new_con->read_stop(new_con);
+    pscom_poll(&pscom.poll_read);
 }
 
 

@@ -17,9 +17,11 @@ int teardown_dummy_portals_con(void **state);
 void test_portals_first_initialization(void **state);
 void test_portals_second_initialization(void **state);
 void test_portals_initialization_after_failure(void **state);
+void test_portals_initialization_after_socket_failure(void **state);
 
 void test_portals_read_after_con_read(void **state);
 void test_portals_read_after_con_read_stop_out_of_two(void **state);
+void test_portals_one_reader_per_socket(void **state);
 void test_portals_read_on_event_put(void **state);
 void test_portals_read_out_of_order_receive(void **state);
 void test_portals_read_three_out_of_order_receive(void **state);
