@@ -40,9 +40,15 @@ void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
  */
 void *__wrap_malloc(size_t size)
 {
-	/* only mock malloc if this is set for the current test */
-	if (pscom_utest.mock_functions.malloc) {
-		return NULL;
+	/*
+	 * only mock malloc if this is set for the current test via
+	 * enable_malloc_mock()
+	 *
+	 * NOTE: Currently, this only supports single calls to malloc()!
+	 *       (there is no stack implemented)
+	 */
+	if (pscom_utest.mock_functions.malloc.enabled) {
+		return pscom_utest.mock_functions.malloc.addr;
 	}
 
 	return __real_malloc(size);

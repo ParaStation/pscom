@@ -846,6 +846,8 @@ void test_portals_memory_registration(void **state)
 {
     dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
     pscom_con_t *dummy_con       = con_state->con;
+    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
+    uint32_t rndv_pti            = con_info->ep->pti[PSPTL_PROT_RNDV];
 
     /* register a memory region  */
     char buf[42]               = {0};
@@ -856,10 +858,35 @@ void test_portals_memory_registration(void **state)
                 .data_len = 42,
             },
     };
+    pscom_rendezvous_data_portals_t *rd_portals = get_req_data(&rd);
+    psptl_rma_mreg_t *psptl_rma_mreg = &rd_portals->rma_write_rx.rma_mreg;
 
     expect_function_call(__wrap_PtlMEAppend);
     will_return(__wrap_PtlMEAppend, PTL_OK);
-    assert_true(dummy_con->rma_mem_register(dummy_con, &rd) > 0);
+
+    /*
+     * Pre-allocate the rendezvous bucket to be returned by PtlEQPoll() while
+     * waiting for the ME to be linked in psptl_rma_mem_register(). This is
+     * realized by calling enable_malloc_mock() beforehand.
+     */
+    void *rndv_bucket = malloc(sizeof(psptl_bucket_t));
+
+    will_return(__wrap_PtlEQPoll, rndv_bucket);     /* pre-allocated bucket */
+    will_return(__wrap_PtlEQPoll, 0x42);            /* arbitrary hdr_data */
+    will_return(__wrap_PtlEQPoll, PTL_EVENT_LINK);  /* issue a LINK event */
+    will_return(__wrap_PtlEQPoll, PTL_NI_OK);       /* no link failure */
+    will_return(__wrap_PtlEQPoll, strlen(buf));     /* arbitrary mlength */
+    will_return(__wrap_PtlEQPoll, strlen(buf));     /* arbitrary rlength */
+    will_return(__wrap_PtlEQPoll, rndv_pti);        /* rndv PT index */
+    will_return(__wrap_PtlEQPoll, PSPTL_PROT_RNDV); /* rndv EQ index */
+    will_return(__wrap_PtlEQPoll, PTL_OK);          /* event queue not empty */
+
+    enable_malloc_mock(rndv_bucket);
+
+    assert_true(psptl_rma_mem_register(dummy_con->arch.portals.ci, rd.msg.data,
+                                       rd.msg.data_len, psptl_rma_mreg) == 0);
+
+    disable_malloc_mock();
 }
 
 
