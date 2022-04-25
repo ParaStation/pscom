@@ -56,11 +56,6 @@ pscom_env_table_entry_t pscom_env_table_portals[] = {
      &psptl.con_params.max_rndv_reqs, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 
-    {"MAX_RNDV_RETRY", "10",
-     "Maximum number rendezvous retries per RMA request.",
-     &psptl.con_params.max_rndv_retry, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-     PSCOM_ENV_PARSER_UINT},
-
     {"RENDEZVOUS", "40000", "The rendezvous threshold for pscom4portals.",
      &pscom.env.rendezvous_size_portals, PSCOM_ENV_ENTRY_HAS_PARENT,
      PSCOM_ENV_PARSER_UINT},
@@ -272,7 +267,6 @@ static int pscom_portals_rma_write(pscom_con_t *con, void *src,
     psptl_rma_req->data       = rndv_msg->data;
     psptl_rma_req->data_len   = rndv_msg->data_len;
     psptl_rma_req->con_info   = con_info;
-    psptl_rma_req->retry_cnt  = 0;
 
     /* store the io_done callback information */
     rd_portals->rma_write_tx.io_done = io_done;

@@ -56,13 +56,11 @@ typedef struct psptl {
         uint32_t sendq_size;
         uint32_t recvq_size;
         uint32_t max_rndv_reqs;
-        uint32_t max_rndv_retry;
     } con_params;
     struct {
         uint64_t retry_cnt;
         uint64_t outstanding_put_ops;
         uint64_t rndv_write;
-        uint64_t rndv_retry;
     } stats;
     struct {
         void (*sendv_done)(void *con_priv);
@@ -88,7 +86,6 @@ typedef struct psptl_rma_req {
     void *data;
     size_t data_len;
     uint64_t match_bits;
-    uint8_t retry_cnt;
 } psptl_rma_req_t;
 
 extern psptl_t psptl;

@@ -26,7 +26,8 @@
     (PTL_ME_EVENT_LINK_DISABLE | PTL_ME_EVENT_UNLINK_DISABLE | PTL_ME_OP_PUT)
 #define PSPTL_USE_ONCE (PTL_ME_USE_ONCE)
 #define PSPTL_RMA_WRITE_FLAGS                                                  \
-    (PSPTL_PUT_FLAGS | PTL_ME_EVENT_COMM_DISABLE | PTL_ME_USE_ONCE)
+    (PTL_ME_EVENT_UNLINK_DISABLE | PTL_ME_OP_PUT | PTL_ME_EVENT_COMM_DISABLE | \
+     PTL_ME_USE_ONCE)
 
 #define psptl_dprint(debug_level, fmt, arg...)                                 \
     do {                                                                       \
@@ -37,6 +38,13 @@
     } while (0);
 
 typedef struct psptl_bucket psptl_bucket_t;
+
+typedef enum psptl_bucket_status {
+    PSPTL_BUCKET_FREE       = 0,
+    PSPTL_BUCKET_IN_USE     = 1,
+    PSPTL_BUCKET_LINK_ERROR = 2,
+    PSPTL_BUCKET_LINK_WAIT  = 3,
+} psptl_bucket_status_t;
 
 typedef struct psptl_hca_info {
     ptl_handle_ni_t nih;
@@ -90,7 +98,7 @@ typedef struct psptl_bucket {
     uint64_t seq_id;
     uint64_t match_bits;
     uint64_t ignore_bits;
-    uint8_t in_use;
+    uint8_t status;
     ptl_handle_me_t meh;
     struct list_head next;
 } psptl_bucket_t;
@@ -108,7 +116,6 @@ psptl_t psptl = {
             .retry_cnt           = 0,
             .outstanding_put_ops = 0,
             .rndv_write          = 0,
-            .rndv_retry          = 0,
         },
     .init_state   = PSPORTALS_NOT_INITIALIZED,
     .cleanup_cons = LIST_HEAD_INIT(psptl.cleanup_cons),
@@ -375,7 +382,7 @@ static void psptl_create_send_queue(uint32_t num_bufs, size_t buf_len,
 
         con_info->send_buffers.buckets[i].con_info = con_info;
         con_info->send_buffers.buckets[i].buf      = buf;
-        con_info->send_buffers.buckets[i].in_use   = 0;
+        con_info->send_buffers.buckets[i].status   = PSPTL_BUCKET_FREE;
     }
 
     return;
@@ -666,7 +673,7 @@ void psptl_finalize(void)
 static void psptl_bucket_send_done(psptl_bucket_t *send_bucket)
 {
     /* the bucket is free to be reused */
-    send_bucket->in_use = 0;
+    send_bucket->status = PSPTL_BUCKET_FREE;
 
     /* tell the upper layer the request is done */
     psptl.callbacks.sendv_done(send_bucket->con_info->con_priv);
@@ -784,19 +791,16 @@ static void psptl_handle_eager_ack(psptl_bucket_t *send_bucket, uint8_t done)
 }
 
 
+static void
+psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket, uint8_t err)
+{
+    rndv_bucket->status = err ? PSPTL_BUCKET_LINK_ERROR : PSPTL_BUCKET_FREE;
+}
+
+
 static void psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, int err)
 {
-    if (err && (rma_req->retry_cnt < psptl.con_params.max_rndv_retry)) {
-        psptl_post_rma_put(rma_req);
-
-        /* increase the retry counter */
-        rma_req->retry_cnt++;
-
-        /* take statistics */
-        psptl.stats.rndv_retry++;
-    } else {
-        rma_req->io_done(rma_req->priv, err);
-    }
+    rma_req->io_done(rma_req->priv, err);
 }
 
 
@@ -834,6 +838,13 @@ int psptl_progress(void *ep_priv)
         psptl_handle_put_event(event);
         break;
     }
+    case PTL_EVENT_LINK: {
+        /* currently, we only capture link events for rendezvous regions */
+        assert(event.pt_index == ep->pti[PSPTL_PROT_RNDV]);
+
+        psptl_handle_rndv_link_event((psptl_bucket_t *)(event.user_ptr),
+                                     (event.ni_fail_type != PTL_NI_OK));
+    }
     case PTL_EVENT_SEND: break;
     default:
         psptl_dprint(D_ERR, "Unhandled event: %s (eqh: %d)!",
@@ -859,7 +870,8 @@ ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len)
     uint32_t cur_send_bucket           = con_info->send_buffers.cur;
 
     /* check if the current send bucket is free */
-    if (con_info->send_buffers.buckets[cur_send_bucket].in_use) {
+    if (con_info->send_buffers.buckets[cur_send_bucket].status ==
+        PSPTL_BUCKET_IN_USE) {
         goto err_busy;
     }
 
@@ -867,7 +879,7 @@ ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len)
     len = (len <= psptl.con_params.bufsize) ? len : psptl.con_params.bufsize;
 
     send_bucket         = &(con_info->send_buffers.buckets[cur_send_bucket]);
-    send_bucket->in_use = 1;
+    send_bucket->status = PSPTL_BUCKET_IN_USE;
     send_bucket->len    = len;
     send_bucket->seq_id = con_info->send_seq_id++;
 
@@ -941,7 +953,6 @@ void psptl_print_stats(void)
     psptl_dprint(D_STATS, "outstanding_put_ops : %8lu",
                  psptl.stats.outstanding_put_ops);
     psptl_dprint(D_STATS, "rndv_write          : %8lu", psptl.stats.rndv_write);
-    psptl_dprint(D_STATS, "rndv_retry          : %8lu", psptl.stats.rndv_retry);
 }
 
 
@@ -962,6 +973,7 @@ int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
     rndv_bucket->con_info    = con_info;
     rndv_bucket->match_bits  = con_info->rndv_seq_id++; /* con-local seq ID */
     rndv_bucket->ignore_bits = 0;
+    rndv_bucket->status      = PSPTL_BUCKET_LINK_WAIT; /* set by link event */
 
     /* update the RMA request */
     rma_mreg->match_bits = rndv_bucket->match_bits;
@@ -972,12 +984,24 @@ int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
                                      ep->pti[PSPTL_PROT_RNDV], len);
     if (ret < 0) goto err_mem_register;
 
+    /* wait for the ME to be linked */
+    while (rndv_bucket->status == PSPTL_BUCKET_LINK_WAIT) {
+        psptl_progress(ep);
+    }
+    if (rndv_bucket->status != PSPTL_BUCKET_FREE) goto err_me_link;
+
+
     con_info->outstanding_rndv_reqs++;
 
     return 0;
     /* --- */
 err_mem_register:
     psptl_dprint(D_ERR, "Failed to register rendezvous buffer %p\n", buf);
+    goto err_out;
+err_me_link:
+    psptl_dprint(D_ERR, "Failed to link the ME for the rendezvous buffer %p\n",
+                 buf);
+    goto err_out;
 err_out:
     return -1;
 }
