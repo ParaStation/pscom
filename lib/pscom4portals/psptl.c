@@ -27,7 +27,7 @@
 #define PSPTL_USE_ONCE (PTL_ME_USE_ONCE)
 #define PSPTL_RMA_WRITE_FLAGS                                                  \
     (PTL_ME_EVENT_UNLINK_DISABLE | PTL_ME_OP_PUT | PTL_ME_EVENT_COMM_DISABLE | \
-     PTL_ME_USE_ONCE)
+     PTL_ME_MANAGE_LOCAL)
 
 #define psptl_dprint(debug_level, fmt, arg...)                                 \
     do {                                                                       \
@@ -52,6 +52,7 @@ typedef struct psptl_hca_info {
         ptl_process_t ptl_pid;
         uint64_t raw;
     } pid;
+    ptl_ni_limits_t limits;
 } psptl_hca_info_t;
 
 struct psptl_ep {
@@ -616,9 +617,24 @@ int psptl_init(void)
                       init_opts,         /* NI-related options */
                       PTL_PID_ANY,       /* let portals4 choose the pid */
                       NULL,              /* do not impose resource limits */
-                      NULL,              /* do not retrieve resource limits */
+                      &psptl_hca_info.limits, /* store limits of the NI */
                       &psptl_hca_info.nih); /* handle to the network interface */
         if (ret != PTL_OK) goto err_ni_init;
+
+        /* limit the fragment size for rendezvous transfers */
+        if (psptl_hca_info.limits.max_msg_size <
+            psptl.con_params.rndv_fragment_size) {
+
+            psptl.con_params.rndv_fragment_size =
+                psptl_hca_info.limits.max_msg_size;
+
+            psptl_dprint(
+                D_INFO,
+                "Limiting the rendezvous fragment size to %lu corresponding to "
+                "the max_msg_size supported by the Portals4 layer.",
+                psptl.con_params.rndv_fragment_size);
+        }
+
 
         /* retrieve the portals process ID */
         ret = PtlGetPhysId(psptl_hca_info.nih, &psptl_hca_info.pid.ptl_pid);
@@ -798,9 +814,20 @@ psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket, uint8_t err)
 }
 
 
-static void psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, int err)
+static void
+psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, ptl_ni_fail_t fail_type)
 {
-    rma_req->io_done(rma_req->priv, err);
+    if (fail_type == PTL_NI_OK) {
+        rma_req->remaining_fragments--;
+
+        /* the request is done, once all fragments have been sent */
+        if (!rma_req->remaining_fragments) {
+            rma_req->io_done(rma_req->priv, 0);
+        }
+    } else {
+        psptl_dprint(D_ERR, "Rendezvous ack failed with: %u", fail_type);
+        rma_req->io_done(rma_req->priv, 1);
+    }
 }
 
 
@@ -827,7 +854,7 @@ int psptl_progress(void *ep_priv)
                                    (event.ni_fail_type == PTL_NI_OK));
         } else {
             psptl_handle_rndv_ack((psptl_rma_req_t *)(event.user_ptr),
-                                  (event.ni_fail_type != PTL_NI_OK));
+                                  event.ni_fail_type);
         }
         break;
     }
@@ -1012,7 +1039,7 @@ void psptl_rma_mem_deregister(psptl_rma_mreg_t *rma_mreg)
     psptl_bucket_t *rndv_bucket = (psptl_bucket_t *)(rma_mreg->priv);
     psptl_con_info_t *con_info  = rndv_bucket->con_info;
 
-    /* PtlMEUnlink not required due to PSPTL_USE_ONCE */
+    psptl_deregister_recv_buffer(rndv_bucket);
     con_info->outstanding_rndv_reqs--;
 
     /* free the corresponding bucket */
@@ -1028,19 +1055,31 @@ int psptl_post_rma_put(psptl_rma_req_t *rma_req)
     psptl_con_info_t *con_info         = rma_req->con_info;
     psptl_ep_t *ep                     = con_info->ep;
     psptl_remote_con_info_t *remote_ci = &con_info->remote_ci;
+    size_t fragment_size               = psptl.con_params.rndv_fragment_size;
+    uint8_t remainder                  = (data_len % fragment_size) ? 1 : 0;
 
-    /* Transmit the messages via put operation */
-    ret = PtlPut(ep->mdh[PSPTL_PROT_RNDV], /* local memory handle */
-                 (uint64_t)data,           /* local offset */
-                 data_len,                 /* amount of bytes to be sent */
-                 PTL_ACK_REQ,              /* request a full event */
-                 remote_ci->pid.ptl_pid,   /* peer process ID */
-                 remote_ci->pti[PSPTL_PROT_RNDV], /* remote portals index */
-                 rma_req->match_bits,             /* match bits */
-                 0,                               /* do not ignore any bit */
-                 rma_req,                         /* local user pointer */
-                 0);                              /* no header */
-    if (ret != PTL_OK) goto err_put;
+    rma_req->remaining_fragments = data_len / fragment_size + remainder;
+
+    /* Transmit the messages via put operation (possibly in fragments) */
+    while (data_len) {
+        size_t put_len = (data_len < fragment_size) ? data_len : fragment_size;
+
+        ret = PtlPut(ep->mdh[PSPTL_PROT_RNDV], /* local memory handle */
+                     (uint64_t)data,           /* local offset */
+                     put_len,                  /* amount of bytes to be sent */
+                     PTL_ACK_REQ,              /* request a full event */
+                     remote_ci->pid.ptl_pid,   /* peer process ID */
+                     remote_ci->pti[PSPTL_PROT_RNDV], /* remote portals index */
+                     rma_req->match_bits,             /* match bits */
+                     0,       /* offset is managed locally */
+                     rma_req, /* local user pointer */
+                     0);      /* no header */
+        if (ret != PTL_OK) goto err_put;
+
+        /* update parameters for next fragment */
+        data += put_len;
+        data_len -= put_len;
+    }
 
     /* take some statistics */
     psptl.stats.rndv_write++;

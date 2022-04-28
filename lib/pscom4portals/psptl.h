@@ -53,6 +53,7 @@ typedef struct psptl {
     uint32_t eq_size;
     struct {
         size_t bufsize;
+        size_t rndv_fragment_size;
         uint32_t sendq_size;
         uint32_t recvq_size;
         uint32_t max_rndv_reqs;
@@ -86,6 +87,7 @@ typedef struct psptl_rma_req {
     void *data;
     size_t data_len;
     uint64_t match_bits;
+    size_t remaining_fragments;
 } psptl_rma_req_t;
 
 extern psptl_t psptl;
