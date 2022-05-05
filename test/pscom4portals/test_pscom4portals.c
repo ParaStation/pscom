@@ -939,10 +939,8 @@ void test_portals_mem_deregister_releases_resources(void **state)
     pscom_rendezvous_data_portals_t *rd_portals = get_req_data(&rd);
     rd_portals->rma_write_rx.rma_mreg.priv      = bucket;
 
-    enable_free_mock();
-    expect_value(__wrap_free, ptr, bucket);
+    expect_function_call(__wrap_PtlMEUnlink);
     dummy_con->rma_mem_deregister(dummy_con, &rd);
-    disable_free_mock();
 }
 
 

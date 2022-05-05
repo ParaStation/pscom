@@ -28,6 +28,9 @@ int __wrap_PtlNIInit(ptl_interface_t iface, unsigned int options, ptl_pid_t pid,
                      const ptl_ni_limits_t *desired, ptl_ni_limits_t *actual,
                      ptl_handle_ni_t *ni_handle)
 {
+    /* provide a max_msg_size used by rendezvous transfers */
+    actual->max_msg_size = 64*1024*1024;
+
     return PTL_OK;
 }
 
