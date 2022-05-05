@@ -40,6 +40,7 @@ bin/p4logd.c \
 bin/p4stat.c \
 bin/p4tcp.c \
 bin/port_pp.c \
+bin/portals4/portals4_pp.c \
 bin/porttest.c \
 bin/pscom.gdb \
 bin/pscom_bcast_pp.c \
@@ -75,6 +76,7 @@ cmake/Modules/FindDapl.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindIbVerbs.cmake \
 cmake/Modules/FindPopt.cmake \
+cmake/Modules/FindPortals4.cmake \
 cmake/Modules/FindPsm2.cmake \
 cmake/Modules/FindPsmgmt.cmake \
 cmake/Modules/FindUcp.cmake \
@@ -201,6 +203,11 @@ lib/pscom4openib/pscom_openib.h \
 lib/pscom4openib/psoib.c \
 lib/pscom4openib/psoib.h \
 lib/pscom4openib/psoib_mregion_cache.c \
+lib/pscom4portals/CMakeLists.txt \
+lib/pscom4portals/pscom_portals.c \
+lib/pscom4portals/pscom_portals.h \
+lib/pscom4portals/psptl.c \
+lib/pscom4portals/psptl.h \
 lib/pscom4psm/CMakeLists.txt \
 lib/pscom4psm/pscom_psm.c \
 lib/pscom4psm/pscom_psm.h \
@@ -246,6 +253,8 @@ test/CMakeLists.txt \
 test/mocks/cuda_mocks.c \
 test/mocks/misc_mocks.c \
 test/mocks/misc_mocks.h \
+test/mocks/portals4_mocks.c \
+test/mocks/portals4_mocks.h \
 test/mocks/ucx_mocks.c \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
@@ -257,6 +266,8 @@ test/pscom/test_io.c \
 test/pscom/test_io.h \
 test/pscom/test_plugin.c \
 test/pscom/test_plugin.h \
+test/pscom4portals/test_pscom4portals.c \
+test/pscom4portals/test_pscom4portals.h \
 test/pscom4ucp/test_pscom4ucp.c \
 test/pscom4ucp/test_pscom4ucp.h \
 test/pscom_utest.c \
