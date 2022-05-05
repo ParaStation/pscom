@@ -20,6 +20,9 @@ typedef struct pscom_utest {
             unsigned int enabled;
             void *addr;
         } malloc;
+        struct {
+            unsigned int extended_ptl_put;
+        } portals;
     } mock_functions;
 } pscom_utest_t;
 

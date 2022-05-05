@@ -21,6 +21,7 @@
 #include "pscom_priv.h"
 #include "pscom_utest.h"
 #include "mocks/misc_mocks.h"
+#include "mocks/portals4_mocks.h"
 
 #include "pscom_portals.h"
 #include "psptl.h"
@@ -1050,4 +1051,100 @@ void test_portals_rma_write_completion(void **state)
     /* stop writing and cleanup polling list */
     dummy_con->read_stop(dummy_con);
     pscom_poll(&pscom.poll_read);
+}
+
+
+/**
+ * \brief Test RMA write for long messages I
+ *
+ * Given: A rendezvous request of a long message exceeding the rendezvous
+ *        fragmentation size
+ * When: con->rma_write is called with correct parameters
+ * Then: the request is processes by sending multiple fragments
+ */
+void test_portals_rma_write_fragmentation(void **state)
+{
+    const size_t fragment_size   = 2 * 1024;
+    const size_t msg_size        = 64 * 1024;
+    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con       = con_state->con;
+
+    /* set  the fragmentation size */
+    psptl.con_params.rndv_fragment_size = fragment_size;
+
+    /* register a memory region  */
+    void *src_buf                   = malloc(msg_size);
+    pscom_rendezvous_msg_t rndv_msg = {
+        .data     = src_buf,
+        .data_len = msg_size,
+    };
+
+    enable_extended_ptl_put_mock();
+
+    expect_function_calls(__wrap_PtlPut, (int)(msg_size / fragment_size));
+    will_return_always(__wrap_PtlPut, PTL_OK);
+
+    /* check data buffers passed to PtlPut() */
+    for (size_t offset = 0; offset < msg_size; offset += fragment_size) {
+        expect_value(__wrap_PtlPut, local_offset, src_buf + offset);
+        expect_value(__wrap_PtlPut, length, fragment_size);
+    }
+
+    assert_true(
+        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == 0);
+
+    disable_extended_ptl_put_mock();
+
+    free(src_buf);
+}
+
+
+/**
+ * \brief Test RMA write for long messages II
+ *
+ * Given: A rendezvous request of a long message exceeding the rendezvous
+ *        fragmentation size and remainder
+ * When: con->rma_write is called with correct parameters
+ * Then: the request is processes by sending multiple fragments
+ */
+void test_portals_rma_write_fragmentation_remainder(void **state)
+{
+    const size_t fragment_size     = 2 * 1024;
+    const size_t msg_size          = 6 * 1024 + 1;
+    const size_t full_fragment_cnt = msg_size / fragment_size;
+    const size_t remainder         = msg_size % fragment_size;
+    dummy_con_state_t *con_state   = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con         = con_state->con;
+
+    /* set  the fragmentation size */
+    psptl.con_params.rndv_fragment_size = fragment_size;
+
+    /* register a memory region  */
+    void *src_buf                   = malloc(msg_size);
+    pscom_rendezvous_msg_t rndv_msg = {
+        .data     = src_buf,
+        .data_len = msg_size,
+    };
+
+    enable_extended_ptl_put_mock();
+
+    expect_function_calls(__wrap_PtlPut, (int)full_fragment_cnt + 1);
+    will_return_always(__wrap_PtlPut, PTL_OK);
+
+    /* check data buffers passed to PtlPut() */
+    for (size_t offset = 0; offset < full_fragment_cnt * fragment_size;
+         offset += fragment_size) {
+        expect_value(__wrap_PtlPut, local_offset, src_buf + offset);
+        expect_value(__wrap_PtlPut, length, fragment_size);
+    }
+    expect_value(__wrap_PtlPut, local_offset,
+                 src_buf + full_fragment_cnt * fragment_size);
+    expect_value(__wrap_PtlPut, length, remainder);
+
+    assert_true(
+        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == 0);
+
+    disable_extended_ptl_put_mock();
+
+    free(src_buf);
 }

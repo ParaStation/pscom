@@ -40,6 +40,9 @@ pscom_utest_t pscom_utest = {
 			.enabled = 0,
 			.addr = NULL,
 		},
+		.portals = {
+			.extended_ptl_put = 0,
+		},
 	},
 };
 
@@ -371,6 +374,14 @@ int main(void)
 			teardown_dummy_portals_con),
 		cmocka_unit_test_setup_teardown(
 			test_portals_rma_write,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fragmentation,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fragmentation_remainder,
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),
 		cmocka_unit_test_setup_teardown(

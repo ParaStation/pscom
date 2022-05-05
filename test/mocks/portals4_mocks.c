@@ -16,6 +16,9 @@
 
 #include <portals4.h>
 
+#include "mocks/portals4_mocks.h"
+#include "pscom_utest.h"
+
 static void *save_user_ptr = NULL;
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -186,6 +189,11 @@ int __wrap_PtlPut(ptl_handle_md_t md_handle, ptl_size_t local_offset,
     function_called();
 
     save_user_ptr = user_ptr;
+
+	if (pscom_utest.mock_functions.portals.extended_ptl_put) {
+    	check_expected(local_offset);
+    	check_expected(length);
+    }
 
     return mock_type(int);
 }

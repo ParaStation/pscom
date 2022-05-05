@@ -35,6 +35,8 @@ void test_portals_memory_registration(void **state);
 void test_portals_failed_memory_registration(void **state);
 void test_portals_mem_deregister_releases_resources(void **state);
 void test_portals_rma_write(void **state);
+void test_portals_rma_write_fragmentation(void **state);
+void test_portals_rma_write_fragmentation_remainder(void **state);
 void test_portals_rma_write_fail_put(void **state);
 void test_portals_rma_write_completion(void **state);
 
