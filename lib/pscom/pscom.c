@@ -40,6 +40,7 @@
 #include "pscom_ufd.h"
 #include "pscom_str_util.h"
 #include "pscom_con.h"
+#include "pscom_queues.h"
 #include "pscom_cuda.h"
 #include "pscom_env.h"
 #include "pslib.h"
@@ -247,6 +248,8 @@ void pscom_cleanup(void)
 		pscom_sock_t *sock = list_entry(pscom.sockets.next, pscom_sock_t, next);
 		pscom_close_socket(&sock->pub);
 	}
+
+	pscom_recvq_terminate_any_global();
 
 #ifdef PSCOM_CUDA_AWARENESS
 	pscom_cuda_cleanup();

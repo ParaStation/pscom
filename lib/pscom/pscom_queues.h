@@ -90,6 +90,7 @@ void _pscom_send_req_cnt_dec(pscom_con_t *con);
 void _pscom_recvq_user_enq(pscom_req_t *req);
 void _pscom_recvq_user_deq(pscom_req_t *req);
 
+void pscom_recvq_terminate_any_global();
 
 pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con, pscom_header_net_t *header);
 

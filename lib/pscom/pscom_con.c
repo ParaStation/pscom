@@ -99,6 +99,15 @@ void _pscom_con_terminate_sendq(pscom_con_t *con)
 }
 
 
+static inline
+void _pscom_recv_req_terminate_deq(pscom_req_t *req)
+{
+	_pscom_recvq_user_deq(req); // dequeue
+
+	req->pub.state |= PSCOM_REQ_STATE_ERROR;
+	_pscom_recv_req_done(req); // done
+}
+
 // clear all recvq's of this connection. finish all recv requests
 // of this connection with error. (keep recv any!)
 void pscom_con_terminate_recvq(pscom_con_t *con)
@@ -119,13 +128,10 @@ void pscom_con_terminate_recvq(pscom_con_t *con)
 	while (!list_empty(&con->recvq_user)) {
 		pscom_req_t *req = list_entry(con->recvq_user.next, pscom_req_t, next);
 
-		_pscom_recvq_user_deq(req); // dequeue
-
-		req->pub.state |= PSCOM_REQ_STATE_ERROR;
-		_pscom_recv_req_done(req); // done
+		_pscom_recv_req_terminate_deq(req);
 	}
 
-	// RecvAny Queue:
+	// Socket RecvAny Queue:
 	pscom_sock_t *sock = get_sock(con->pub.socket);
 
 	assert(sock->magic == MAGIC_SOCKET);
@@ -133,14 +139,23 @@ void pscom_con_terminate_recvq(pscom_con_t *con)
 	list_for_each_safe(pos, next, &sock->recvq_any) {
 		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
 
-//		fprintf(stderr, "Test rm "RED"req %p  con %p == %p "NORM"\n", req, req->pub.connection, &con->pub);
+		/* Check for connection-related requests that have temporarily (for the sake
+		   of message ordering) been moved to the any-source queue of the socket: */
 		if (req->pub.connection == &con->pub) {
-//			fprintf(stderr, RED "remove con %p\n"NORM, req);
 
-			_pscom_recvq_user_deq(req); // dequeue
+			_pscom_recv_req_terminate_deq(req);
+		}
+	}
 
-			req->pub.state |= PSCOM_REQ_STATE_ERROR;
-			_pscom_recv_req_done(req); // done
+	// Global RecvAny Queue:
+	list_for_each_safe(pos, next, &pscom.recvq_any_global) {
+		pscom_req_t *req = list_entry(pos, pscom_req_t, next);
+
+		/* Check for connection-related requests that have temporarily (for the sake
+		   of message ordering) been moved to the global any-source queue: */
+		if (req->pub.connection == &con->pub) {
+
+			_pscom_recv_req_terminate_deq(req);
 		}
 	}
 
