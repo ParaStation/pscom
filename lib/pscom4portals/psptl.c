@@ -37,15 +37,26 @@
         }                                                                      \
     } while (0);
 
+/**
+ * @brief Some forward declarations.
+ */
 typedef struct psptl_bucket psptl_bucket_t;
 
+
+/**
+ * @brief The status of a communication bucket.
+ */
 typedef enum psptl_bucket_status {
-    PSPTL_BUCKET_FREE       = 0,
-    PSPTL_BUCKET_IN_USE     = 1,
-    PSPTL_BUCKET_LINK_ERROR = 2,
-    PSPTL_BUCKET_LINK_WAIT  = 3,
+    PSPTL_BUCKET_FREE       = 0, /**< The bucket is free for use */
+    PSPTL_BUCKET_IN_USE     = 1, /**< There is currently a send OP pending */
+    PSPTL_BUCKET_LINK_ERROR = 2, /**< There was an error during linking */
+    PSPTL_BUCKET_LINK_WAIT  = 3, /**< The link event is still pending */
 } psptl_bucket_status_t;
 
+
+/**
+ * @brief Plugin-wide handles to the Portals4 layer.
+ */
 typedef struct psptl_hca_info {
     ptl_handle_ni_t nih;
     union {
@@ -55,12 +66,20 @@ typedef struct psptl_hca_info {
     ptl_ni_limits_t limits;
 } psptl_hca_info_t;
 
+
+/**
+ * @brief Socket-specific handles to the Portals4 layer.
+ */
+
 struct psptl_ep {
     ptl_handle_eq_t eqh[PSPTL_PROT_COUNT];
     ptl_handle_md_t mdh[PSPTL_PROT_COUNT];
     ptl_pt_index_t pti[PSPTL_PROT_COUNT];
 };
 
+/**
+ * @brief Remote connection information.
+ */
 typedef struct psptl_remote_con_info {
     union {
         ptl_process_t ptl_pid;
@@ -69,39 +88,52 @@ typedef struct psptl_remote_con_info {
     ptl_pt_index_t pti[PSPTL_PROT_COUNT];
 } psptl_remote_con_info_t;
 
+/**
+ * @brief Connection-related information.
+ *
+ * This structure holds information relevant to a single connection between
+ * two peer processes. Additionally, it stores accounting information,
+ * especially w.r.t. eager communication.
+ */
 struct psptl_con_info {
-    psptl_ep_t *ep;
-    psptl_remote_con_info_t remote_ci;
-    uint64_t send_seq_id;
-    uint64_t recv_seq_id;
-    uint64_t rndv_seq_id;
-    uint64_t outstanding_put_ops;
-    uint32_t outstanding_rndv_reqs;
+    psptl_ep_t *ep;                    /**< Socket-related information */
+    psptl_remote_con_info_t remote_ci; /**< Remote connection information */
+    uint64_t send_seq_id;              /**< Sequence ID of the sending side */
+    uint64_t recv_seq_id;              /**< Sequence ID of the receiving side */
+    uint64_t rndv_seq_id;              /**< Sequence ID of rndv requests */
+    uint64_t outstanding_put_ops;      /**< Outstanding (eager) puts */
+    uint32_t outstanding_rndv_reqs;    /**< Outstanding rendezvous requests */
     struct {
         void *mem;
         psptl_bucket_t *buckets;
         uint32_t cur;
-    } send_buffers;
+    } send_buffers; /**< Pre-allocated send buffers */
     struct {
         void *mem;
         psptl_bucket_t *buckets;
-    } recv_buffers;
+    } recv_buffers; /**< Pre-allocated receive buffers */
 
-    void *con_priv; /**< the pscom_con_t object */
-    struct list_head pending_recvs;
-    struct list_head next;
+    void *con_priv;                 /**< Handle to the pscom_con_t object to
+                                         be passed to the sendv/recv CBs */
+    struct list_head pending_recvs; /**< List holding out-of-order receives */
+    struct list_head next;          /**< For deferred cleanup */
 };
 
+/**
+ * @brief Memory bucket for sending or receiving data.
+ *
+ */
 typedef struct psptl_bucket {
-    psptl_con_info_t *con_info;
-    void *buf;
-    size_t len;
-    uint64_t seq_id;
-    uint64_t match_bits;
-    uint64_t ignore_bits;
-    uint8_t status;
-    ptl_handle_me_t meh;
-    struct list_head next;
+    psptl_con_info_t *con_info; /**< Corresponding pscom4portals connection */
+    void *buf;                  /**< The actual memory buffer */
+    size_t len;                 /**< Size of the buffer */
+    uint64_t seq_id;            /**< The packets sequence ID */
+    uint64_t match_bits;        /**< Matching criteria for this bucket */
+    uint64_t ignore_bits;       /**< Mask out insignificant bits for matching */
+    uint8_t status;             /**< Status of this bucket
+                                     (cf. @ref psptl_link_status_t) */
+    ptl_handle_me_t meh;        /**< Handle to Portals4 match list entry */
+    struct list_head next;      /**< Used for out-of-order receives */
 } psptl_bucket_t;
 
 psptl_hca_info_t psptl_hca_info;
@@ -135,14 +167,14 @@ static inline void psptl_pending_bucket_remove(psptl_bucket_t *bucket)
 
 
 /**
- * @brief Insert a receive bucket with new data into the list of pending buckets
+ * @brief Insert a recv bucket with new data into the list of pending buckets.
  *
  * This is only necessary if the sequence number of this bucket does not match
  * the expected sequence number on the receiving side. In this case, its
  * processing is postponed until all preceding buckets have been received.
  *
- * @param bucket The bucket to be inserted in the pending list of buckets of
- *               this connection.
+ * @param [in] bucket The bucket to be inserted in the pending list of buckets
+ *                    of this connection.
  */
 static inline void psptl_pending_bucket_insert(psptl_bucket_t *bucket)
 {
@@ -161,6 +193,14 @@ static inline void psptl_pending_bucket_insert(psptl_bucket_t *bucket)
 }
 
 
+/**
+ * @brief Return the string representation of a @ref psptl_prot_type_t.
+ *
+ * @param [in] protocol The protocol identifier.
+ *
+ * @return A pointer to a buffer containing the protocol's string
+ *         representation.
+ */
 static const char *psptl_prot_str(psptl_prot_type_t protocol)
 {
     static char buf[100];
@@ -176,6 +216,13 @@ static const char *psptl_prot_str(psptl_prot_type_t protocol)
 }
 
 
+/**
+ * @brief Return an error description of an error on the Portals4 layer.
+ *
+ * @param [in] error The error number from the Portals4 layer
+ *
+ * @return A pointer to a buffer containing the error description.
+ */
 static const char *psptl_err_str(int error)
 {
     static char buf[100];
@@ -209,6 +256,13 @@ static const char *psptl_err_str(int error)
 }
 
 
+/**
+ * @brief Return the string representation of an event on the Portals4 layer.
+ *
+ * @param [in] event The event identifier.
+ *
+ * @return A pointer to a buffer containing the events's string representation.
+ */
 static const char *psptl_event_str(ptl_event_t event)
 {
     static char buf[100];
@@ -243,6 +297,21 @@ static const char *psptl_event_str(ptl_event_t event)
 }
 
 
+/**
+ * @brief Register a @ref psptl_bucket_t as pre-allocated receive buffer.
+ *
+ * This function registers a @ref psptl_bucket_t as a pre-allocated receive
+ * buffer for eager communication by creating and appending a Portals4 match
+ * list entry (ME) to the @ref list.
+ *
+ * @param [in] recv_bucket The @ref psptl_bucket_t describing the recv buffer
+ * @param [in] options     ME-related options
+ * @param [in] list        The match list, this ME should be appended to
+ * @param [in] pti         The PTI where this ME should be appended
+ * @param [in] len         Size of the receive buffer
+ *
+ * @return 0 on success; -1 otherwise.
+ */
 static int psptl_register_recv_buffer(psptl_bucket_t *recv_bucket,
                                       uint32_t options, int32_t list,
                                       ptl_pt_index_t pti, size_t len)
@@ -278,6 +347,14 @@ err_out:
 }
 
 
+/**
+ * @brief Deregister a previously registered eager @ref psptl_bucket_t.
+ *
+ * This function unlinks a handle to the a match list entry (ME) from the
+ * Portals4 layer (e.g., during the closing of a pscom4portals connection).
+ *
+ * @param [in] recv_bucket The bucket whose handle to an ME should be unlinked
+ */
 static void psptl_deregister_recv_buffer(psptl_bucket_t *recv_bucket)
 {
     int ret;
@@ -296,6 +373,19 @@ err_out:
 }
 
 
+/**
+ * @brief Create a receive queue for eager communication.
+ *
+ * This function creates and allocates the receive buckets (incl. the memory
+ * space for the actual communication buffers) for eager communication.
+ * Additionally, it registers the communication buffers with the Portals4 layer.
+ *
+ * @param [in] num_bufs Number of eager buffers for receiving data
+ * @param [in] buf_len  Size of a single eager buffer
+ * @param [in] con_info The corresponding pscom4portals connection
+ *
+ * @return 0 on success; -1 otherwise.
+ */
 static int psptl_create_recv_queue(uint32_t num_bufs, size_t buf_len,
                                    psptl_con_info_t *con_info)
 {
@@ -317,10 +407,13 @@ static int psptl_create_recv_queue(uint32_t num_bufs, size_t buf_len,
         psptl_bucket_t *cur_bucket = &con_info->recv_buffers.buckets[i];
         uint32_t flags             = (PSPTL_PUT_FLAGS | PSPTL_USE_ONCE);
 
-        cur_bucket->buf         = buf;
-        cur_bucket->con_info    = con_info;
+        cur_bucket->buf      = buf;
+        cur_bucket->con_info = con_info;
+
+        /* we currently do not make use of the Portals4 matching facility */
         cur_bucket->match_bits  = 0;
         cur_bucket->ignore_bits = ~0;
+
         INIT_LIST_HEAD(&cur_bucket->next);
 
         /* register the memory region */
@@ -338,6 +431,18 @@ err_out:
 }
 
 
+/**
+ * @brief Deregister and release eager communication buffer.
+ *
+ * This function deregisters the pre-allocated receive buffers of a
+ * pscom4portals connection.
+ *
+ * @note This function can be called multiple times on the same connection.
+ *
+ * @param [in] con_info The pscom4portals connection whose receive queue shall
+ *                      be destroyed.
+ * @param [in] num_bufs The number of pre-allocated receive buffers.
+ */
 static void
 psptl_destroy_recv_queue(psptl_con_info_t *con_info, uint32_t num_bufs)
 {
@@ -362,6 +467,19 @@ psptl_destroy_recv_queue(psptl_con_info_t *con_info, uint32_t num_bufs)
 }
 
 
+/**
+ * @brief Create a send queue for eager communication.
+ *
+ * This function creates and allocates the send buckets (incl. the memory
+ * space for the actual communication buffers) for eager communication.
+ *
+ * There is no explicit registration with the Portals4 layer, as the whole VA
+ * has already been bound in @ref psptl_init_ep.
+ *
+ * @param [in] num_bufs Number of eager buffers for sending data
+ * @param [in] buf_len  Size of a single eager buffer
+ * @param [in] con_info The corresponding pscom4portals connection
+ */
 static void psptl_create_send_queue(uint32_t num_bufs, size_t buf_len,
                                     psptl_con_info_t *con_info)
 {
@@ -390,6 +508,17 @@ static void psptl_create_send_queue(uint32_t num_bufs, size_t buf_len,
 }
 
 
+/**
+ * @brief Release eager communication buffers.
+ *
+ * This function frees all resources associated with the pre-allocated buffers
+ * for sending eager messages.
+ *
+ * @note This function can be called multiple times on the same connection.
+ *
+ * @param [in] con_info The pscom4portals connection whose receive queue shall
+ *                      be destroyed.
+ */
 static void psptl_destroy_send_queue(psptl_con_info_t *con_info)
 {
     if (con_info->send_buffers.buckets) {
@@ -413,7 +542,12 @@ void psptl_configure_debug(FILE *stream, int level)
 
 int psptl_con_init(psptl_con_info_t *con_info, void *con_priv, void *ep_priv)
 {
-    con_info->ep       = (psptl_ep_t *)ep_priv;
+    con_info->ep = (psptl_ep_t *)ep_priv;
+
+    /*
+     * the pscom's pscom_con_t object to be passed to the sendv_done and
+     * recv_done callbacks.
+     */
     con_info->con_priv = con_priv;
 
     return 0;
@@ -718,6 +852,18 @@ static void psptl_req_recv_done(psptl_bucket_t *recv_bucket)
 }
 
 
+/**
+ * @brief Make progress on pending incoming packets.
+ *
+ * Since we simply retry the transmission of failing send requests, these might
+ * arrive out-of-order at the target. Therefore, we have to store them in a
+ * sorted list corresponding to their sequence IDs.
+ *
+ * This function processes these incoming packets as long as there is no gap in
+ * the sequence numbers.
+ *
+ * @param [in] con_info The connection whose incoming data should be processed.
+ */
 static void psptl_progress_pending_recvs(psptl_con_info_t *con_info)
 {
     struct list_head *pos, *next;
@@ -725,6 +871,7 @@ static void psptl_progress_pending_recvs(psptl_con_info_t *con_info)
     list_for_each_safe (pos, next, &con_info->pending_recvs) {
         psptl_bucket_t *cur_recv_bucket = list_entry(pos, psptl_bucket_t, next);
 
+        /* is there a missing packet? */
         if (cur_recv_bucket->seq_id > con_info->recv_seq_id) {
             break;
         } else {
@@ -753,11 +900,21 @@ static void psptl_handle_put_event(ptl_event_t event)
         psptl_pending_bucket_insert(recv_bucket);
     }
 
-    /* now try to progress on the pending packets */
+    /* now try to progress the pending packets */
     psptl_progress_pending_recvs(con_info);
 }
 
 
+/**
+ * @brief Retry the transmission of an eager message.
+ *
+ * If the transmission of an eager message fails, we simply retry by leveraging
+ * the information already stored in the @ref psptl_bucket_t object.
+ *
+ * @todo Limit the number of retries until we report a connection error.
+ *
+ * @param [in] send_bucket The bucket whose transmission failed
+ */
 static void psptl_bucket_send_retry(psptl_bucket_t *send_bucket)
 {
     int ret;
