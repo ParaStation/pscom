@@ -906,16 +906,20 @@ static void psptl_handle_put_event(ptl_event_t event)
 
 
 /**
- * @brief Retry the transmission of an eager message.
+ * @brief Transmit an eager message.
  *
- * If the transmission of an eager message fails, we simply retry by leveraging
- * the information already stored in the @ref psptl_bucket_t object.
+ * This function triggers a PUT operation based on the information provided
+ * within the @ref psptl_bucket_t object. This corresponds to the transmission
+ * of a single eager message.
  *
- * @todo Limit the number of retries until we report a connection error.
+ * @param [in] send_bucket The bucket corresponding to the mssage to be sent
  *
- * @param [in] send_bucket The bucket whose transmission failed
+ * @return The actual amount of bytes being sent. In case of an error, a
+ *         negative errno is returned indicating the failure:
+ *
+ *         EPIPE  PtlPut() did not return PTL_OK
  */
-static void psptl_bucket_send_retry(psptl_bucket_t *send_bucket)
+static ssize_t psptl_bucket_send(psptl_bucket_t *send_bucket)
 {
     int ret;
     psptl_con_info_t *con_info         = send_bucket->con_info;
@@ -939,16 +943,45 @@ static void psptl_bucket_send_retry(psptl_bucket_t *send_bucket)
     if (ret != PTL_OK) goto err_put;
 
     /* increase some counters */
-    psptl.stats.retry_cnt++;
     con_info->outstanding_put_ops++;
 
-    return;
+    return len;
     /* --- */
 err_put:
     psptl_dprint(D_ERR, "PtlPut() failed: '%s'", psptl_err_str(ret));
-    return;
+    return -EPIPE;
 }
 
+
+/**
+ * @brief Retry the transmission of an eager message.
+ *
+ * If the transmission of an eager message fails, we simply retry by leveraging
+ * the information already stored in the @ref psptl_bucket_t object.
+ *
+ * @todo Limit the number of retries until we report a connection error.
+ *
+ * @param [in] send_bucket The bucket whose transmission failed
+ */
+
+static void psptl_bucket_send_retry(psptl_bucket_t *send_bucket)
+{
+    psptl_bucket_send(send_bucket);
+
+    /* increase the global retry counters */
+    psptl.stats.retry_cnt++;
+}
+
+
+/**
+ * @brief Handle the acknowledgement of an eager message.
+ *
+ * Depending on whether the transmission succeeded, it is retried or reported to
+ * the upper layer.
+ *
+ * @param [in] send_bucket The bucket used for sending the eager data
+ * @param [in] done        Indicating success or failure
+ */
 static void psptl_handle_eager_ack(psptl_bucket_t *send_bucket, uint8_t done)
 {
     psptl_con_info_t *con_info = send_bucket->con_info;
@@ -964,6 +997,16 @@ static void psptl_handle_eager_ack(psptl_bucket_t *send_bucket, uint8_t done)
 }
 
 
+/**
+ * @brief Handle a link event of a rendezvous bucket.
+ *
+ * This function handles a link event of a rendezvous bucket by setting its
+ * status accordingly. This is part of the blocking registration of RMA regions
+ * within @ref psptl_rma_mem_register.
+ *
+ * @param [in] rndv_bucket The bucket that should be linked
+ * @param [in] err         Indicating success or failure
+ */
 static void
 psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket, uint8_t err)
 {
@@ -971,6 +1014,19 @@ psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket, uint8_t err)
 }
 
 
+/**
+ * @brief Handle the acknowledgement of a rendezvous fragment.
+ *
+ * This handles the acknowledgement of rendezvous fragments by keeping track of
+ * the number of remaining fragments to be sent. Once all fragments have been
+ * transmitted successfully, it informs the upper layer by triggering the
+ * io_done callback routine.
+ *
+ * If there was a transmission error, the upper layer is directly informed.
+ *
+ * @param [in] rma_req   The corresponding RMA request object
+ * @param [in] fail_type The ptl_ni_fail_t reported by the Portals4 layer
+ */
 static void
 psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, ptl_ni_fail_t fail_type)
 {
@@ -983,6 +1039,8 @@ psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, ptl_ni_fail_t fail_type)
         }
     } else {
         psptl_dprint(D_ERR, "Rendezvous ack failed with: %u", fail_type);
+
+        /* directly inform the upper layer */
         rma_req->io_done(rma_req->priv, 1);
     }
 }
@@ -1047,11 +1105,9 @@ err_out:
 
 ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len)
 {
-    int ret;
+    ssize_t ret;
     psptl_bucket_t *send_bucket;
-    psptl_ep_t *ep                     = con_info->ep;
-    psptl_remote_con_info_t *remote_ci = &con_info->remote_ci;
-    uint32_t cur_send_bucket           = con_info->send_buffers.cur;
+    uint32_t cur_send_bucket = con_info->send_buffers.cur;
 
     /* check if the current send bucket is free */
     if (con_info->send_buffers.buckets[cur_send_bucket].status ==
@@ -1067,37 +1123,21 @@ ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len)
     send_bucket->len    = len;
     send_bucket->seq_id = con_info->send_seq_id++;
 
-    void *send_buf = send_bucket->buf;
-
     /* copy the iovec (header+payload) to the send buffer */
-    pscom_memcpy_from_iov(send_buf, iov, len);
+    pscom_memcpy_from_iov(send_bucket->buf, iov, len);
 
     /* transmit the messages via put operation */
-    ret = PtlPut(ep->mdh[PSPTL_PROT_EAGER], /* local memory handle */
-                 (uint64_t)send_buf,        /* local offset */
-                 len,                       /* amount of bytes to be sent */
-                 PTL_ACK_REQ,               /* request a full event */
-                 remote_ci->pid.ptl_pid,    /* peer process ID */
-                 remote_ci->pti[PSPTL_PROT_EAGER], /* remote portals index */
-                 0,                                /* match bits */
-                 0,                                /* remote offset */
-                 send_bucket,                      /* local user pointer */
-                 send_bucket->seq_id);             /* sequence number */
-    if (ret != PTL_OK) goto err_put;
-
-    /* increase the pending put counter */
-    con_info->outstanding_put_ops++;
+    ret = psptl_bucket_send(send_bucket);
+    if (ret < 0) goto out;
 
     con_info->send_buffers.cur = (uint32_t)((cur_send_bucket + 1) %
                                             psptl.con_params.sendq_size);
 
-    return len;
+out:
+    return ret;
     /* --- */
 err_busy:
     return -EAGAIN;
-err_put:
-    psptl_dprint(D_ERR, "PtlPut() failed: '%s'", psptl_err_str(ret));
-    return -EPIPE;
 }
 
 
