@@ -353,6 +353,7 @@ int main(void)
 			setup_dummy_streams,
 			clear_dummy_streams),
 		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem_no_copy),
+		cmocka_unit_test(test_pscom_unstage_buffer_dev_mem_err_req),
 		cmocka_unit_test(test_pscom_unstage_buffer_host_mem),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_cuda_tests);

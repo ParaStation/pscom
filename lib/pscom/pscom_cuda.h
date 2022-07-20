@@ -82,8 +82,8 @@ void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
 {
 	if (req->stage_buf != NULL) {
 
-		/* we only have to copy in case of recv requests */
-		if (copy) {
+		/* we only have to copy in case of (at least partly successful) recv requests */
+		if (copy && !(req->pub.state & (PSCOM_REQ_STATE_ERROR | PSCOM_REQ_STATE_CANCELED))) {
 			size_t copy_len = MIN(req->pub.data_len, req->pub.header.data_len);
 			pscom_memcpy_host2device(req->stage_buf, req->pub.data,
 						 copy_len);
