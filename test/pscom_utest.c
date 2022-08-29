@@ -361,6 +361,10 @@ int main(void)
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),
 		cmocka_unit_test_setup_teardown(
+			test_portals_ack_after_con_close,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
 			test_portals_handle_message_drop,
 			setup_dummy_portals_con,
 			teardown_dummy_portals_con),

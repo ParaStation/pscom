@@ -30,6 +30,7 @@ void test_portals_read_after_send_request(void **state);
 void test_portals_put_fail(void **state);
 void test_portals_defer_close_with_outstanding_put_requests(void **state);
 void test_portals_close_with_no_outstanding_put_requests(void **state);
+void test_portals_ack_after_con_close(void **state);
 void test_portals_handle_message_drop(void **state);
 
 void test_portals_memory_registration(void **state);
