@@ -74,7 +74,7 @@ int setup_dummy_portals_con(void **state)
     psptl_con_info_t *ci = psptl_con_create();
     psptl_sock_t *sock   = &get_sock(con->pub.socket)->portals;
 
-    psptl_con_init(ci, (void *)con, sock->priv);
+    psptl_con_init(ci, (void *)con, sock, sock->priv);
     con->arch.portals.ci = ci;
 
     /* initialize the send and receiver buffers */
