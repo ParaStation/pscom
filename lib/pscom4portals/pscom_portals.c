@@ -207,14 +207,12 @@ static int pscom_portals_make_progress(pscom_poll_t *poll)
  * incremented in a previous call to pscom_portals_do_write() after posting the
  * send request.
  *
- * @param [in] con_priv The connection on which the send request terminated.
+ * @param [in] sock_priv The socket corresponding to the connection on which the
+ *                       send request terminated.
  */
-static inline void pscom_portals_sendv_done(void *con_priv)
+static inline void pscom_portals_sendv_done(void *sock_priv)
 {
-    pscom_con_t *con   = (pscom_con_t *)con_priv;
-    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
-
-    assert(con->magic == MAGIC_CONNECTION);
+    psptl_sock_t *sock = (psptl_sock_t *)sock_priv;
 
     poll_reader_dec(sock);
 }
@@ -231,14 +229,14 @@ static inline void pscom_portals_sendv_done(void *con_priv)
  *         enabled by setting the `PSP_PORTALS4_FOSTER_PROGRESS` environment
  *         variable.
  *
- * @param [in] con_priv The connection on which the send request terminated.
+ * @param [in] sock_priv The socket corresponding to the connection on which the
+ *                       send request terminated.
  */
-static void pscom_portals_sendv_done_with_progress(void *con_priv)
+static void pscom_portals_sendv_done_with_progress(void *sock_priv)
 {
-    pscom_con_t *con   = (pscom_con_t *)con_priv;
-    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+    psptl_sock_t *sock = (psptl_sock_t *)sock_priv;
 
-    pscom_portals_sendv_done(con_priv);
+    pscom_portals_sendv_done(sock);
 
     /* trigger the progress engine once again */
     if (!sock->reader_user) { psptl_progress(sock->priv); }
@@ -734,7 +732,7 @@ pscom_portals_handshake(pscom_con_t *con, int type, void *data, unsigned size)
         con->arch.portals.ci      = ci;
         con->arch.portals.reading = 0;
 
-        if (psptl_con_init(ci, con, sock->priv)) goto error_con_init;
+        if (psptl_con_init(ci, con, sock, sock->priv)) goto error_con_init;
 
         /* send my connection id's */
         psptl_con_get_info_msg(ci, &msg);

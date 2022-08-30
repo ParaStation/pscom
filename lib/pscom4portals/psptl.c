@@ -114,7 +114,9 @@ struct psptl_con_info {
     } recv_buffers; /**< Pre-allocated receive buffers */
 
     void *con_priv;                 /**< Handle to the pscom_con_t object to
-                                         be passed to the sendv/recv CBs */
+                                         be passed to the recv CBs */
+    void *sock_priv;                /**< Handle to the psptl_sock_t object to
+                                         be passed to the sendv CB */
     struct list_head pending_recvs; /**< List holding out-of-order receives */
     struct list_head next;          /**< For deferred cleanup */
 };
@@ -540,15 +542,14 @@ void psptl_configure_debug(FILE *stream, int level)
 }
 
 
-int psptl_con_init(psptl_con_info_t *con_info, void *con_priv, void *ep_priv)
+int psptl_con_init(psptl_con_info_t *con_info, void *con_priv, void *sock_priv,
+                   void *ep_priv)
 {
     con_info->ep = (psptl_ep_t *)ep_priv;
 
-    /*
-     * the pscom's pscom_con_t object to be passed to the sendv_done and
-     * recv_done callbacks.
-     */
-    con_info->con_priv = con_priv;
+    /* the upper layer objects to be passed to the sendv_/recv_done CBs */
+    con_info->con_priv  = con_priv;
+    con_info->sock_priv = sock_priv;
 
     return 0;
 }
@@ -826,7 +827,7 @@ static void psptl_bucket_send_done(psptl_bucket_t *send_bucket)
     send_bucket->status = PSPTL_BUCKET_FREE;
 
     /* tell the upper layer the request is done */
-    psptl.callbacks.sendv_done(send_bucket->con_info->con_priv);
+    psptl.callbacks.sendv_done(send_bucket->con_info->sock_priv);
 
     return;
 }
