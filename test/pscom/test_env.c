@@ -776,7 +776,7 @@ void test_env_table_register_no_mem(void **state)
 		{0},
 	};
 
-	enable_malloc_mock();
+	enable_malloc_mock(NULL);
 
 	ret = pscom_env_table_register(table_name, table_prefix, env_table);
 	assert_true(ret == PSCOM_ERR_STDERROR);
@@ -1009,7 +1009,7 @@ void test_env_table_register_and_parse_no_mem(void **state)
 		{0},
 	};
 
-	enable_malloc_mock();
+	enable_malloc_mock(NULL);
 
 	ret = pscom_env_table_register_and_parse(table_name, table_prefix,
 						 env_table);

@@ -145,6 +145,11 @@ typedef struct psucp_conn {
 	unsigned		reading : 1;
 } psucp_conn_t;
 
+typedef struct psptl_conn {
+	struct psptl_con_info	*ci;
+	unsigned		reading : 1;
+} psptl_conn_t;
+
 typedef struct psgw_conn {
 	struct psgw_con_info	*ci;
 	unsigned		reading : 1;
@@ -165,6 +170,14 @@ typedef struct ondemand_conn {
 typedef struct user_conn {
 	void	*priv;
 } user_conn_t;
+
+
+typedef struct psptl_sock {
+    pscom_poll_t poll_read;
+    void *priv;
+    int init_state;
+    unsigned reader_user;
+} psptl_sock_t;
 
 
 /* rendezvous message for RMA requests. */
@@ -214,6 +227,9 @@ typedef struct pscom_rendezvous_msg {
 			int  padding_size;
 			char padding_data[64]; // >= IB_RNDV_PADDING_SIZE (see psoib.h)
 		} openib;
+		struct {
+			uint64_t /* ptl_match_bits_t */	match_bits;
+		} portals;
 	}	arch;
 } pscom_rendezvous_msg_t;
 
@@ -260,6 +276,12 @@ typedef struct _pscom_rendezvous_data_openib {
 } _pscom_rendezvous_data_openib_t;
 
 
+typedef struct _pscom_rendezvous_data_portals {
+	/* placeholder for struct pscom_rendezvous_data_portals */
+	char /* struct psiob_rma_req */ _rma_req[128]; /* ??? */
+} _pscom_rendezvous_data_portals_t;
+
+
 typedef struct pscom_rendezvous_data {
 	pscom_rendezvous_msg_t	msg;
 	size_t			msg_arch_len;
@@ -268,6 +290,7 @@ typedef struct pscom_rendezvous_data {
 		_pscom_rendezvous_data_dapl_t	dapl;
 		_pscom_rendezvous_data_extoll_t	extoll;
 		_pscom_rendezvous_data_openib_t openib;
+		_pscom_rendezvous_data_portals_t portals;
 	}		arch;
 } pscom_rendezvous_data_t;
 
@@ -379,8 +402,9 @@ struct PSCOM_con
 		psmxm_conn_t	mxm;
 		psucp_conn_t	ucp;
 		psgw_conn_t	gateway;
-		ondemand_conn_t ondemand;
-		pspsm_conn_t    psm;
+		ondemand_conn_t	ondemand;
+		pspsm_conn_t   	psm;
+		psptl_conn_t	portals;
 		user_conn_t	user; // Future usage (new plugins)
 	}			arch;
 
@@ -435,6 +459,7 @@ struct PSCOM_sock
 //	psoib_sock_t		openib;
 //	psofed_sock_t		ofed;
 	psgm_sock_t		gm;
+	psptl_sock_t		portals;
 //	psdapl_sock_t		dapl;
 //	pselan_sock_t		elan;
 //	psextoll_sock_t		extoll;
@@ -529,6 +554,7 @@ extern pscom_t pscom;
 #define PSCOM_ARCH_SUSPEND	/* 118 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_SUSPEND)
 #define PSCOM_ARCH_UCP		/* 119 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_UCP)
 #define PSCOM_ARCH_GW		/* 120 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_GW)
+#define PSCOM_ARCH_PORTALS	/* 121 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_PORTALS)
 
 
 #define PSCOM_TCP_PRIO		2
@@ -545,6 +571,7 @@ extern pscom_t pscom;
 #define PSCOM_MXM_PRIO		30
 #define PSCOM_UCP_PRIO		30
 #define PSCOM_GW_PRIO		10
+#define PSCOM_PORTALS_PRIO	40
 
 typedef uint8_t pscom_msgtype_t;
 

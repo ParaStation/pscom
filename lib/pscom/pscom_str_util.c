@@ -316,6 +316,7 @@ pscom_con_type_str(pscom_con_type_t type)
 	case PSCOM_CON_TYPE_SUSPENDED:	return "susp";
 	case PSCOM_CON_TYPE_UCP:	return "ucp";
 	case PSCOM_CON_TYPE_GW:		return "gateway";
+	case PSCOM_CON_TYPE_PORTALS:	return "portals";
 	}
 
 	{

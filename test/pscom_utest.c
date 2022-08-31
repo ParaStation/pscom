@@ -24,6 +24,7 @@
 #include "pscom/test_io.h"
 #include "pscom/test_plugin.h"
 
+#include "pscom4portals/test_pscom4portals.h"
 #include "pscom4ucp/test_pscom4ucp.h"
 
 #include "util/test_utils_con.h"
@@ -34,7 +35,14 @@
 pscom_utest_t pscom_utest = {
 	.mock_functions = {
 		.memcpy = 0,
-		.malloc = 0,
+		.free = 0,
+		.malloc = {
+			.enabled = 0,
+			.addr = NULL,
+		},
+		.portals = {
+			.extended_ptl_put = 0,
+		},
 	},
 };
 
@@ -291,6 +299,115 @@ int main(void)
 	total_tests += TEST_GROUP_SIZE(pscom4ucp_tests);
 	failed_tests += cmocka_run_group_tests(pscom4ucp_tests, NULL, NULL);
 #endif /* UCP_ENABLED */
+
+
+#ifdef PORTALS4_ENABLED
+	/* pscom4ucp tests */
+	const struct CMUnitTest pscom4portals_tests[] = {
+		cmocka_unit_test_setup_teardown(
+			test_portals_first_initialization,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_second_initialization,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_initialization_after_failure,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_initialization_after_socket_failure,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_read_after_con_read,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_read_after_con_read_stop_out_of_two,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_one_reader_per_socket,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_read_on_event_put,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_read_out_of_order_receive,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_read_three_out_of_order_receive,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_read_after_send_request,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_put_fail,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_defer_close_with_outstanding_put_requests,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_close_with_no_outstanding_put_requests,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_ack_after_con_close,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_handle_message_drop,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_memory_registration,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_failed_memory_registration,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_mem_deregister_releases_resources,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fragmentation,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fragmentation_remainder,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fail_put,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_completion,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+		cmocka_unit_test_setup_teardown(
+			test_portals_rma_write_fail_ack,
+			setup_dummy_portals_con,
+			teardown_dummy_portals_con),
+	};
+	total_tests += TEST_GROUP_SIZE(pscom4portals_tests);
+	failed_tests += cmocka_run_group_tests(pscom4portals_tests, NULL, NULL);
+#endif /* PORTALS4_ENABLED */
 
 
 #ifdef PSCOM_CUDA_AWARENESS

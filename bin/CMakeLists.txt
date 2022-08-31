@@ -226,6 +226,21 @@ if (UCP_ENABLED)
     )
 endif (UCP_ENABLED)
 
+if (PORTALS4_ENABLED)
+  add_executable(portals4_pp portals4/portals4_pp.c)
+  target_include_directories(
+    portals4_pp
+    PRIVATE ${PORTALS4_INCLUDE_DIRS}
+    PRIVATE ${PROJECT_BINARY_DIR}/include
+    PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
+    )
+
+  target_link_libraries(
+    portals4_pp
+    PRIVATE ${PORTALS4_LIBRARIES}
+    )
+endif (PORTALS4_ENABLED)
+
 if (PSM1_ENABLED)
   # noinst_PROGRAMS += psm_pp
   # psm_pp_SOURCES = psm/psm_pp.c

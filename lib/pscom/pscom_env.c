@@ -289,6 +289,11 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_VELO], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
+	{"PORTALS", "1",
+	 "The user priority of the pscom4portals plugin.",
+	 &pscom.env.user_prio[PSCOM_CON_TYPE_PORTALS], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+	 PSCOM_ENV_PARSER_UINT},
+
 	{0},
 };
 

@@ -18,11 +18,22 @@
 
 void *__real_memcpy(void *restrict dst, const void *restrict src, size_t nbytes);
 void *__real_malloc(size_t size);
+void __real_free(void *ptr);
 
 static inline void enable_memcpy_mock(void) { pscom_utest.mock_functions.memcpy = 1; }
 static inline void disable_memcpy_mock(void) { pscom_utest.mock_functions.memcpy = 0; }
 
-static inline void enable_malloc_mock(void) { pscom_utest.mock_functions.malloc = 1; }
-static inline void disable_malloc_mock(void) { pscom_utest.mock_functions.malloc = 0; }
+static inline void enable_malloc_mock(void *addr)
+{
+	pscom_utest.mock_functions.malloc.addr    = addr;
+	pscom_utest.mock_functions.malloc.enabled = 1;
+}
+static inline void disable_malloc_mock(void) {
+	pscom_utest.mock_functions.malloc.addr    = NULL;
+	pscom_utest.mock_functions.malloc.enabled = 0;
+}
+
+static inline void enable_free_mock(void) { pscom_utest.mock_functions.free = 1; }
+static inline void disable_free_mock(void) { pscom_utest.mock_functions.free = 0; }
 
 #endif /* _MOCKS_H_ */
