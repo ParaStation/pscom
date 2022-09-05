@@ -1,3 +1,25 @@
+2022-08-31  Simon Pickartz  <pickartz@par-tec.com>	-	5.6.0-0rc1
+
+	* New: Add support for the BXI interconnect with the new pscom4portals
+	plugin.
+
+2022-07-20  Carsten Clauss  <clauss@par-tec.com>
+
+	* Fix: Only unstage CUDA memory for successful requests.
+
+	* Fix: Ensure proper termination of global any-source requests.
+
+	* Fix: Support simultaneous 'bultin' for pscom4openib and pscom4ucp in
+	case of psmpi allin builds.
+
+2022-02-22  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Fix: Handling of PSP_DEBUG_OUT in the runtime environment
+	configuration.
+
+	* Enhancement: Clear distinction between read and write operations for
+	pending I/O.
+
 2022-02-09  Simon Pickartz  <pickartz@par-tec.com>	-	5.5.0-1
 
 	* Fix: Translation from the arch ID to string.
