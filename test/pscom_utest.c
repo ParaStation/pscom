@@ -31,6 +31,7 @@
 #include "util/test_utils_cuda.h"
 #include "util/test_utils_debug.h"
 #include "util/test_utils_env.h"
+#include "util/test_utils_sock.h"
 
 pscom_utest_t pscom_utest = {
 	.mock_functions = {
@@ -130,8 +131,8 @@ int main(void)
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
 			test_post_any_recv_on_global_queue_and_terminate_global_queue,
-			setup_dummy_con,
-			teardown_dummy_con),
+			setup_dummy_sock,
+			teardown_dummy_sock),
 		cmocka_unit_test_setup_teardown(
 			test_pscom_get_rma_read_receiver_failing_rma_write,
 			setup_dummy_con,
