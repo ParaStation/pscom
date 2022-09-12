@@ -1,3 +1,5 @@
+2022-09-12  Simon Pickartz  <pickartz@par-tec.com>	-	5.6.0-1
+
 2022-08-31  Simon Pickartz  <pickartz@par-tec.com>	-	5.6.0-0rc1
 
 	* New: Add support for the BXI interconnect with the new pscom4portals
