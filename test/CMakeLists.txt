@@ -107,6 +107,7 @@ add_executable(		pscom_utest
   util/test_utils_con.c
   util/test_utils_debug.c
   util/test_utils_env.c
+  util/test_utils_sock.c
   )
 
 # Mocked functions
