@@ -119,6 +119,8 @@ target_link_options(	pscom_utest
   -Wl,--wrap=free
   -Wl,--wrap=memcpy
   -Wl,--wrap=malloc
+  -Wl,--wrap=send
+  -Wl,--wrap=setsockopt
 #  -static
 )
 

@@ -283,7 +283,14 @@ int main(void)
 			test_debug_psp_debug_out_max_debug_level,
 			backup_env_vars,
 			restore_env_vars),
-
+		cmocka_unit_test_setup_teardown(
+			test_debug_precon_broken_pipe,
+			setup_dummy_con,
+			teardown_dummy_con),
+		cmocka_unit_test_setup_teardown(
+			test_debug_precon_io_error,
+			setup_dummy_con,
+			teardown_dummy_con),
 	};
 	total_tests += TEST_GROUP_SIZE(pscom_debug_tests);
 	failed_tests += cmocka_run_group_tests(pscom_debug_tests, NULL, NULL);
