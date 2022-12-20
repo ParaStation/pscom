@@ -70,6 +70,9 @@ test_debug_psp_debug_out_max_debug_level(void **state)
         /* cleanup the environment module to prevent memory leaks */
         pscom_env_cleanup();
 
+        /* explicitly reset pscom.env to prevent side effects */
+        memset(&pscom.env, 0, sizeof(struct PSCOM_env));
+
         /* remove the debug file and the temporary directory */
         assert_true(remove(debug_out_name) == 0);
         assert_true(rmdir(debug_dir) == 0);
