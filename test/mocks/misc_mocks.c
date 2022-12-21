@@ -9,8 +9,11 @@
  * file.
  */
 
+#include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <sys/socket.h>
+#include <sys/types.h>
 #include <setjmp.h>
 #include <cmocka.h>
 #include <dlfcn.h>
@@ -111,4 +114,24 @@ int __wrap_dlclose(void *handle)
 char *__wrap_dlerror(void)
 {
 	return NULL;
+}
+
+
+/**
+ * \brief Mocking function for send()
+ */
+ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags)
+{
+	errno = mock_type(int);
+	return mock_type(ssize_t);
+}
+
+
+/**
+ * \brief Mocking function for setsockopt()
+ */
+int __wrap_setsockopt(int sockfd, int level, int optname, const void *optval,
+	socklen_t optlen)
+{
+	return 0;
 }

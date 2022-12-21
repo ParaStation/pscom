@@ -785,15 +785,22 @@ void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 			case EINTR:
 				/* Try again later */
 				break;
-			default:
-				/* Unexpected error. Stop writing. Print diagnostics.
-				   The cleanup will be done in do_read, which will
-				   (hopefully) also fail in read(). */
-				DPRINT(D_ERR, "precon(%p): write(%d, %p, %u) : %s",
+			default: {
+				/*
+				 * Unexpected error. Stop writing. Print diagnostics.
+				 * The cleanup will be done in do_read, which will
+				 * (hopefully) also fail in read().
+				 *
+				 * NOTE: EPIPE is handled as a warning as this might occur in
+				 *       back-connect situations and does not constitute an error.
+				 */
+				const int log_level = (errno == EPIPE) ? D_WARN : D_ERR;
+				DPRINT(log_level, "precon(%p): write(%d, %p, %u) : %s",
 				       pre, pre->ufd_info.fd, pre->send, pre->send_len, strerror(errno));
 				ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLOUT);
 				close(pre->ufd_info.fd);
 				pre->send_len = 0;
+			}
 			}
 		}
 	}
