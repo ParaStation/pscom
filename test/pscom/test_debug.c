@@ -34,8 +34,8 @@
 void
 test_debug_psp_debug_out_max_debug_level(void **state)
 {
-        char template[]         = "/tmp/tmpdir.XXXXXX";
-        char stderr_buf[128] = {0};
+        char template[]          = "/tmp/tmpdir.XXXXXX";
+        char stderr_buf[128]     = {0};
         char debug_out_name[128] = {0};
         char *debug_dir;
         int captured_stderr;
@@ -63,7 +63,8 @@ test_debug_psp_debug_out_max_debug_level(void **state)
         fflush(stderr);
 
         /* read stderr and restore */
-        assert_true(read(captured_stderr, stderr_buf, 128) >= 0);
+        assert_true(read(captured_stderr, stderr_buf,
+                         sizeof(stderr_buf)-1) >= 0);
 
         restore_fd(STDERR_FILENO);
 
