@@ -69,9 +69,15 @@ function(add_static_target target)
     EXCLUDE_FROM_ALL
     ${${uc_target}_SOURCES}
     )
+
   target_include_directories(${target}-static PRIVATE ${${uc_target}_INCLUDE_DIRECTORIES})
-  target_compile_definitions(${target}-static PRIVATE ${${uc_target}_COMPILE_DEFINITIONS})
   target_link_libraries(${target}-static PRIVATE ${${uc_target}_LINK_LIBRARIES})
+
+  # Only include compile definitions if there are any
+  if (${uc_target}_COMPILE_DEFINITIONS)
+    target_compile_definitions(${target}-static PRIVATE ${${uc_target}_COMPILE_DEFINITIONS})
+  endif (${uc_target}_COMPILE_DEFINITIONS)
+
   if(CUDA_ENABLED)
     target_add_cuda(${target}-static)
   endif(CUDA_ENABLED)
