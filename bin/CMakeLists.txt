@@ -15,8 +15,7 @@ include_directories(
 
 
 add_executable(             pscom_pp	pscom_pp.c)
-target_include_directories( pscom_pp	PRIVATE ${POPT_INCLUDE_DIRS})
-target_link_libraries(      pscom_pp	PRIVATE pscom ${POPT_LIBRARIES})
+target_link_libraries(      pscom_pp	PRIVATE pscom)
 install(TARGETS             pscom_pp	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
 add_executable(             pscom_dispatch	examples/pscom_dispatch.c)
