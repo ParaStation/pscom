@@ -72,6 +72,25 @@ void print_usage(void)
 
 
 static
+void print_config(void)
+{
+	printf("Running %s with the following configuration:\n", arg_progname);
+	printf("  Listen port   : %d\n", arg_lport);
+	printf("  Loops         : %d\n", arg_loops);
+	printf("  Time          : %d\n", arg_maxtime);
+	printf("  Minsize       : %lu\n", arg_minmsize);
+	printf("  Maxsize       : %lu\n", arg_maxmsize);
+	printf("  Xheader size  : %d\n", arg_xheader);
+	printf("  Use valloc()  : %s\n", arg_valloc ? "yes" : "no");
+	printf("  Histogram     : %s\n", arg_histo ? "yes" : "no");
+	printf("  Verify results: %s\n", arg_verify ? "yes" : "no");
+	printf("  Run once      : %s\n", arg_run_once ? "yes" : "no");
+	printf("  Verbose mode  : %s\n", arg_verbose ? "yes" : "no");
+	printf("  Server        : %s\n", arg_server);
+}
+
+
+static
 void parse_opt(int argc, char **argv)
 {
 	int c;
@@ -139,6 +158,10 @@ void parse_opt(int argc, char **argv)
 			fprintf(stderr, "%s ", argv[optind++]);
 		}
 		fprintf(stderr, "\n");
+	}
+
+	if (arg_verbose) {
+		print_config();
 	}
 }
 
