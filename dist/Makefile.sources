@@ -279,4 +279,6 @@ test/util/test_utils_cuda.h \
 test/util/test_utils_debug.c \
 test/util/test_utils_debug.h \
 test/util/test_utils_env.c \
-test/util/test_utils_env.h
+test/util/test_utils_env.h \
+test/util/test_utils_sock.c \
+test/util/test_utils_sock.h

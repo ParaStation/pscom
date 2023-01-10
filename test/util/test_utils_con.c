@@ -15,26 +15,14 @@
 #include "pscom_con.h"
 
 #include "test_utils_con.h"
+#include "test_utils_sock.h"
 
-static
-pscom_sock_t* create_dummy_sock(void)
-{
-	INIT_LIST_HEAD(&pscom.sockets);
-	INIT_LIST_HEAD(&pscom.recvq_any_global);
-
-	return pscom_open_sock(0, 0);
-}
-
-static
-void destroy_dummy_sock(pscom_sock_t *sock)
-{
-	free(sock);
-}
 
 int setup_dummy_con(void **state)
 {
 	/* create a dummy socket */
-	pscom_sock_t *sock = create_dummy_sock();
+	pscom_sock_t *sock = NULL;
+	setup_dummy_sock((void **)&sock);
 
 	/* create a new connection on that sock */
 	pscom_con_t *con = pscom_con_create(sock);
@@ -70,7 +58,7 @@ int teardown_dummy_con(void **state)
 	}
 
 	/* destroy the dummy socket */
-	destroy_dummy_sock(sock);
+	teardown_dummy_sock((void **)&sock);
 
 	return 0;
 }

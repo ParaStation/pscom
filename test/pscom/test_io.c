@@ -737,9 +737,6 @@ void test_post_any_recv_on_sock_and_terminate_sock_queue(void **state)
  */
 void test_post_any_recv_on_global_queue_and_terminate_global_queue(void **state)
 {
-	/* obtain the dummy connection from the test setup */
-	pscom_con_t *recv_con =  (pscom_con_t*)(*state);
-
 	/* create and post an any recv request without a given socket */
 	pscom_request_t *recv_any_req = pscom_request_create(0, 0);
 	recv_any_req->connection = NULL;
