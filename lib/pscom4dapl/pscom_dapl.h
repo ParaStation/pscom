@@ -16,6 +16,4 @@
 #ifndef _PSCOM_DAPL_H_
 #define _PSCOM_DAPL_H_
 
-#include "p4sockets.h"
-
 #endif /* _PSCOM_DAPL_H_ */

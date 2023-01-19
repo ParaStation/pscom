@@ -15,6 +15,4 @@
 #ifndef _PSCOM_EXTOLL_H_
 #define _PSCOM_EXTOLL_H_
 
-#include "p4sockets.h"
-
 #endif /* _PSCOM_EXTOLL_H_ */

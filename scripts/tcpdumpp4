@@ -1,6 +1,0 @@
-#!/bin/sh
-
-cd `dirname $0`
-
-tcpdump -l -Xx ether proto 0x0815 or 0x0814 or 0x813 or 0x812 |\
-./tcpdump.awk

@@ -377,7 +377,6 @@ PSCOM_API_EXPORT
 int pscom_get_nodeid(void)
 {
 	static int id = 0;
-	/*  p4s_node_id(void) expect the IP of this node! */
 
 	if (!id) {
 		id = psp_getid(); /* Use env PSP_NETWORK to get an IP */

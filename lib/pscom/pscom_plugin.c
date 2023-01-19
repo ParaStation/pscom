@@ -267,7 +267,6 @@ void pscom_plugins_init(void)
 
 	pscom_plugin_register(&pscom_plugin_tcp, pscom_plugin_uprio(PSCOM_CON_TYPE_TCP));
 	pscom_plugin_register(&pscom_plugin_shm, pscom_plugin_uprio(PSCOM_CON_TYPE_SHM));
-	pscom_plugin_register(&pscom_plugin_p4s, pscom_plugin_uprio(PSCOM_CON_TYPE_P4S));
 #ifdef PSCOM_ALLIN_PSM2
 	pscom_plugin_register(&pscom_plugin_psm, pscom_plugin_uprio(PSCOM_CON_TYPE_PSM));
 #endif

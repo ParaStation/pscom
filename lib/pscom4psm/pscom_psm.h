@@ -26,7 +26,6 @@
 #include "pscom_util.h"
 #include "pscom_debug.h"
 #include "pscom_io.h"
-#include "p4sockets.h"
 
 
 /*

@@ -72,31 +72,6 @@ if(PSMGMT_ENABLED)
 endif(PSMGMT_ENABLED)
 
 
-#
-# p4sock tools
-#
-add_executable(			p4stat 		p4stat.c)
-target_include_directories(	p4stat		PRIVATE ${POPT_INCLUDE_DIRS})
-target_link_libraries(		p4stat		PRIVATE ${POPT_LIBRARIES})
-
-add_executable(			p4tcp		p4tcp.c)
-target_include_directories(	p4tcp		PRIVATE ${POPT_INCLUDE_DIRS})
-target_link_libraries(		p4tcp		PRIVATE ${POPT_LIBRARIES})
-
-add_executable(			p4logd		p4logd.c)
-target_include_directories(	p4logd		PRIVATE ${POPT_INCLUDE_DIRS})
-target_link_libraries(		p4logd		PRIVATE ${POPT_LIBRARIES})
-
-add_executable(			psock_pp	psock_pp.c)
-target_include_directories(	psock_pp	PRIVATE ${POPT_INCLUDE_DIRS})
-target_link_libraries(		psock_pp	PRIVATE ${POPT_LIBRARIES})
-
-add_executable(			psock_test	psock_test.c)
-target_include_directories(	psock_test	PRIVATE ${POPT_INCLUDE_DIRS})
-target_link_libraries(		psock_test	PRIVATE ${POPT_LIBRARIES})
-
-
-
 if (PSMGMT_ENABLED)
 #  pscp
 endif (PSMGMT_ENABLED)
