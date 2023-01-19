@@ -20,12 +20,16 @@
 #include <math.h>
 #include <fcntl.h>
 #include <assert.h>
-#include <popt.h>
+#include <getopt.h>
 #include <ctype.h>
 #include <limits.h>
 
 #include "pscom.h"
 
+#define MINSIZE_OPT 1000
+#define MAXSIZE_OPT 1001
+#define XHEADER_OPT 1002
+#define VALLOC_OPT  1003
 
 const char *arg_server = "localhost:7100";
 int arg_client = 0;
@@ -42,86 +46,123 @@ int arg_verbose = 0;
 int arg_histo = 0;
 int arg_valloc = 0;
 int arg_verify = 0;
+int arg_help = 0;
+char *arg_progname = NULL;
+
+
+static
+void print_usage(void)
+{
+	printf("USAGE:\n");
+	printf("    %s [OPTIONS]\n\n", arg_progname);
+	printf("OPTIONS:\n");
+	printf("    -l, --listen        run as server and listen on port (default: %d)\n", arg_lport);
+	printf("    -n, --loops=COUNT   pp loops (default: %d)\n", arg_loops);
+	printf("    -t, --time=ms       max time (default: %d)\n", arg_maxtime);
+	printf("        --minsize=size  minimal messagesize (default: %lu)\n", arg_minmsize);
+	printf("        --maxsize=size  maximum messagesize (default: %lu)\n", arg_maxmsize);
+	printf("        --xheader=size  xheader size (default: %d)\n", arg_xheader);
+	printf("        --valloc        use valloc() instead of malloc for send/receive buffers\n");
+	printf("    -i, --histo         Measure each ping pong\n");
+	printf("    -V, --verify        verify message content\n");
+	printf("    -1, --once          stop after one client\n");
+	printf("    -v, --verbose       increase verbosity\n");
+	printf("    -h, --help          Show this help message\n");
+}
+
+
+static
+void print_config(void)
+{
+	printf("Running %s with the following configuration:\n", arg_progname);
+	printf("  Listen port   : %d\n", arg_lport);
+	printf("  Loops         : %d\n", arg_loops);
+	printf("  Time          : %d\n", arg_maxtime);
+	printf("  Minsize       : %lu\n", arg_minmsize);
+	printf("  Maxsize       : %lu\n", arg_maxmsize);
+	printf("  Xheader size  : %d\n", arg_xheader);
+	printf("  Use valloc()  : %s\n", arg_valloc ? "yes" : "no");
+	printf("  Histogram     : %s\n", arg_histo ? "yes" : "no");
+	printf("  Verify results: %s\n", arg_verify ? "yes" : "no");
+	printf("  Run once      : %s\n", arg_run_once ? "yes" : "no");
+	printf("  Verbose mode  : %s\n", arg_verbose ? "yes" : "no");
+	printf("  Server        : %s\n", arg_server);
+}
+
 
 static
 void parse_opt(int argc, char **argv)
 {
 	int c;
-	poptContext optCon;
-	const char *no_arg;
 
-	struct poptOption optionsTable[] = {
-		{ "listen" , 'l', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_lport, 0, "run as server and listen on", "port" },
+	arg_progname = argv[0];
 
+	while (1) {
+		static struct option long_options[] = {
+			{"client" , no_argument      , &arg_client  , 'c'        },
+			{"help"   , no_argument      , &arg_help    , 1          },
+			{"histo"  , no_argument      , &arg_histo   , 'i'        },
+			{"listen" , required_argument, NULL         , 'l'        },
+			{"loops"  , required_argument, NULL         , 'n'        },
+			{"maxsize", required_argument, NULL         , MAXSIZE_OPT},
+			{"minsize", required_argument, NULL         , MINSIZE_OPT},
+			{"once"   , no_argument      , &arg_run_once, '1'        },
+			{"time"   , required_argument, NULL         , 't'        },
+			{"valloc" , no_argument      , NULL         , VALLOC_OPT },
+			{"verbose", no_argument      , &arg_verbose , 1          },
+			{"verify" , no_argument      , &arg_verify  , 'V'        },
+			{"xheader", required_argument, NULL         , XHEADER_OPT},
+			{0, 0, 0, 0}
+		};
 
-		{ "client" , 'c', POPT_ARGFLAG_OR | POPT_ARG_VAL,
-		  &arg_client, 1, "run as client", NULL },
+		int option_index = 0;
+		c = getopt_long(argc, argv, "chil:n:1t:vV", long_options, &option_index);
 
-		{ "loops"  , 'n', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_loops , 0, "pp loops", "count" },
-		{ "time"  , 't', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_maxtime, 0, "max time", "ms" },
-		{ "minsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_LONG,
-		  &arg_minmsize , 0, "minimal messagesize", "size" },
-		{ "maxsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_LONG,
-		  &arg_maxmsize , 0, "maximal messagesize", "size" },
-		{ "xheader"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_xheader , 0, "xheader size", "size" },
+		if (c == -1) break;
 
-		{ "valloc"  , 0, POPT_ARGFLAG_OR | POPT_ARG_VAL,
-		  &arg_valloc , 1, "use valloc() instead of malloc for send/receive buffers", NULL },
-
-		{ "histo" , 'i', POPT_ARGFLAG_OR | POPT_ARG_VAL,
-		  &arg_histo, 1, "Measure each ping pong", NULL },
-
-		{ "verify", 'V', POPT_ARGFLAG_OR | POPT_ARG_VAL,
-		  &arg_verify, 1, "verify message content", NULL },
-
-		{ "once" , '1', POPT_ARGFLAG_OR | POPT_ARG_VAL,
-		  &arg_run_once, 1, "stop after one client", NULL },
-
-		{ "verbose"	, 'v', POPT_ARG_NONE,
-		  NULL		, 'v', "increase verbosity", NULL },
-		POPT_AUTOHELP
-		POPT_TABLEEND
-	};
-
-	optCon = poptGetContext(NULL, argc, (const char **) argv, optionsTable, 0);
-
-	poptSetOtherOptionHelp(optCon, "[serveraddr]");
-
-	while ((c = poptGetNextOpt(optCon)) >= 0) {
-		switch (c) { // c = poptOption.val;
-		case 'v': arg_verbose++; break;
-		//default: fprintf(stderr, "unhandled popt value %d\n", c); break;
+		switch (c) {
+		case 0: break;
+		case 'c': arg_client = 1; break;
+		case 'l': arg_lport = atoi(optarg); break;
+		case 'n': arg_loops = atoi(optarg); break;
+		case 't': arg_maxtime = atoi(optarg); break;
+		case MINSIZE_OPT: arg_minmsize = atol(optarg); break;
+		case MAXSIZE_OPT: arg_maxmsize = atol(optarg); break;
+		case XHEADER_OPT: arg_xheader = atoi(optarg); break;
+		case VALLOC_OPT: arg_valloc = 1; break;
+		case 'V': arg_verify = 1; break;
+		case '1': arg_run_once = 1; break;
+		case 'i': arg_histo = 1; break;
+		case 'v': arg_verbose = 1; break;
+		case 'h':
+		default:
+			print_usage();
+			exit(EXIT_FAILURE);
 		}
 	}
 
-	if (c < -1) { /* an error occurred during option processing */
-		fprintf(stderr, "%s: %s\n",
-			poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-			poptStrerror(c));
-		poptPrintHelp(optCon, stderr, 0);
-		exit(1);
+	if (arg_help) {
+		print_usage();
+		exit(EXIT_FAILURE);
 	}
 
-//	arg_1 = poptGetArg(optCon);
-//	arg_2 = poptGetArg(optCon);
-	/* if (arg_client)*/ {
-		const char *server = poptGetArg(optCon);
-		if (server) arg_server = server;
+	/* determine the server */
+	if (optind < argc) {
+		arg_server = argv[optind++];
 	}
 
-	no_arg = poptGetArg(optCon); // should return NULL
-	if (no_arg) {
-		fprintf(stderr, "%s: %s\n",
-			no_arg, poptStrerror(POPT_ERROR_BADOPT));
-		poptPrintHelp(optCon, stderr, 0);
-		exit(1);
+	/* remaining arguments are ignored */
+	if (optind < argc) {
+		fprintf(stderr, "WARNING: Ignoring the remaining arguments: ");
+		while (optind < argc) {
+			fprintf(stderr, "%s ", argv[optind++]);
+		}
+		fprintf(stderr, "\n");
 	}
 
-	poptFreeContext(optCon);
+	if (arg_verbose) {
+		print_config();
+	}
 }
 
 
