@@ -91,7 +91,7 @@ typedef enum PSCOM_con_type {
 	PSCOM_CON_TYPE_LOOP	= 0x01, /**< Loopback connection */
 	PSCOM_CON_TYPE_TCP	= 0x02, /**< TCP communication */
 	PSCOM_CON_TYPE_SHM	= 0x03, /**< Shared memory communication */
-	PSCOM_CON_TYPE_P4S	= 0x04, /**< Optimized socket interface */
+	PSCOM_CON_TYPE_P4S __attribute__ ((deprecated)) = 0x04,
 	PSCOM_CON_TYPE_GM	= 0x05, /**< Myrinet communication */
 	PSCOM_CON_TYPE_MVAPI	= 0x06, /**< @deprecated */
 	PSCOM_CON_TYPE_OPENIB	= 0x07, /**< InfiniBand communication via verbs */
