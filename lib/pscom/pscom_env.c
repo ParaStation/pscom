@@ -222,11 +222,6 @@ static pscom_env_table_entry_t pscom_env_table [] = {
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_SHM], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
 	 PSCOM_ENV_PARSER_UINT},
 
-	{"P4S", "1",
-	 "The user priority of the pscom4p4s plugin.",
-	 &pscom.env.user_prio[PSCOM_CON_TYPE_P4S], PSCOM_ENV_ENTRY_FLAGS_EMPTY,
-	 PSCOM_ENV_PARSER_UINT},
-
 	{"GATEWAY", "1",
 	 "The user priority of the pscom4gateway plugin.",
 	 &pscom.env.user_prio[PSCOM_CON_TYPE_GW], PSCOM_ENV_ENTRY_FLAGS_EMPTY,

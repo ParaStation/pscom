@@ -25,7 +25,6 @@
 
 #include "pscom_tcp.h"
 #include "pscom_shm.h"
-#include "pscom_p4s.h"
 #include "pscom_gm.h"
 #include "pscom_env.h"
 #include "pscom_precon.h"
@@ -391,7 +390,6 @@ struct PSCOM_con
 		loopback_conn_t	loop;
 		tcp_conn_t	tcp;
 		shm_conn_t	shm;
-		p4s_conn_t	p4s;
 		psib_conn_t	mvapi;
 		psoib_conn_t	openib;
 		psofed_conn_t	ofed;
@@ -454,7 +452,6 @@ struct PSCOM_sock
 						   default = ~0 */
 	tcp_sock_t		tcp;
 	shm_sock_t		shm;
-	p4s_sock_t		p4s;
 //	psib_sock_t		mvapi;
 //	psoib_sock_t		openib;
 //	psofed_sock_t		ofed;
@@ -538,7 +535,6 @@ extern pscom_t pscom;
 #define PSCOM_ARCH_LOOP		/* 102 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_LOOP)
 #define PSCOM_ARCH_TCP		/* 103 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_TCP)
 #define PSCOM_ARCH_SHM		/* 104 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_SHM)
-#define PSCOM_ARCH_P4S		/* 105 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_P4S)
 #define PSCOM_ARCH_GM		/* 106 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_GM)
 #define PSCOM_ARCH_MVAPI	/* 107 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_MVAPI)
 #define PSCOM_ARCH_OPENIB	/* 108 */ PSCOM_CON_TYPE2ARCH(PSCOM_CON_TYPE_OPENIB)
@@ -559,7 +555,6 @@ extern pscom_t pscom;
 
 #define PSCOM_TCP_PRIO		2
 #define PSCOM_SHM_PRIO		90
-#define PSCOM_P4S_PRIO		10
 #define PSCOM_GM_PRIO		15
 #define PSCOM_MVAPI_PRIO	20
 #define PSCOM_OPENIB_PRIO	20

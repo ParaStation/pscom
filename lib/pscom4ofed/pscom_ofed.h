@@ -16,6 +16,4 @@
 #ifndef _PSCOM_OFED_H_
 #define _PSCOM_OFED_H_
 
-#include "p4sockets.h"
-
 #endif /* _PSCOM_OFED_H_ */

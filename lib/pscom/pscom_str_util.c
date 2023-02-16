@@ -300,7 +300,6 @@ pscom_con_type_str(pscom_con_type_t type)
 	case PSCOM_CON_TYPE_LOOP:	return "loop";
 	case PSCOM_CON_TYPE_TCP:	return "tcp";
 	case PSCOM_CON_TYPE_SHM:	return "shm";
-	case PSCOM_CON_TYPE_P4S:	return "p4s";
 	case PSCOM_CON_TYPE_GM:		return "gm";
 	case PSCOM_CON_TYPE_MVAPI:	return "mvapi";
 	case PSCOM_CON_TYPE_PSM:	return "psm";
@@ -317,6 +316,10 @@ pscom_con_type_str(pscom_con_type_t type)
 	case PSCOM_CON_TYPE_UCP:	return "ucp";
 	case PSCOM_CON_TYPE_GW:		return "gateway";
 	case PSCOM_CON_TYPE_PORTALS:	return "portals";
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wdeprecated-declarations"
+	case PSCOM_CON_TYPE_P4S:	return "p4s <deprecated>";
+#pragma GCC diagnostic pop
 	}
 
 	{

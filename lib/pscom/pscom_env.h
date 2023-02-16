@@ -43,10 +43,6 @@
 #define ENV_ARCH_OLD_SHM "PSP_SHAREDMEM"
 #define ENV_ARCH_NEW_SHM ENV_ARCH_PREFIX "SHM"
 
-/* Use this, if ENV_ARCH_NEW_P4S is not set */
-#define ENV_ARCH_OLD_P4S "PSP_P4SOCK"
-#define ENV_ARCH_NEW_P4S ENV_ARCH_PREFIX "P4S"
-
 /* The DAPL Provider to use */
 #define ENV_DAPL_PROVIDER "PSP_DAPL_PROVIDER"
 

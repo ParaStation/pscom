@@ -16,6 +16,4 @@
 #ifndef _PSCOM_ELAN_H_
 #define _PSCOM_ELAN_H_
 
-#include "p4sockets.h"
-
 #endif /* _PSCOM_ELAN_H_ */
