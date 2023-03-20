@@ -1,0 +1,55 @@
+# Introduction and Concepts
+
+The ParaStation Communication Library (`pscom` for short) is an open-source low-level communication library, especially designed for the employment in HPC systems.
+Although it mainly serves as the lower-level communication substrate of ParaStation MPI (`psmpi`), it can also be used independently as a light-weight communication layer.
+In ParaStation MPI, `pscom` provides the communication substrate for the so-called PSP device, which uses the `pscom` interface at the bottom and implements MPICH's ADI3 interface at the top (see also the following figure).
+
+![Overview diagram of pscom](./img/pscom_overview.svg)
+
+## Asynchronous peer-to-peer connections
+
+The `pscom` uses peer-to-peer connections between two entities for data exchange.
+For example in the use case of ParaStation MPI these entities are MPI processes.
+In general, peer-to-peer communication can happen in two ways:
+- **Connection-oriented:** A communication session is established before any datagram is transmitted so that the data is delivered in the correct order to the upper communication layer (typical example: TCP).
+- **Connection-less:** Each datagram is addressed and routed individually so that data can arrive out of order at the upper communication layer (typical example: UDP).
+
+The `pscom` uses **connection-oriented** communication.
+A bi-directional communication channel is established before data is transmitted using the channel.
+However, the communication API of the `pscom` is asynchronous, i.e., progress on any bi-directional communication channel has to be triggered explicitly by the user.
+
+## Request-based communication management
+The central data structures managed by `pscom` are connections and requests.
+Connections are the abstraction of bi-directional and reliable communication channels accepting send and receive requests.
+The progress engine of `pscom` manages pending requests by queuing and dispatching messages based on address and tag information embedded in message headers.
+
+The general session management of `pscom` is based on the Berkeley Socket API using the pseudo TCP/IP-based [plugin](#plugins-for-different-interconnects) for the initial connection establishment.
+Subsequently, other plugins are able to use these socket connections for the exchange of further information, e.g., the necessary resources for the establishment of IB connections.
+Upper layer communication interfaces, i.e., the MPI layer of ParaStation MPI, establish `pscom` connections by explicit and asymmetric API calls in terms of listen, connect, and accept.
+
+The `pscom` offers an [instant connection establishment mechanism](./PscomInterface.md#instant-connectivity) and one for [on-demand connection establishment](./PscomInterface.md#on-demand-connectivity---pspondemand1) upon the first write on the connection.
+In both cases, TCP is used for the initial connection and then the best possible available plugin is chosen (based on priorities) for any further communication.
+
+## Plugins for different interconnects
+
+The `pscom` library supports a large variety of interconnects that are (or have been) commonly used in the HPC domain.
+Therefore, it exhibits a flexible architecture featuring plugins for all the different interfaces and protocols.
+These plugins are loaded and selected at runtime of the library by a predefined priority/fall-back scheme, favoring those interconnects promising faster communication.
+However, as the lowest common denominator, socket-based communication via the TCP/IP protocol serves as kind of pseudo plugin firmly included into the library that always has to be available.
+
+| Plugin   | Description                      |
+|---------------|-----------------------------------|
+| TCP    | TCP/ IP (e.g., Ethernet) |
+| Gateway (PSGW) | Bridge transparently between different networks (closed source feature) |
+| DAPL    | Direct Access Progamming Library, Generic API for RDMA-capable hardware  |
+| GM      | GM Myrinet  |
+| ELAN   | Support for Quadrics Elan network  |
+| OpenIB  | OpenIB /Infiniband (Verbs interface)  |
+| Extoll  | Support for the EXTOLL network |
+| Velo    | Support for the EXTOLL network  |
+| MXM     | Mellanox Messaging Accelerator (IB)  |
+| OFED    | OFED/Infiniband (in Unreliable Datagam (UD) mode)  |
+| PSM     | Performance Scaled Messaging API (e.g., Omni-Path)  |
+| UCP     | UCX framework for HPC network programming  |
+| Portals | Portals4 communication (e.g., for BXI) |
+| SHM     | Intra-host communication over shared memory |

@@ -1,0 +1,70 @@
+# Repository Structure
+
+## Folders
+
+```console
+├── bin - pscom commmand line tools
+├── cmake - cmake find module files
+├── dist - building rpm packages for pscom
+├── doc - documentation
+├── include - general includes
+├── lib - library implementation including plugins
+│   ├── all - includes all pscom sources for "all-in" compile of psmpi
+│   ├── pscom - main library components
+│   ├── pscom4dapl - DAPL plugin
+│   ├── pscom4elan - ELAN plugin
+│   ├── pscom4extoll - EXTOLL plugin
+│   ├── pscom4gm - GM plugin
+│   ├── pscom4mxm - MXM plugin
+│   ├── pscom4ofed - OFED plugin
+│   ├── pscom4openib - OpenIB plugin
+│   ├── pscom4portals - Portals plugin
+│   ├── pscom4psm - PSM plugin
+│   ├── pscom4ucp - UCP plugin
+│   ├── pscom4velo - Velo plugin (Extoll)
+│   └── psmalloc - not used
+├── scripts - supporting scripts (mostly bash)
+└── test - unit tests
+```
+
+## Modules & Files
+A *module* is a set of `.h` and/or `.c` files that provides the implementation of a specific feature of the `pscom`. In the following list, the file names and a short description are provided as an overview. Plugins are not included in this list.
+
+Files located in the folders `lib/pscom` and `include`:
+
+| Filename | Description |
+|--------|-------------|
+| `getid.c` | Get IP address functions with usage of env `PSP_NETWORK` |
+| `list.h` | Simple doubly linked list implementation |
+| `pscom.h` | Declaration of `pscom` API, global installation header |
+| `pscom.c` | Implementation of several functions of the main library API |
+| `pscom_async.{h,c}`  | Asynchronous event handling |
+| `pscom_con.{h,c}` | Connection-related operations |
+| `pscom_cuda.{h,c}` | CUDA-awareness features |
+| `pscom_debug.{h,c}` | Debugging features such as dumps |
+| `pscom_dprint.c` | Debug output features such as `DPRINT` |
+| `pscom_env.{h,c}` | Definition and management of environment variables |
+| `pscom_group.{h,c}`, `pscom_group_bcast.c` | Collective operations (barrier, bcast, ...) and group handling |
+| `pscom_io.{h,c}` | Input and output operations on network and application side including RMA and rendezvous mechanisms |
+| `pscom_listener.c` | Socket listener management |
+| `pscom_ondemand.c` | On-demand connectivity features |
+| `pscom_plugin.{h,c}` | Plugin interface |
+| `pscom_poll.{h,c}` | Progress engine of `pscom` based on polling mechanism |
+| `pscom_precon.{h,c}` | Pre-connection features for initial TCP handshake |
+| `pscom_priv.h` | Declarations and functions for internal use inside of `pscom` |
+| `pscom_queues.{h,c}` | Management of queues (receive, send, pending, etc.) |
+| `pscom_req.{h,c}` | Management of send and receive requests |
+| `pscom_sock.{h,c}` | Communication socket features |
+| `pscom_str_util.{h,c}` | Socket management related to socket name |
+| `pscom_suspend.c` | Suspend and resume features for connections |
+| `pscom_types.h` | Generic type definitions |
+| `pscom_ufd.{h,c}` | File handling (using file descriptors) |
+| `pscom_util.h` | Helper functions (memcpy, strncpy, ...) |
+| `pslib.{h,c}` | Configuration management for `pscom` using `libpslib` |
+
+Files which are currently unused by `pscom` library:
+
+| Filename | Description |
+|--------|-------------|
+| `perf.{h,c,sh}` | Tool: Performance data collection on `stdout`, graphical output with gnuplot |
+| `ps_perf.h` | Get some performance counters (eg. CPU cycles) using time stamp counter |
