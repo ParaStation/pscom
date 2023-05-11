@@ -9,7 +9,13 @@
  * file.
  */
 
+#include <stdarg.h>
+#include <stdio.h>
+#include <stddef.h>
 #include <stdlib.h>
+#include <setjmp.h>
+#include <string.h>
+#include <cmocka.h>
 
 #include "pscom_priv.h"
 #include "pscom_con.h"
@@ -20,6 +26,10 @@
 
 int setup_dummy_con(void **state)
 {
+	/* ensure the polling lists are empty before test execution */
+	assert_true(list_empty(&(&pscom.poll_read)->head));
+	assert_true(list_empty(&(&pscom.poll_write)->head));
+
 	/* create a dummy socket */
 	pscom_sock_t *sock = NULL;
 	setup_dummy_sock((void **)&sock);
