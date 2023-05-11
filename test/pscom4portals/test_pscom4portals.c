@@ -415,6 +415,10 @@ void test_portals_read_on_event_put(void **state)
     /* relese the request */
     recv_req->state |= PSCOM_REQ_STATE_DONE;
     pscom_request_free(recv_req);
+
+    /* cleanup the readers (enforce read_stop) */
+    dummy_con->read_stop(dummy_con);
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -504,6 +508,9 @@ void test_portals_read_out_of_order_receive(void **state)
 
     /* release the request */
     pscom_request_free(recv_req);
+
+    /* cleanup the readers */
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -613,6 +620,9 @@ void test_portals_read_three_out_of_order_receive(void **state)
 
     /* release the request */
     pscom_request_free(recv_req);
+
+    /* cleanup the readers */
+    pscom_poll(&pscom.poll_read);
 }
 
 
