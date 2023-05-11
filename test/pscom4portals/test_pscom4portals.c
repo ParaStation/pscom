@@ -125,10 +125,9 @@ int teardown_dummy_portals_con(void **state)
     if (con_state->expect_me_unlink_on_close) {
         expect_function_call_any(__wrap_PtlMEUnlink);
     }
-    con->close(con);
 
     /* close the pscom connection */
-    teardown_dummy_con((void **)&con);
+    con->close(con);
 
     if (!con_state->expect_me_unlink_on_close) {
         expect_function_call_any(__wrap_PtlMEUnlink);
@@ -137,8 +136,8 @@ int teardown_dummy_portals_con(void **state)
     pscom_plugin_portals.sock_destroy(get_sock(con->pub.socket));
     pscom_plugin_portals.destroy();
 
-    /* ensure the readers are actually removed */
-    pscom_poll(&pscom.poll_read);
+    /* destroy the pscom connection object */
+    teardown_dummy_con((void **)&con);
 
     free(con_state);
 
