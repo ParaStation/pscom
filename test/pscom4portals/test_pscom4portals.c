@@ -263,8 +263,8 @@ void test_portals_read_after_con_read(void **state)
     dummy_con->read_start    = pscom_portals_read_start;
     dummy_con->read_stop     = pscom_portals_read_stop;
 
-    /* set the reading state */
-    dummy_sock->portals.reader_user = 0;
+    /* initialize the portals socket and set the reading state */
+    pscom_plugin_portals.sock_init(dummy_sock);
 
     /* start reading on the connection */
     dummy_con->read_start(dummy_con);
@@ -379,8 +379,8 @@ void test_portals_read_on_event_put(void **state)
     pscom_post_recv(recv_req);
 
     /* receive ACK */
-    uint64_t seq_id = 0x42;
-    char *buf[128];
+    uint64_t seq_id           = 0x42;
+    char buf[18]              = {0};
     psptl_ep_t *ep            = (psptl_ep_t *)psptl_sock->priv;
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
