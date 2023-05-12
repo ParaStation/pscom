@@ -27,6 +27,7 @@
 #include "psptl.h"
 
 #include "util/test_utils_con.h"
+#include "util/test_utils_sock.h"
 
 #include "pscom_portals.c" /* we need to access some static functions */
 #include "psptl.c"         /* we need to access some static functions */
@@ -835,9 +836,13 @@ void test_portals_close_with_no_outstanding_put_requests(void **state)
  */
 void test_portals_ack_after_con_close(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    /* call the setup routine explicitly as this test actively closes the con */
+    dummy_con_state_t *con_state;
+    setup_dummy_portals_con((void **)&con_state);
+
     pscom_con_t *dummy_con       = con_state->con;
-    psptl_sock_t *dummy_sock     = &get_sock(dummy_con->pub.socket)->portals;
+    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
     psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
     uint32_t eager_pti           = con_info->ep->pti[PSPTL_PROT_EAGER];
 
@@ -854,7 +859,7 @@ void test_portals_ack_after_con_close(void **state)
     pscom_con_close(dummy_con);
 
     /* receive the missing ACK */
-    poll_reader_inc(dummy_sock);
+    poll_reader_inc(dummy_ptl_sock);
     will_return(__wrap_PtlEQPoll, &bucket); /* use saved user pointer */
     will_return(__wrap_PtlEQPoll, 0);       /* sequence ID not important */
     will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);    /* generate an ACK event */
@@ -866,11 +871,19 @@ void test_portals_ack_after_con_close(void **state)
     will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
     pscom_poll(&pscom.poll_read);
 
-    /* closing of the connection will be deferred until plugin destroy */
-    con_state->expect_me_unlink_on_close = 0;
-
     /* cleanup the readers */
     pscom_poll(&pscom.poll_read);
+
+    /* explicit teardown of resources created during setup_dummy_portals_con */
+    expect_function_call_any(__wrap_PtlMEUnlink);
+    expect_function_calls(__wrap_PtlMDRelease, 2);
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+    pscom_plugin_portals.destroy();
+
+    /* destroy the pscom socket object */
+    teardown_dummy_sock((void **)&dummy_sock);
+
+    free(con_state);
 }
 
 
