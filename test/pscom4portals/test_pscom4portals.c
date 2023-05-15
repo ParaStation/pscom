@@ -158,11 +158,12 @@ int teardown_dummy_portals_con(void **state)
  */
 void test_portals_first_initialization(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    psptl_sock_t *sock     = &get_sock(dummy_con->pub.socket)->portals;
+    pscom_con_t *dummy_con         = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock       = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_psptl_sock = &dummy_sock->portals;
 
     /* start socket initialization */
-    pscom_plugin_portals.sock_init(get_sock(dummy_con->pub.socket));
+    pscom_plugin_portals.sock_init(dummy_sock);
 
     /* set the init state */
     psptl.init_state = PSPORTALS_NOT_INITIALIZED;
@@ -175,7 +176,11 @@ void test_portals_first_initialization(void **state)
     pscom_plugin_portals.con_init(dummy_con);
 
     assert_true(psptl.init_state == PSPORTALS_INIT_DONE);
-    assert_true(sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
+    assert_true(dummy_psptl_sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
+
+    /* destroy the portals socket */
+    expect_function_calls(__wrap_PtlMDRelease, 2);
+    pscom_plugin_portals.sock_destroy(dummy_sock);
 }
 
 
@@ -275,6 +280,9 @@ void test_portals_read_after_con_read(void **state)
     /* cleanup the readers */
     dummy_con->read_stop(dummy_con);
     pscom_poll(&pscom.poll_read);
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
 }
 
 
@@ -314,13 +322,14 @@ void test_portals_read_after_con_read_stop_out_of_two(void **state)
  */
 void test_portals_one_reader_per_socket(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+    pscom_con_t *dummy_con   = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
 
     /* initialize as portals connection */
     dummy_con->read_stop            = pscom_portals_read_stop;
     dummy_con->read_start           = pscom_portals_read_start;
     dummy_con->arch.portals.reading = 0;
-    pscom_plugin_portals.sock_init(get_sock(dummy_con->pub.socket));
+    pscom_plugin_portals.sock_init(dummy_sock);
 
     /* start reading */
     dummy_con->read_start(dummy_con);
@@ -333,7 +342,7 @@ void test_portals_one_reader_per_socket(void **state)
     new_con->read_stop            = pscom_portals_read_stop;
     new_con->read_start           = pscom_portals_read_start;
     new_con->arch.portals.reading = 0;
-    pscom_plugin_portals.sock_init(get_sock(new_con->pub.socket));
+    pscom_plugin_portals.sock_init(new_sock);
 
 
     /* start reading */
@@ -346,6 +355,10 @@ void test_portals_one_reader_per_socket(void **state)
     new_con->read_stop(dummy_con);
     new_con->read_stop(new_con);
     pscom_poll(&pscom.poll_read);
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+    pscom_plugin_portals.sock_destroy(new_sock);
 }
 
 
