@@ -27,6 +27,7 @@
 #include "psptl.h"
 
 #include "util/test_utils_con.h"
+#include "util/test_utils_sock.h"
 
 #include "pscom_portals.c" /* we need to access some static functions */
 #include "psptl.c"         /* we need to access some static functions */
@@ -125,10 +126,9 @@ int teardown_dummy_portals_con(void **state)
     if (con_state->expect_me_unlink_on_close) {
         expect_function_call_any(__wrap_PtlMEUnlink);
     }
-    con->close(con);
 
     /* close the pscom connection */
-    teardown_dummy_con((void **)&con);
+    con->close(con);
 
     if (!con_state->expect_me_unlink_on_close) {
         expect_function_call_any(__wrap_PtlMEUnlink);
@@ -137,8 +137,8 @@ int teardown_dummy_portals_con(void **state)
     pscom_plugin_portals.sock_destroy(get_sock(con->pub.socket));
     pscom_plugin_portals.destroy();
 
-    /* ensure the readers are actually removed */
-    pscom_poll(&pscom.poll_read);
+    /* destroy the pscom connection object */
+    teardown_dummy_con((void **)&con);
 
     free(con_state);
 
@@ -158,11 +158,12 @@ int teardown_dummy_portals_con(void **state)
  */
 void test_portals_first_initialization(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    psptl_sock_t *sock     = &get_sock(dummy_con->pub.socket)->portals;
+    pscom_con_t *dummy_con         = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock       = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_psptl_sock = &dummy_sock->portals;
 
     /* start socket initialization */
-    pscom_plugin_portals.sock_init(get_sock(dummy_con->pub.socket));
+    pscom_plugin_portals.sock_init(dummy_sock);
 
     /* set the init state */
     psptl.init_state = PSPORTALS_NOT_INITIALIZED;
@@ -175,7 +176,11 @@ void test_portals_first_initialization(void **state)
     pscom_plugin_portals.con_init(dummy_con);
 
     assert_true(psptl.init_state == PSPORTALS_INIT_DONE);
-    assert_true(sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
+    assert_true(dummy_psptl_sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
+
+    /* destroy the portals socket */
+    expect_function_calls(__wrap_PtlMDRelease, 2);
+    pscom_plugin_portals.sock_destroy(dummy_sock);
 }
 
 
@@ -263,8 +268,8 @@ void test_portals_read_after_con_read(void **state)
     dummy_con->read_start    = pscom_portals_read_start;
     dummy_con->read_stop     = pscom_portals_read_stop;
 
-    /* set the reading state */
-    dummy_sock->portals.reader_user = 0;
+    /* initialize the portals socket and set the reading state */
+    pscom_plugin_portals.sock_init(dummy_sock);
 
     /* start reading on the connection */
     dummy_con->read_start(dummy_con);
@@ -275,6 +280,9 @@ void test_portals_read_after_con_read(void **state)
     /* cleanup the readers */
     dummy_con->read_stop(dummy_con);
     pscom_poll(&pscom.poll_read);
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
 }
 
 
@@ -314,13 +322,14 @@ void test_portals_read_after_con_read_stop_out_of_two(void **state)
  */
 void test_portals_one_reader_per_socket(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+    pscom_con_t *dummy_con   = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
 
     /* initialize as portals connection */
     dummy_con->read_stop            = pscom_portals_read_stop;
     dummy_con->read_start           = pscom_portals_read_start;
     dummy_con->arch.portals.reading = 0;
-    pscom_plugin_portals.sock_init(get_sock(dummy_con->pub.socket));
+    pscom_plugin_portals.sock_init(dummy_sock);
 
     /* start reading */
     dummy_con->read_start(dummy_con);
@@ -333,7 +342,7 @@ void test_portals_one_reader_per_socket(void **state)
     new_con->read_stop            = pscom_portals_read_stop;
     new_con->read_start           = pscom_portals_read_start;
     new_con->arch.portals.reading = 0;
-    pscom_plugin_portals.sock_init(get_sock(new_con->pub.socket));
+    pscom_plugin_portals.sock_init(new_sock);
 
 
     /* start reading */
@@ -346,6 +355,10 @@ void test_portals_one_reader_per_socket(void **state)
     new_con->read_stop(dummy_con);
     new_con->read_stop(new_con);
     pscom_poll(&pscom.poll_read);
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+    pscom_plugin_portals.sock_destroy(new_sock);
 }
 
 
@@ -379,8 +392,8 @@ void test_portals_read_on_event_put(void **state)
     pscom_post_recv(recv_req);
 
     /* receive ACK */
-    uint64_t seq_id = 0x42;
-    char *buf[128];
+    uint64_t seq_id           = 0x42;
+    char buf[18]              = {0};
     psptl_ep_t *ep            = (psptl_ep_t *)psptl_sock->priv;
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
@@ -416,6 +429,10 @@ void test_portals_read_on_event_put(void **state)
     /* relese the request */
     recv_req->state |= PSCOM_REQ_STATE_DONE;
     pscom_request_free(recv_req);
+
+    /* cleanup the readers (enforce read_stop) */
+    dummy_con->read_stop(dummy_con);
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -505,6 +522,9 @@ void test_portals_read_out_of_order_receive(void **state)
 
     /* release the request */
     pscom_request_free(recv_req);
+
+    /* cleanup the readers */
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -614,6 +634,9 @@ void test_portals_read_three_out_of_order_receive(void **state)
 
     /* release the request */
     pscom_request_free(recv_req);
+
+    /* cleanup the readers */
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -632,6 +655,7 @@ void test_portals_read_after_send_request(void **state)
     dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
     pscom_con_t *dummy_con       = con_state->con;
     pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
 
     /* set the reading state */
     dummy_sock->portals.reader_user = 0;
@@ -661,6 +685,10 @@ void test_portals_read_after_send_request(void **state)
 
     /* closing of the connection will be deferred until plugin destroy */
     con_state->expect_me_unlink_on_close = 0;
+
+    /* cleanup the readers */
+    poll_reader_dec(dummy_ptl_sock);
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -701,6 +729,9 @@ void test_portals_put_fail(void **state)
     assert_true(dummy_sock->portals.reader_user == 0);
     assert_int_equal(list_count(&pscom.poll_write.head), 0);
     assert_false(dummy_con->pub.state & PSCOM_CON_STATE_W);
+
+    /* pretend EOF received -> no more reading on this connection */
+    dummy_con->state.eof_received = 1;
 }
 
 
@@ -716,6 +747,7 @@ void test_portals_defer_close_with_outstanding_put_requests(void **state)
     dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
     pscom_con_t *dummy_con       = con_state->con;
     pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
     psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
     uint32_t eager_pti           = con_info->ep->pti[PSPTL_PROT_EAGER];
 
@@ -752,6 +784,10 @@ void test_portals_defer_close_with_outstanding_put_requests(void **state)
 
     /* closing of the connection will be deferred until plugin destroy */
     con_state->expect_me_unlink_on_close = 0;
+
+    /* cleanup the readers */
+    poll_reader_dec(dummy_ptl_sock);
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -797,10 +833,10 @@ void test_portals_close_with_no_outstanding_put_requests(void **state)
     will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
     pscom_poll(&pscom.poll_read);
 
-
-    /* explicitly stop writing to remove the poller */
+    /* explicitly stop writing and remove both readers and writers */
     dummy_con->write_stop(dummy_con);
     pscom_poll(&pscom.poll_write);
+    pscom_poll(&pscom.poll_read);
 }
 
 
@@ -813,9 +849,13 @@ void test_portals_close_with_no_outstanding_put_requests(void **state)
  */
 void test_portals_ack_after_con_close(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
+    /* call the setup routine explicitly as this test actively closes the con */
+    dummy_con_state_t *con_state;
+    setup_dummy_portals_con((void **)&con_state);
+
     pscom_con_t *dummy_con       = con_state->con;
-    psptl_sock_t *dummy_sock     = &get_sock(dummy_con->pub.socket)->portals;
+    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
     psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
     uint32_t eager_pti           = con_info->ep->pti[PSPTL_PROT_EAGER];
 
@@ -832,7 +872,7 @@ void test_portals_ack_after_con_close(void **state)
     pscom_con_close(dummy_con);
 
     /* receive the missing ACK */
-    poll_reader_inc(dummy_sock);
+    poll_reader_inc(dummy_ptl_sock);
     will_return(__wrap_PtlEQPoll, &bucket); /* use saved user pointer */
     will_return(__wrap_PtlEQPoll, 0);       /* sequence ID not important */
     will_return(__wrap_PtlEQPoll, PTL_EVENT_ACK);    /* generate an ACK event */
@@ -844,8 +884,19 @@ void test_portals_ack_after_con_close(void **state)
     will_return(__wrap_PtlEQPoll, PTL_OK); /* an event has been generated */
     pscom_poll(&pscom.poll_read);
 
-    /* closing of the connection will be deferred until plugin destroy */
-    con_state->expect_me_unlink_on_close = 0;
+    /* cleanup the readers */
+    pscom_poll(&pscom.poll_read);
+
+    /* explicit teardown of resources created during setup_dummy_portals_con */
+    expect_function_call_any(__wrap_PtlMEUnlink);
+    expect_function_calls(__wrap_PtlMDRelease, 2);
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+    pscom_plugin_portals.destroy();
+
+    /* destroy the pscom socket object */
+    teardown_dummy_sock((void **)&dummy_sock);
+
+    free(con_state);
 }
 
 
@@ -861,6 +912,7 @@ void test_portals_handle_message_drop(void **state)
     dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
     pscom_con_t *dummy_con       = con_state->con;
     pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
 
     /* set the reading state */
     dummy_con->arch.portals.reading = 0;
@@ -915,6 +967,12 @@ void test_portals_handle_message_drop(void **state)
 
     /* closing of the connection will be deferred until plugin destroy */
     con_state->expect_me_unlink_on_close = 0;
+
+    /* cleanup the readers and writers */
+    poll_reader_dec(dummy_ptl_sock);
+    pscom_poll(&pscom.poll_read);
+    dummy_con->write_stop(dummy_con);
+    pscom_poll(&pscom.poll_write);
 }
 
 

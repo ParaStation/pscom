@@ -164,6 +164,8 @@ int __wrap_PtlPTAlloc(ptl_handle_ni_t ni_handle, unsigned int options,
                       ptl_handle_eq_t eq_handle, ptl_pt_index_t pt_index_req,
                       ptl_pt_index_t *pt_index)
 {
+    *pt_index = 0x42;
+
     return PTL_OK;
 }
 
