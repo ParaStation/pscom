@@ -193,6 +193,7 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size)
 	sock->pub.userdata_size = userdata_size;
 	sock->pub.connection_userdata_size = 0;
 
+	INIT_LIST_HEAD(&sock->archs);
 	INIT_LIST_HEAD(&sock->connections);
 	INIT_LIST_HEAD(&sock->genrecvq_any);
 	INIT_LIST_HEAD(&sock->recvq_any);
@@ -233,6 +234,9 @@ void pscom_sock_destroy(pscom_sock_t *sock)
 	}
 
 	pscom_plugins_sock_destroy(sock);
+
+	/* ensure all plugins performed a proper cleanup */
+	assert(list_empty(&sock->archs));
 
 	sock->magic = 0;
 

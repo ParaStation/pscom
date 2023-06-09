@@ -85,6 +85,17 @@ struct PSCOM_req
 	pscom_request_t pub;
 };
 
+typedef struct pscom_portals_sock pscom_portals_sock_t;
+typedef struct pscom_arch_sock {
+	struct list_head        next;
+	pscom_con_type_t        plugin_con_type;
+	union {
+		psgm_sock_t             gm;
+		pscom_portals_sock_t    *portals;
+	} arch;
+	char arch_sock_data[0];
+} pscom_arch_sock_t;
+
 struct con_guard {
 	int fd;
 };
@@ -146,6 +157,7 @@ typedef struct psucp_conn {
 
 typedef struct psptl_conn {
 	struct psptl_con_info	*ci;
+	pscom_portals_sock_t	*arch_sock;
 	unsigned		reading : 1;
 } psptl_conn_t;
 
@@ -169,14 +181,6 @@ typedef struct ondemand_conn {
 typedef struct user_conn {
 	void	*priv;
 } user_conn_t;
-
-
-typedef struct psptl_sock {
-    pscom_poll_t poll_read;
-    void *priv;
-    int init_state;
-    unsigned reader_user;
-} psptl_sock_t;
 
 
 /* rendezvous message for RMA requests. */
@@ -450,8 +454,9 @@ struct PSCOM_sock
 	uint64_t		con_type_mask;	/* allowed con_types.
 						   Or'd value from: (1 << (pscom_con_type_t) con_type)
 						   default = ~0 */
-	psgm_sock_t		gm;
-	psptl_sock_t		portals;
+
+	struct list_head	archs;		// List of architecture-specific sockets
+
 	struct {
 		unsigned	close_called : 1;
 		unsigned	close_timeout : 1;
@@ -638,6 +643,35 @@ pscom_sock_t *get_sock(pscom_socket_t *socket)
 	return list_entry(socket, pscom_sock_t, pub);
 }
 
+/**
+ * @brief Get the arch sock object from pscom sock
+ *
+ * This function returns the architecture-specific socket object for a given
+ * @ref con_type.
+ *
+ * @param [in] sock        pscom sock pointer
+ * @param [in] con_type    connection type
+ *
+ * @return pscom_arch_sock_t* If an architecture-spcific socket object coult be
+ *                            found
+ * @return NULL               Otherwise
+ */
+static inline
+pscom_arch_sock_t *get_arch_sock(pscom_sock_t *sock, pscom_con_type_t con_type)
+{
+	struct list_head *pos;
+
+	list_for_each(pos, &sock->archs) {
+		pscom_arch_sock_t *arch_sock =
+			list_entry(pos, pscom_arch_sock_t, next);
+
+		if (arch_sock->plugin_con_type == con_type) {
+			return arch_sock;
+		}
+	}
+
+	return NULL;
+}
 
 void pscom_sock_set_name(pscom_sock_t *sock, const char *name);
 
