@@ -72,8 +72,8 @@ int setup_dummy_portals_con(void **state)
     pscom_plugin_portals.con_init(con);
 
     /* initialize the pscom4portals connection */
-    psptl_con_info_t *ci = psptl_con_create();
-    psptl_sock_t *sock   = &get_sock(con->pub.socket)->portals;
+    psptl_con_info_t *ci       = psptl_con_create();
+    pscom_portals_sock_t *sock = con->arch.portals.arch_sock;
 
     psptl_con_init(ci, (void *)con, sock, sock->priv);
     con->arch.portals.ci = ci;
@@ -158,9 +158,8 @@ int teardown_dummy_portals_con(void **state)
  */
 void test_portals_first_initialization(void **state)
 {
-    pscom_con_t *dummy_con         = (pscom_con_t *)(*state);
-    pscom_sock_t *dummy_sock       = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *dummy_psptl_sock = &dummy_sock->portals;
+    pscom_con_t *dummy_con   = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
 
     /* start socket initialization */
     pscom_plugin_portals.sock_init(dummy_sock);
@@ -174,6 +173,8 @@ void test_portals_first_initialization(void **state)
 
     /* initialize the pscom4portals plugin */
     pscom_plugin_portals.con_init(dummy_con);
+
+    pscom_portals_sock_t *dummy_psptl_sock = dummy_con->arch.portals.arch_sock;
 
     assert_true(psptl.init_state == PSPORTALS_INIT_DONE);
     assert_true(dummy_psptl_sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
@@ -193,18 +194,27 @@ void test_portals_first_initialization(void **state)
  */
 void test_portals_second_initialization(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    psptl_sock_t *sock     = &get_sock(dummy_con->pub.socket)->portals;
+    pscom_con_t *dummy_con   = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
+
+    pscom_portals_sock_init(dummy_sock);
+    pscom_arch_sock_t *arch_sock         = get_arch_sock(dummy_sock,
+                                                         PSCOM_CON_TYPE_PORTALS);
+    pscom_portals_sock_t *dummy_ptl_sock = arch_sock->arch.portals;
 
     /* set the init state */
-    psptl.init_state = PSPORTALS_INIT_DONE;
-    sock->init_state = PSCOM_PORTALS_SOCK_INIT_DONE;
+    psptl.init_state           = PSPORTALS_INIT_DONE;
+    dummy_ptl_sock->init_state = PSCOM_PORTALS_SOCK_INIT_DONE;
 
     /* initialize the connection */
     pscom_plugin_portals.con_init(dummy_con);
 
     assert_true(psptl.init_state == PSPORTALS_INIT_DONE);
-    assert_true(sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
+    assert_true(dummy_ptl_sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE);
+
+    /* pretend the sock is not initialized (to avoid cleanup of the ep) */
+    dummy_ptl_sock->init_state = PSCOM_PORTALS_SOCK_NOT_INITIALIZED;
+    pscom_portals_sock_destroy(dummy_sock);
 }
 
 
@@ -217,7 +227,13 @@ void test_portals_second_initialization(void **state)
  */
 void test_portals_initialization_after_failure(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+    pscom_con_t *dummy_con   = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
+
+    pscom_portals_sock_init(dummy_sock);
+    pscom_arch_sock_t *arch_sock         = get_arch_sock(dummy_sock,
+                                                         PSCOM_CON_TYPE_PORTALS);
+    pscom_portals_sock_t *dummy_ptl_sock = arch_sock->arch.portals;
 
     /* set the init state */
     psptl.init_state = PSPORTALS_INIT_FAILED;
@@ -226,6 +242,10 @@ void test_portals_initialization_after_failure(void **state)
     int ret = pscom_plugin_portals.con_init(dummy_con);
 
     assert_true(ret == PSPORTALS_INIT_FAILED);
+
+    /* pretend the sock is not initialized (to avoid cleanup of the ep) */
+    dummy_ptl_sock->init_state = PSCOM_PORTALS_SOCK_NOT_INITIALIZED;
+    pscom_portals_sock_destroy(dummy_sock);
 }
 
 
@@ -238,17 +258,27 @@ void test_portals_initialization_after_failure(void **state)
  */
 void test_portals_initialization_after_socket_failure(void **state)
 {
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    psptl_sock_t *sock     = &get_sock(dummy_con->pub.socket)->portals;
+    pscom_con_t *dummy_con   = (pscom_con_t *)(*state);
+    pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
+
+    pscom_portals_sock_init(dummy_sock);
+    pscom_arch_sock_t *arch_sock         = get_arch_sock(dummy_sock,
+                                                         PSCOM_CON_TYPE_PORTALS);
+    pscom_portals_sock_t *dummy_ptl_sock = arch_sock->arch.portals;
+
 
     /* set the init state */
-    psptl.init_state = PSPORTALS_INIT_DONE;
-    sock->init_state = PSCOM_PORTALS_SOCK_INIT_FAILED;
+    psptl.init_state           = PSPORTALS_INIT_DONE;
+    dummy_ptl_sock->init_state = PSCOM_PORTALS_SOCK_INIT_FAILED;
 
     /* initialize the second connection */
     int ret = pscom_plugin_portals.con_init(dummy_con);
 
     assert_true(ret == PSCOM_PORTALS_SOCK_INIT_FAILED);
+
+    /* pretend the sock is not initialized (to avoid cleanup of the ep) */
+    dummy_ptl_sock->init_state = PSCOM_PORTALS_SOCK_NOT_INITIALIZED;
+    pscom_portals_sock_destroy(dummy_sock);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -271,11 +301,17 @@ void test_portals_read_after_con_read(void **state)
     /* initialize the portals socket and set the reading state */
     pscom_plugin_portals.sock_init(dummy_sock);
 
+    /* search for portals plugin socket*/
+    pscom_arch_sock_t *arch_sock         = get_arch_sock(dummy_sock,
+                                                         PSCOM_CON_TYPE_PORTALS);
+    pscom_portals_sock_t *dummy_ptl_sock = arch_sock->arch.portals;
+    dummy_con->arch.portals.arch_sock    = arch_sock->arch.portals;
+
     /* start reading on the connection */
     dummy_con->read_start(dummy_con);
 
     /* ensure pscom4portals is in reading state */
-    assert_true(dummy_sock->portals.reader_user == 1);
+    assert_true(dummy_ptl_sock->reader_user == 1);
 
     /* cleanup the readers */
     dummy_con->read_stop(dummy_con);
@@ -300,16 +336,27 @@ void test_portals_read_after_con_read_stop_out_of_two(void **state)
     pscom_sock_t *dummy_sock = get_sock(dummy_con->pub.socket);
     dummy_con->read_stop     = pscom_portals_read_stop;
 
+    /* initialize a new portals plugin socket*/
+    pscom_portals_sock_init(dummy_sock);
+    pscom_arch_sock_t *arch_sock         = get_arch_sock(dummy_sock,
+                                                         PSCOM_CON_TYPE_PORTALS);
+    pscom_portals_sock_t *dummy_ptl_sock = arch_sock->arch.portals;
+    dummy_con->arch.portals.arch_sock    = arch_sock->arch.portals;
+
+
     /* set the reading state */
     dummy_con->arch.portals.reading = 1;
-    dummy_sock->portals.reader_user = 2;
+    dummy_ptl_sock->reader_user     = 2;
 
     /* stop reading on the connection */
     dummy_con->read_stop(dummy_con);
 
     /* ensure pscom4portals is in reading state */
-    assert_true(dummy_sock->portals.reader_user == 1);
+    assert_true(dummy_ptl_sock->reader_user == 1);
     assert_true(dummy_con->arch.portals.reading == 0);
+
+    /* pretend the sock is not initialized (to avoid cleanup of the ep) */
+    pscom_portals_sock_destroy(dummy_sock);
 }
 
 
@@ -330,6 +377,10 @@ void test_portals_one_reader_per_socket(void **state)
     dummy_con->read_start           = pscom_portals_read_start;
     dummy_con->arch.portals.reading = 0;
     pscom_plugin_portals.sock_init(dummy_sock);
+    /* search for portals plugin socket*/
+    pscom_arch_sock_t *arch_sock      = get_arch_sock(dummy_sock,
+                                                      PSCOM_CON_TYPE_PORTALS);
+    dummy_con->arch.portals.arch_sock = arch_sock->arch.portals;
 
     /* start reading */
     dummy_con->read_start(dummy_con);
@@ -343,7 +394,9 @@ void test_portals_one_reader_per_socket(void **state)
     new_con->read_start           = pscom_portals_read_start;
     new_con->arch.portals.reading = 0;
     pscom_plugin_portals.sock_init(new_sock);
-
+    /* search for portals plugin socket*/
+    arch_sock = get_arch_sock(new_sock, PSCOM_CON_TYPE_PORTALS);
+    new_con->arch.portals.arch_sock = arch_sock->arch.portals;
 
     /* start reading */
     new_con->read_start(new_con);
@@ -372,14 +425,13 @@ void test_portals_one_reader_per_socket(void **state)
  */
 void test_portals_read_on_event_put(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *psptl_sock     = &get_sock(dummy_con->pub.socket)->portals;
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
 
     /* set the reading state */
     dummy_con->arch.portals.reading = 0;
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user     = 0;
 
     /* create and post a any recv request */
     char recv_buf[128];
@@ -394,7 +446,7 @@ void test_portals_read_on_event_put(void **state)
     /* receive ACK */
     uint64_t seq_id           = 0x42;
     char buf[18]              = {0};
-    psptl_ep_t *ep            = (psptl_ep_t *)psptl_sock->priv;
+    psptl_ep_t *ep            = (psptl_ep_t *)dummy_ptl_sock->priv;
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
         .recv_seq_id   = seq_id,
@@ -445,14 +497,13 @@ void test_portals_read_on_event_put(void **state)
  */
 void test_portals_read_out_of_order_receive(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *psptl_sock     = &get_sock(dummy_con->pub.socket)->portals;
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
 
     /* set the reading state */
     dummy_con->arch.portals.reading = 0;
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user     = 0;
 
     /* create and post a any recv request */
     char recv_buf[128]        = {0};
@@ -466,7 +517,7 @@ void test_portals_read_out_of_order_receive(void **state)
 
     /* receive the payload (seq ID: 1) */
     char buf[128]             = "This is the payload";
-    psptl_ep_t *ep            = (psptl_ep_t *)psptl_sock->priv;
+    psptl_ep_t *ep            = (psptl_ep_t *)dummy_ptl_sock->priv;
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
         .recv_seq_id   = 0,
@@ -537,14 +588,13 @@ void test_portals_read_out_of_order_receive(void **state)
  */
 void test_portals_read_three_out_of_order_receive(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *psptl_sock     = &get_sock(dummy_con->pub.socket)->portals;
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
 
     /* set the reading state */
     dummy_con->arch.portals.reading = 0;
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user     = 0;
 
     /* create and post a any recv request */
     char recv_buf[128]        = {0};
@@ -561,7 +611,7 @@ void test_portals_read_three_out_of_order_receive(void **state)
     char buf_one[128]  = "This is the first part of the payload; This is the "
                          "second part of the payload";
     char *buf_two      = buf_one + buf_one_len;
-    psptl_ep_t *ep     = (psptl_ep_t *)psptl_sock->priv;
+    psptl_ep_t *ep     = (psptl_ep_t *)dummy_ptl_sock->priv;
     psptl_con_info_t con_info = {
         .con_priv      = dummy_con,
         .recv_seq_id   = 0,
@@ -652,13 +702,12 @@ void test_portals_read_three_out_of_order_receive(void **state)
  */
 void test_portals_read_after_send_request(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
 
     /* set the reading state */
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user = 0;
 
     /* post a send request on the connection */
     pscom_request_t *send_req = pscom_request_create(0, 100);
@@ -674,14 +723,14 @@ void test_portals_read_after_send_request(void **state)
     pscom_poll(&pscom.poll_write);
 
     /* ensure pscom4portals is in reading state */
-    assert_true(dummy_sock->portals.reader_user == 1);
+    assert_true(dummy_ptl_sock->reader_user == 1);
 
     /* stop writing and cleanup polling list */
     dummy_con->write_stop(dummy_con);
     pscom_poll(&pscom.poll_write);
 
     /* ensure we are still in reading state (ACK not received yet) */
-    assert_true(dummy_sock->portals.reader_user == 1);
+    assert_true(dummy_ptl_sock->reader_user == 1);
 
     /* closing of the connection will be deferred until plugin destroy */
     con_state->expect_me_unlink_on_close = 0;
@@ -701,13 +750,13 @@ void test_portals_read_after_send_request(void **state)
  */
 void test_portals_put_fail(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
 
     /* set the reading and connection state */
-    dummy_sock->portals.reader_user = 0;
-    dummy_con->pub.state            = PSCOM_CON_STATE_RW;
+    dummy_ptl_sock->reader_user = 0;
+    dummy_con->pub.state        = PSCOM_CON_STATE_RW;
 
     /* post a send request on the connection */
     pscom_request_t *send_req = pscom_request_create(0, 100);
@@ -726,7 +775,7 @@ void test_portals_put_fail(void **state)
     pscom_poll(&pscom.poll_write);
 
     /* ensure pscom4portals is not reading state */
-    assert_true(dummy_sock->portals.reader_user == 0);
+    assert_true(dummy_ptl_sock->reader_user == 0);
     assert_int_equal(list_count(&pscom.poll_write.head), 0);
     assert_false(dummy_con->pub.state & PSCOM_CON_STATE_W);
 
@@ -744,15 +793,14 @@ void test_portals_put_fail(void **state)
  */
 void test_portals_defer_close_with_outstanding_put_requests(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
-    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
-    uint32_t eager_pti           = con_info->ep->pti[PSPTL_PROT_EAGER];
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
+    psptl_con_info_t *con_info           = dummy_con->arch.portals.ci;
+    uint32_t eager_pti                   = con_info->ep->pti[PSPTL_PROT_EAGER];
 
     /* set the reading state */
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user = 0;
 
     /* post a send request on the connection */
     pscom_request_t *send_req = pscom_request_create(0, 100);
@@ -800,14 +848,14 @@ void test_portals_defer_close_with_outstanding_put_requests(void **state)
  */
 void test_portals_close_with_no_outstanding_put_requests(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
-    uint32_t eager_pti           = con_info->ep->pti[PSPTL_PROT_EAGER];
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
+    psptl_con_info_t *con_info           = dummy_con->arch.portals.ci;
+    uint32_t eager_pti                   = con_info->ep->pti[PSPTL_PROT_EAGER];
 
     /* set the reading state */
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user = 0;
 
     /* post a send request on the connection */
     pscom_request_t *send_req = pscom_request_create(0, 100);
@@ -853,11 +901,11 @@ void test_portals_ack_after_con_close(void **state)
     dummy_con_state_t *con_state;
     setup_dummy_portals_con((void **)&con_state);
 
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
-    psptl_con_info_t *con_info   = dummy_con->arch.portals.ci;
-    uint32_t eager_pti           = con_info->ep->pti[PSPTL_PROT_EAGER];
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_sock_t *dummy_sock             = get_sock(dummy_con->pub.socket);
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
+    psptl_con_info_t *con_info           = dummy_con->arch.portals.ci;
+    uint32_t eager_pti                   = con_info->ep->pti[PSPTL_PROT_EAGER];
 
     /* pretend we have outstanding PUT operations (i.e., waiting for ACKs) */
     con_info->outstanding_put_ops = 1;
@@ -909,14 +957,13 @@ void test_portals_ack_after_con_close(void **state)
  */
 void test_portals_handle_message_drop(void **state)
 {
-    dummy_con_state_t *con_state = (dummy_con_state_t *)(*state);
-    pscom_con_t *dummy_con       = con_state->con;
-    pscom_sock_t *dummy_sock     = get_sock(dummy_con->pub.socket);
-    psptl_sock_t *dummy_ptl_sock = &dummy_sock->portals;
+    dummy_con_state_t *con_state         = (dummy_con_state_t *)(*state);
+    pscom_con_t *dummy_con               = con_state->con;
+    pscom_portals_sock_t *dummy_ptl_sock = dummy_con->arch.portals.arch_sock;
 
     /* set the reading state */
     dummy_con->arch.portals.reading = 0;
-    dummy_sock->portals.reader_user = 0;
+    dummy_ptl_sock->reader_user     = 0;
 
     /* post a send request on the connection */
     pscom_request_t *send_req = pscom_request_create(0, 100);
@@ -963,7 +1010,7 @@ void test_portals_handle_message_drop(void **state)
 
     /* ensure there is an outstanding put operation */
     assert_int_equal(con_info.outstanding_put_ops, 1);
-    assert_true(dummy_sock->portals.reader_user == 1);
+    assert_true(dummy_ptl_sock->reader_user == 1);
 
     /* closing of the connection will be deferred until plugin destroy */
     con_state->expect_me_unlink_on_close = 0;
