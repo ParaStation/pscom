@@ -198,7 +198,8 @@ psptl_con_info_t *psptl_con_create(void);
  *
  * @param [in] con_info The psptl_con_info_t object to be initialized.
  * @param [in] con_priv The corresponding pscom_con_t from the pscom layer.
- * @param [in] sock_priv The corresponding psptl_sock_t from the upper layer.
+ * @param [in] sock_priv The corresponding pscom_portals_sock_t from the upper
+ * layer.
  * @param [in] ep_priv  The corresponding psptl endpoint object.
  *
  * @return 0
