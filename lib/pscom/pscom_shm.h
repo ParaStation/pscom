@@ -71,9 +71,6 @@ typedef struct shm_conn_s {
 	struct shm_pending *shm_pending; /* first pending io request of this connection */
 } shm_conn_t;
 
-typedef struct shm_sock_s {
-} shm_sock_t;
-
 
 extern pscom_plugin_t pscom_plugin_shm;
 

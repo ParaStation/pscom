@@ -450,18 +450,8 @@ struct PSCOM_sock
 	uint64_t		con_type_mask;	/* allowed con_types.
 						   Or'd value from: (1 << (pscom_con_type_t) con_type)
 						   default = ~0 */
-	tcp_sock_t		tcp;
-	shm_sock_t		shm;
-//	psib_sock_t		mvapi;
-//	psoib_sock_t		openib;
-//	psofed_sock_t		ofed;
 	psgm_sock_t		gm;
 	psptl_sock_t		portals;
-//	psdapl_sock_t		dapl;
-//	pselan_sock_t		elan;
-//	psextoll_sock_t		extoll;
-//	psgw_sock_t		gateway;
-
 	struct {
 		unsigned	close_called : 1;
 		unsigned	close_timeout : 1;
