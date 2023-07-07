@@ -24,10 +24,6 @@ typedef struct tcp_conn_s {
 } tcp_conn_t;
 
 
-typedef struct tcp_sock_s {
-} tcp_sock_t;
-
-
 extern pscom_plugin_t pscom_plugin_tcp;
 
 #endif /* _PSPORT_TCP_H_ */

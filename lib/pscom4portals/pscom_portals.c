@@ -7,7 +7,7 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-
+#include "pscom_priv.h"
 #include "pscom_portals.h"
 #include "pscom_async.h"
 #include "pscom_con.h"
@@ -21,6 +21,19 @@
 #include <unistd.h>
 
 #include "psptl.h"
+
+/**
+ * @brief pscom4portals-specific socket structure
+ *
+ */
+typedef struct pscom_portals_sock {
+    pscom_poll_t poll_read; /**< The polling obect to enable/disable
+                                 pscom4portals in the progress engine */
+    void *priv;             /**< Endpoint object of the psptl layer */
+    int init_state;         /**< Initialization state of pscom4portals*/
+    unsigned reader_user;   /**< Plugin-wide reader counter */
+} pscom_portals_sock_t;
+
 
 uint8_t foster_progress = 0;
 
@@ -104,14 +117,14 @@ static int pscom_portals_make_progress(pscom_poll_t *poll);
 /**
  * @brief Increase the number of connections in reading state on a socket.
  *
- * Increases an internal counter in the psptl_sock_t structure to keep track of
- * its connections in reading state. If this is the first connection, it
- * actually appends the polling object to the pscom's global reading queue,
+ * Increases an internal counter in the pscom_portals_sock_t structure to keep
+ * track of its connections in reading state. If this is the first connection,
+ * it actually appends the polling object to the pscom's global reading queue,
  * i.e., there is only _one_ polling object for all connections of a socket.
  *
  * @param [in] sock The socket corresponding to the connection in reading state.
  */
-static void poll_reader_inc(psptl_sock_t *sock)
+static void poll_reader_inc(pscom_portals_sock_t *sock)
 {
     /* enqueue to polling reader if not enqueued yet */
     if (!sock->reader_user) {
@@ -127,12 +140,12 @@ static void poll_reader_inc(psptl_sock_t *sock)
 /**
  * @brief Decrease the number of connections in reading state on a socket.
  *
- * Decreases an internal counter in the psptl_sock_t structure to keep track of
- * its connections in reading state. (see also: poll_reader_inc()).
+ * Decreases an internal counter in the pscom_portals_sock_t structure to keep
+ * track of its connections in reading state. (see also: poll_reader_inc()).
  *
  * @param [in] sock The socket corresponding to the connection in reading state.
  */
-static void poll_reader_dec(psptl_sock_t *sock)
+static void poll_reader_dec(pscom_portals_sock_t *sock)
 {
     /* decrease the reader counter */
     sock->reader_user--;
@@ -153,7 +166,7 @@ static void pscom_portals_read_start(pscom_con_t *con)
 {
     /* set to reading state if not yet reading */
     if (!con->arch.portals.reading) {
-        psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+        pscom_portals_sock_t *sock = con->arch.portals.arch_sock;
 
         con->arch.portals.reading = 1;
         poll_reader_inc(sock);
@@ -174,7 +187,7 @@ static void pscom_portals_read_stop(pscom_con_t *con)
 {
     /* unset reading state if this connection is still reading */
     if (con->arch.portals.reading) {
-        psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+        pscom_portals_sock_t *sock = con->arch.portals.arch_sock;
 
         con->arch.portals.reading = 0;
         poll_reader_dec(sock);
@@ -192,7 +205,8 @@ static void pscom_portals_read_stop(pscom_con_t *con)
 static int pscom_portals_make_progress(pscom_poll_t *poll)
 {
     /* retrieve the socket corresponding to the polling object */
-    psptl_sock_t *sock = list_entry(poll, psptl_sock_t, poll_read);
+    pscom_portals_sock_t *sock = list_entry(poll, pscom_portals_sock_t,
+                                            poll_read);
 
     /* trigger the progress engine of the lower psptl layer */
     return psptl_progress(sock->priv);
@@ -212,7 +226,7 @@ static int pscom_portals_make_progress(pscom_poll_t *poll)
  */
 static inline void pscom_portals_sendv_done(void *sock_priv)
 {
-    psptl_sock_t *sock = (psptl_sock_t *)sock_priv;
+    pscom_portals_sock_t *sock = (pscom_portals_sock_t *)sock_priv;
 
     poll_reader_dec(sock);
 }
@@ -234,7 +248,7 @@ static inline void pscom_portals_sendv_done(void *sock_priv)
  */
 static void pscom_portals_sendv_done_with_progress(void *sock_priv)
 {
-    psptl_sock_t *sock = (psptl_sock_t *)sock_priv;
+    pscom_portals_sock_t *sock = (pscom_portals_sock_t *)sock_priv;
 
     pscom_portals_sendv_done(sock);
 
@@ -285,8 +299,8 @@ static int pscom_portals_do_write(pscom_poll_t *poll)
     size_t len;
     struct iovec iov[2];
     pscom_req_t *req;
-    pscom_con_t *con   = list_entry(poll, pscom_con_t, poll_write);
-    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+    pscom_con_t *con           = list_entry(poll, pscom_con_t, poll_write);
+    pscom_portals_sock_t *sock = con->arch.portals.arch_sock;
 
     /* get the next req/iov from the connection's send queue */
     req = pscom_write_get_iov(con, iov);
@@ -622,9 +636,20 @@ static void pscom_portals_init(void)
  */
 static void pscom_portals_sock_init(pscom_sock_t *sock)
 {
-    psptl_sock_t *portals_sock = &sock->portals;
+    /* allocate space for a new arch sock containing pscom_portals_sock */
+    pscom_arch_sock_t *arch_sock = malloc(sizeof(pscom_arch_sock_t) +
+                                          sizeof(pscom_portals_sock_t));
+
+    /* set up the arch_sock structure */
+    arch_sock->arch.portals = (pscom_portals_sock_t *)&arch_sock->arch_sock_data;
+    arch_sock->plugin_con_type = PSCOM_CON_TYPE_PORTALS;
+
+    /* add the new arch sock to the socket archs list */
+    assert(get_arch_sock(sock, PSCOM_CON_TYPE_PORTALS) == NULL);
+    list_add_tail(&arch_sock->next, &sock->archs);
 
     /* initialize the poll reader */
+    pscom_portals_sock_t *portals_sock = arch_sock->arch.portals;
     pscom_poll_init(&portals_sock->poll_read);
     portals_sock->reader_user = 0;
 
@@ -643,7 +668,9 @@ static void pscom_portals_sock_init(pscom_sock_t *sock)
  */
 static void pscom_portals_sock_destroy(pscom_sock_t *sock)
 {
-    psptl_sock_t *portals_sock = &sock->portals;
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_PORTALS);
+    assert(arch_sock);
+    pscom_portals_sock_t *portals_sock = arch_sock->arch.portals;
 
     /* only cleanup the ep if the socket has been (successfully) initialized */
     if (portals_sock->init_state == PSCOM_PORTALS_SOCK_INIT_DONE) {
@@ -664,6 +691,11 @@ static void pscom_portals_sock_destroy(pscom_sock_t *sock)
 
     /* set the initialization state */
     portals_sock->init_state = PSCOM_PORTALS_SOCK_NOT_INITIALIZED;
+
+    /* release resources associated with the arch_sock structure */
+    arch_sock->arch.portals = NULL;
+    list_del_init(&arch_sock->next);
+    free(arch_sock);
 }
 
 
@@ -683,7 +715,13 @@ static void pscom_portals_sock_destroy(pscom_sock_t *sock)
 static int pscom_portals_con_init(pscom_con_t *con)
 {
     int ret;
-    psptl_sock_t *sock = &get_sock(con->pub.socket)->portals;
+    pscom_sock_t *sock           = get_sock(con->pub.socket);
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_PORTALS);
+    assert(arch_sock);
+    pscom_portals_sock_t *portals_sock = arch_sock->arch.portals;
+
+    /* store a pointer to the architecture-specific socket for fast access */
+    con->arch.portals.arch_sock = portals_sock;
 
     /* initialize the psptl layer (once for all sockets) */
     ret = psptl_init();
@@ -693,17 +731,17 @@ static int pscom_portals_con_init(pscom_con_t *con)
      * initialize one endpoint per sock
      * (cleanup in pscom_portals_sock_destroy()!)
      */
-    if (sock->init_state == PSCOM_PORTALS_SOCK_NOT_INITIALIZED) {
-        ret = psptl_init_ep(&sock->priv);
+    if (portals_sock->init_state == PSCOM_PORTALS_SOCK_NOT_INITIALIZED) {
+        ret = psptl_init_ep(&portals_sock->priv);
         if (ret < 0) goto err_out;
 
-        sock->init_state = PSCOM_PORTALS_SOCK_INIT_DONE;
+        portals_sock->init_state = PSCOM_PORTALS_SOCK_INIT_DONE;
     }
 
-    return sock->init_state;
+    return portals_sock->init_state;
     /* --- */
 err_out:
-    sock->init_state = PSCOM_PORTALS_SOCK_INIT_FAILED;
+    portals_sock->init_state = PSCOM_PORTALS_SOCK_INIT_FAILED;
     return ret;
 }
 
@@ -725,9 +763,9 @@ pscom_portals_handshake(pscom_con_t *con, int type, void *data, unsigned size)
 {
     switch (type) {
     case PSCOM_INFO_ARCH_REQ: {
-        psptl_info_msg_t msg = {0};
-        psptl_con_info_t *ci = psptl_con_create();
-        psptl_sock_t *sock   = &get_sock(con->pub.socket)->portals;
+        psptl_info_msg_t msg       = {0};
+        psptl_con_info_t *ci       = psptl_con_create();
+        pscom_portals_sock_t *sock = con->arch.portals.arch_sock;
 
         con->arch.portals.ci      = ci;
         con->arch.portals.reading = 0;

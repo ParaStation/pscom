@@ -113,10 +113,10 @@ struct psptl_con_info {
         psptl_bucket_t *buckets;
     } recv_buffers; /**< Pre-allocated receive buffers */
 
-    void *con_priv;                 /**< Handle to the pscom_con_t object to
-                                         be passed to the recv CBs */
-    void *sock_priv;                /**< Handle to the psptl_sock_t object to
-                                         be passed to the sendv CB */
+    void *con_priv;  /**< Handle to the pscom_con_t object to
+                          be passed to the recv CBs */
+    void *sock_priv; /**< Handle to the pscom_portals_sock_t object to
+                          be passed to the sendv CB */
     struct list_head pending_recvs; /**< List holding out-of-order receives */
     struct list_head next;          /**< For deferred cleanup */
 };
@@ -748,12 +748,12 @@ int psptl_init(void)
         /* initialize the network interface */
         int init_opts = (PTL_NI_MATCHING | PTL_NI_PHYSICAL);
         ret           = PtlNIInit(
-                      PTL_IFACE_DEFAULT, /* use the default interface */
-                      init_opts,         /* NI-related options */
-                      PTL_PID_ANY,       /* let portals4 choose the pid */
-                      NULL,              /* do not impose resource limits */
-                      &psptl_hca_info.limits, /* store limits of the NI */
-                      &psptl_hca_info.nih); /* handle to the network interface */
+            PTL_IFACE_DEFAULT, /* use the default interface */
+            init_opts,         /* NI-related options */
+            PTL_PID_ANY,       /* let portals4 choose the pid */
+            NULL,              /* do not impose resource limits */
+            &psptl_hca_info.limits, /* store limits of the NI */
+            &psptl_hca_info.nih); /* handle to the network interface */
         if (ret != PTL_OK) goto err_ni_init;
 
         /* limit the fragment size for rendezvous transfers */
