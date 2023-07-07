@@ -18,6 +18,10 @@ void test_portals_first_initialization(void **state);
 void test_portals_second_initialization(void **state);
 void test_portals_initialization_after_failure(void **state);
 void test_portals_initialization_after_socket_failure(void **state);
+void test_portals_creates_arch_sock(void **state);
+void test_portals_arch_sock_is_found_after_initialization(void **state);
+void test_portals_arch_sock_is_correctly_removed(void **state);
+void test_portals_creates_arch_sock_with_arch_sock_present(void **state);
 
 void test_portals_read_after_con_read(void **state);
 void test_portals_read_after_con_read_stop_out_of_two(void **state);

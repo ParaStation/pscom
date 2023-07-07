@@ -325,6 +325,22 @@ int main(void)
 			setup_dummy_con,
 			teardown_dummy_con),
 		cmocka_unit_test_setup_teardown(
+			test_portals_creates_arch_sock,
+			setup_dummy_sock,
+			teardown_dummy_sock),
+		cmocka_unit_test_setup_teardown(
+			test_portals_creates_arch_sock_with_arch_sock_present,
+			setup_dummy_sock,
+			teardown_dummy_sock),
+		cmocka_unit_test_setup_teardown(
+			test_portals_arch_sock_is_found_after_initialization,
+			setup_dummy_sock,
+			teardown_dummy_sock),
+		cmocka_unit_test_setup_teardown(
+			test_portals_arch_sock_is_correctly_removed,
+			setup_dummy_sock,
+			teardown_dummy_sock),
+		cmocka_unit_test_setup_teardown(
 			test_portals_initialization_after_socket_failure,
 			setup_dummy_con,
 			teardown_dummy_con),

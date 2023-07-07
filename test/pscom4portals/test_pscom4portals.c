@@ -281,6 +281,134 @@ void test_portals_initialization_after_socket_failure(void **state)
     pscom_portals_sock_destroy(dummy_sock);
 }
 
+
+/**
+ * \brief Test if pscom4portals correctly creates the arch_sock object
+ *
+ * Given: A pscom socket without existing pscom4portals connection
+ * When: the pscom4portals' sock_init callback is called
+ * Then: the architecture-specific socket is appended to the socket's archs list
+ */
+void test_portals_creates_arch_sock(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* the archs list should be empty _before_ the initialization */
+    assert_true(list_empty(dummy_sock->archs.next));
+
+    /* start socket initialization */
+    pscom_plugin_portals.sock_init(dummy_sock);
+
+    /* the archs list should be empty _before_ the initialization */
+    assert_true(!list_empty(dummy_sock->archs.next));
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+}
+
+
+/**
+ * \brief Test if pscom4portals arch_sock object is created if there is already
+ *        one from another plugin
+ *
+ * Given: A pscom socket without existing pscom4portals connection
+ * When: the pscom4portals' sock_init callback is called
+ * Then: the architecture-specific socket is appended to the socket's archs list
+ */
+void test_portals_creates_arch_sock_with_arch_sock_present(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* create and append the dummy arch_sock */
+    pscom_arch_sock_t *dummy_arch_sock = malloc(sizeof(pscom_arch_sock_t));
+    dummy_arch_sock->plugin_con_type   = PSCOM_CON_TYPE_NONE;
+    list_add_tail(&dummy_arch_sock->next, &dummy_sock->archs);
+
+    /* start socket initialization */
+    pscom_plugin_portals.sock_init(dummy_sock);
+
+    /* the archs list should be empty _before_ the initialization */
+    assert_int_equal(list_count(dummy_sock->archs.next), 2);
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+
+    /* remove and free the dummy arch_sock */
+    list_del_init(&dummy_arch_sock->next);
+    free(dummy_arch_sock);
+}
+
+
+/**
+ * \brief Test if pscom4portals correctly creates the arch_sock object
+ *
+ * Given: The pscom4portals' sock_init callback is called
+ * When: get_arch_sock is queried
+ * Then: it returns the correct architecture-specific socket
+ */
+void test_portals_arch_sock_is_found_after_initialization(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* allocate the memory for the arch_sock object beforehand */
+    void *arch_sock = malloc(sizeof(pscom_arch_sock_t) +
+                             sizeof(pscom_portals_sock_t));
+    enable_malloc_mock(arch_sock);
+
+    /* start socket initialization */
+    pscom_plugin_portals.sock_init(dummy_sock);
+
+    disable_malloc_mock();
+
+    /* query get_arch_sock */
+    pscom_arch_sock_t *queried_arch_sock =
+        get_arch_sock(dummy_sock, PSCOM_CON_TYPE_PORTALS);
+    assert_true(arch_sock == queried_arch_sock);
+
+    /* destroy the portals socket */
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+}
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// Destruction
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test if pscom4portals correctly cleans up architecture-specific socket
+ *
+ * Given: An initialized socket with pscom4portals' arch_sock attached
+ * When: pscom4portals' sock_destroy() callback is called
+ * Then: it frees the resources for the architecture-specific socket and removes
+ *       it from the socket's archs list
+ */
+void test_portals_arch_sock_is_correctly_removed(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* allocate the memory for the arch_sock object beforehand */
+    void *arch_sock = malloc(sizeof(pscom_arch_sock_t) +
+                             sizeof(pscom_portals_sock_t));
+    enable_malloc_mock(arch_sock);
+
+    /* start socket initialization */
+    pscom_plugin_portals.sock_init(dummy_sock);
+
+    disable_malloc_mock();
+
+    /* the archs list should have exactly one entry */
+    assert_int_equal(list_count(dummy_sock->archs.next), 1);
+
+    /* destroy the portals socket */
+    enable_free_mock();
+    expect_value(__wrap_free, ptr, arch_sock);
+    pscom_plugin_portals.sock_destroy(dummy_sock);
+    disable_free_mock();
+
+    /* the archs list should empty now */
+    assert_true(list_empty(dummy_sock->archs.next));
+}
+
+
 ////////////////////////////////////////////////////////////////////////////////
 /// Receiving
 ////////////////////////////////////////////////////////////////////////////////
