@@ -241,9 +241,11 @@ int main(int argc, char **argv)
 }
 #endif
 
-/*
- * Local Variables:
- *  compile-command: "gcc getid.c -DSTAND_ALONE -Wall -W -Wno-unused -O2 -o
- * getid" End:
+/* clang-format off
  *
+ * Local Variables:
+ *  compile-command: "gcc getid.c -DSTAND_ALONE -Wall -W -Wno-unused -O2 -o * getid"
+ * End:
+ *
+ * clang-format on
  */

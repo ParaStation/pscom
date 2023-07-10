@@ -72,7 +72,9 @@ static void parse_opt(int argc, char **argv)
          "server port to use", "port"},
 
         {"verbose", 'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL},
-        POPT_AUTOHELP POPT_TABLEEND};
+
+        POPT_AUTOHELP POPT_TABLEEND // Add help option and terminate table
+    };
 
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 
@@ -611,10 +613,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-
-/*
+/* clang-format off
+ *
  * Local Variables:
- *  compile-command: "module load ucx && gcc ucp_pp.c -Wall -W -Wno-unused
- * -Wno-unused-parameter -L${UCX_HOME}/lib -I${UCX_HOME}/include -O2 -lpopt
- * -lucp -o ucp_pp" End:
+ *  compile-command: "module load ucx && gcc ucp_pp.c -Wall -W -Wno-unused * -Wno-unused-parameter -L${UCX_HOME}/lib -I${UCX_HOME}/include -O2 -lpopt * -lucp -o ucp_pp"
+ * End:
+ *
+ * clang-format on
  */

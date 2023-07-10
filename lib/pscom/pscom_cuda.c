@@ -73,9 +73,7 @@ static void pscom_print_cuda_err(const char *func, CUresult err)
 {
     const char *cuda_err_str;
     cuGetErrorName(err, &cuda_err_str);
-    DPRINT(D_ERR,
-           "CUDA driver call '%s' failed "
-           "[CUDA error code: '%s' (%d)]",
+    DPRINT(D_ERR, "CUDA driver call '%s' failed [CUDA error code: '%s' (%d)]",
            func, cuda_err_str, err);
 
     return;

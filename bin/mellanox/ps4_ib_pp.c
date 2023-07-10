@@ -1022,7 +1022,9 @@ void parse_opt(int argc, char **argv)
         {"loops", 'l', POPT_ARG_INT, &arg_loops, 0, "pp loops", "count"},
         /*	{ "flag" , 'f', POPT_ARGFLAG_OR, &arg_flag, 0,
                   "flag description", "" },*/
-        POPT_AUTOHELP{NULL, 0, 0, NULL, 0, NULL, NULL}};
+        POPT_AUTOHELP // Add help option
+        {NULL, 0, 0, NULL, 0, NULL, NULL},
+    };
 
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 

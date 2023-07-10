@@ -922,7 +922,9 @@ int main(int argc, char *argv[])
          &arg_rlimit_nofile, 0, "set RLIMIT_NOFILE (soft and hard)", "num"},
         {"verbose", 'v', POPT_ARGFLAG_OR | POPT_ARG_VAL, &arg_verbose, 1,
          "increase verbosity", NULL},
-        POPT_AUTOHELP{NULL, '\0', 0, NULL, 0, NULL, NULL}};
+        POPT_AUTOHELP // Add help option
+        {NULL, '\0', 0, NULL, 0, NULL, NULL},
+    };
 
     // printf(__DATE__" "__TIME__"\n");
 

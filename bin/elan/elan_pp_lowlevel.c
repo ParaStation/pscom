@@ -47,7 +47,9 @@ static void parse_opt(int argc, char **argv)
         {"maxsize", 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT, &arg_maxmsize,
          0, "maximal messagesize", "size"},
         {"verbose", 'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL},
-        POPT_AUTOHELP POPT_TABLEEND};
+
+        POPT_AUTOHELP POPT_TABLEEND // Add help option and terminate table
+    };
 
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 

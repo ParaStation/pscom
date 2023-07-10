@@ -75,7 +75,9 @@ static void parse_opt(int argc, char **argv)
          &arg_ssh_clienthost, 0, "autostart a client on node with ssh", "node"},
 
         {"verbose", 'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL},
-        POPT_AUTOHELP POPT_TABLEEND};
+
+        POPT_AUTOHELP POPT_TABLEEND // Add help option and terminate table
+    };
 
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 

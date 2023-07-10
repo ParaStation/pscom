@@ -68,9 +68,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/*
- * Local Variables:
- *  compile-command: "gcc list_test.c -g -Wall -W -Wno-unused -O2 -o list_test
- * && ./list_test" End:
+/* clang-format off
  *
+ * Local Variables:
+ *  compile-command: "gcc list_test.c -g -Wall -W -Wno-unused -O2 -o list_test * && ./list_test"
+ * End:
+ *
+ * clang-format on
  */

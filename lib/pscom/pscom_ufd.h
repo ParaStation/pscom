@@ -51,10 +51,9 @@ void ufd_init(ufd_t *ufd);
 
 void ufd_add(ufd_t *ufd, ufd_info_t *ufd_info);
 /*
-                        void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info),
-                        void (*can_write)(ufd_t *ufd, ufd_info_t *ufd_info),
-                        int (*poll)(ufd_t *ufd, ufd_info_t *ufd_info, int
-   timeout), void *priv);
+   void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info),
+   void (*can_write)(ufd_t *ufd, ufd_info_t *ufd_info),
+   int (*poll)(ufd_t *ufd, ufd_info_t *ufd_info, inr timeout), void *priv);
 */
 void ufd_del(ufd_t *ufd, ufd_info_t *ufd_info);
 void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, short event)

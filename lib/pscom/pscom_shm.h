@@ -68,8 +68,8 @@ typedef struct shm_conn_s {
     int remote_id;
     void *direct_base; /* shm direct base */
 
-    pscom_poll_t poll_write_pending_io; // Polled if this shm_conn_t has pending
-                                        // io
+    pscom_poll_t poll_write_pending_io; // Polled if this shm_conn_t has
+                                        // pending io
     struct shm_pending *shm_pending;    /* first pending io request of this
                                            connection */
 } shm_conn_t;

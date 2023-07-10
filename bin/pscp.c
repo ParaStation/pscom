@@ -192,7 +192,10 @@ void parse_opt(int argc, char **argv)
         {"version", 'V', POPT_ARG_NONE, &arg_version, -1,
          "output version information and exit", NULL},
 
-        POPT_AUTOHELP{NULL, 0, 0, NULL, 0, NULL, NULL}};
+        POPT_AUTOHELP // Add help option
+
+        {NULL, 0, 0, NULL, 0, NULL, NULL},
+    };
 
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 

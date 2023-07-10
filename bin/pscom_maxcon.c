@@ -117,10 +117,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/*
- * Local Variables:
- *  compile-command: "gcc -I/opt/parastation/include -L/opt/parastation/lib64
- * -lpscom pscom_maxcon.c  -Wall -W -O2 -o pscom_maxcon &&
- * LD_LIBRARY_PATH=/opt/parastation/lib64 ./pscom_maxcon" End:
+/* clang-format off
  *
+ * Local Variables:
+ *  compile-command: "gcc -I/opt/parastation/include -L/opt/parastation/lib64 * -lpscom pscom_maxcon.c  -Wall -W -O2 -o pscom_maxcon && * LD_LIBRARY_PATH=/opt/parastation/lib64 ./pscom_maxcon"
+ * End:
+ *
+ * clang-format on
  */

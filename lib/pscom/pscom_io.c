@@ -1177,8 +1177,8 @@ void pscom_write_pending(pscom_con_t *con, pscom_req_t *req, size_t len)
     _pscom_write_pendingio_cnt_inc(con, req);
 
     if (send_req_all_io_started(req)) {
-        // Remove req from sendq. The req is still not done yet (has pending
-        // io)!
+        // Remove req from sendq. The req is still not done yet
+        // (has pendingio)!
         _pscom_sendq_deq(con, req);
     }
 }
@@ -1426,11 +1426,11 @@ static inline pscom_req_t *pscom_prepare_send_rendezvous_inline(
     user_req->pub.state   = PSCOM_REQ_STATE_RENDEZVOUS_REQUEST |
                           PSCOM_REQ_STATE_SEND_REQUEST | PSCOM_REQ_STATE_POSTED;
 
-    _pscom_read_pendingio_cnt_inc(
-        con,
-        user_req); // Pending rendezvous. Dec in
-                   // _pscom_get_rendezvous_fin_receiver()
-                   // or _pscom_con_terminate_sendq()
+    /*
+     * Pending rendezvous. Dec in _pscom_get_rendezvous_fin_receiver() or
+     * _pscom_con_terminate_sendq()
+     */
+    _pscom_read_pendingio_cnt_inc(con, user_req);
 
     return rndv_req;
 

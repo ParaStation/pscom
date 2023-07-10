@@ -116,9 +116,11 @@ int main(int argc, char **argv)
     return 0;
 }
 
-/*
- * Local Variables:
- *  compile-command: "gcc bcast_devide.c -Wall -W -Wno-unused -O2 -o
- * bcast_devide && ./bcast_devide" End:
+/* clang-format off
  *
+ * Local Variables:
+ *  compile-command: "gcc bcast_devide.c -Wall -W -Wno-unused -O2 -o bcast_devide && ./bcast_devide"
+ * End:
+ *
+ * clang-format on
  */

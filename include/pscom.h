@@ -74,47 +74,21 @@ typedef enum PSCOM_con_state {
                                            precon (active) */
     PSCOM_CON_STATE_ACCEPTING  = 0x10,  /**< Connection setup in progress via
                                            precon (passive) */
-    PSCOM_CON_STATE_CLOSE_WAIT = 0x400, /**< EOF sent; waiting for EOF from peer
-                                         */
+    PSCOM_CON_STATE_CLOSE_WAIT = 0x400, /**< EOF sent; wait for EOF from peer */
     PSCOM_CON_STATE_CLOSING    = 0x20,  /**< Send EOF */
     PSCOM_CON_STATE_SUSPENDING = 0x40,  /**< Send PSCOM_MSGTYPE_SUSPEND */
-    PSCOM_CON_STATE_SUSPEND_SENT = PSCOM_CON_STATE_SUSPENDING |
-                                   0x080, /**<
-                                             PSCOM_MSGTYPE_SUSPEND
-                                             sent;
-                                             wait
-                                             for a
-                                             PSCOM_MSGTYPE_SUSPEND
-                                             from
-                                             peer
-                                           */
-    PSCOM_CON_STATE_SUSPEND_RECEIVED = PSCOM_CON_STATE_SUSPENDING |
-                                       0x100, /**< Received a
-                                                 PSCOM_MSGTYPE_SUSPEND from
-                                                 peer*/
-    PSCOM_CON_STATE_SUSPENDED = PSCOM_CON_STATE_SUSPENDING |
+    /**< PSCOM_MSGTYPE_SUSPEND sent; wait for PSCOM_MSGTYPE_SUSPEND from peer */
+    PSCOM_CON_STATE_SUSPEND_SENT     = PSCOM_CON_STATE_SUSPENDING | 0x080,
+    /**< Received a PSCOM_MSGTYPE_SUSPEND from peer*/
+    PSCOM_CON_STATE_SUSPEND_RECEIVED = PSCOM_CON_STATE_SUSPENDING | 0x100,
+    /**< Suspend complete */
+    PSCOM_CON_STATE_SUSPENDED        = PSCOM_CON_STATE_SUSPENDING |
                                 PSCOM_CON_STATE_SUSPEND_SENT |
-                                PSCOM_CON_STATE_SUSPEND_RECEIVED, /**< Suspend
-                                                                     complete */
-    PSCOM_CON_STATE_CONNECTING_ONDEMAND =
-        0x200 | PSCOM_CON_STATE_CONNECTING, /**<
-                                               Connection
-                                               setup
-                                               in
-                                               progress
-                                               via
-                                               precon/ondemand
-                                               (active)
-                                             */
-    PSCOM_CON_STATE_ACCEPTING_ONDEMAND =
-        0x200 | PSCOM_CON_STATE_ACCEPTING, /**<
-                                              Connection
-                                              setup in
-                                              progress
-                                              via
-                                              precon/ondemand
-                                              (passive)
-                                            */
+                                PSCOM_CON_STATE_SUSPEND_RECEIVED,
+    /**< Connection setup in progress via precon/ondemand (active) */
+    PSCOM_CON_STATE_CONNECTING_ONDEMAND = 0x200 | PSCOM_CON_STATE_CONNECTING,
+    /**< Connection setup in progress via precon/ondemand (passive) */
+    PSCOM_CON_STATE_ACCEPTING_ONDEMAND  = 0x200 | PSCOM_CON_STATE_ACCEPTING,
 } pscom_con_state_t;
 
 
@@ -133,7 +107,7 @@ typedef enum PSCOM_con_type {
     PSCOM_CON_TYPE_ELAN     = 0x08, /**< ELAN communication */
     PSCOM_CON_TYPE_DAPL     = 0x09, /**< DAPL communication (e.g., via IB) */
     PSCOM_CON_TYPE_ONDEMAND = 0x0a, /**< Pseudo connection for on-demand
-                                       connection establishment */
+                                         connection establishment */
     PSCOM_CON_TYPE_OFED   = 0x0b, /**< Alternative IB communication via verbs */
     PSCOM_CON_TYPE_EXTOLL = 0x0c, /**< EXTOLL communication */
     PSCOM_CON_TYPE_PSM    = 0x0d, /**< PSM communication (e.g., for OmniPath) */
@@ -143,8 +117,7 @@ typedef enum PSCOM_con_type {
     PSCOM_CON_TYPE_SUSPENDED = 0x11, /**< A suspended connection */
     PSCOM_CON_TYPE_UCP = 0x12, /**< UCP communication (e.g., for InfiniBand) */
     PSCOM_CON_TYPE_GW  = 0x13, /**< Communication via a gateway node */
-    PSCOM_CON_TYPE_PORTALS = 0x14, /**< Portals4 communication (e.g., for BXI)
-                                    */
+    PSCOM_CON_TYPE_PORTALS = 0x14, /**< Portals4 communication (e.g., BXI) */
 } pscom_con_type_t;
 
 /**
@@ -160,46 +133,39 @@ typedef enum PSCOM_op {
     PSCOM_OP_RW      = 4, /**< Read or write */
 } pscom_op_t;
 
-#define PSCOM_REQ_STATE_SEND_REQUEST                                           \
-    0x00000001 /**< The request refers to a send operation */
-#define PSCOM_REQ_STATE_RECV_REQUEST                                           \
-    0x00000002 /**< The request refers to a receive operation */
-#define PSCOM_REQ_STATE_GRECV_REQUEST                                          \
-    0x00000004 /**< Generated request; matching user-level receive             \
-                    is missing */
-#define PSCOM_REQ_STATE_POSTED                                                 \
-    0x00000008 /**< The request has been appended to the send or receive       \
-                    queue */
-#define PSCOM_REQ_STATE_IO_STARTED                                             \
-    0x00000010 /**< Reading/writing from/to the buffer is ongoing; the         \
-                    request cannot be cancelled */
-#define PSCOM_REQ_STATE_IO_DONE                                                \
-    0x00000020 /**< Reading/writing from/to the buffer completed */
+/**< The request refers to a send operation */
+#define PSCOM_REQ_STATE_SEND_REQUEST 0x00000001
+/**< The request refers to a receive operation */
+#define PSCOM_REQ_STATE_RECV_REQUEST 0x00000002
+/**< Generated request; matching user-level receive is missing */
+#define PSCOM_REQ_STATE_GRECV_REQUEST 0x00000004
+/**< The request has been appended to the send or receive queue */
+#define PSCOM_REQ_STATE_POSTED 0x00000008
+/**< Reading/writing from/to the buffer is ongoing;
+     the request cannot be
+     cancelled */
+#define PSCOM_REQ_STATE_IO_STARTED 0x00000010
+/**< Reading/writing from/to the buffer completed */
+#define PSCOM_REQ_STATE_IO_DONE 0x00000020
+/**< An error occurred while processing this request */
+#define PSCOM_REQ_STATE_ERROR 0x00000040
+/**< The request has been cancelled by the application */
+#define PSCOM_REQ_STATE_CANCELED 0x00000080
+/**< The receive buffer is too small for the incoming data */
+#define PSCOM_REQ_STATE_TRUNCATED 0x00000100
+/**< The request is completed and the io_done()-callback will be called */
+#define PSCOM_REQ_STATE_DONE 0x00000200
+/**< The request refers to an RMA read operation */
+#define PSCOM_REQ_STATE_RMA_READ_REQUEST 0x00000400
+/**< The request refers to an RMA write operation */
+#define PSCOM_REQ_STATE_RMA_WRITE_REQUEST 0x00000800
+/**< The passive side of an RMA write operation */
+#define PSCOM_REQ_STATE_PASSIVE_SIDE 0x00001000
+/**< The data will be sent/received by using the rendezvous protocol */
+#define PSCOM_REQ_STATE_RENDEZVOUS_REQUEST 0x00002000
+/**< A generated request that was merged with the matching user request */
+#define PSCOM_REQ_STATE_GRECV_MERGED 0x00004000
 
-#define PSCOM_REQ_STATE_ERROR                                                  \
-    0x00000040 /**< An error occurred while processing this request */
-#define PSCOM_REQ_STATE_CANCELED                                               \
-    0x00000080 /**< The request has been cancelled by the application */
-#define PSCOM_REQ_STATE_TRUNCATED                                              \
-    0x00000100 /**< The receive buffer is too small for the incoming           \
-                    data */
-#define PSCOM_REQ_STATE_DONE                                                   \
-    0x00000200 /**< The request is completed and the io_done()-callback will   \
-                    be called */
-
-#define PSCOM_REQ_STATE_RMA_READ_REQUEST                                       \
-    0x00000400 /**< The request refers to an RMA read operation */
-#define PSCOM_REQ_STATE_RMA_WRITE_REQUEST                                      \
-    0x00000800 /**< The request refers to an RMA write operation */
-#define PSCOM_REQ_STATE_PASSIVE_SIDE                                           \
-    0x00001000 /**< The passive side of an RMA write operation */
-#define PSCOM_REQ_STATE_RENDEZVOUS_REQUEST                                     \
-    0x00002000 /**< The data will be sent/received by using the rendezvous     \
-                    protocol */
-
-#define PSCOM_REQ_STATE_GRECV_MERGED                                           \
-    0x00004000 /**< A generated request that was merged with the matching      \
-                    user request */
 #define PSCOM_V_NONSTRING
 #ifdef __has_attribute
 #if __has_attribute(__nonstring__)

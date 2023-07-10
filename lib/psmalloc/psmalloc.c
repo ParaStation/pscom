@@ -22,10 +22,11 @@
 /* Override initializing hook from the C library. */
 void (*__MALLOC_HOOK_VOLATILE __malloc_initialize_hook)(void) = psshm_init;
 
-
-/*
- * Local Variables:
- *  compile-command: "gcc shmmalloc.c -Wall -W -Wno-unused -O2 -fpic -shared -o
- * libshmmalloc.so" End:
+/* clang-format off
  *
+ * Local Variables:
+ *  compile-command: "gcc shmmalloc.c -Wall -W -Wno-unused -O2 -fpic -shared -o * libshmmalloc.so"
+ * End:
+ *
+ * clang-format on
  */

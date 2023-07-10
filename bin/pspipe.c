@@ -88,7 +88,10 @@ void parse_opt(int argc, char **argv)
         {"maxsize", 0, POPT_ARG_INT, &arg_maxmsize, 0,
          "maximal messagesize\t(default " STR(DEFAULT_maxmsize) ")", "size"},
 
-        POPT_AUTOHELP{NULL, 0, 0, NULL, 0, NULL, NULL}};
+        POPT_AUTOHELP // Add help option
+
+        {NULL, 0, 0, NULL, 0, NULL, NULL},
+    };
 
     optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 
