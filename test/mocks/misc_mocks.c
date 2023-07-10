@@ -26,15 +26,15 @@
  */
 void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
 {
-	/* only mock memcpy if this is set for the current test */
-	if (pscom_utest.mock_functions.memcpy) {
-		function_called();
-		check_expected(dst);
-		check_expected(src);
-		check_expected(nbytes);
-	}
+    /* only mock memcpy if this is set for the current test */
+    if (pscom_utest.mock_functions.memcpy) {
+        function_called();
+        check_expected(dst);
+        check_expected(src);
+        check_expected(nbytes);
+    }
 
-	return __real_memcpy(dst, src, nbytes);
+    return __real_memcpy(dst, src, nbytes);
 }
 
 
@@ -43,18 +43,18 @@ void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
  */
 void *__wrap_malloc(size_t size)
 {
-	/*
-	 * only mock malloc if this is set for the current test via
-	 * enable_malloc_mock()
-	 *
-	 * NOTE: Currently, this only supports single calls to malloc()!
-	 *       (there is no stack implemented)
-	 */
-	if (pscom_utest.mock_functions.malloc.enabled) {
-		return pscom_utest.mock_functions.malloc.addr;
-	}
+    /*
+     * only mock malloc if this is set for the current test via
+     * enable_malloc_mock()
+     *
+     * NOTE: Currently, this only supports single calls to malloc()!
+     *       (there is no stack implemented)
+     */
+    if (pscom_utest.mock_functions.malloc.enabled) {
+        return pscom_utest.mock_functions.malloc.addr;
+    }
 
-	return __real_malloc(size);
+    return __real_malloc(size);
 }
 
 
@@ -63,18 +63,14 @@ void *__wrap_malloc(size_t size)
  */
 void __wrap_free(void *ptr)
 {
-	/* only mock malloc if this is set for the current test */
-	if (pscom_utest.mock_functions.free) {
-		check_expected(ptr);
-	}
+    /* only mock malloc if this is set for the current test */
+    if (pscom_utest.mock_functions.free) { check_expected(ptr); }
 
-	/* call the original free() */
-	__real_free(ptr);
+    /* call the original free() */
+    __real_free(ptr);
 
-	return;
+    return;
 }
-
-
 
 
 /**
@@ -82,9 +78,9 @@ void __wrap_free(void *ptr)
  */
 void *__wrap_dlsym(void *restrict handle, const char *restrict symbol)
 {
-	check_expected(symbol);
+    check_expected(symbol);
 
-	return mock_type(void *);
+    return mock_type(void *);
 }
 
 
@@ -93,9 +89,9 @@ void *__wrap_dlsym(void *restrict handle, const char *restrict symbol)
  */
 void *__wrap_dlopen(const char *filename, int flags)
 {
-	check_expected(filename);
+    check_expected(filename);
 
-	return mock_type(void *);
+    return mock_type(void *);
 }
 
 
@@ -104,7 +100,7 @@ void *__wrap_dlopen(const char *filename, int flags)
  */
 int __wrap_dlclose(void *handle)
 {
-	return 0;
+    return 0;
 }
 
 
@@ -113,7 +109,7 @@ int __wrap_dlclose(void *handle)
  */
 char *__wrap_dlerror(void)
 {
-	return NULL;
+    return NULL;
 }
 
 
@@ -122,8 +118,8 @@ char *__wrap_dlerror(void)
  */
 ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags)
 {
-	errno = mock_type(int);
-	return mock_type(ssize_t);
+    errno = mock_type(int);
+    return mock_type(ssize_t);
 }
 
 
@@ -131,7 +127,7 @@ ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags)
  * \brief Mocking function for setsockopt()
  */
 int __wrap_setsockopt(int sockfd, int level, int optname, const void *optval,
-	socklen_t optlen)
+                      socklen_t optlen)
 {
-	return 0;
+    return 0;
 }

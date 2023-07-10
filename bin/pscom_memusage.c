@@ -41,22 +41,22 @@ pscom_t pscom; // fake pscom
 
 int main(int argc, char **argv)
 {
-	USAGE(sizeof(struct PSCOM_con));
+    USAGE(sizeof(struct PSCOM_con));
 #ifdef OPENIB
-	USAGE(sizeof(psoib_con_info_t));
-	USAGE(sizeof(struct PSCOM_con) + sizeof(psoib_con_info_t));
+    USAGE(sizeof(psoib_con_info_t));
+    USAGE(sizeof(struct PSCOM_con) + sizeof(psoib_con_info_t));
 #endif
 #ifdef OFED
-	USAGE(sizeof(psofed_con_info_t));
-	USAGE(sizeof(struct PSCOM_con) + sizeof(psofed_con_info_t));
+    USAGE(sizeof(psofed_con_info_t));
+    USAGE(sizeof(struct PSCOM_con) + sizeof(psofed_con_info_t));
 #endif
 #ifdef EXTOLL
-	USAGE(sizeof(struct psex_con_info));
-	USAGE(sizeof(struct PSCOM_con) + sizeof(struct psex_con_info));
+    USAGE(sizeof(struct psex_con_info));
+    USAGE(sizeof(struct PSCOM_con) + sizeof(struct psex_con_info));
 #endif
 #ifdef VELO
-	USAGE(sizeof(struct psex_con_info));
-	USAGE(sizeof(struct PSCOM_con) + sizeof(struct psex_con_info));
+    USAGE(sizeof(struct psex_con_info));
+    USAGE(sizeof(struct PSCOM_con) + sizeof(struct psex_con_info));
 #endif
-	return 0;
+    return 0;
 }

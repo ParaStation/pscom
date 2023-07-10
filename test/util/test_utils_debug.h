@@ -12,8 +12,8 @@
 #define _PSCOM_UTIL_DEBUG_H_
 
 typedef struct env_vars_backup {
-        size_t count;
-        char **backup_values;
+    size_t count;
+    char **backup_values;
 } env_vars_backup_t;
 
 int backup_env_vars(void **state);

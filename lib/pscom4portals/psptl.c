@@ -187,7 +187,7 @@ static inline void psptl_pending_bucket_insert(psptl_bucket_t *bucket)
     list_for_each (pos, &con_info->pending_recvs) {
         psptl_bucket_t *cur_recv_bucket = list_entry(pos, psptl_bucket_t, next);
 
-        if (bucket->seq_id < cur_recv_bucket->seq_id) break;
+        if (bucket->seq_id < cur_recv_bucket->seq_id) { break; }
     }
 
     /* insert the bucket */
@@ -328,15 +328,15 @@ static int psptl_register_recv_buffer(psptl_bucket_t *recv_bucket,
         .uid        = PTL_UID_ANY,             /* any usage ID */
         .options    = options,                 /* ME-related flags */
         .match_bits = recv_bucket->match_bits, /* bits to be matched */
-        .match_id =
-            con_info->remote_ci.pid.ptl_pid, /* only messages from the peer */
-        .ignore_bits = recv_bucket->ignore_bits, /* bits to be ignored */
+        .match_id   = con_info->remote_ci.pid.ptl_pid, /* only messages from the
+                                                          peer */
+        .ignore_bits = recv_bucket->ignore_bits,       /* bits to be ignored */
     };
 
     /* append it to the matching list */
     ret = PtlMEAppend(psptl_hca_info.nih, pti, &me, list, recv_bucket,
                       &recv_bucket->meh);
-    if (ret != PTL_OK) goto err_out;
+    if (ret != PTL_OK) { goto err_out; }
 
     psptl_dprint(D_TRACE, "PtlMEAppend (%p; %p; %p)\n", recv_bucket,
                  recv_bucket->con_info, recv_bucket->buf);
@@ -362,7 +362,7 @@ static void psptl_deregister_recv_buffer(psptl_bucket_t *recv_bucket)
     int ret;
 
     ret = PtlMEUnlink(recv_bucket->meh);
-    if (ret != PTL_OK) goto err_out;
+    if (ret != PTL_OK) { goto err_out; }
 
     psptl_dprint(D_TRACE, "PtlMEUnlink (%p; %p; %p)\n", recv_bucket,
                  recv_bucket->con_info, recv_bucket->buf);
@@ -421,7 +421,7 @@ static int psptl_create_recv_queue(uint32_t num_bufs, size_t buf_len,
         /* register the memory region */
         ret = psptl_register_recv_buffer(cur_bucket, flags, PTL_PRIORITY_LIST,
                                          ep->pti[PSPTL_PROT_EAGER], buf_len);
-        if (ret < 0) goto err_out;
+        if (ret < 0) { goto err_out; }
     }
 
     return 0;
@@ -445,8 +445,8 @@ err_out:
  *                      be destroyed.
  * @param [in] num_bufs The number of pre-allocated receive buffers.
  */
-static void
-psptl_destroy_recv_queue(psptl_con_info_t *con_info, uint32_t num_bufs)
+static void psptl_destroy_recv_queue(psptl_con_info_t *con_info,
+                                     uint32_t num_bufs)
 {
     if (con_info->recv_buffers.buckets) {
         /* deregister the buckets */
@@ -581,7 +581,7 @@ int psptl_con_connect(psptl_con_info_t *con_info, psptl_info_msg_t *info_msg)
     /* create the send and receive queue */
     ret = psptl_create_recv_queue(psptl.con_params.recvq_size,
                                   psptl.con_params.bufsize, con_info);
-    if (ret < 0) goto err_out;
+    if (ret < 0) { goto err_out; }
 
     psptl_create_send_queue(psptl.con_params.sendq_size,
                             psptl.con_params.bufsize, con_info);
@@ -642,15 +642,15 @@ void psptl_cleanup_ep(void *ep_priv)
     for (prot = 0; prot < PSPTL_PROT_COUNT; ++prot) {
         /* free the PT handle */
         ret = PtlPTFree(psptl_hca_info.nih, ep->pti[prot]);
-        if (ret != PTL_OK) goto err_pt_free;
+        if (ret != PTL_OK) { goto err_pt_free; }
 
         /* release the MD handle */
         ret = PtlMDRelease(ep->mdh[prot]);
-        if (ret != PTL_OK) goto err_md_release;
+        if (ret != PTL_OK) { goto err_md_release; }
 
         /* free the event queue */
         ret = PtlEQFree(ep->eqh[prot]);
-        if (ret != PTL_OK) goto err_eq_free;
+        if (ret != PTL_OK) { goto err_eq_free; }
     }
 
     /* free the endpoint object */
@@ -688,7 +688,7 @@ int psptl_init_ep(void **ep_priv)
     /* build the event queues */
     for (prot = 0; prot < PSPTL_PROT_COUNT; ++prot) {
         ret = PtlEQAlloc(psptl_hca_info.nih, psptl.eq_size, &new_ep->eqh[prot]);
-        if (ret != PTL_OK) goto err_eq_alloc;
+        if (ret != PTL_OK) { goto err_eq_alloc; }
 
         /* bind the whole VA to avoid regular calls to PtlMDBind */
         ptl_md_t md = {
@@ -699,7 +699,7 @@ int psptl_init_ep(void **ep_priv)
             .ct_handle = PTL_CT_NONE,
         };
         ret = PtlMDBind(psptl_hca_info.nih, &md, &new_ep->mdh[prot]);
-        if (ret != PTL_OK) goto err_md_bind;
+        if (ret != PTL_OK) { goto err_md_bind; }
 
         /* request a portals index for the respective communication protocol */
         ret = PtlPTAlloc(psptl_hca_info.nih,  /* interface handle */
@@ -707,7 +707,7 @@ int psptl_init_ep(void **ep_priv)
                          new_ep->eqh[prot],   /* event queue handle */
                          PTL_PT_ANY,          /* no specific PTI */
                          &new_ep->pti[prot]); /* the assigned PTI */
-        if (ret != PTL_OK) goto err_pt_alloc;
+        if (ret != PTL_OK) { goto err_pt_alloc; }
     }
 
     psptl_dprint(D_DBG_V, "Endpoint initialized!");
@@ -743,18 +743,18 @@ int psptl_init(void)
     /* only initialize once */
     if (psptl.init_state == PSPORTALS_NOT_INITIALIZED) {
         /* initialize the portals4 library */
-        if ((ret = PtlInit()) != PTL_OK) goto err_init;
+        if ((ret = PtlInit()) != PTL_OK) { goto err_init; }
 
         /* initialize the network interface */
         int init_opts = (PTL_NI_MATCHING | PTL_NI_PHYSICAL);
-        ret           = PtlNIInit(
-            PTL_IFACE_DEFAULT, /* use the default interface */
-            init_opts,         /* NI-related options */
-            PTL_PID_ANY,       /* let portals4 choose the pid */
-            NULL,              /* do not impose resource limits */
-            &psptl_hca_info.limits, /* store limits of the NI */
-            &psptl_hca_info.nih); /* handle to the network interface */
-        if (ret != PTL_OK) goto err_ni_init;
+        ret = PtlNIInit(PTL_IFACE_DEFAULT, /* use the default interface */
+                        init_opts,         /* NI-related options */
+                        PTL_PID_ANY,       /* let portals4 choose the pid */
+                        NULL,              /* do not impose resource limits */
+                        &psptl_hca_info.limits, /* store limits of the NI */
+                        &psptl_hca_info.nih); /* handle to the network interface
+                                               */
+        if (ret != PTL_OK) { goto err_ni_init; }
 
         /* limit the fragment size for rendezvous transfers */
         if (psptl_hca_info.limits.max_msg_size <
@@ -763,17 +763,17 @@ int psptl_init(void)
             psptl.con_params.rndv_fragment_size =
                 psptl_hca_info.limits.max_msg_size;
 
-            psptl_dprint(
-                D_INFO,
-                "Limiting the rendezvous fragment size to %lu corresponding to "
-                "the max_msg_size supported by the Portals4 layer.",
-                psptl.con_params.rndv_fragment_size);
+            psptl_dprint(D_INFO,
+                         "Limiting the rendezvous fragment size to %lu "
+                         "corresponding to "
+                         "the max_msg_size supported by the Portals4 layer.",
+                         psptl.con_params.rndv_fragment_size);
         }
 
 
         /* retrieve the portals process ID */
         ret = PtlGetPhysId(psptl_hca_info.nih, &psptl_hca_info.pid.ptl_pid);
-        if (ret != PTL_OK) goto err_get_id;
+        if (ret != PTL_OK) { goto err_get_id; }
 
 
         psptl.init_state = PSPORTALS_INIT_DONE;
@@ -941,7 +941,7 @@ static ssize_t psptl_bucket_send(psptl_bucket_t *send_bucket)
                  0,                                /* remote offset */
                  send_bucket,                      /* local user pointer */
                  send_bucket->seq_id);             /* no header */
-    if (ret != PTL_OK) goto err_put;
+    if (ret != PTL_OK) { goto err_put; }
 
     /* increase some counters */
     con_info->outstanding_put_ops++;
@@ -1008,8 +1008,8 @@ static void psptl_handle_eager_ack(psptl_bucket_t *send_bucket, uint8_t done)
  * @param [in] rndv_bucket The bucket that should be linked
  * @param [in] err         Indicating success or failure
  */
-static void
-psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket, uint8_t err)
+static void psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket,
+                                         uint8_t err)
 {
     rndv_bucket->status = err ? PSPTL_BUCKET_LINK_ERROR : PSPTL_BUCKET_FREE;
 }
@@ -1028,8 +1028,8 @@ psptl_handle_rndv_link_event(psptl_bucket_t *rndv_bucket, uint8_t err)
  * @param [in] rma_req   The corresponding RMA request object
  * @param [in] fail_type The ptl_ni_fail_t reported by the Portals4 layer
  */
-static void
-psptl_handle_rndv_ack(psptl_rma_req_t *rma_req, ptl_ni_fail_t fail_type)
+static void psptl_handle_rndv_ack(psptl_rma_req_t *rma_req,
+                                  ptl_ni_fail_t fail_type)
 {
     if (fail_type == PTL_NI_OK) {
         rma_req->remaining_fragments--;
@@ -1129,7 +1129,7 @@ ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len)
 
     /* transmit the messages via put operation */
     ret = psptl_bucket_send(send_bucket);
-    if (ret < 0) goto out;
+    if (ret < 0) { goto out; }
 
     con_info->send_buffers.cur = (uint32_t)((cur_send_bucket + 1) %
                                             psptl.con_params.sendq_size);
@@ -1155,7 +1155,7 @@ psptl_con_info_t *psptl_con_create(void)
 void psptl_con_free(psptl_con_info_t *con_info)
 {
     /* only free the connection information if the cleanup is *not* deferred */
-    if (list_empty(&con_info->next)) free(con_info);
+    if (list_empty(&con_info->next)) { free(con_info); }
 }
 
 
@@ -1191,8 +1191,7 @@ int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
         goto err_out;
     }
 
-    psptl_bucket_t *rndv_bucket = (psptl_bucket_t *)malloc(
-        sizeof(*rndv_bucket));
+    psptl_bucket_t *rndv_bucket = (psptl_bucket_t *)malloc(sizeof(*rndv_bucket));
 
     rndv_bucket->buf         = buf;
     rndv_bucket->con_info    = con_info;
@@ -1207,13 +1206,13 @@ int psptl_rma_mem_register(psptl_con_info_t *con_info, void *buf, size_t len,
     ret = psptl_register_recv_buffer(rndv_bucket, PSPTL_RMA_WRITE_FLAGS,
                                      PTL_PRIORITY_LIST,
                                      ep->pti[PSPTL_PROT_RNDV], len);
-    if (ret < 0) goto err_mem_register;
+    if (ret < 0) { goto err_mem_register; }
 
     /* wait for the ME to be linked */
     while (rndv_bucket->status == PSPTL_BUCKET_LINK_WAIT) {
         psptl_progress(ep);
     }
-    if (rndv_bucket->status != PSPTL_BUCKET_FREE) goto err_me_link;
+    if (rndv_bucket->status != PSPTL_BUCKET_FREE) { goto err_me_link; }
 
 
     con_info->outstanding_rndv_reqs++;
@@ -1272,7 +1271,7 @@ int psptl_post_rma_put(psptl_rma_req_t *rma_req)
                      0,       /* offset is managed locally */
                      rma_req, /* local user pointer */
                      0);      /* no header */
-        if (ret != PTL_OK) goto err_put;
+        if (ret != PTL_OK) { goto err_put; }
 
         /* update parameters for next fragment */
         data += put_len;

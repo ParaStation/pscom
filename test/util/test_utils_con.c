@@ -26,18 +26,18 @@
 
 int setup_dummy_con(void **state)
 {
-	/* ensure the polling lists are empty before test execution */
-	assert_true(list_empty(&(&pscom.poll_read)->head));
-	assert_true(list_empty(&(&pscom.poll_write)->head));
+    /* ensure the polling lists are empty before test execution */
+    assert_true(list_empty(&(&pscom.poll_read)->head));
+    assert_true(list_empty(&(&pscom.poll_write)->head));
 
-	/* create a dummy socket */
-	pscom_sock_t *sock = NULL;
-	setup_dummy_sock((void **)&sock);
+    /* create a dummy socket */
+    pscom_sock_t *sock = NULL;
+    setup_dummy_sock((void **)&sock);
 
-	/* create a new connection on that sock */
-	pscom_con_t *con = pscom_con_create(sock);
+    /* create a new connection on that sock */
+    pscom_con_t *con = pscom_con_create(sock);
 
-	*state = (void*)con;
+    *state = (void *)con;
 
     return 0;
 }
@@ -45,43 +45,41 @@ int setup_dummy_con(void **state)
 
 int setup_dummy_con_pair(void **state)
 {
-	dummy_con_pair_t *con_pair = (dummy_con_pair_t*)malloc(sizeof(dummy_con_pair_t));
+    dummy_con_pair_t *con_pair = (dummy_con_pair_t *)malloc(
+        sizeof(dummy_con_pair_t));
 
-	setup_dummy_con(&con_pair->send_con);
-	setup_dummy_con(&con_pair->recv_con);
+    setup_dummy_con(&con_pair->send_con);
+    setup_dummy_con(&con_pair->recv_con);
 
-	*state = (void*)con_pair;
+    *state = (void *)con_pair;
 
-	return 0;
+    return 0;
 }
-
 
 
 int teardown_dummy_con(void **state)
 {
-	pscom_con_t *con = (pscom_con_t*)(*state);
-	pscom_sock_t *sock = get_sock(con->pub.socket);
+    pscom_con_t *con   = (pscom_con_t *)(*state);
+    pscom_sock_t *sock = get_sock(con->pub.socket);
 
-	/* free connection-related resources */
-	if (!con->state.destroyed) {
-		pscom_con_ref_release(con);
-	}
+    /* free connection-related resources */
+    if (!con->state.destroyed) { pscom_con_ref_release(con); }
 
-	/* destroy the dummy socket */
-	teardown_dummy_sock((void **)&sock);
+    /* destroy the dummy socket */
+    teardown_dummy_sock((void **)&sock);
 
-	return 0;
+    return 0;
 }
 
 
 int teardown_dummy_con_pair(void **state)
 {
-	dummy_con_pair_t *con_pair = (dummy_con_pair_t*)(*state);
+    dummy_con_pair_t *con_pair = (dummy_con_pair_t *)(*state);
 
-	teardown_dummy_con(&con_pair->send_con);
-	teardown_dummy_con(&con_pair->recv_con);
+    teardown_dummy_con(&con_pair->send_con);
+    teardown_dummy_con(&con_pair->recv_con);
 
-	free(con_pair);
+    free(con_pair);
 
-	return 0;
+    return 0;
 }

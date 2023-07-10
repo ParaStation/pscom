@@ -357,8 +357,8 @@ get_req_data(pscom_rendezvous_data_t *rd)
  *
  * @return The size of the rendezvous control message; 0 in case of an error.
  */
-static unsigned int
-pscom_portals_rma_mem_register(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+static unsigned int pscom_portals_rma_mem_register(pscom_con_t *con,
+                                                   pscom_rendezvous_data_t *rd)
 {
     int err = 0;
 
@@ -368,7 +368,7 @@ pscom_portals_rma_mem_register(pscom_con_t *con, pscom_rendezvous_data_t *rd)
     /* register the RMA region */
     err = psptl_rma_mem_register(con->arch.portals.ci, rd->msg.data,
                                  rd->msg.data_len, psptl_rma_mreg);
-    if (err < 0) goto err_out;
+    if (err < 0) { goto err_out; }
 
     /* provide match bits to the peer */
     rd->msg.arch.portals.match_bits = psptl_rma_mreg->match_bits;
@@ -389,8 +389,8 @@ err_out:
  * @param [in] con The connection to be used for the RMA transfers.
  * @param [in] rd  A handle to a rendezvous data object.
  */
-static void
-pscom_portals_rma_mem_deregister(pscom_con_t *con, pscom_rendezvous_data_t *rd)
+static void pscom_portals_rma_mem_deregister(pscom_con_t *con,
+                                             pscom_rendezvous_data_t *rd)
 {
     pscom_rendezvous_data_portals_t *rd_portals = get_req_data(rd);
     psptl_rma_mreg_t *psptl_rma_mreg = &rd_portals->rma_write_rx.rma_mreg;
@@ -450,9 +450,8 @@ static int pscom_portals_rma_write(pscom_con_t *con, void *src,
                                    void *priv)
 {
     int err;
-    psptl_con_info_t *con_info  = con->arch.portals.ci;
-    pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)malloc(
-        sizeof(*rd));
+    psptl_con_info_t *con_info = con->arch.portals.ci;
+    pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)malloc(sizeof(*rd));
     pscom_rendezvous_data_portals_t *rd_portals = get_req_data(rd);
     psptl_rma_req_t *psptl_rma_req = &rd_portals->rma_write_tx.rma_req;
 
@@ -470,7 +469,7 @@ static int pscom_portals_rma_write(pscom_con_t *con, void *src,
 
     /* write to the RMA region */
     err = psptl_post_rma_put(psptl_rma_req);
-    if (err < 0) goto err_out;
+    if (err < 0) { goto err_out; }
 
     return 0;
     /* --- */
@@ -490,7 +489,7 @@ err_out:
 static void pscom_portals_con_cleanup(pscom_con_t *con)
 {
     psptl_con_info_t *ci = con->arch.portals.ci;
-    if (!ci) return;
+    if (!ci) { return; }
 
     psptl_con_cleanup(ci);
     psptl_con_free(ci);
@@ -511,7 +510,7 @@ static void pscom_portals_con_cleanup(pscom_con_t *con)
 static void pscom_portals_con_close(pscom_con_t *con)
 {
     psptl_con_info_t *ci = con->arch.portals.ci;
-    if (!ci) return;
+    if (!ci) { return; }
 
     pscom_portals_con_cleanup(con);
 }
@@ -725,7 +724,7 @@ static int pscom_portals_con_init(pscom_con_t *con)
 
     /* initialize the psptl layer (once for all sockets) */
     ret = psptl_init();
-    if (ret != PSPORTALS_INIT_DONE) goto err_out;
+    if (ret != PSPORTALS_INIT_DONE) { goto err_out; }
 
     /*
      * initialize one endpoint per sock
@@ -733,7 +732,7 @@ static int pscom_portals_con_init(pscom_con_t *con)
      */
     if (portals_sock->init_state == PSCOM_PORTALS_SOCK_NOT_INITIALIZED) {
         ret = psptl_init_ep(&portals_sock->priv);
-        if (ret < 0) goto err_out;
+        if (ret < 0) { goto err_out; }
 
         portals_sock->init_state = PSCOM_PORTALS_SOCK_INIT_DONE;
     }
@@ -758,8 +757,8 @@ err_out:
  * @param [in] data The psptl_info_msg_t in the PSCOM_INFO_PORTALS_ID step.
  * @param [in] size Size of @ref data.
  */
-static void
-pscom_portals_handshake(pscom_con_t *con, int type, void *data, unsigned size)
+static void pscom_portals_handshake(pscom_con_t *con, int type, void *data,
+                                    unsigned size)
 {
     switch (type) {
     case PSCOM_INFO_ARCH_REQ: {
@@ -770,13 +769,12 @@ pscom_portals_handshake(pscom_con_t *con, int type, void *data, unsigned size)
         con->arch.portals.ci      = ci;
         con->arch.portals.reading = 0;
 
-        if (psptl_con_init(ci, con, sock, sock->priv)) goto error_con_init;
+        if (psptl_con_init(ci, con, sock, sock->priv)) { goto error_con_init; }
 
         /* send my connection id's */
         psptl_con_get_info_msg(ci, &msg);
 
-        pscom_precon_send(con->precon, PSCOM_INFO_PORTALS_ID, &msg,
-                          sizeof(msg));
+        pscom_precon_send(con->precon, PSCOM_INFO_PORTALS_ID, &msg, sizeof(msg));
         break; /* Next: PSCOM_INFO_PORTALS_ID or PSCOM_INFO_ARCH_NEXT */
     }
     case PSCOM_INFO_PORTALS_ID: {

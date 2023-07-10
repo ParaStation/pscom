@@ -24,46 +24,47 @@
 #ifdef DUMP_PREFIX
 DUMP_PREFIX
 #endif
-void dump( void * addr, int offset, int len,int allign,
-	   int cols, char * desc ){
+void dump(void *addr, int offset, int len, int allign, int cols, char *desc)
+{
     int line[100];
     int i;
     int lbeg;
     int end;
 
-    if (cols > 100) cols = 100;
-    if (desc)
-	__PRINT("%s: %p\n",desc,addr);
+    if (cols > 100) { cols = 100; }
+    if (desc) { __PRINT("%s: %p\n", desc, addr); }
 
-    lbeg = offset - ((offset+cols-allign) % cols);
+    lbeg = offset - ((offset + cols - allign) % cols);
     end  = offset + len;
-    while (lbeg < end ){
-	__PRINT("%08x ",lbeg);
-	for (i=0;i<cols;i++){
-	    if ((lbeg<offset)||(lbeg>=end)){
-		line[i]=-1;
-	    }else{
-		line[i]=((unsigned char *)addr)[lbeg];
-	    }
-	    lbeg++;
-	}
-	for (i=0;i<cols;i++){
-	    if (line[i]>=0)
-		__PRINT("%02x",line[i]);
-	    else
-		__PRINT("  ");
-	    __PRINT("%s",(i%4!=3)?" ": "  ");
-//	    __PRINT("%s",(i%4!=3)?" ": (i%8!=7)?:"  ":"   ");
-	}
-	//__PRINT(":");
-	for (i=0;i<cols;i++){
-	    if (line[i]>=0)
-		__PRINT("%c",isprint(line[i])?line[i]:'.');
-	    else
-		__PRINT(" ");
-//	    __PRINT("%s",i%4!=3?" ":i%8!=7?:"  ":"   ");
-	}
-	__PRINT("\n");
+    while (lbeg < end) {
+        __PRINT("%08x ", lbeg);
+        for (i = 0; i < cols; i++) {
+            if ((lbeg < offset) || (lbeg >= end)) {
+                line[i] = -1;
+            } else {
+                line[i] = ((unsigned char *)addr)[lbeg];
+            }
+            lbeg++;
+        }
+        for (i = 0; i < cols; i++) {
+            if (line[i] >= 0) {
+                __PRINT("%02x", line[i]);
+            } else {
+                __PRINT("  ");
+            }
+            __PRINT("%s", (i % 4 != 3) ? " " : "  ");
+            //	    __PRINT("%s",(i%4!=3)?" ": (i%8!=7)?:"  ":"   ");
+        }
+        //__PRINT(":");
+        for (i = 0; i < cols; i++) {
+            if (line[i] >= 0) {
+                __PRINT("%c", isprint(line[i]) ? line[i] : '.');
+            } else {
+                __PRINT(" ");
+            }
+            //	    __PRINT("%s",i%4!=3?" ":i%8!=7?:"  ":"   ");
+        }
+        __PRINT("\n");
     }
 }
 

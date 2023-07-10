@@ -37,341 +37,317 @@
 #undef PSCOM_CUDA_AWARENESS
 
 struct PSCOM {
-	struct {
-		unsigned int readahead;
-		unsigned int psm_uniq_id;
-		int debug_stats;
-	} env;
+    struct {
+        unsigned int readahead;
+        unsigned int psm_uniq_id;
+        int debug_stats;
+    } env;
 };
 
-pscom_t	pscom = {
-	.env = {
-		.readahead = 100,
-		.psm_uniq_id = 0,
-		.debug_stats = 0
-	}
-};
+pscom_t pscom = {.env = {.readahead = 100, .psm_uniq_id = 0, .debug_stats = 0}};
 
 #include "pspsm.h"
 
-int arg_loops = 1024;
+int arg_loops   = 1024;
 int arg_maxtime = 3000;
 #define MAX_MSIZE (4 * 1024 * 1024)
-int arg_maxmsize = MAX_MSIZE;
-int arg_verbose = 0;
-const char *arg_port = "5538";
+int arg_maxmsize           = MAX_MSIZE;
+int arg_verbose            = 0;
+const char *arg_port       = "5538";
 const char *arg_servername = NULL;
-int arg_nokill = 0;
-int is_server = 1;
+int arg_nokill             = 0;
+int is_server              = 1;
 
-static
-void parse_opt(int argc, char **argv)
+static void parse_opt(int argc, char **argv)
 {
-	int c;
-	poptContext optCon;
-	const char *no_arg;
+    int c;
+    poptContext optCon;
+    const char *no_arg;
 
-	struct poptOption optionsTable[] = {
-		{ "loops"  , 'n', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_loops , 0, "pp loops", "count" },
-		{ "time"  , 't', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_maxtime, 0, "max time", "ms" },
-		{ "maxsize"  , 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT,
-		  &arg_maxmsize , 0, "maximal messagesize", "size" },
+    struct poptOption optionsTable[] = {
+        {"loops", 'n', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT, &arg_loops, 0,
+         "pp loops", "count"},
+        {"time", 't', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT, &arg_maxtime, 0,
+         "max time", "ms"},
+        {"maxsize", 0, POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_INT, &arg_maxmsize,
+         0, "maximal messagesize", "size"},
 
-		{ "nokill" , 'k', POPT_ARGFLAG_OR | POPT_ARG_VAL,
-		  &arg_nokill, 1, "Dont kill the server afterwards", NULL },
+        {"nokill", 'k', POPT_ARGFLAG_OR | POPT_ARG_VAL, &arg_nokill, 1,
+         "Dont kill the server afterwards", NULL},
 
-		{ "port" , 'p', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_STRING,
-		  &arg_port, 0, "server port to use", "port" },
+        {"port", 'p', POPT_ARGFLAG_SHOW_DEFAULT | POPT_ARG_STRING, &arg_port, 0,
+         "server port to use", "port"},
 
-		{ "verbose"	, 'v', POPT_ARG_NONE,
-		  NULL		, 'v', "increase verbosity", NULL },
-		POPT_AUTOHELP
-		POPT_TABLEEND
-	};
+        {"verbose", 'v', POPT_ARG_NONE, NULL, 'v', "increase verbosity", NULL},
+        POPT_AUTOHELP POPT_TABLEEND};
 
-	optCon = poptGetContext(NULL, argc, (const char **) argv, optionsTable, 0);
+    optCon = poptGetContext(NULL, argc, (const char **)argv, optionsTable, 0);
 
-	poptSetOtherOptionHelp(optCon, "[serveraddr]");
+    poptSetOtherOptionHelp(optCon, "[serveraddr]");
 
-	while ((c = poptGetNextOpt(optCon)) >= 0) {
-		switch (c) { // c = poptOption.val;
-		case 'v': arg_verbose++; break;
-		}
-	}
+    while ((c = poptGetNextOpt(optCon)) >= 0) {
+        switch (c) { // c = poptOption.val;
+        case 'v': arg_verbose++; break;
+        }
+    }
 
-	if (c < -1) { /* an error occurred during option processing */
-		fprintf(stderr, "%s: %s\n",
-			poptBadOption(optCon, POPT_BADOPTION_NOALIAS),
-			poptStrerror(c));
-		poptPrintHelp(optCon, stderr, 0);
-		exit(1);
-	}
+    if (c < -1) { /* an error occurred during option processing */
+        fprintf(stderr, "%s: %s\n",
+                poptBadOption(optCon, POPT_BADOPTION_NOALIAS), poptStrerror(c));
+        poptPrintHelp(optCon, stderr, 0);
+        exit(1);
+    }
 
-//	arg_1 = poptGetArg(optCon);
-//	arg_2 = poptGetArg(optCon);
-	arg_servername = poptGetArg(optCon);
-	is_server = !arg_servername;
+    //	arg_1 = poptGetArg(optCon);
+    //	arg_2 = poptGetArg(optCon);
+    arg_servername = poptGetArg(optCon);
+    is_server      = !arg_servername;
 
-	no_arg = poptGetArg(optCon); // should return NULL
-	if (no_arg) {
-		fprintf(stderr, "%s: %s\n",
-			no_arg, poptStrerror(POPT_ERROR_BADOPT));
-		poptPrintHelp(optCon, stderr, 0);
-		exit(1);
-	}
+    no_arg = poptGetArg(optCon); // should return NULL
+    if (no_arg) {
+        fprintf(stderr, "%s: %s\n", no_arg, poptStrerror(POPT_ERROR_BADOPT));
+        poptPrintHelp(optCon, stderr, 0);
+        exit(1);
+    }
 
-	poptFreeContext(optCon);
+    poptFreeContext(optCon);
 }
 
 
-#define MIN(a,b)      (((a)<(b))?(a):(b))
-#define MAX(a,b)      (((a)>(b))?(a):(b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
 #include <sys/time.h>
 
-static inline
-unsigned long getusec(void)
+static inline unsigned long getusec(void)
 {
-	struct timeval tv;
-	gettimeofday(&tv,NULL);
-	return (tv.tv_usec+tv.tv_sec*1000000);
+    struct timeval tv;
+    gettimeofday(&tv, NULL);
+    return (tv.tv_usec + tv.tv_sec * 1000000);
 }
 
 
-typedef struct msg_buf
-{
-	uint32_t	len;
-	char		data[MAX_MSIZE];
+typedef struct msg_buf {
+    uint32_t len;
+    char data[MAX_MSIZE];
 } msg_buf_t;
 
 
-msg_buf_t	*s_buf;
-msg_buf_t	*r_buf;
+msg_buf_t *s_buf;
+msg_buf_t *r_buf;
 
-pspsm_con_info_t	*con;
+pspsm_con_info_t *con;
 
 
-static
-void rc_check(int ret, char *msg)
+static void rc_check(int ret, char *msg)
 {
-	if (!ret) return;
+    if (!ret) { return; }
 
-	fprintf(stderr, "%s : %s\n", msg, strerror(-ret));
-	exit(1);
+    fprintf(stderr, "%s : %s\n", msg, strerror(-ret));
+    exit(1);
 }
 
 
-static
-void pspsm_init_bufs(void)
+static void pspsm_init_bufs(void)
 {
-	s_buf = valloc(sizeof(*s_buf) + 1); *(char *)&s_buf[1] = (char)0xee;
-	r_buf = valloc(sizeof(*r_buf) + 1); *(char *)&r_buf[1] = (char)0xee;
+    s_buf              = valloc(sizeof(*s_buf) + 1);
+    *(char *)&s_buf[1] = (char)0xee;
+    r_buf              = valloc(sizeof(*r_buf) + 1);
+    *(char *)&r_buf[1] = (char)0xee;
 
-	memset(s_buf->data, 0x11, sizeof(s_buf->data));
-	memset(r_buf->data, 0x22, sizeof(r_buf->data));
+    memset(s_buf->data, 0x11, sizeof(s_buf->data));
+    memset(r_buf->data, 0x22, sizeof(r_buf->data));
 }
 
 
+#define SEC_IN_NS 1000000000ULL
 
-#define SEC_IN_NS   1000000000ULL
-
-#define PSPSM_INFO_FMT "epid:%016lx id:%016lx"
+#define PSPSM_INFO_FMT  "epid:%016lx id:%016lx"
 #define PSPSM_INFO(msg) (unsigned long)(msg)->epid, (unsigned long)(msg)->id
 
-static
-void pp_info_read(FILE *peer, pspsm_info_msg_t *msg)
+static void pp_info_read(FILE *peer, pspsm_info_msg_t *msg)
 {
-	int rc;
+    int rc;
 
-	rc = fscanf(peer, VERSION "\n");
-	if (rc != 0) error(1, 0, "Parsing error! Only %d from 0 fields. Version mismatch?\n", rc);
+    rc = fscanf(peer, VERSION "\n");
+    if (rc != 0) {
+        error(1, 0, "Parsing error! Only %d from 0 fields. Version mismatch?\n",
+              rc);
+    }
 
-	rc = (int)fread(msg, sizeof(*msg), 1, peer);
-	printf("remote: " PSPSM_INFO_FMT "\n", PSPSM_INFO(msg));
-	assert(rc == 1);
+    rc = (int)fread(msg, sizeof(*msg), 1, peer);
+    printf("remote: " PSPSM_INFO_FMT "\n", PSPSM_INFO(msg));
+    assert(rc == 1);
 }
 
 
-static
-void pp_info_write(FILE *peer, pspsm_info_msg_t *msg)
+static void pp_info_write(FILE *peer, pspsm_info_msg_t *msg)
 {
-	printf("local:  " PSPSM_INFO_FMT "\n", PSPSM_INFO(msg));
-	fprintf(peer, VERSION "\n");
-	fwrite(msg, sizeof(*msg), 1, peer);
-	fflush(peer);
+    printf("local:  " PSPSM_INFO_FMT "\n", PSPSM_INFO(msg));
+    fprintf(peer, VERSION "\n");
+    fwrite(msg, sizeof(*msg), 1, peer);
+    fflush(peer);
 }
 
 #define DUMMY_CON ((struct PSCOM_con *)0x313321)
 #define DUMMY_REQ ((struct PSCOM_req *)0x123321)
 
-static
-void init(FILE *peer)
+static void init(FILE *peer)
 {
-	int rc;
-	pspsm_info_msg_t lmsg, rmsg;
+    int rc;
+    pspsm_info_msg_t lmsg, rmsg;
 
-	rc = pspsm_init();
-	rc_check(rc, "pspsm_init");
+    rc = pspsm_init();
+    rc_check(rc, "pspsm_init");
 
-	con = pspsm_con_create();
-	assert(con);
+    con = pspsm_con_create();
+    assert(con);
 
-	pspsm_con_init(con, DUMMY_CON);
+    pspsm_con_init(con, DUMMY_CON);
 
-	pspsm_con_get_info_msg(con, &lmsg);
+    pspsm_con_get_info_msg(con, &lmsg);
 
-	if (is_server) {
-		pp_info_write(peer, &lmsg);
-		pp_info_read(peer, &rmsg);
-	} else {
-		pp_info_read(peer, &rmsg);
-		pp_info_write(peer, &lmsg);
-	}
+    if (is_server) {
+        pp_info_write(peer, &lmsg);
+        pp_info_read(peer, &rmsg);
+    } else {
+        pp_info_read(peer, &rmsg);
+        pp_info_write(peer, &lmsg);
+    }
 
-	pspsm_con_connect(con, &rmsg);
+    pspsm_con_connect(con, &rmsg);
 
-	printf("I'm the %s\n", is_server ? "server" : "client");
-	sleep(1);
+    printf("I'm the %s\n", is_server ? "server" : "client");
+    sleep(1);
 
-	pspsm_init_bufs();
+    pspsm_init_bufs();
 }
 
 
-static
-void cleanup(void)
+static void cleanup(void)
 {
-	pspsm_con_cleanup(con);
-	pspsm_con_free(con); con = NULL;
-	pspsm_close_endpoint();
-	pspsm_finalize_mq();
+    pspsm_con_cleanup(con);
+    pspsm_con_free(con);
+    con = NULL;
+    pspsm_close_endpoint();
+    pspsm_finalize_mq();
 }
 
 
-static inline
-void pspsm_send(size_t len)
+static inline void pspsm_send(size_t len)
 {
-	int rc;
-	size_t slen;
-	struct iovec iov[2];
+    int rc;
+    size_t slen;
+    struct iovec iov[2];
 
-	s_buf->len = (uint32_t)len;
+    s_buf->len = (uint32_t)len;
 
-	slen = len + sizeof(s_buf->len);
-	iov[0].iov_base = s_buf;
-	iov[0].iov_len = slen;
-	iov[1].iov_base = NULL;
-	iov[1].iov_len = 0;
+    slen            = len + sizeof(s_buf->len);
+    iov[0].iov_base = s_buf;
+    iov[0].iov_len  = slen;
+    iov[1].iov_base = NULL;
+    iov[1].iov_len  = 0;
 
-	//memcpy(s_buf->buf, r_buf->buf, len);
+    // memcpy(s_buf->buf, r_buf->buf, len);
 
-	rc = pspsm_sendv(con, iov, DUMMY_REQ);
+    rc = pspsm_sendv(con, iov, DUMMY_REQ);
 
-	if (rc == 0) {
-		// send done.
-	} else if (rc == -EAGAIN) {
-		// send pending. Wait for write done
-		while (pspsm_send_pending(con)) {
-			pspsm_progress();
-		}
-	} else {
-		rc_check(rc, "pspsm_sendv");
-	}
+    if (rc == 0) {
+        // send done.
+    } else if (rc == -EAGAIN) {
+        // send pending. Wait for write done
+        while (pspsm_send_pending(con)) { pspsm_progress(); }
+    } else {
+        rc_check(rc, "pspsm_sendv");
+    }
 }
 
 
-static inline
-unsigned pspsm_recv(void)
+static inline unsigned pspsm_recv(void)
 {
-	int rc;
+    int rc;
 
-	rc = pspsm_recv_start(con, (char*)r_buf, sizeof(*r_buf));
-	assert(rc == 0);
+    rc = pspsm_recv_start(con, (char *)r_buf, sizeof(*r_buf));
+    assert(rc == 0);
 
-	while (pspsm_recv_pending(con)) {
-		pspsm_progress();
-	}
+    while (pspsm_recv_pending(con)) { pspsm_progress(); }
 
-	return r_buf->len;
+    return r_buf->len;
 }
 
 
-static
-void run_pp_server(void)
+static void run_pp_server(void)
 {
-	while (1) {
-		unsigned len = pspsm_recv();
-		pspsm_send(len);
-	}
+    while (1) {
+        unsigned len = pspsm_recv();
+        pspsm_send(len);
+    }
 }
 
 
-static
-int run_pp_c(size_t msize, int loops)
+static int run_pp_c(size_t msize, int loops)
 {
-	int cnt;
-	assert(msize <= MAX_MSIZE);
+    int cnt;
+    assert(msize <= MAX_MSIZE);
 
-	//printf("Send %d\n", msize);
+    // printf("Send %d\n", msize);
 
-	for (cnt = 0; cnt < loops; cnt++) {
-		size_t len = msize;
-		size_t rlen;
+    for (cnt = 0; cnt < loops; cnt++) {
+        size_t len = msize;
+        size_t rlen;
 
-		pspsm_send(len);
-		rlen = pspsm_recv();
-		assert(rlen == len);
-	}
-	return 0;
+        pspsm_send(len);
+        rlen = pspsm_recv();
+        assert(rlen == len);
+    }
+    return 0;
 }
 
 
-static
-void do_pp_client(void)
+static void do_pp_client(void)
 {
-	unsigned long t1, t2;
-	double time;
-	double throuput;
-	size_t msgsize;
-	double ms;
-	int res;
-	double loops = arg_loops;
+    unsigned long t1, t2;
+    double time;
+    double throuput;
+    size_t msgsize;
+    double ms;
+    int res;
+    double loops = arg_loops;
 
-	printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
-	printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
-	for (ms = 0.0/*1.4142135*/; ms < arg_maxmsize;
-	     ms = (ms < 128) ? (ms + 1) : (ms * 1.4142135)) {
-		unsigned int iloops = (unsigned)(loops + 0.5);
-		msgsize = (size_t)(ms + 0.5);
+    printf("%7s %8s %8s %8s\n", "msize", "loops", "time", "throughput");
+    printf("%7s %8s %8s %8s\n", "[bytes]", "[cnt]", "[us/cnt]", "[MB/s]");
+    for (ms = 0.0 /*1.4142135*/; ms < arg_maxmsize;
+         ms = (ms < 128) ? (ms + 1) : (ms * 1.4142135)) {
+        unsigned int iloops = (unsigned)(loops + 0.5);
+        msgsize             = (size_t)(ms + 0.5);
 
-		/* warmup, for sync */
-		run_pp_c(1, 2);
+        /* warmup, for sync */
+        run_pp_c(1, 2);
 
-		t1 = getusec();
-		res = run_pp_c(msgsize, iloops);
-		t2 = getusec();
+        t1  = getusec();
+        res = run_pp_c(msgsize, iloops);
+        t2  = getusec();
 
-		time = (double)(t2 - t1) / (iloops * 2);
-		throuput = (double)msgsize / time;
-		if (res == 0) {
-			printf("%7zu %8d %8.2f %8.2f\n", msgsize, iloops, time, throuput);
-			fflush(stdout);
-		} else {
-			printf("Error in communication...\n");
-		}
+        time     = (double)(t2 - t1) / (iloops * 2);
+        throuput = (double)msgsize / time;
+        if (res == 0) {
+            printf("%7zu %8d %8.2f %8.2f\n", msgsize, iloops, time, throuput);
+            fflush(stdout);
+        } else {
+            printf("Error in communication...\n");
+        }
 
-		{
-			double t = (double)(t2 - t1) / 1000;
-			while (t > arg_maxtime) {
-				loops = loops / 1.4142135;
-				t /= 1.4142135;
-			}
-			if (loops < 1) loops = 1;
-		}
-	}
+        {
+            double t = (double)(t2 - t1) / 1000;
+            while (t > arg_maxtime) {
+                loops = loops / 1.4142135;
+                t /= 1.4142135;
+            }
+            if (loops < 1) { loops = 1; }
+        }
+    }
 
-	return;
+    return;
 }
 
 
@@ -380,67 +356,69 @@ void do_pp_client(void)
  * Connection establishment via TCP
  */
 
-#define SCALL(func) do {				\
-    if ((func) < 0) {					\
-	printf( #func ": %s\n", strerror(errno));	\
-	exit(1);					\
-    }							\
-}while (0)
+#define SCALL(func)                                                            \
+    do {                                                                       \
+        if ((func) < 0) {                                                      \
+            printf(#func ": %s\n", strerror(errno));                           \
+            exit(1);                                                           \
+        }                                                                      \
+    } while (0)
 
-#define INET_ADDR_SPLIT(addr) ((addr) >> 24) & 0xff, ((addr) >> 16) & 0xff, ((addr) >>  8) & 0xff, (addr) & 0xff
+#define INET_ADDR_SPLIT(addr)                                                  \
+    ((addr) >> 24) & 0xff, ((addr) >> 16) & 0xff, ((addr) >> 8) & 0xff,        \
+        (addr)&0xff
 #define INET_ADDR_FORMAT "%u.%u.%u.%u"
 
 
-static
-FILE *get_peer(void)
+static FILE *get_peer(void)
 {
-	int fd;
+    int fd;
 
-	struct addrinfo hints = {
-		.ai_flags = AI_CANONNAME,
-		//.ai_family   = AF_UNSPEC,
-		.ai_family   = AF_INET,
-		.ai_socktype = SOCK_STREAM
-	};
-	struct addrinfo *addrinfo;
+    struct addrinfo hints = {.ai_flags    = AI_CANONNAME,
+                             //.ai_family   = AF_UNSPEC,
+                             .ai_family   = AF_INET,
+                             .ai_socktype = SOCK_STREAM};
+    struct addrinfo *addrinfo;
 
-	int n;
-	n = getaddrinfo(arg_servername ? arg_servername : "0", arg_port, &hints, &addrinfo);
-	if (n) {
-		addrinfo = NULL;
-		printf("getaddrinfo() failed: %s\n", gai_strerror(n));
-		exit(1);
-	}
+    int n;
+    n = getaddrinfo(arg_servername ? arg_servername : "0", arg_port, &hints,
+                    &addrinfo);
+    if (n) {
+        addrinfo = NULL;
+        printf("getaddrinfo() failed: %s\n", gai_strerror(n));
+        exit(1);
+    }
 
-	if (is_server) {
-		int val = 1;
-		int listen_fd;
-		SCALL(listen_fd = socket(PF_INET, SOCK_STREAM, 0));
+    if (is_server) {
+        int val = 1;
+        int listen_fd;
+        SCALL(listen_fd = socket(PF_INET, SOCK_STREAM, 0));
 
-		setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR,
-			   (void*) &val, sizeof(val));
+        setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (void *)&val,
+                   sizeof(val));
 
-		SCALL(bind(listen_fd, addrinfo->ai_addr, addrinfo->ai_addrlen));
-		SCALL(listen(listen_fd, 1));
-		printf("Waiting for connection\n");
-		fd = accept(listen_fd, NULL, 0);
-	} else {
-		struct sockaddr_in *si = (struct sockaddr_in *)addrinfo->ai_addr;
-		assert(si->sin_family == AF_INET);
-		SCALL(fd = socket(PF_INET, SOCK_STREAM, 0));
-		printf("Connect to "INET_ADDR_FORMAT" \n",
-		       INET_ADDR_SPLIT(ntohl(si->sin_addr.s_addr)));
+        SCALL(bind(listen_fd, addrinfo->ai_addr, addrinfo->ai_addrlen));
+        SCALL(listen(listen_fd, 1));
+        printf("Waiting for connection\n");
+        fd = accept(listen_fd, NULL, 0);
+    } else {
+        struct sockaddr_in *si = (struct sockaddr_in *)addrinfo->ai_addr;
+        assert(si->sin_family == AF_INET);
+        SCALL(fd = socket(PF_INET, SOCK_STREAM, 0));
+        printf("Connect to " INET_ADDR_FORMAT " \n",
+               INET_ADDR_SPLIT(ntohl(si->sin_addr.s_addr)));
 
-		SCALL(connect(fd, addrinfo->ai_addr, addrinfo->ai_addrlen));
-	}
+        SCALL(connect(fd, addrinfo->ai_addr, addrinfo->ai_addrlen));
+    }
 
-	if (addrinfo) freeaddrinfo(addrinfo);
-	return fdopen(fd, "a+");
+    if (addrinfo) { freeaddrinfo(addrinfo); }
+    return fdopen(fd, "a+");
 }
 
 
 /*
- * Implement upper layer functions usually implemented by libpscom or libpscom4psm.
+ * Implement upper layer functions usually implemented by libpscom or
+ * libpscom4psm.
  */
 void pscom_write_done(struct PSCOM_con *con, struct PSCOM_req *req, size_t len)
 {
@@ -473,33 +451,33 @@ static void pscom_psm_post_recv_check(struct PSCOM_con *con)
 
 int main(int argc, char **argv)
 {
-	FILE *peer;
+    FILE *peer;
 
-	parse_opt(argc, argv);
+    parse_opt(argc, argv);
 
-	pspsm_debug_stream = stderr;
-	pspsm_debug = arg_verbose + 2;
+    pspsm_debug_stream = stderr;
+    pspsm_debug        = arg_verbose + 2;
 
-	peer = get_peer();
-	init(peer);
+    peer = get_peer();
+    init(peer);
 
-	if (is_server) { // server
-		if (!arg_nokill) {
-			// Kill the server with SIGSTOP if the peer disappear.
-			int fd = fileno(peer);
-			SCALL(fcntl(fd, F_SETOWN, getpid()));
-			SCALL(fcntl(fd, F_SETSIG, SIGINT));
-			SCALL(fcntl(fd, F_SETFL, O_ASYNC));
-		}
-		run_pp_server();
-	} else {
-		sleep(2);
-		do_pp_client();
-	}
+    if (is_server) { // server
+        if (!arg_nokill) {
+            // Kill the server with SIGSTOP if the peer disappear.
+            int fd = fileno(peer);
+            SCALL(fcntl(fd, F_SETOWN, getpid()));
+            SCALL(fcntl(fd, F_SETSIG, SIGINT));
+            SCALL(fcntl(fd, F_SETFL, O_ASYNC));
+        }
+        run_pp_server();
+    } else {
+        sleep(2);
+        do_pp_client();
+    }
 
-	if (arg_verbose) pspsm_print_stats();
+    if (arg_verbose) { pspsm_print_stats(); }
 
-	cleanup();
+    cleanup();
 
-	return 0;
+    return 0;
 }

@@ -31,55 +31,53 @@
  * When:  DPRINT() is called
  * Then:  nothing should be written to stderr.
  */
-void
-test_debug_psp_debug_out_max_debug_level(void **state)
+void test_debug_psp_debug_out_max_debug_level(void **state)
 {
-        char template[]          = "/tmp/tmpdir.XXXXXX";
-        char stderr_buf[128]     = {0};
-        char debug_out_name[128] = {0};
-        char *debug_dir;
-        int captured_stderr;
+    char template[]          = "/tmp/tmpdir.XXXXXX";
+    char stderr_buf[128]     = {0};
+    char debug_out_name[128] = {0};
+    char *debug_dir;
+    int captured_stderr;
 
-        /* create temporary directory for our debug file */
-        debug_dir = mkdtemp(template);
-        assert_true(debug_dir);
-        snprintf(debug_out_name, 128, "%s/psp-debug.out", debug_dir);
+    /* create temporary directory for our debug file */
+    debug_dir = mkdtemp(template);
+    assert_true(debug_dir);
+    snprintf(debug_out_name, 128, "%s/psp-debug.out", debug_dir);
 
-        /* capture STDERR */
-        captured_stderr = capture_fd(STDERR_FILENO);
+    /* capture STDERR */
+    captured_stderr = capture_fd(STDERR_FILENO);
 
-        /* set debug level to max  redirect to a file */
-        setenv("PSP_DEBUG", "6", 1);
-        setenv("PSP_DEBUG_OUT", debug_out_name, 1);
+    /* set debug level to max  redirect to a file */
+    setenv("PSP_DEBUG", "6", 1);
+    setenv("PSP_DEBUG_OUT", debug_out_name, 1);
 
-        /* initialize the environment module */
-        pscom_env_init();
+    /* initialize the environment module */
+    pscom_env_init();
 
-        /* write a debug message */
-        DPRINT(D_ERR, "THIS SHOULD NOT APPEAR ON STDERR");
+    /* write a debug message */
+    DPRINT(D_ERR, "THIS SHOULD NOT APPEAR ON STDERR");
 
-        /* write something to stderr so we can retrieve it via read() */
-        fprintf(stderr, "EOF");
-        fflush(stderr);
+    /* write something to stderr so we can retrieve it via read() */
+    fprintf(stderr, "EOF");
+    fflush(stderr);
 
-        /* read stderr and restore */
-        assert_true(read(captured_stderr, stderr_buf,
-                         sizeof(stderr_buf)-1) >= 0);
+    /* read stderr and restore */
+    assert_true(read(captured_stderr, stderr_buf, sizeof(stderr_buf) - 1) >= 0);
 
-        restore_fd(STDERR_FILENO);
+    restore_fd(STDERR_FILENO);
 
-        /* cleanup the environment module to prevent memory leaks */
-        pscom_env_cleanup();
+    /* cleanup the environment module to prevent memory leaks */
+    pscom_env_cleanup();
 
-        /* explicitly reset pscom.env to prevent side effects */
-        memset(&pscom.env, 0, sizeof(struct PSCOM_env));
+    /* explicitly reset pscom.env to prevent side effects */
+    memset(&pscom.env, 0, sizeof(struct PSCOM_env));
 
-        /* remove the debug file and the temporary directory */
-        assert_true(remove(debug_out_name) == 0);
-        assert_true(rmdir(debug_dir) == 0);
+    /* remove the debug file and the temporary directory */
+    assert_true(remove(debug_out_name) == 0);
+    assert_true(rmdir(debug_dir) == 0);
 
-        /* stderr should contain nothing than our 'EOF' */
-        assert_string_equal(stderr_buf, "EOF");
+    /* stderr should contain nothing than our 'EOF' */
+    assert_string_equal(stderr_buf, "EOF");
 }
 
 
@@ -90,48 +88,46 @@ test_debug_psp_debug_out_max_debug_level(void **state)
  * When:  the precon sees an EPIPE
  * Then:  nothing should be written to stderr.
  */
-void
-test_debug_precon_broken_pipe(void **state)
+void test_debug_precon_broken_pipe(void **state)
 {
-        char stderr_buf[128] = {0};
-        int captured_stderr;
+    char stderr_buf[128] = {0};
+    int captured_stderr;
 
-        /* capture STDERR */
-        captured_stderr = capture_fd(STDERR_FILENO);
+    /* capture STDERR */
+    captured_stderr = capture_fd(STDERR_FILENO);
 
-        /* initialize the environment module */
-        pscom_env_init();
-        ufd_init(&pscom.ufd);
+    /* initialize the environment module */
+    pscom_env_init();
+    ufd_init(&pscom.ufd);
 
-        /* create and initialize the precon object */
-        pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-        precon_t *precon       = pscom_precon_create(dummy_con);
-        pscom_precon_assign_fd(precon, 0x42);
+    /* create and initialize the precon object */
+    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+    precon_t *precon       = pscom_precon_create(dummy_con);
+    pscom_precon_assign_fd(precon, 0x42);
 
-        /* start writing on the precon and generate EPIPE */
-        will_return(__wrap_send, EPIPE);
-        will_return(__wrap_send, -1);
-        precon->send_len = 42;
-        precon->ufd_info.can_write(NULL, &precon->ufd_info);
+    /* start writing on the precon and generate EPIPE */
+    will_return(__wrap_send, EPIPE);
+    will_return(__wrap_send, -1);
+    precon->send_len = 42;
+    precon->ufd_info.can_write(NULL, &precon->ufd_info);
 
-        /* write something to stderr so we can retrieve it via read() */
-        fprintf(stderr, "EOF");
-        fflush(stderr);
+    /* write something to stderr so we can retrieve it via read() */
+    fprintf(stderr, "EOF");
+    fflush(stderr);
 
-        /* read stderr and restore */
-        assert_true(read(captured_stderr, stderr_buf,
-                         sizeof(stderr_buf)-1) >= 0);
+    /* read stderr and restore */
+    assert_true(read(captured_stderr, stderr_buf, sizeof(stderr_buf) - 1) >= 0);
 
-        restore_fd(STDERR_FILENO);
+    restore_fd(STDERR_FILENO);
 
-        /* cleanup the environment module to prevent memory leaks */
-        pscom_env_cleanup();
+    /* cleanup the environment module to prevent memory leaks */
+    pscom_env_cleanup();
 
-        /* explicitly reset pscom.env to prevent side effects */
-        memset(&pscom.env, 0, sizeof(struct PSCOM_env));
+    /* explicitly reset pscom.env to prevent side effects */
+    memset(&pscom.env, 0, sizeof(struct PSCOM_env));
 
-        /* stderr should contain nothing than our 'EOF' */
-        assert_string_equal(stderr_buf, "EOF");
+    /* stderr should contain nothing than our 'EOF' */
+    assert_string_equal(stderr_buf, "EOF");
 }
 
 
@@ -142,46 +138,44 @@ test_debug_precon_broken_pipe(void **state)
  * When:  the precon sees an EIO
  * Then:  the user should see an according error message.
  */
-void
-test_debug_precon_io_error(void **state)
+void test_debug_precon_io_error(void **state)
 {
-        char stderr_buf[128] = {0};
-        int captured_stderr;
+    char stderr_buf[128] = {0};
+    int captured_stderr;
 
-        /* capture STDERR */
-        captured_stderr = capture_fd(STDERR_FILENO);
+    /* capture STDERR */
+    captured_stderr = capture_fd(STDERR_FILENO);
 
-        /* initialize the environment module */
-        pscom_env_init();
-        ufd_init(&pscom.ufd);
+    /* initialize the environment module */
+    pscom_env_init();
+    ufd_init(&pscom.ufd);
 
-        /* create and initialize the precon object */
-        pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-        precon_t *precon       = pscom_precon_create(dummy_con);
-        pscom_precon_assign_fd(precon, 0x42);
+    /* create and initialize the precon object */
+    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
+    precon_t *precon       = pscom_precon_create(dummy_con);
+    pscom_precon_assign_fd(precon, 0x42);
 
-        /* start writing on the precon and generate EPIPE */
-        will_return(__wrap_send, EIO);
-        will_return(__wrap_send, -1);
-        precon->send_len = 42;
-        precon->ufd_info.can_write(NULL, &precon->ufd_info);
+    /* start writing on the precon and generate EPIPE */
+    will_return(__wrap_send, EIO);
+    will_return(__wrap_send, -1);
+    precon->send_len = 42;
+    precon->ufd_info.can_write(NULL, &precon->ufd_info);
 
-        /* write something to stderr so we can retrieve it via read() */
-        fprintf(stderr, "EOF");
-        fflush(stderr);
+    /* write something to stderr so we can retrieve it via read() */
+    fprintf(stderr, "EOF");
+    fflush(stderr);
 
-        /* read stderr and restore */
-        assert_true(read(captured_stderr, stderr_buf,
-                         sizeof(stderr_buf)-1) >= 0);
+    /* read stderr and restore */
+    assert_true(read(captured_stderr, stderr_buf, sizeof(stderr_buf) - 1) >= 0);
 
-        restore_fd(STDERR_FILENO);
+    restore_fd(STDERR_FILENO);
 
-        /* cleanup the environment module to prevent memory leaks */
-        pscom_env_cleanup();
+    /* cleanup the environment module to prevent memory leaks */
+    pscom_env_cleanup();
 
-        /* explicitly reset pscom.env to prevent side effects */
-        memset(&pscom.env, 0, sizeof(struct PSCOM_env));
+    /* explicitly reset pscom.env to prevent side effects */
+    memset(&pscom.env, 0, sizeof(struct PSCOM_env));
 
-        /* stderr should contain 'Input/output error' */
-        assert_true(strstr(stderr_buf, "Input/output error") != NULL);
+    /* stderr should contain 'Input/output error' */
+    assert_true(strstr(stderr_buf, "Input/output error") != NULL);
 }

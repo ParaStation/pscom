@@ -12,84 +12,83 @@
 #include "pscom_priv.h"
 
 
-
 void pscom_listener_init(struct pscom_listener *listener,
-			 void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info),
-			 void *priv)
+                         void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info),
+                         void *priv)
 {
-	memset(listener, 0, sizeof(*listener));
-	listener->ufd_info.fd = -1;
-	listener->ufd_info.can_read = can_read;
-	listener->ufd_info.priv = priv;
+    memset(listener, 0, sizeof(*listener));
+    listener->ufd_info.fd       = -1;
+    listener->ufd_info.can_read = can_read;
+    listener->ufd_info.priv     = priv;
 
-	listener->usercnt = 0;
-	listener->activecnt = 0;
+    listener->usercnt   = 0;
+    listener->activecnt = 0;
 }
 
 
 void pscom_listener_set_fd(struct pscom_listener *listener, int fd)
 {
-	assert(fd >= 0);
-	assert(listener->ufd_info.fd == -1);
+    assert(fd >= 0);
+    assert(listener->ufd_info.fd == -1);
 
-	listener->ufd_info.fd = fd;
+    listener->ufd_info.fd = fd;
 }
 
 
 int pscom_listener_get_fd(struct pscom_listener *listener)
 {
-	return listener->ufd_info.fd;
+    return listener->ufd_info.fd;
 }
 
 
 void pscom_listener_user_inc(struct pscom_listener *listener)
 {
-	listener->usercnt++;
+    listener->usercnt++;
 }
 
 
 void pscom_listener_user_dec(struct pscom_listener *listener)
 {
-	assert(listener->usercnt > 0);
+    assert(listener->usercnt > 0);
 
-	listener->usercnt--;
+    listener->usercnt--;
 
-	if (!listener->usercnt) {
-		assert(!listener->activecnt);
+    if (!listener->usercnt) {
+        assert(!listener->activecnt);
 
-		int fd = pscom_listener_get_fd(listener);
-		if (fd >= 0) {
-			close(fd);
-		} else {
-			DPRINT(D_WARN, "warning: %s() fd already closed", __func__);
-		}
-		listener->ufd_info.fd = -1;
-	}
+        int fd = pscom_listener_get_fd(listener);
+        if (fd >= 0) {
+            close(fd);
+        } else {
+            DPRINT(D_WARN, "warning: %s() fd already closed", __func__);
+        }
+        listener->ufd_info.fd = -1;
+    }
 }
 
 
 void pscom_listener_active_inc(struct pscom_listener *listener)
 {
-	int start = !listener->activecnt;
+    int start = !listener->activecnt;
 
-	listener->activecnt++;
+    listener->activecnt++;
 
-	if (start) {
-		pscom_listener_user_inc(listener);
+    if (start) {
+        pscom_listener_user_inc(listener);
 
-		ufd_add(&pscom.ufd, &listener->ufd_info);
-		ufd_event_set(&pscom.ufd, &listener->ufd_info, POLLIN);
-	}
+        ufd_add(&pscom.ufd, &listener->ufd_info);
+        ufd_event_set(&pscom.ufd, &listener->ufd_info, POLLIN);
+    }
 }
 
 
 void pscom_listener_active_dec(struct pscom_listener *listener)
 {
-	listener->activecnt--;
+    listener->activecnt--;
 
-	if (!listener->activecnt) {
-		ufd_del(&pscom.ufd, &listener->ufd_info);
+    if (!listener->activecnt) {
+        ufd_del(&pscom.ufd, &listener->ufd_info);
 
-		pscom_listener_user_dec(listener);
-	}
+        pscom_listener_user_dec(listener);
+    }
 }

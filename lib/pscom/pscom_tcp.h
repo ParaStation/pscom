@@ -20,7 +20,7 @@
 #include "pscom_plugin.h"
 
 typedef struct tcp_conn_s {
-	ufd_info_t ufd_info;
+    ufd_info_t ufd_info;
 } tcp_conn_t;
 
 

@@ -26,9 +26,9 @@ void pscom_backlog_push(void (*call)(void *priv), void *priv);
 // return number of deleted entries (= 0 or 1)
 int pscom_backlog_del(void (*call)(void *priv), void *priv);
 void pscom_backlog_execute();
-static inline
-int pscom_backlog_empty(void) {
-	return list_empty(&pscom.backlog);
+static inline int pscom_backlog_empty(void)
+{
+    return list_empty(&pscom.backlog);
 }
 
 

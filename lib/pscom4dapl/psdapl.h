@@ -24,8 +24,8 @@ typedef struct psdapl_con_info psdapl_con_info_t;
 typedef struct psdapl_socket psdapl_socket_t;
 
 typedef struct psdapl_info_msg {
-	DAT_SOCK_ADDR sock_addr;
-	DAT_CONN_QUAL conn_qual;
+    DAT_SOCK_ADDR sock_addr;
+    DAT_CONN_QUAL conn_qual;
 } psdapl_info_msg_t;
 
 /* Create a socket.
@@ -71,7 +71,8 @@ int psdapl_connect(psdapl_con_info_t *ci, psdapl_info_msg_t *msg);
 /* Close connection ci and free resources */
 void psdapl_con_destroy(psdapl_con_info_t *ci);
 
-void psex_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */);
+void psex_con_get_info_msg(psdapl_con_info_t *ci /* in */,
+                           psdapl_info_msg_t *msg /* out */);
 
 
 /* send size bytes from iov through ci. (size > 0)
@@ -98,7 +99,8 @@ extern int psdapl_debug;
 extern char psdapl_provider[128];
 extern FILE *psdapl_debug_stream;
 
-void psdapl_con_get_info_msg(psdapl_con_info_t *ci /* in */, psdapl_info_msg_t *msg /* out */);
+void psdapl_con_get_info_msg(psdapl_con_info_t *ci /* in */,
+                             psdapl_info_msg_t *msg /* out */);
 
 const char *psdapl_addr2str(const psdapl_info_msg_t *msg /* in */);
 /* return -1 on parse error */
@@ -113,24 +115,24 @@ typedef struct psdapl_mregion_cache psdapl_mregion_cache_t;
 
 typedef struct psdapl_rdma_req psdapl_rdma_req_t;
 struct psdapl_rdma_req {
-	psdapl_con_info_t *ci;
-	DAT_RMR_CONTEXT rmr_context;
-	DAT_VADDR	rmr_vaddr;
-	char		*lmr_buf;
-	size_t		size;
+    psdapl_con_info_t *ci;
+    DAT_RMR_CONTEXT rmr_context;
+    DAT_VADDR rmr_vaddr;
+    char *lmr_buf;
+    size_t size;
 
-	psdapl_mregion_cache_t *mreg; /* set by psdapl_post_rma_put() */
+    psdapl_mregion_cache_t *mreg; /* set by psdapl_post_rma_put() */
 
-	void		(*io_done)(psdapl_rdma_req_t *req);
-	void		*priv;
+    void (*io_done)(psdapl_rdma_req_t *req);
+    void *priv;
 };
 
 
 /* get lmr and rmr Handles from mem region buf:size. from cache.
  * call psdapl_put_mregion() after usage!
  * return NULL on error. */
-psdapl_mregion_cache_t *
-psdapl_get_mregion(void *buf, size_t size, psdapl_con_info_t *ci);
+psdapl_mregion_cache_t *psdapl_get_mregion(void *buf, size_t size,
+                                           psdapl_con_info_t *ci);
 
 void psdapl_put_mregion(psdapl_mregion_cache_t *mreg);
 
@@ -141,17 +143,15 @@ int psdapl_post_rdma_put(psdapl_rdma_req_t *req);
 int psdapl_post_rdma_get(psdapl_rdma_req_t *req);
 
 
-static inline
-DAT_VADDR psdapl_mem2vaddr(char *mem)
+static inline DAT_VADDR psdapl_mem2vaddr(char *mem)
 {
-	return (DAT_VADDR)(long)mem;
+    return (DAT_VADDR)(long)mem;
 }
 
 
-static inline
-DAT_VADDR psdapl_get_rmr_vaddr(void *buf)
+static inline DAT_VADDR psdapl_get_rmr_vaddr(void *buf)
 {
-	return psdapl_mem2vaddr(buf);
+    return psdapl_mem2vaddr(buf);
 }
 
 

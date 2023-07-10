@@ -14,82 +14,73 @@
 
 #include "pscom_cuda.h"
 
-static inline
-void _pscom_step(void)
+static inline void _pscom_step(void)
 {
-	pscom.stat.progresscounter++;
+    pscom.stat.progresscounter++;
 }
 
 
 /* move to state done and call io_done. unlocked version */
-static inline
-void pscom_req_done(pscom_req_t *req)
+static inline void pscom_req_done(pscom_req_t *req)
 {
-	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
-		    pscom_debug_req_str(req)));
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req)));
 
-	req->pub.state |= PSCOM_REQ_STATE_IO_DONE | PSCOM_REQ_STATE_DONE;
-	_pscom_step(); // ToDo: Need lock!
+    req->pub.state |= PSCOM_REQ_STATE_IO_DONE | PSCOM_REQ_STATE_DONE;
+    _pscom_step(); // ToDo: Need lock!
 
-	if (req->pub.ops.io_done) {
-		req->pub.ops.io_done(&req->pub);
-	}
+    if (req->pub.ops.io_done) { req->pub.ops.io_done(&req->pub); }
 }
 
 
-static inline
-void _pscom_req_done(pscom_req_t *req)
+static inline void _pscom_req_done(pscom_req_t *req)
 {
-	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
-		    pscom_debug_req_str(req)));
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req)));
 
-	if (req->pub.ops.io_done) {
-		req->pub.state |= PSCOM_REQ_STATE_IO_DONE;
-		D_TR(printf("%s:%u:%s req:%s add to pscom.io_doneq\n", __FILE__, __LINE__, __func__,
-			    pscom_debug_req_str(req)));
-		list_add_tail(&req->next, &pscom.io_doneq);
-	} else {
-		req->pub.state |= PSCOM_REQ_STATE_IO_DONE | PSCOM_REQ_STATE_DONE;
-	}
+    if (req->pub.ops.io_done) {
+        req->pub.state |= PSCOM_REQ_STATE_IO_DONE;
+        D_TR(printf("%s:%u:%s req:%s add to pscom.io_doneq\n", __FILE__,
+                    __LINE__, __func__, pscom_debug_req_str(req)));
+        list_add_tail(&req->next, &pscom.io_doneq);
+    } else {
+        req->pub.state |= PSCOM_REQ_STATE_IO_DONE | PSCOM_REQ_STATE_DONE;
+    }
 
-	_pscom_step();
+    _pscom_step();
 }
 
 
 /* unlocked version */
-static inline
-void pscom_recv_req_done(pscom_req_t *req)
+static inline void pscom_recv_req_done(pscom_req_t *req)
 {
-	_pscom_unstage_buffer(req, 1);
-	pscom_req_done(req);
+    _pscom_unstage_buffer(req, 1);
+    pscom_req_done(req);
 }
 
 
 /* locked version */
-static inline
-void _pscom_recv_req_done(pscom_req_t *req)
+static inline void _pscom_recv_req_done(pscom_req_t *req)
 {
-	_pscom_unstage_buffer(req, 1);
-	_pscom_req_done(req);
+    _pscom_unstage_buffer(req, 1);
+    _pscom_req_done(req);
 }
 
 
-static inline
-void _pscom_send_req_done(pscom_req_t *req)
+static inline void _pscom_send_req_done(pscom_req_t *req)
 {
-	_pscom_unstage_buffer(req, 0);
-	_pscom_req_done(req);
+    _pscom_unstage_buffer(req, 0);
+    _pscom_req_done(req);
 }
 
 
-static inline
-void _pscom_grecv_req_done(pscom_req_t *req)
+static inline void _pscom_grecv_req_done(pscom_req_t *req)
 {
-	D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
-		    pscom_debug_req_str(req)));
-	// assert(!genreq->rendezvous_req);
-	req->pub.state |= PSCOM_REQ_STATE_GRECV_MERGED;
-	_pscom_req_done(req);
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req)));
+    // assert(!genreq->rendezvous_req);
+    req->pub.state |= PSCOM_REQ_STATE_GRECV_MERGED;
+    _pscom_req_done(req);
 }
 
 
@@ -109,8 +100,8 @@ void _pscom_req_bcast_done(pscom_req_t *req)
 
 void pscom_greq_check_free(pscom_con_t *con, pscom_req_t *greq);
 
-/* call _pscom_recv_req_done() and return 1 if req received all data. return 0 else.
-   Do not use req, after a return of 1!  */
+/* call _pscom_recv_req_done() and return 1 if req received all data. return 0
+   else. Do not use req, after a return of 1!  */
 int _pscom_update_recv_req(pscom_req_t *req);
 
 void pscom_post_send_direct(pscom_req_t *req, pscom_msgtype_t msg_type);
@@ -118,10 +109,10 @@ void pscom_post_send_direct(pscom_req_t *req, pscom_msgtype_t msg_type);
 pscom_req_t *_pscom_get_ctrl_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 pscom_req_t *_pscom_get_bcast_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 void pscom_req_prepare_recv(pscom_req_t *req, const pscom_header_net_t *nh,
-			    pscom_connection_t *connection);
+                            pscom_connection_t *connection);
 
-void pscom_req_prepare_send_pending(pscom_req_t *req,
-				    pscom_msgtype_t msg_type, unsigned data_pending);
+void pscom_req_prepare_send_pending(pscom_req_t *req, pscom_msgtype_t msg_type,
+                                    unsigned data_pending);
 
 pscom_req_t *_pscom_generate_recv_req(pscom_con_t *con, pscom_header_net_t *nh);
 
@@ -144,12 +135,12 @@ void _pscom_genreq_abort_rendezvous_rma_reads(pscom_con_t *con);
    req->ops.io_done
 */
 void _pscom_post_recv_ctrl(pscom_req_t *req); /* must hold pscom_lock() */
-void pscom_post_recv_ctrl(pscom_req_t *req); /* must not hold pscom_lock() */
+void pscom_post_recv_ctrl(pscom_req_t *req);  /* must not hold pscom_lock() */
 
 void _pscom_recvq_rma_terminate(pscom_con_t *con);
 
 // receiver for PSCOM_MSGTYPE_GW_ENVELOPE, set by pscom4gateway.
-extern
-pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con, pscom_header_net_t *nh);
+extern pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con,
+                                                       pscom_header_net_t *nh);
 
 #endif /* _PSCOM_IO_H_ */

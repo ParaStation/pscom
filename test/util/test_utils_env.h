@@ -12,10 +12,10 @@
 #define _PSCOM_UTIL_ENV_H_
 
 typedef struct env_var_backup {
-        const char *name;
-        char *value;
-        char *parent_value;
-        char *prefix;
+    const char *name;
+    char *value;
+    char *parent_value;
+    char *prefix;
 } env_var_backup_t;
 
 int backup_test_val_env(void **state);

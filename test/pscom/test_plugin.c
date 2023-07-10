@@ -43,22 +43,22 @@
  */
 void test_load_plugin_lib(void **state)
 {
-	pscom_plugin_t plugin_mock = {
-		.version = PSCOM_PLUGIN_VERSION,
-	};
-	char plugin_path[] = "/path/to/plugin/lib";
-	char arch[] = "myarch";
-	char plugin_name[128];
-        snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s", arch);
+    pscom_plugin_t plugin_mock = {
+        .version = PSCOM_PLUGIN_VERSION,
+    };
+    char plugin_path[] = "/path/to/plugin/lib";
+    char arch[]        = "myarch";
+    char plugin_name[128];
+    snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s", arch);
 
-        will_return(__wrap_dlopen, 0xDEADBEEF);
-        will_return(__wrap_dlsym, &plugin_mock);
-	expect_value(__wrap_dlopen, filename, plugin_path);
-	expect_string(__wrap_dlsym, symbol, plugin_name);
+    will_return(__wrap_dlopen, 0xDEADBEEF);
+    will_return(__wrap_dlsym, &plugin_mock);
+    expect_value(__wrap_dlopen, filename, plugin_path);
+    expect_string(__wrap_dlsym, symbol, plugin_name);
 
-	pscom_plugin_t *plugin = load_plugin_lib(plugin_path, arch);
+    pscom_plugin_t *plugin = load_plugin_lib(plugin_path, arch);
 
-	assert_true(plugin == &plugin_mock);
+    assert_true(plugin == &plugin_mock);
 }
 
 
@@ -71,22 +71,22 @@ void test_load_plugin_lib(void **state)
  */
 void test_load_plugin_lib_invalid_version(void **state)
 {
-	pscom_plugin_t plugin_mock = {
-		.version = (PSCOM_PLUGIN_VERSION ^ 0x1),
-	};
-	char plugin_path[] = "/path/to/plugin/lib";
-	char arch[] = "myarch";
-	char plugin_name[128];
-        snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s", arch);
+    pscom_plugin_t plugin_mock = {
+        .version = (PSCOM_PLUGIN_VERSION ^ 0x1),
+    };
+    char plugin_path[] = "/path/to/plugin/lib";
+    char arch[]        = "myarch";
+    char plugin_name[128];
+    snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s", arch);
 
-        will_return(__wrap_dlopen, 0xDEADBEEF);
-        will_return(__wrap_dlsym, &plugin_mock);
-	expect_value(__wrap_dlopen, filename, plugin_path);
-	expect_string(__wrap_dlsym, symbol, plugin_name);
+    will_return(__wrap_dlopen, 0xDEADBEEF);
+    will_return(__wrap_dlsym, &plugin_mock);
+    expect_value(__wrap_dlopen, filename, plugin_path);
+    expect_string(__wrap_dlsym, symbol, plugin_name);
 
-	pscom_plugin_t *plugin = load_plugin_lib(plugin_path, arch);
+    pscom_plugin_t *plugin = load_plugin_lib(plugin_path, arch);
 
-	assert_false(plugin);
+    assert_false(plugin);
 }
 
 /**
@@ -98,19 +98,19 @@ void test_load_plugin_lib_invalid_version(void **state)
  */
 void test_load_plugin_lib_invalid_name(void **state)
 {
-	char plugin_path[] = "/path/to/plugin/lib";
-	char arch[] = "myarch";
-	char plugin_name[128];
-        snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s", arch);
+    char plugin_path[] = "/path/to/plugin/lib";
+    char arch[]        = "myarch";
+    char plugin_name[128];
+    snprintf(plugin_name, sizeof(plugin_name), "pscom_plugin_%s", arch);
 
-        will_return(__wrap_dlopen, 0xDEADBEEF);
-        will_return(__wrap_dlsym, NULL);
-	expect_value(__wrap_dlopen, filename, plugin_path);
-	expect_string(__wrap_dlsym, symbol, plugin_name);
+    will_return(__wrap_dlopen, 0xDEADBEEF);
+    will_return(__wrap_dlsym, NULL);
+    expect_value(__wrap_dlopen, filename, plugin_path);
+    expect_string(__wrap_dlsym, symbol, plugin_name);
 
-	pscom_plugin_t *plugin = load_plugin_lib(plugin_path, arch);
+    pscom_plugin_t *plugin = load_plugin_lib(plugin_path, arch);
 
-	assert_false(plugin);
+    assert_false(plugin);
 }
 
 
@@ -123,12 +123,12 @@ void test_load_plugin_lib_invalid_name(void **state)
  */
 void test_load_plugin_lib_invalid_path(void **state)
 {
-	char plugin_path[] = "/invalid/path";
+    char plugin_path[] = "/invalid/path";
 
-	expect_value(__wrap_dlopen, filename, plugin_path);
-        will_return(__wrap_dlopen, NULL);
+    expect_value(__wrap_dlopen, filename, plugin_path);
+    will_return(__wrap_dlopen, NULL);
 
-	pscom_plugin_t *plugin = load_plugin_lib(plugin_path, "myarch");
+    pscom_plugin_t *plugin = load_plugin_lib(plugin_path, "myarch");
 
-	assert_false(plugin);
+    assert_false(plugin);
 }

@@ -19,14 +19,14 @@
 #include "pscom_types.h"
 
 typedef struct psgm_conn {
-	struct psgm_con_info	*gmcon;
-	unsigned		reading : 1;
+    struct psgm_con_info *gmcon;
+    unsigned reading : 1;
 } psgm_conn_t;
 
 
 typedef struct psgm_sock {
-	int			readers;
-	pscom_poll_t		poll_read;
+    int readers;
+    pscom_poll_t poll_read;
 } psgm_sock_t;
 
 #endif /* _PSPORT_GM_H_ */

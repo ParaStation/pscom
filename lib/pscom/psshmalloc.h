@@ -13,12 +13,12 @@
 #define _SHMMALLOC_H_
 
 struct Psshm {
-	void *base; /* base pointer of shared mem segment */
-	void *end;  /* = base + size */
-	void *tail;
-	size_t size;
-	int shmid; /* shmid of shared mem segment at base */
-	const char *msg; /* Message if initialization failed */
+    void *base; /* base pointer of shared mem segment */
+    void *end;  /* = base + size */
+    void *tail;
+    size_t size;
+    int shmid;       /* shmid of shared mem segment at base */
+    const char *msg; /* Message if initialization failed */
 };
 
 /* Get the Psshm of the shared memory. */
@@ -26,18 +26,16 @@ extern struct Psshm psshm_info;
 
 
 /* Check if the Pointer ptr is part of the shared memory */
-static inline
-int is_psshm_ptr(void *ptr)
+static inline int is_psshm_ptr(void *ptr)
 {
-	return (ptr < psshm_info.end) && (psshm_info.base <= ptr);
+    return (ptr < psshm_info.end) && (psshm_info.base <= ptr);
 }
 
 
 /* If psshm is enabled? */
-static inline
-int is_psshm_enabled()
+static inline int is_psshm_enabled()
 {
-	return !!psshm_info.base;
+    return !!psshm_info.base;
 }
 
 

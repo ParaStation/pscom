@@ -24,11 +24,11 @@ size_t pscom_req_forward(pscom_req_t *req, size_t len);
 /* append data on req. used for partial send requests with pending data. */
 void pscom_req_append(pscom_req_t *req, char *buf, size_t len);
 
-//#define USE_PSCOM_MALLOC 1
+// #define USE_PSCOM_MALLOC 1
 
 #if USE_PSCOM_MALLOC
 
-#define PSCOM_MALLOC_SAFE_SIZE	0
+#define PSCOM_MALLOC_SAFE_SIZE 0
 
 void *pscom_malloc(size_t size);
 void pscom_free(void *ptr);
@@ -37,8 +37,10 @@ void pscom_mverify(void *ptr);
 #else
 
 #define pscom_malloc malloc
-#define pscom_free free
-#define pscom_mverify(x) do {} while (0)
+#define pscom_free   free
+#define pscom_mverify(x)                                                       \
+    do {                                                                       \
+    } while (0)
 
 #endif
 

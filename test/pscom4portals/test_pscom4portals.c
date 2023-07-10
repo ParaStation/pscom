@@ -361,8 +361,8 @@ void test_portals_arch_sock_is_found_after_initialization(void **state)
     disable_malloc_mock();
 
     /* query get_arch_sock */
-    pscom_arch_sock_t *queried_arch_sock =
-        get_arch_sock(dummy_sock, PSCOM_CON_TYPE_PORTALS);
+    pscom_arch_sock_t *queried_arch_sock = get_arch_sock(dummy_sock,
+                                                         PSCOM_CON_TYPE_PORTALS);
     assert_true(arch_sock == queried_arch_sock);
 
     /* destroy the portals socket */
@@ -591,8 +591,8 @@ void test_portals_read_on_event_put(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
     will_return(__wrap_PtlEQPoll, sizeof(buf));   /* mlength */
     will_return(__wrap_PtlEQPoll, sizeof(buf));   /* rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep->pti[PSPTL_PROT_EAGER]);          /* eager PT index */
+    will_return(__wrap_PtlEQPoll, ep->pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                               */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
 
@@ -662,8 +662,8 @@ void test_portals_read_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);       /* no failure */
     will_return(__wrap_PtlEQPoll, strlen(buf));     /* mlength */
     will_return(__wrap_PtlEQPoll, strlen(buf));     /* rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep->pti[PSPTL_PROT_EAGER]);          /* eager PT index */
+    will_return(__wrap_PtlEQPoll, ep->pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                               */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
     pscom_poll(&pscom.poll_read);
@@ -682,10 +682,10 @@ void test_portals_read_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, 0);              /* expected sequence ID */
     will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT);  /* issue a PUT event */
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);      /* no failure */
-    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* mlength */
-    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep->pti[PSPTL_PROT_EAGER]);          /* eager PT index */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net));        /* mlength */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net));        /* rlength */
+    will_return(__wrap_PtlEQPoll, ep->pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                               */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
 
@@ -756,8 +756,8 @@ void test_portals_read_three_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
     will_return(__wrap_PtlEQPoll, strlen(buf_one) - buf_one_len); /* mlength */
     will_return(__wrap_PtlEQPoll, strlen(buf_one) - buf_one_len); /* rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep->pti[PSPTL_PROT_EAGER]);          /* eager PT index */
+    will_return(__wrap_PtlEQPoll, ep->pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                               */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
     pscom_poll(&pscom.poll_read);
@@ -773,8 +773,8 @@ void test_portals_read_three_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);     /* no failure */
     will_return(__wrap_PtlEQPoll, buf_one_len);   /* mlength */
     will_return(__wrap_PtlEQPoll, buf_one_len);   /* rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep->pti[PSPTL_PROT_EAGER]);          /* eager PT index */
+    will_return(__wrap_PtlEQPoll, ep->pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                               */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
     pscom_poll(&pscom.poll_read);
@@ -793,10 +793,10 @@ void test_portals_read_three_out_of_order_receive(void **state)
     will_return(__wrap_PtlEQPoll, 0);              /* expected sequence ID */
     will_return(__wrap_PtlEQPoll, PTL_EVENT_PUT);  /* issue a PUT event */
     will_return(__wrap_PtlEQPoll, PTL_NI_OK);      /* no failure */
-    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* mlength */
-    will_return(__wrap_PtlEQPoll, sizeof(header_net)); /* rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep->pti[PSPTL_PROT_EAGER]);          /* eager PT index */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net));        /* mlength */
+    will_return(__wrap_PtlEQPoll, sizeof(header_net));        /* rlength */
+    will_return(__wrap_PtlEQPoll, ep->pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                               */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
 
@@ -1125,8 +1125,8 @@ void test_portals_handle_message_drop(void **state)
     will_return(__wrap_PtlEQPoll, PTL_NI_DROPPED); /* message dropped by recv */
     will_return(__wrap_PtlEQPoll, strlen(buf));    /* arbitrary mlength */
     will_return(__wrap_PtlEQPoll, strlen(buf));    /* arbitrary rlength */
-    will_return(__wrap_PtlEQPoll,
-                ep.pti[PSPTL_PROT_EAGER]);           /* eager PT index */
+    will_return(__wrap_PtlEQPoll, ep.pti[PSPTL_PROT_EAGER]); /* eager PT index
+                                                              */
     will_return(__wrap_PtlEQPoll, PSPTL_PROT_EAGER); /* eager EQ index */
     will_return(__wrap_PtlEQPoll, PTL_OK);           /* event queue not empty */
 
