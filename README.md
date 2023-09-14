@@ -1,4 +1,21 @@
 # ParaStation Communication Library
+* [Installation](#installation)
+    * [Prerequisites](#prerequisites)
+        * [Required](#required)
+        * [Optional](#optional)
+            * [Hardware-dependent](#hardware-dependent)
+            * [Other](#other)
+    * [Build configuration](#build-configuration)
+        * [Install prefix / location](#install-prefix-location)
+        * [Build type](#build-type)
+        * [Plugins](#plugins)
+        * [CUDA awareness](#cuda-awareness)
+        * [Unit tests](#unit-tests)
+        * [Code coverage analysis](#code-coverage-analysis)
+    * [Build & Install](#build-install)
+    * [Environment variables](#environment-variables)
+    * [Contributing](#contributing)
+    * [More documentation](#more-documentation)
 
 The ParaStation Communication Library (`pscom` for short) is an open-source low-level communication library, especially designed for the employment in HPC systems.
 
