@@ -21,7 +21,7 @@
 #include "pscom_utest.h"
 
 #include "pscom_ucp.h"
-//#include "pscom_ucp.c" /* we need to access some static functions */
+// #include "pscom_ucp.c" /* we need to access some static functions */
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Some forward declarations
@@ -41,15 +41,15 @@ void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit);
  */
 void test_ucp_is_initialized_within_plugin(void **state)
 {
-	(void) state;
+    (void)state;
 
-        /* enable UCP fast initialization */
-	pscom.env.ucp_fastinit = 1;
+    /* enable UCP fast initialization */
+    pscom.env.ucp_fastinit = 1;
 
-	expect_function_calls(__wrap_ucp_init_version, 1);
+    expect_function_calls(__wrap_ucp_init_version, 1);
 
-        /* initialize the pscom4ucp plugin */
-        pscom_plugin_ucp.init();
+    /* initialize the pscom4ucp plugin */
+    pscom_plugin_ucp.init();
 }
 
 
@@ -62,22 +62,22 @@ void test_ucp_is_initialized_within_plugin(void **state)
  */
 void test_ucp_disable_fast_initialization(void **state)
 {
-	(void) state;
+    (void)state;
 
-        /* save original value of PSP_UCP_FASTINIT */
-        char *orig_fastinit = getenv("PSP_UCP_FASTINIT");
+    /* save original value of PSP_UCP_FASTINIT */
+    char *orig_fastinit = getenv("PSP_UCP_FASTINIT");
 
-        pscom_env_ucp_fastinit_set(0);
+    pscom_env_ucp_fastinit_set(0);
 
-        /* initialize the pscom4ucp plugin */
-        pscom_plugin_ucp.init();
+    /* initialize the pscom4ucp plugin */
+    pscom_plugin_ucp.init();
 
-        /* restore original value of PSP_UCP_FASTINIT */
-        if (orig_fastinit) {
-                setenv("PSP_UCP_FASTINIT", orig_fastinit, 1);
-        } else {
-                unsetenv("PSP_UCP_FASTINIT");
-        }
+    /* restore original value of PSP_UCP_FASTINIT */
+    if (orig_fastinit) {
+        setenv("PSP_UCP_FASTINIT", orig_fastinit, 1);
+    } else {
+        unsetenv("PSP_UCP_FASTINIT");
+    }
 }
 
 
@@ -90,20 +90,20 @@ void test_ucp_disable_fast_initialization(void **state)
  */
 void test_ucp_disable_fast_initialization_via_environment(void **state)
 {
-	(void) state;
+    (void)state;
 
-        /* save original value of PSP_UCP_FASTINIT */
-        char *orig_fastinit = getenv("PSP_UCP_FASTINIT");
+    /* save original value of PSP_UCP_FASTINIT */
+    char *orig_fastinit = getenv("PSP_UCP_FASTINIT");
 
-        setenv("PSP_UCP_FASTINIT", "0", 1);
+    setenv("PSP_UCP_FASTINIT", "0", 1);
 
-        /* initialize the pscom4ucp plugin */
-        pscom_plugin_ucp.init();
+    /* initialize the pscom4ucp plugin */
+    pscom_plugin_ucp.init();
 
-        /* restore original value of PSP_UCP_FASTINIT */
-        if (orig_fastinit) {
-                setenv("PSP_UCP_FASTINIT", orig_fastinit, 1);
-        } else {
-                unsetenv("PSP_UCP_FASTINIT");
-        }
+    /* restore original value of PSP_UCP_FASTINIT */
+    if (orig_fastinit) {
+        setenv("PSP_UCP_FASTINIT", orig_fastinit, 1);
+    } else {
+        unsetenv("PSP_UCP_FASTINIT");
+    }
 }

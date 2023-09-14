@@ -296,8 +296,7 @@ int psptl_progress(void *ep_priv);
  *         EAGAIN There are no free send buffers left
  *         EPIPE  An error happened on the lower Portals4 layer
  */
-ssize_t
-psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len);
+ssize_t psptl_sendv(psptl_con_info_t *con_info, struct iovec iov[2], size_t len);
 
 
 /**

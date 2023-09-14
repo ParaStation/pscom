@@ -37,11 +37,11 @@
  */
 void test_env_table_parse_empty_table(void **state)
 {
-	pscom_env_table_entry_t env_table[] = {{0}};
+    pscom_env_table_entry_t env_table[] = {{0}};
 
-	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+    pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 
-	assert_true(ret == PSCOM_SUCCESS);
+    assert_true(ret == PSCOM_SUCCESS);
 }
 
 
@@ -54,9 +54,9 @@ void test_env_table_parse_empty_table(void **state)
  */
 void test_env_table_parse_null_table(void **state)
 {
-	pscom_err_t ret = pscom_env_table_parse(NULL, NULL, NULL, NULL);
+    pscom_err_t ret = pscom_env_table_parse(NULL, NULL, NULL, NULL);
 
-	assert_true(ret == PSCOM_ERR_INVALID);
+    assert_true(ret == PSCOM_ERR_INVALID);
 }
 
 /**
@@ -68,16 +68,15 @@ void test_env_table_parse_null_table(void **state)
  */
 void test_env_table_parse_null_var(void **state)
 {
-	pscom_env_table_entry_t env_table[] = {
-		{"TEST_VAR", "3", NULL, NULL, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR", "3", NULL, NULL, 0, PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+    pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 
-	assert_true(ret == PSCOM_ERR_INVALID);
+    assert_true(ret == PSCOM_ERR_INVALID);
 }
 
 
@@ -90,22 +89,20 @@ void test_env_table_parse_null_var(void **state)
  */
 void test_env_table_parse_null_parser(void **state)
 {
-	char *test_var_one;
-	int test_var_two = 0;
+    char *test_var_one;
+    int test_var_two = 0;
 
-	pscom_env_table_entry_t env_table[] = {
-		{"TEST_VAR_ONE", "string", NULL, &test_var_one, 0,
-		 PSCOM_ENV_PARSER_STR},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR_ONE", "string", NULL, &test_var_one, 0, PSCOM_ENV_PARSER_STR},
 
-		{"TEST_VAR_TWO", "-42", NULL, &test_var_two, 0,
-		 {NULL, NULL}},
+        {"TEST_VAR_TWO", "-42", NULL, &test_var_two, 0, {NULL, NULL}},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+    pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
 
-	assert_true(ret == PSCOM_ERR_INVALID);
+    assert_true(ret == PSCOM_ERR_INVALID);
 }
 
 
@@ -119,20 +116,18 @@ void test_env_table_parse_null_parser(void **state)
  */
 void test_env_table_parse_single_uint_default(void **state)
 {
-	unsigned int test_var = 0;
+    unsigned int test_var = 0;
 
-	pscom_env_table_entry_t env_table_uint[] = {
-		{"TEST_VAR", "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table_uint[] = {
+        {"TEST_VAR", "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 3);
+    assert_int_equal(test_var, 3);
 }
 
 
@@ -146,24 +141,22 @@ void test_env_table_parse_single_uint_default(void **state)
  */
 void test_env_table_parse_single_uint(void **state)
 {
-	unsigned int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    unsigned int test_var = 0;
+    const char *env_var   = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "42", 1);
+    /* set the environment variable */
+    setenv(env_var, "42", 1);
 
-	pscom_env_table_entry_t env_table_uint[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table_uint[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 42);
+    assert_int_equal(test_var, 42);
 }
 
 
@@ -177,21 +170,20 @@ void test_env_table_parse_single_uint(void **state)
  */
 void test_env_table_parse_single_uint_inf(void **state)
 {
-	unsigned int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    unsigned int test_var = 0;
+    const char *env_var   = ((env_var_backup_t *)(*state))->name;
 
-	pscom_env_table_entry_t env_table_uint[] = {
-		{env_var, PSCOM_ENV_UINT_INF_STR, NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table_uint[] = {
+        {env_var, PSCOM_ENV_UINT_INF_STR, NULL, &test_var, 0,
+         PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, PSCOM_ENV_UINT_INF);
+    assert_int_equal(test_var, PSCOM_ENV_UINT_INF);
 }
 
 
@@ -205,21 +197,20 @@ void test_env_table_parse_single_uint_inf(void **state)
  */
 void test_env_table_parse_single_uint_auto(void **state)
 {
-	unsigned int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    unsigned int test_var = 0;
+    const char *env_var   = ((env_var_backup_t *)(*state))->name;
 
-	pscom_env_table_entry_t env_table_uint[] = {
-		{env_var, PSCOM_ENV_UINT_AUTO_STR, NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table_uint[] = {
+        {env_var, PSCOM_ENV_UINT_AUTO_STR, NULL, &test_var, 0,
+         PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, PSCOM_ENV_UINT_AUTO);
+    assert_int_equal(test_var, PSCOM_ENV_UINT_AUTO);
 }
 
 
@@ -233,24 +224,22 @@ void test_env_table_parse_single_uint_auto(void **state)
  */
 void test_env_table_parse_single_uint_typo(void **state)
 {
-	unsigned int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    unsigned int test_var = 0;
+    const char *env_var   = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "infi", 1);
+    /* set the environment variable */
+    setenv(env_var, "infi", 1);
 
-	pscom_env_table_entry_t env_table_uint[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table_uint[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_ERR_INVALID);
+    pscom_err_t ret = pscom_env_table_parse(env_table_uint, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_ERR_INVALID);
 
-	assert_int_equal(test_var, 3);
+    assert_int_equal(test_var, 3);
 }
 
 
@@ -264,21 +253,19 @@ void test_env_table_parse_single_uint_typo(void **state)
  */
 void test_env_table_parse_single_int_default(void **state)
 {
-	int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    int test_var        = 0;
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	pscom_env_table_entry_t env_table_int[] = {
-		{env_var, "-1", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table_int[] = {
+        {env_var, "-1", NULL, &test_var, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, -1);
+    assert_int_equal(test_var, -1);
 }
 
 
@@ -292,24 +279,22 @@ void test_env_table_parse_single_int_default(void **state)
  */
 void test_env_table_parse_single_int(void **state)
 {
-	int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    int test_var        = 0;
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "13", 1);
+    /* set the environment variable */
+    setenv(env_var, "13", 1);
 
-	pscom_env_table_entry_t env_table_int[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table_int[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 13);
+    assert_int_equal(test_var, 13);
 }
 
 
@@ -323,26 +308,23 @@ void test_env_table_parse_single_int(void **state)
  */
 void test_env_table_parse_single_int_empty(void **state)
 {
-	int test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    int test_var        = 0;
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "", 1);
+    /* set the environment variable */
+    setenv(env_var, "", 1);
 
-	pscom_env_table_entry_t env_table_int[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table_int[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_ERR_INVALID);
+    pscom_err_t ret = pscom_env_table_parse(env_table_int, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_ERR_INVALID);
 
-	assert_int_equal(test_var, 3);
+    assert_int_equal(test_var, 3);
 }
-
 
 
 /**
@@ -355,20 +337,18 @@ void test_env_table_parse_single_int_empty(void **state)
  */
 void test_env_table_parse_single_size_t_default(void **state)
 {
-	size_t test_var = 0;
+    size_t test_var = 0;
 
-	pscom_env_table_entry_t env_table_size_t[] = {
-		{"TEST_VAR", "8589934592", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_SIZE_T},
+    pscom_env_table_entry_t env_table_size_t[] = {
+        {"TEST_VAR", "8589934592", NULL, &test_var, 0, PSCOM_ENV_PARSER_SIZE_T},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 8589934592);
+    assert_int_equal(test_var, 8589934592);
 }
 
 
@@ -382,24 +362,22 @@ void test_env_table_parse_single_size_t_default(void **state)
  */
 void test_env_table_parse_single_size_t(void **state)
 {
-	size_t test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    size_t test_var     = 0;
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "8589934592", 1);
+    /* set the environment variable */
+    setenv(env_var, "8589934592", 1);
 
-	pscom_env_table_entry_t env_table_size_t[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_SIZE_T},
+    pscom_env_table_entry_t env_table_size_t[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_SIZE_T},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 8589934592);
+    assert_int_equal(test_var, 8589934592);
 }
 
 
@@ -413,26 +391,23 @@ void test_env_table_parse_single_size_t(void **state)
  */
 void test_env_table_parse_single_size_t_typo(void **state)
 {
-	size_t test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    size_t test_var     = 0;
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "I100B", 1);
+    /* set the environment variable */
+    setenv(env_var, "I100B", 1);
 
-	pscom_env_table_entry_t env_table_size_t[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_SIZE_T},
+    pscom_env_table_entry_t env_table_size_t[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_SIZE_T},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_ERR_INVALID);
+    pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_ERR_INVALID);
 
-	assert_int_equal(test_var, 3);
+    assert_int_equal(test_var, 3);
 }
-
 
 
 /**
@@ -445,20 +420,18 @@ void test_env_table_parse_single_size_t_typo(void **state)
  */
 void test_env_table_parse_single_str_default(void **state)
 {
-	char *test_var = "";
+    char *test_var = "";
 
-	pscom_env_table_entry_t env_table_str[] = {
-		{"TEST_VAR", "testval", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_STR},
+    pscom_env_table_entry_t env_table_str[] = {
+        {"TEST_VAR", "testval", NULL, &test_var, 0, PSCOM_ENV_PARSER_STR},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(test_var, "testval");
+    assert_string_equal(test_var, "testval");
 }
 
 
@@ -472,24 +445,22 @@ void test_env_table_parse_single_str_default(void **state)
  */
 void test_env_table_parse_single_str(void **state)
 {
-	char *test_var = "Hello";
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    char *test_var      = "Hello";
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "World", 1);
+    /* set the environment variable */
+    setenv(env_var, "World", 1);
 
-	pscom_env_table_entry_t env_table_str[] = {
-		{env_var, "dummy text", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_STR},
+    pscom_env_table_entry_t env_table_str[] = {
+        {env_var, "dummy text", NULL, &test_var, 0, PSCOM_ENV_PARSER_STR},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_str, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(test_var, "World");
+    assert_string_equal(test_var, "World");
 }
 
 
@@ -503,20 +474,19 @@ void test_env_table_parse_single_str(void **state)
  */
 void test_env_table_parse_single_dir_default(void **state)
 {
-	char *test_var = "";
+    char *test_var = "";
 
-	pscom_env_table_entry_t env_table_dir[] = {
-		{"TEST_VAR", "/path/to/testdir/", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_DIR},
+    pscom_env_table_entry_t env_table_dir[] = {
+        {"TEST_VAR", "/path/to/testdir/", NULL, &test_var, 0,
+         PSCOM_ENV_PARSER_DIR},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_dir, NULL, NULL,
-						NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_dir, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(test_var, "/path/to/testdir/");
+    assert_string_equal(test_var, "/path/to/testdir/");
 }
 
 
@@ -531,24 +501,22 @@ void test_env_table_parse_single_dir_default(void **state)
  */
 void test_env_table_parse_single_dir(void **state)
 {
-	char *test_var = "/path/to/hello";
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    char *test_var      = "/path/to/hello";
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "/path/to/world", 1);
+    /* set the environment variable */
+    setenv(env_var, "/path/to/world", 1);
 
-	pscom_env_table_entry_t env_table_dir[] = {
-		{env_var, "dummy text", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_DIR},
+    pscom_env_table_entry_t env_table_dir[] = {
+        {env_var, "dummy text", NULL, &test_var, 0, PSCOM_ENV_PARSER_DIR},
 
-		{0},
-	};
+        {0},
+    };
 
-        pscom_err_t ret =
-            pscom_env_table_parse(env_table_dir, NULL, NULL, NULL);
-        assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_dir, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(test_var, "/path/to/world/");
+    assert_string_equal(test_var, "/path/to/world/");
 }
 
 
@@ -562,38 +530,40 @@ void test_env_table_parse_single_dir(void **state)
  */
 void test_env_table_parse_multi_entry(void **state)
 {
-	int test_var_int = -1;
-	char *test_var_str = "oldstring";
-	unsigned int test_var_uint = 1001;
-	env_var_backup_t *env_var_backup = (env_var_backup_t*)(*state);
+    int test_var_int                 = -1;
+    char *test_var_str               = "oldstring";
+    unsigned int test_var_uint       = 1001;
+    env_var_backup_t *env_var_backup = (env_var_backup_t *)(*state);
 
-	/* set the second environment variable */
-	setenv(env_var_backup[2].name, "World", 1);
+    /* set the second environment variable */
+    setenv(env_var_backup[2].name, "World", 1);
 
-	pscom_env_table_entry_t env_table [] = {
-		{env_var_backup[0].name, "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {env_var_backup[0].name, "-42", NULL, &test_var_int, 0,
+         PSCOM_ENV_PARSER_INT},
 
-		{env_var_backup[1].name, "13", NULL, &test_var_uint, 0,
-		 PSCOM_ENV_PARSER_UINT},
+        {env_var_backup[1].name, "13", NULL, &test_var_uint, 0,
+         PSCOM_ENV_PARSER_UINT},
 
-		{env_var_backup[2].name, "wrong string", NULL, &test_var_str, 0,
-		 PSCOM_ENV_PARSER_STR},
+        {env_var_backup[2].name, "wrong string", NULL, &test_var_str, 0,
+         PSCOM_ENV_PARSER_STR},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var_int, -42);
-	assert_int_equal(test_var_uint, 13);
-	assert_string_equal(test_var_str, "World");
+    assert_int_equal(test_var_int, -42);
+    assert_int_equal(test_var_uint, 13);
+    assert_string_equal(test_var_str, "World");
 }
 
 
-int parser_set_not_implemented(void *env_entry,
-			       const char *config_val) { return PSCOM_NOT_IMPLEMENTED; }
+int parser_set_not_implemented(void *env_entry, const char *config_val)
+{
+    return PSCOM_NOT_IMPLEMENTED;
+}
 
 /**
  * @brief Test pscom_env_table_parse() for a multi entry table with wrong entry
@@ -607,32 +577,36 @@ int parser_set_not_implemented(void *env_entry,
  */
 void test_env_table_parse_multi_entry_failing_entry(void **state)
 {
-	int test_var_int = -1;
-	char *test_var_str = "oldstring";
-	unsigned int test_var_uint = 1001;
-	env_var_backup_t *env_var_backup = (env_var_backup_t*)(*state);
+    int test_var_int                 = -1;
+    char *test_var_str               = "oldstring";
+    unsigned int test_var_uint       = 1001;
+    env_var_backup_t *env_var_backup = (env_var_backup_t *)(*state);
 
-	/* set the second environment variable */
-	setenv(env_var_backup[2].name, "World", 1);
+    /* set the second environment variable */
+    setenv(env_var_backup[2].name, "World", 1);
 
-	pscom_env_table_entry_t env_table [] = {
-		{env_var_backup[0].name, "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {env_var_backup[0].name, "-42", NULL, &test_var_int, 0,
+         PSCOM_ENV_PARSER_INT},
 
-		{env_var_backup[1].name, "13", NULL, &test_var_uint, 0,
-		 {&parser_set_not_implemented, NULL}},
+        {env_var_backup[1].name,
+         "13",
+         NULL,
+         &test_var_uint,
+         0,
+         {&parser_set_not_implemented, NULL}},
 
-		{env_var_backup[2].name, "wrong string", NULL, &test_var_str, 0,
-		 PSCOM_ENV_PARSER_STR},
+        {env_var_backup[2].name, "wrong string", NULL, &test_var_str, 0,
+         PSCOM_ENV_PARSER_STR},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
-	assert_true(ret == PSCOM_ERR_INVALID);
+    pscom_err_t ret = pscom_env_table_parse(env_table, NULL, NULL, NULL);
+    assert_true(ret == PSCOM_ERR_INVALID);
 
-	assert_int_equal(test_var_int, -42);
-	assert_string_equal(test_var_str, "World");
+    assert_int_equal(test_var_int, -42);
+    assert_string_equal(test_var_str, "World");
 }
 
 
@@ -646,24 +620,23 @@ void test_env_table_parse_multi_entry_failing_entry(void **state)
  */
 void test_env_table_parse_single_size_t_parent_set(void **state)
 {
-	size_t test_var = 0;
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
+    size_t test_var     = 0;
+    const char *env_var = ((env_var_backup_t *)(*state))->name;
 
-	/* set the environment variable */
-	setenv(env_var, "8589934592", 1);
+    /* set the environment variable */
+    setenv(env_var, "8589934592", 1);
 
-	pscom_env_table_entry_t env_table_size_t[] = {
-		{env_var, "3", NULL, &test_var, 1,
-		 PSCOM_ENV_PARSER_SIZE_T},
+    pscom_env_table_entry_t env_table_size_t[] = {
+        {env_var, "3", NULL, &test_var, 1, PSCOM_ENV_PARSER_SIZE_T},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
-						"SUBTABLE_", NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL, "SUBTABLE_",
+                                            NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 8589934592);
+    assert_int_equal(test_var, 8589934592);
 }
 
 
@@ -678,30 +651,28 @@ void test_env_table_parse_single_size_t_parent_set(void **state)
  */
 void test_env_table_parse_single_size_t_parent_set_and_env_set(void **state)
 {
-	size_t test_var = 0;
-	env_var_backup_t *env_var = (env_var_backup_t*)(*state);
+    size_t test_var           = 0;
+    env_var_backup_t *env_var = (env_var_backup_t *)(*state);
 
-	/* set the parent environment variable */
-	setenv(env_var->name, "8589934592", 1);
+    /* set the parent environment variable */
+    setenv(env_var->name, "8589934592", 1);
 
-	/* set the actual environment variable */
-	char envvar[128];
-	snprintf(envvar, sizeof(envvar) - 1, "%s%s", env_var->prefix,
-		 env_var->name);
-	setenv(envvar, "10000000000", 1);
+    /* set the actual environment variable */
+    char envvar[128];
+    snprintf(envvar, sizeof(envvar) - 1, "%s%s", env_var->prefix, env_var->name);
+    setenv(envvar, "10000000000", 1);
 
-	pscom_env_table_entry_t env_table_size_t[] = {
-		{env_var->name, "3", NULL, &test_var, 1,
-		 PSCOM_ENV_PARSER_SIZE_T},
+    pscom_env_table_entry_t env_table_size_t[] = {
+        {env_var->name, "3", NULL, &test_var, 1, PSCOM_ENV_PARSER_SIZE_T},
 
-		{0},
-	};
+        {0},
+    };
 
-	pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
-						env_var->prefix, NULL);
-	assert_true(ret == PSCOM_SUCCESS);
+    pscom_err_t ret = pscom_env_table_parse(env_table_size_t, NULL,
+                                            env_var->prefix, NULL);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_int_equal(test_var, 10000000000);
+    assert_int_equal(test_var, 10000000000);
 }
 
 
@@ -717,37 +688,37 @@ void test_env_table_parse_single_size_t_parent_set_and_env_set(void **state)
  */
 void test_env_table_register_simple(void **state)
 {
-	pscom_err_t ret;
-	int test_var_int = 42;
-	const char *table_name = "Dummy Table";
-	const char *table_prefix = "TMP_";
+    pscom_err_t ret;
+    int test_var_int         = 42;
+    const char *table_name   = "Dummy Table";
+    const char *table_prefix = "TMP_";
 
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_entry_t env_table [] = {
-		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR", "-42", NULL, &test_var_int, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	ret = pscom_env_table_register(table_name, table_prefix, env_table);
-	assert_true(ret == PSCOM_SUCCESS);
+    ret = pscom_env_table_register(table_name, table_prefix, env_table);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	/* there should be exactly one list element */
-	assert_int_equal(list_count(&pscom.env_config), 1);
+    /* there should be exactly one list element */
+    assert_int_equal(list_count(&pscom.env_config), 1);
 
-	/* the list element should match our table */
-	struct list_head *pos;
-	list_for_each(pos, &pscom.env_config) {
-		pscom_env_list_entry_t *list_entry =
-		    list_entry(pos, pscom_env_list_entry_t, next);
+    /* the list element should match our table */
+    struct list_head *pos;
+    list_for_each (pos, &pscom.env_config) {
+        pscom_env_list_entry_t *list_entry = list_entry(pos,
+                                                        pscom_env_list_entry_t,
+                                                        next);
 
-		assert_string_equal(list_entry->name, table_name);
-		assert_string_equal(list_entry->prefix, table_prefix);
-		assert_ptr_equal(list_entry->table, &env_table);
-	}
+        assert_string_equal(list_entry->name, table_name);
+        assert_string_equal(list_entry->prefix, table_prefix);
+        assert_ptr_equal(list_entry->table, &env_table);
+    }
 }
 
 
@@ -761,31 +732,30 @@ void test_env_table_register_simple(void **state)
  */
 void test_env_table_register_no_mem(void **state)
 {
-	pscom_err_t ret;
-	int test_var_int = 42;
-	const char *table_name = "Dummy Table";
-	const char *table_prefix = "TMP_";
+    pscom_err_t ret;
+    int test_var_int         = 42;
+    const char *table_name   = "Dummy Table";
+    const char *table_prefix = "TMP_";
 
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_entry_t env_table [] = {
-		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR", "-42", NULL, &test_var_int, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	enable_malloc_mock(NULL);
+    enable_malloc_mock(NULL);
 
-	ret = pscom_env_table_register(table_name, table_prefix, env_table);
-	assert_true(ret == PSCOM_ERR_STDERROR);
-	assert_int_equal(errno, ENOMEM);
+    ret = pscom_env_table_register(table_name, table_prefix, env_table);
+    assert_true(ret == PSCOM_ERR_STDERROR);
+    assert_int_equal(errno, ENOMEM);
 
-	/* there should not be any list element */
-	assert_int_equal(list_count(&pscom.env_config), 0);
+    /* there should not be any list element */
+    assert_int_equal(list_count(&pscom.env_config), 0);
 
-	disable_malloc_mock();
+    disable_malloc_mock();
 }
 
 
@@ -801,21 +771,18 @@ void test_env_table_register_no_mem(void **state)
  */
 void test_env_parser_get_int(void **state)
 {
-	int test_var = -42;
+    int test_var = -42;
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"-1",
-		&test_var, 0, PSCOM_ENV_PARSER_INT
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "-1",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_INT};
 
-	char val_str[16] = "wrong string";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[16] = "wrong string";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "-42");
+    assert_string_equal(val_str, "-42");
 }
 
 
@@ -828,21 +795,18 @@ void test_env_parser_get_int(void **state)
  */
 void test_env_parser_get_uint(void **state)
 {
-	unsigned int test_var = 42;
+    unsigned int test_var = 42;
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"13",
-		&test_var, 0, PSCOM_ENV_PARSER_UINT
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "13",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_UINT};
 
-	char val_str[16] = "wrong string";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[16] = "wrong string";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "42");
+    assert_string_equal(val_str, "42");
 }
 
 
@@ -856,21 +820,18 @@ void test_env_parser_get_uint(void **state)
  */
 void test_env_parser_get_uint_inf(void **state)
 {
-	unsigned int test_var = PSCOM_ENV_UINT_INF;
+    unsigned int test_var = PSCOM_ENV_UINT_INF;
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"13",
-		&test_var, 0, PSCOM_ENV_PARSER_UINT
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "13",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_UINT};
 
-	char val_str[16] = "wrong string";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[16] = "wrong string";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "inf");
+    assert_string_equal(val_str, "inf");
 }
 
 
@@ -884,21 +845,18 @@ void test_env_parser_get_uint_inf(void **state)
  */
 void test_env_parser_get_uint_auto(void **state)
 {
-	unsigned int test_var = PSCOM_ENV_UINT_AUTO;
+    unsigned int test_var = PSCOM_ENV_UINT_AUTO;
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"13",
-		&test_var, 0, PSCOM_ENV_PARSER_UINT
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "13",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_UINT};
 
-	char val_str[16] = "wrong string";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[16] = "wrong string";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "auto");
+    assert_string_equal(val_str, "auto");
 }
 
 
@@ -911,21 +869,18 @@ void test_env_parser_get_uint_auto(void **state)
  */
 void test_env_parser_get_size_t(void **state)
 {
-	size_t test_var = 4294967296;
+    size_t test_var = 4294967296;
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"13",
-		&test_var, 0, PSCOM_ENV_PARSER_SIZE_T
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "13",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_SIZE_T};
 
-	char val_str[32] = "wrong string";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[32] = "wrong string";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "4294967296");
+    assert_string_equal(val_str, "4294967296");
 }
 
 
@@ -938,21 +893,18 @@ void test_env_parser_get_size_t(void **state)
  */
 void test_env_parser_get_str(void **state)
 {
-	char *test_var = "Correct String";
+    char *test_var = "Correct String";
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"13",
-		&test_var, 0, PSCOM_ENV_PARSER_STR
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "13",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_STR};
 
-	char val_str[32] = "wrong string";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[32] = "wrong string";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "Correct String");
+    assert_string_equal(val_str, "Correct String");
 }
 
 
@@ -965,21 +917,18 @@ void test_env_parser_get_str(void **state)
  */
 void test_env_parser_get_dir(void **state)
 {
-	char *test_var = "/path/to/correct/dir/";
+    char *test_var = "/path/to/correct/dir/";
 
-	pscom_env_table_entry_t env_entry = {
-		"TEST_VAR",
-		"dummy text",
-		"13",
-		&test_var, 0, PSCOM_ENV_PARSER_DIR
-	};
+    pscom_env_table_entry_t env_entry = {"TEST_VAR", "dummy text",
+                                         "13",       &test_var,
+                                         0,          PSCOM_ENV_PARSER_DIR};
 
-	char val_str[64] = "/wrong/dir/";
-	pscom_err_t ret = env_entry.parser.get((&env_entry)->config_var,
-					       val_str, sizeof(val_str));
-	assert_true(ret == PSCOM_SUCCESS);
+    char val_str[64] = "/wrong/dir/";
+    pscom_err_t ret  = env_entry.parser.get((&env_entry)->config_var, val_str,
+                                            sizeof(val_str));
+    assert_true(ret == PSCOM_SUCCESS);
 
-	assert_string_equal(val_str, "/path/to/correct/dir/");
+    assert_string_equal(val_str, "/path/to/correct/dir/");
 }
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_env_table_register_and_parse()
@@ -994,35 +943,34 @@ void test_env_parser_get_dir(void **state)
  */
 void test_env_table_register_and_parse_no_mem(void **state)
 {
-	pscom_err_t ret;
-	int test_var_int = 42;
-	const char *table_name = "Dummy Table";
-	const char *table_prefix = "TMP_";
+    pscom_err_t ret;
+    int test_var_int         = 42;
+    const char *table_name   = "Dummy Table";
+    const char *table_prefix = "TMP_";
 
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_entry_t env_table [] = {
-		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR", "-42", NULL, &test_var_int, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	enable_malloc_mock(NULL);
+    enable_malloc_mock(NULL);
 
-	ret = pscom_env_table_register_and_parse(table_name, table_prefix,
-						 env_table);
-	assert_true(ret == PSCOM_ERR_STDERROR);
-	assert_int_equal(errno, ENOMEM);
+    ret = pscom_env_table_register_and_parse(table_name, table_prefix,
+                                             env_table);
+    assert_true(ret == PSCOM_ERR_STDERROR);
+    assert_int_equal(errno, ENOMEM);
 
-	/* there should not be any list element */
-	assert_int_equal(list_count(&pscom.env_config), 0);
+    /* there should not be any list element */
+    assert_int_equal(list_count(&pscom.env_config), 0);
 
-	/* test_var_int should not be touched */
-	assert_int_equal(test_var_int, 42);
+    /* test_var_int should not be touched */
+    assert_int_equal(test_var_int, 42);
 
-	disable_malloc_mock();
+    disable_malloc_mock();
 }
 
 
@@ -1035,41 +983,41 @@ void test_env_table_register_and_parse_no_mem(void **state)
  */
 void test_env_table_register_and_parse_simple(void **state)
 {
-	pscom_err_t ret;
-	int test_var_int = 42;
-	const char *table_name = "Dummy Table";
-	const char *table_prefix = "TMP_";
+    pscom_err_t ret;
+    int test_var_int         = 42;
+    const char *table_name   = "Dummy Table";
+    const char *table_prefix = "TMP_";
 
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_entry_t env_table [] = {
-		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR", "-42", NULL, &test_var_int, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	ret = pscom_env_table_register_and_parse(table_name, table_prefix,
-						 env_table);
-	assert_true(ret == PSCOM_SUCCESS);
+    ret = pscom_env_table_register_and_parse(table_name, table_prefix,
+                                             env_table);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	/* there should be exactly one list element */
-	assert_int_equal(list_count(&pscom.env_config), 1);
+    /* there should be exactly one list element */
+    assert_int_equal(list_count(&pscom.env_config), 1);
 
-	/* the list element should match our table */
-	struct list_head *pos;
-	list_for_each(pos, &pscom.env_config) {
-		pscom_env_list_entry_t *list_entry =
-		    list_entry(pos, pscom_env_list_entry_t, next);
+    /* the list element should match our table */
+    struct list_head *pos;
+    list_for_each (pos, &pscom.env_config) {
+        pscom_env_list_entry_t *list_entry = list_entry(pos,
+                                                        pscom_env_list_entry_t,
+                                                        next);
 
-		assert_string_equal(list_entry->name, table_name);
-		assert_string_equal(list_entry->prefix, table_prefix);
-		assert_ptr_equal(list_entry->table, &env_table);
-	}
+        assert_string_equal(list_entry->name, table_name);
+        assert_string_equal(list_entry->prefix, table_prefix);
+        assert_ptr_equal(list_entry->table, &env_table);
+    }
 
-	/* check if the table has been parsed */
-	assert_int_equal(test_var_int, -42);
+    /* check if the table has been parsed */
+    assert_int_equal(test_var_int, -42);
 }
 
 
@@ -1084,47 +1032,46 @@ void test_env_table_register_and_parse_simple(void **state)
  */
 void test_env_table_register_and_parse_env_var(void **state)
 {
-	pscom_err_t ret;
-	unsigned int test_var = 0;
-	const char *table_name = "Dummy Table";
-	const char *env_var = ((env_var_backup_t*)(*state))->name;
-	char env_var_with_prefix[64];
+    pscom_err_t ret;
+    unsigned int test_var  = 0;
+    const char *table_name = "Dummy Table";
+    const char *env_var    = ((env_var_backup_t *)(*state))->name;
+    char env_var_with_prefix[64];
 
-	/* set the environment variable includeing global prefix */
-	snprintf(env_var_with_prefix, sizeof(env_var_with_prefix) - 1, "%s%s",
-		 PSCOM_ENV_GLOBAL_PREFIX, env_var);
-	setenv(env_var_with_prefix, "42", 1);
+    /* set the environment variable includeing global prefix */
+    snprintf(env_var_with_prefix, sizeof(env_var_with_prefix) - 1, "%s%s",
+             PSCOM_ENV_GLOBAL_PREFIX, env_var);
+    setenv(env_var_with_prefix, "42", 1);
 
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_entry_t env_table[] = {
-		{env_var, "3", NULL, &test_var, 0,
-		 PSCOM_ENV_PARSER_UINT},
+    pscom_env_table_entry_t env_table[] = {
+        {env_var, "3", NULL, &test_var, 0, PSCOM_ENV_PARSER_UINT},
 
-		{0},
-	};
+        {0},
+    };
 
-	ret = pscom_env_table_register_and_parse(table_name, NULL,
-						 env_table);
-	assert_true(ret == PSCOM_SUCCESS);
+    ret = pscom_env_table_register_and_parse(table_name, NULL, env_table);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	/* there should be exactly one list element */
-	assert_int_equal(list_count(&pscom.env_config), 1);
+    /* there should be exactly one list element */
+    assert_int_equal(list_count(&pscom.env_config), 1);
 
-	/* the list element should match our table */
-	struct list_head *pos;
-	list_for_each(pos, &pscom.env_config) {
-		pscom_env_list_entry_t *list_entry =
-		    list_entry(pos, pscom_env_list_entry_t, next);
+    /* the list element should match our table */
+    struct list_head *pos;
+    list_for_each (pos, &pscom.env_config) {
+        pscom_env_list_entry_t *list_entry = list_entry(pos,
+                                                        pscom_env_list_entry_t,
+                                                        next);
 
-		assert_string_equal(list_entry->name, table_name);
-		assert_ptr_equal(list_entry->prefix, NULL);
-		assert_ptr_equal(list_entry->table, &env_table);
-	}
+        assert_string_equal(list_entry->name, table_name);
+        assert_ptr_equal(list_entry->prefix, NULL);
+        assert_ptr_equal(list_entry->table, &env_table);
+    }
 
-	/* check if the table has been parsed */
-	assert_int_equal(test_var, 42);
+    /* check if the table has been parsed */
+    assert_int_equal(test_var, 42);
 }
 
 
@@ -1140,13 +1087,13 @@ void test_env_table_register_and_parse_env_var(void **state)
  */
 void test_env_clear_table_list_empty(void **state)
 {
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_list_clear();
+    pscom_env_table_list_clear();
 
-	/* there should be exactly one list element */
-	assert_int_equal(list_count(&pscom.env_config), 0);
+    /* there should be exactly one list element */
+    assert_int_equal(list_count(&pscom.env_config), 0);
 }
 
 
@@ -1159,26 +1106,25 @@ void test_env_clear_table_list_empty(void **state)
  */
 void test_env_clear_table_list_filled(void **state)
 {
-	pscom_err_t ret;
-	int test_var_int = 42;
-	const char *table_name = "Dummy Table";
-	const char *table_prefix = "TMP_";
+    pscom_err_t ret;
+    int test_var_int         = 42;
+    const char *table_name   = "Dummy Table";
+    const char *table_prefix = "TMP_";
 
-	/* initialize the global table list */
-	INIT_LIST_HEAD(&pscom.env_config);
+    /* initialize the global table list */
+    INIT_LIST_HEAD(&pscom.env_config);
 
-	pscom_env_table_entry_t env_table [] = {
-		{"TEST_VAR", "-42", NULL, &test_var_int, 0,
-		 PSCOM_ENV_PARSER_INT},
+    pscom_env_table_entry_t env_table[] = {
+        {"TEST_VAR", "-42", NULL, &test_var_int, 0, PSCOM_ENV_PARSER_INT},
 
-		{0},
-	};
+        {0},
+    };
 
-	ret = pscom_env_table_register(table_name, table_prefix, env_table);
-	assert_true(ret == PSCOM_SUCCESS);
+    ret = pscom_env_table_register(table_name, table_prefix, env_table);
+    assert_true(ret == PSCOM_SUCCESS);
 
-	pscom_env_table_list_clear();
+    pscom_env_table_list_clear();
 
-	/* there should be exactly one list element */
-	assert_int_equal(list_count(&pscom.env_config), 0);
+    /* there should be exactly one list element */
+    assert_int_equal(list_count(&pscom.env_config), 0);
 }

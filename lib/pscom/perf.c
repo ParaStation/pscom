@@ -25,14 +25,14 @@
 
 double cycles_us;
 
-static
-void cycles_cal(void)
+static void cycles_cal(void)
 {
     unsigned long t1, t2, rt1, rt2;
     t1 = pscom_wtime_usec();
     GET_CPU_CYCLES(rt1);
     /* usleep call kapm-idled and slowdown the cpu! */
-    while (pscom_wtime_usec() - 1000 < t1);
+    while (pscom_wtime_usec() - 1000 < t1)
+        ;
     GET_CPU_CYCLES(rt2);
     t2 = pscom_wtime_usec();
 
@@ -42,7 +42,7 @@ void cycles_cal(void)
     printf("# %ld usec = %ld cycles, 1 usec = %f\n", t2, rt2, 1 / cycles_us);
 }
 
-#define LOG_SIZE (1024 * 32)
+#define LOG_SIZE      (1024 * 32)
 #define ID_INDEX_SIZE 1024
 
 typedef struct log_s {
@@ -57,49 +57,43 @@ static log_t *logpos = perf_log;
 
 static const char *id_index[ID_INDEX_SIZE];
 
-static
-unsigned get_id_index(const char *id) {
+static unsigned get_id_index(const char *id)
+{
     unsigned idx = 0;
     for (idx = 0; id_index[idx]; idx++) {
-	if (strcmp(id, id_index[idx]) == 0) {
-	    return idx;
-	}
+        if (strcmp(id, id_index[idx]) == 0) { return idx; }
     }
-    if (idx < ID_INDEX_SIZE) {
-	id_index[idx] = id;
-    }
+    if (idx < ID_INDEX_SIZE) { id_index[idx] = id; }
     return idx;
 }
 
 void perf_print(void)
 {
     int i;
-    unsigned long lasttime = 0;
+    unsigned long lasttime  = 0;
     unsigned long firsttime = perf_log[0].time;
-    int pid = getpid();
+    int pid                 = getpid();
 
     cycles_cal();
-    printf("#%5s %12s %12s %2s %20s %s\n",
-	   "pid", "dtime", "dtime prev", "#id", "id", "abs time");
+    printf("#%5s %12s %12s %2s %20s %s\n", "pid", "dtime", "dtime prev", "#id",
+           "id", "abs time");
     for (i = 0; i < LOG_SIZE; i++) {
-	log_t *cur = &perf_log[i];
-	if (!cur->id) break;
-	while (1) {
-	    printf("pid_%06d %12.2f %12.2f %2u %20s %lu\n", pid,
-		   (unsigned /*long*/)(cur->time - firsttime) * cycles_us,
-		   (unsigned /*long*/)(cur->time - lasttime) * cycles_us,
-		   get_id_index(cur->id),
-		   cur->id,
-		   cur->time);
-	    lasttime = cur->time;
+        log_t *cur = &perf_log[i];
+        if (!cur->id) { break; }
+        while (1) {
+            printf("pid_%06d %12.2f %12.2f %2u %20s %lu\n", pid,
+                   (unsigned /*long*/)(cur->time - firsttime) * cycles_us,
+                   (unsigned /*long*/)(cur->time - lasttime) * cycles_us,
+                   get_id_index(cur->id), cur->id, cur->time);
+            lasttime = cur->time;
 
-	    if (strncmp(cur->id, "reset_",6) == 0 && firsttime != cur->time) {
-		firsttime = cur->time;
-		printf("\n");
-		continue;
-	    }
-	    break;
-	};
+            if (strncmp(cur->id, "reset_", 6) == 0 && firsttime != cur->time) {
+                firsttime = cur->time;
+                printf("\n");
+                continue;
+            }
+            break;
+        };
     }
     fflush(stdout);
     logpos = perf_log;
@@ -111,9 +105,7 @@ void perf_add(char *id)
     GET_CPU_CYCLES(logpos->time);
     logpos->id = id;
     logpos++;
-    if (logpos == &perf_log[LOG_SIZE]) {
-	perf_print();
-    }
+    if (logpos == &perf_log[LOG_SIZE]) { perf_print(); }
 }
 
 #endif /* ENABLE_PERF */

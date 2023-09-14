@@ -1,0 +1,56 @@
+---
+BasedOnStyle: LLVM
+AlignTrailingComments: true
+AlignEscapedNewlines: 'Right'
+AlignConsecutiveAssignments: 'AcrossComments'
+AlignConsecutiveDeclarations: false
+AlignConsecutiveMacros:
+  Enabled: true
+  AcrossEmptyLines: false
+  AcrossComments: false
+AlignAfterOpenBracket: true
+AlignOperands: 'Align'
+PointerAlignment: Right
+AllowShortBlocksOnASingleLine: true
+AllowShortIfStatementsOnASingleLine: 'AllIfsAndElse'
+AllowShortCaseLabelsOnASingleLine: true
+AllowShortFunctionsOnASingleLine: None
+AllowShortLoopsOnASingleLine: true
+PenaltyReturnTypeOnItsOwnLine: 100
+PenaltyBreakAssignment: 100
+PenaltyExcessCharacter: 50
+PenaltyBreakBeforeFirstCallParameter: 100
+PenaltyIndentedWhitespace: 0
+PenaltyBreakString: 10
+PenaltyBreakComment: 10
+ColumnLimit: 80
+AlwaysBreakBeforeMultilineStrings: false
+BinPackArguments: true
+BinPackParameters: true
+InsertBraces: true
+BreakBeforeBraces: 'Custom'
+BraceWrapping:
+  AfterControlStatement: false
+  AfterEnum: false
+  AfterFunction: true
+  AfterStruct: false
+  AfterUnion: false
+  AfterExternBlock: false
+  BeforeElse: false
+  IndentBraces: false
+  SplitEmptyFunction: true
+  SplitEmptyRecord: true
+  SplitEmptyNamespace: true
+BreakBeforeTernaryOperators: true
+IndentCaseLabels: false
+IndentWidth: '4'
+ForEachMacros: ['list_for_each_safe',
+                'list_for_each']
+Language: Cpp
+SpaceBeforeParens: 'ControlStatements'
+SpaceInEmptyParentheses: false
+SpacesInCStyleCastParentheses: false
+SpacesInSquareBrackets: false
+SortIncludes: 'Never'
+MaxEmptyLinesToKeep: '2'
+...

@@ -18,10 +18,10 @@
 #include "pscom_types.h"
 
 #ifndef pscom_min
-#define pscom_min(a,b)      (((a)<(b))?(a):(b))
+#define pscom_min(a, b) (((a) < (b)) ? (a) : (b))
 #endif
 #ifndef pscom_max
-#define pscom_max(a,b)      (((a)>(b))?(a):(b))
+#define pscom_max(a, b) (((a) > (b)) ? (a) : (b))
 #endif
 
 /* preprocessor helpers */
@@ -37,13 +37,13 @@
 #endif
 
 #ifndef likely
-#define likely(x)	__builtin_expect((x),1)
-#define unlikely(x)	__builtin_expect((x),0)
+#define likely(x)   __builtin_expect((x), 1)
+#define unlikely(x) __builtin_expect((x), 0)
 #endif
 
-void pscom_memcpy_gpu_safe_default(void* dst, const void* src, size_t len);
-void pscom_memcpy_gpu_safe_from_user(void* dst, const void* src, size_t len);
-void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len);
+void pscom_memcpy_gpu_safe_default(void *dst, const void *src, size_t len);
+void pscom_memcpy_gpu_safe_from_user(void *dst, const void *src, size_t len);
+void pscom_memcpy_gpu_safe_to_user(void *dst, const void *src, size_t len);
 
 
 /* Define different memcpy() variants making assumptions about the the user
@@ -62,13 +62,12 @@ void pscom_memcpy_gpu_safe_to_user(void* dst, const void* src, size_t len);
  * \param [in] src Pointer to the source buffer.
  * \param [in] len Amount of bytes to be copied.
  */
-static inline
-void _pscom_memcpy_default(void* dst, const void* src, size_t len)
+static inline void _pscom_memcpy_default(void *dst, const void *src, size_t len)
 {
 #ifdef PSCOM_CUDA_AWARENESS
-	pscom_memcpy_gpu_safe_default(dst, src, len);
+    pscom_memcpy_gpu_safe_default(dst, src, len);
 #else
-	memcpy(dst, src, len);
+    memcpy(dst, src, len);
 #endif
 }
 
@@ -79,13 +78,13 @@ void _pscom_memcpy_default(void* dst, const void* src, size_t len)
  * \param [in] src Pointer to the source buffer.
  * \param [in] len Amount of bytes to be copied.
  */
-static inline
-void _pscom_memcpy_from_user(void* dst, const void* src, size_t len)
+static inline void _pscom_memcpy_from_user(void *dst, const void *src,
+                                           size_t len)
 {
 #ifdef PSCOM_CUDA_AWARENESS
-	pscom_memcpy_gpu_safe_from_user(dst, src, len);
+    pscom_memcpy_gpu_safe_from_user(dst, src, len);
 #else
-	memcpy(dst, src, len);
+    memcpy(dst, src, len);
 #endif
 }
 
@@ -96,144 +95,135 @@ void _pscom_memcpy_from_user(void* dst, const void* src, size_t len)
  * \param [in] src Pointer to the source buffer (within host memory).
  * \param [in] len Amount of bytes to be copied.
  */
-static inline
-void _pscom_memcpy_to_user(void* dst, const void* src, size_t len)
+static inline void _pscom_memcpy_to_user(void *dst, const void *src, size_t len)
 {
 #ifdef PSCOM_CUDA_AWARENESS
-	pscom_memcpy_gpu_safe_to_user(dst, src, len);
+    pscom_memcpy_gpu_safe_to_user(dst, src, len);
 #else
-	memcpy(dst, src, len);
+    memcpy(dst, src, len);
 #endif
 }
 
 /* iovlen : number of blocks in iov. return bytelen of iov */
-static inline
-size_t pscom_iovec_len(struct iovec *iov, size_t iovlen)
+static inline size_t pscom_iovec_len(struct iovec *iov, size_t iovlen)
 {
     size_t len = 0;
     while (iovlen) {
-	len += iov->iov_len;
-	iov++;
-	iovlen--;
+        len += iov->iov_len;
+        iov++;
+        iovlen--;
     }
     return len;
 }
 
 
-static inline
-void pscom_read_from_iov(char *data, struct iovec *iov, size_t len)
+static inline void pscom_read_from_iov(char *data, struct iovec *iov, size_t len)
 {
-	while (len > 0) {
-		if (iov->iov_len) {
-			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy_from_user(data, iov->iov_base, copy);
-			len -= copy;
-			data += copy;
-			iov->iov_base += copy;
-			iov->iov_len -= copy;
-		}
-		iov++;
-	}
+    while (len > 0) {
+        if (iov->iov_len) {
+            size_t copy = pscom_min(len, iov->iov_len);
+            _pscom_memcpy_from_user(data, iov->iov_base, copy);
+            len -= copy;
+            data += copy;
+            iov->iov_base += copy;
+            iov->iov_len -= copy;
+        }
+        iov++;
+    }
 }
 
 
-static inline
-void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
+static inline void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
 {
-	while (len > 0) {
-		if (iov->iov_len) {
-			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy_to_user(iov->iov_base, data, copy);
-			len -= copy;
-			data += copy;
-			iov->iov_base += copy;
-			iov->iov_len -= copy;
-		}
-		iov++;
-	}
+    while (len > 0) {
+        if (iov->iov_len) {
+            size_t copy = pscom_min(len, iov->iov_len);
+            _pscom_memcpy_to_user(iov->iov_base, data, copy);
+            len -= copy;
+            data += copy;
+            iov->iov_base += copy;
+            iov->iov_len -= copy;
+        }
+        iov++;
+    }
 }
 
 
-static inline
-void pscom_forward_iov(struct iovec *iov, size_t len)
+static inline void pscom_forward_iov(struct iovec *iov, size_t len)
 {
-	while (len > 0) {
-		if (iov->iov_len) {
-			size_t copy = pscom_min(len, iov->iov_len);
-			len -= copy;
-			iov->iov_base += copy;
-			iov->iov_len -= copy;
-		}
-		iov++;
-	}
+    while (len > 0) {
+        if (iov->iov_len) {
+            size_t copy = pscom_min(len, iov->iov_len);
+            len -= copy;
+            iov->iov_base += copy;
+            iov->iov_len -= copy;
+        }
+        iov++;
+    }
 }
 
 
-static inline
-void pscom_memcpy_to_iov(const struct iovec *iov, char *data, size_t len)
+static inline void pscom_memcpy_to_iov(const struct iovec *iov, char *data,
+                                       size_t len)
 {
-	while (len > 0) {
-		if (iov->iov_len) {
-			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy_to_user(iov->iov_base, data, copy);
-			len -= copy;
-			data += copy;
-		}
-		iov++;
-	}
+    while (len > 0) {
+        if (iov->iov_len) {
+            size_t copy = pscom_min(len, iov->iov_len);
+            _pscom_memcpy_to_user(iov->iov_base, data, copy);
+            len -= copy;
+            data += copy;
+        }
+        iov++;
+    }
 }
 
 
-static inline
-void pscom_memcpy_from_iov(char *data, const struct iovec *iov, size_t len)
+static inline void pscom_memcpy_from_iov(char *data, const struct iovec *iov,
+                                         size_t len)
 {
-	while (len > 0) {
-		if (iov->iov_len) {
-			size_t copy = pscom_min(len, iov->iov_len);
-			_pscom_memcpy_from_user(data, iov->iov_base, copy);
-			len -= copy;
-			data += copy;
-		}
-		iov++;
-	}
+    while (len > 0) {
+        if (iov->iov_len) {
+            size_t copy = pscom_min(len, iov->iov_len);
+            _pscom_memcpy_from_user(data, iov->iov_base, copy);
+            len -= copy;
+            data += copy;
+        }
+        iov++;
+    }
 }
 
 /* strncpy with forced null-termination. Similar to strlcpy(), but with
    additional filling of dest with null bytes from strncpy. */
-static inline
-char *pscom_strncpy0(char *dest, const char *src, size_t n)
+static inline char *pscom_strncpy0(char *dest, const char *src, size_t n)
 {
     strncpy(dest, src, n - 1);
     dest[n - 1] = 0;
     return dest;
 }
 
-static inline
-void pscom_gettimeofday(struct timeval *tv) {
-	if (gettimeofday(tv, NULL)) {
-		// Error
-		tv->tv_sec = tv->tv_usec = 0;
-	}
+static inline void pscom_gettimeofday(struct timeval *tv)
+{
+    if (gettimeofday(tv, NULL)) {
+        // Error
+        tv->tv_sec = tv->tv_usec = 0;
+    }
 }
 
-static inline
-unsigned long pscom_wtime_usec(void)
+static inline unsigned long pscom_wtime_usec(void)
 {
     struct timeval tv;
     pscom_gettimeofday(&tv);
-    return tv.tv_sec*1000000+tv.tv_usec;
+    return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-static inline
-unsigned long pscom_wtime_msec(void)
+static inline unsigned long pscom_wtime_msec(void)
 {
     struct timeval tv;
     pscom_gettimeofday(&tv);
     return tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-static inline
-unsigned long pscom_wtime_sec(void)
+static inline unsigned long pscom_wtime_sec(void)
 {
     struct timeval tv;
     pscom_gettimeofday(&tv);

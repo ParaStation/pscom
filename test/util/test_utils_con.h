@@ -13,8 +13,8 @@
 #define _PSCOM_UTIL_CON_H_
 
 typedef struct dummy_con_pair {
-        void *send_con;
-        void *recv_con;
+    void *send_con;
+    void *recv_con;
 } dummy_con_pair_t;
 
 int setup_dummy_con(void **state);

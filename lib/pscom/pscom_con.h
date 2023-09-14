@@ -56,29 +56,26 @@ void pscom_con_guard_stop(pscom_con_t *con);
  *
  * @return 1 if the connection should be open for reading; 0 otherwise
  */
-static inline
-int pscom_con_should_read(pscom_con_t *con)
+static inline int pscom_con_should_read(pscom_con_t *con)
 {
-	return (con->recv_req_cnt || con->in.req);
+    return (con->recv_req_cnt || con->in.req);
+}
+
+
+static inline void pscom_con_check_read_stop(pscom_con_t *con)
+{
+    if (!pscom_con_should_read(con) && !pscom.env.unexpected_receives) {
+        con->read_stop(con);
+    }
 }
 
 
 static inline
-void pscom_con_check_read_stop(pscom_con_t *con)
+    // void _pscom_recv_req_cnt_check_start(pscom_con_t *con)
+    void
+    pscom_con_check_read_start(pscom_con_t *con)
 {
-	if (!pscom_con_should_read(con) && !pscom.env.unexpected_receives) {
-		con->read_stop(con);
-	}
-}
-
-
-static inline
-//void _pscom_recv_req_cnt_check_start(pscom_con_t *con)
-void pscom_con_check_read_start(pscom_con_t *con)
-{
-	if (pscom_con_should_read(con)) {
-		con->read_start(con);
-	}
+    if (pscom_con_should_read(con)) { con->read_start(con); }
 }
 
 
@@ -95,28 +92,23 @@ void pscom_con_check_read_start(pscom_con_t *con)
  *
  * @return 1 if the connection should be open for writing; 0 otherwise
  */
-static inline
-int pscom_con_should_write(pscom_con_t *con)
+static inline int pscom_con_should_write(pscom_con_t *con)
 {
-	return (!list_empty(&con->sendq) || con->write_pending_io_cnt);
+    return (!list_empty(&con->sendq) || con->write_pending_io_cnt);
 }
 
 
-static inline
-void pscom_con_check_write_start(pscom_con_t *con)
+static inline void pscom_con_check_write_start(pscom_con_t *con)
 {
-	if (pscom_con_should_write(con)) {
-		con->write_start(con);
-	}
+    if (pscom_con_should_write(con)) { con->write_start(con); }
 }
 
 
-static inline
-void pscom_con_check_write_stop(pscom_con_t *con)
+static inline void pscom_con_check_write_stop(pscom_con_t *con)
 {
-	if (!pscom_con_should_write(con)) {
-		assert(list_empty(&con->sendq));
-		con->write_stop(con);
-	}
+    if (!pscom_con_should_write(con)) {
+        assert(list_empty(&con->sendq));
+        con->write_stop(con);
+    }
 }
 #endif /* _PSCOM_CON_H_ */

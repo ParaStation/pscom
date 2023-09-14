@@ -18,26 +18,28 @@ typedef struct pscom_poll pscom_poll_t;
 typedef int pscom_poll_func_t(pscom_poll_t *poll);
 
 struct pscom_poll {
-	struct list_head	next; // Used by pscom_poll_list_t.list
-	pscom_poll_func_t	*do_poll; // return 1 to exit polling loop (e.g. you made progress)
+    struct list_head next;      // Used by pscom_poll_list_t.list
+    pscom_poll_func_t *do_poll; // return 1 to exit polling loop (e.g. you made
+                                // progress)
 };
 
 typedef struct {
-	struct list_head	head;
+    struct list_head head;
 } pscom_poll_list_t;
 
 void pscom_poll_list_init(pscom_poll_list_t *poll_list);
 int pscom_poll(pscom_poll_list_t *poll_list);
 
 // Is poll list empty?
-static inline
-int pscom_poll_list_empty(pscom_poll_list_t *poll_list) {
-	return list_empty(&poll_list->head);
+static inline int pscom_poll_list_empty(pscom_poll_list_t *poll_list)
+{
+    return list_empty(&poll_list->head);
 }
 
-#define POLL_LIST_HEAD_INIT(POLL_LIST) {	\
-	.head = LIST_HEAD_INIT(POLL_LIST.head)	\
-}
+#define POLL_LIST_HEAD_INIT(POLL_LIST)                                         \
+    {                                                                          \
+        .head = LIST_HEAD_INIT(POLL_LIST.head)                                 \
+    }
 
 
 /**
@@ -51,7 +53,8 @@ void pscom_poll_init(pscom_poll_t *poll);
  * multiple times on the same poll.  pscom_poll_init(poll) must be
  * called before usage with start/stop
  */
-void pscom_poll_start(pscom_poll_t *poll, pscom_poll_func_t *do_poll, pscom_poll_list_t *poll_list);
+void pscom_poll_start(pscom_poll_t *poll, pscom_poll_func_t *do_poll,
+                      pscom_poll_list_t *poll_list);
 
 
 /**
@@ -74,9 +77,9 @@ void pscom_poll_cleanup_init(pscom_poll_t *poll);
 /**
  * Return a bool, if this poll is in use of any pscom_poll_list_t.
  */
-static inline
-int pscom_poll_is_inuse(pscom_poll_t *poll) {
-	return !list_empty(&poll->next);
+static inline int pscom_poll_is_inuse(pscom_poll_t *poll)
+{
+    return !list_empty(&poll->next);
 }
 
 

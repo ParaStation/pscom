@@ -30,14 +30,12 @@
 #include <net/if.h>
 #include <sys/ioctl.h>
 
-static char vcid2[] __attribute__(( unused )) =
-"$Id$";
+static char vcid2[] __attribute__((unused)) = "$Id$";
 
-#define MIN(a,b)      (((a)<(b))?(a):(b))
-#define MAX(a,b)      (((a)>(b))?(a):(b))
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-static
-in_addr_t psp_hostip(char *name)
+static in_addr_t psp_hostip(char *name)
 {
     struct hostent *mhost;
     in_addr_t ret = 0;
@@ -45,178 +43,173 @@ in_addr_t psp_hostip(char *name)
     /* Get list of IP-addresses */
     mhost = gethostbyname(name);
 
-    if (!mhost) goto err_nohostent;
-    if (!mhost->h_addr_list) goto err_empty;
+    if (!mhost) { goto err_nohostent; }
+    if (!mhost->h_addr_list) { goto err_empty; }
 
     while (*mhost->h_addr_list) {
-	ret = *(unsigned *)*mhost->h_addr_list;
-	if (ret != htonl(INADDR_LOOPBACK)) { /* Dont allow localhost */
-	    break;
-	}
-	mhost->h_addr_list++;
+        ret = *(unsigned *)*mhost->h_addr_list;
+        if (ret != htonl(INADDR_LOOPBACK)) { /* Dont allow localhost */
+            break;
+        }
+        mhost->h_addr_list++;
     }
- err_nohostent:
- err_empty:
+err_nohostent:
+err_empty:
     return ret;
 }
 
-static
-in_addr_t psp_getid_byname(void)
+static in_addr_t psp_getid_byname(void)
 {
     char myname[256];
     static in_addr_t id = 0;
 
     if (!id) {
-	/* Lookup hostname */
-	if (gethostname(myname, sizeof(myname)) < 0)
-	    goto err_gethostname;
+        /* Lookup hostname */
+        if (gethostname(myname, sizeof(myname)) < 0) { goto err_gethostname; }
 
-	id = psp_hostip(myname);
-	if (!id) goto err_nohostent;
+        id = psp_hostip(myname);
+        if (!id) { goto err_nohostent; }
     }
     return id;
     /* --- */
- err_gethostname:
-    fprintf(stderr, "%s(): gethostname() failed : %s\n", __FUNCTION__, strerror(errno));
+err_gethostname:
+    fprintf(stderr, "%s(): gethostname() failed : %s\n", __FUNCTION__,
+            strerror(errno));
     return 0;
     /* --- */
- err_nohostent:
-    fprintf(stderr, "%s(): Cant get IP of node %s : %s\n",
-	    __FUNCTION__, myname, strerror(errno));
+err_nohostent:
+    fprintf(stderr, "%s(): Cant get IP of node %s : %s\n", __FUNCTION__, myname,
+            strerror(errno));
     return 0;
 }
 
 struct nw_dev_list_s {
-	in_addr_t ip;
-	in_addr_t mask;
+    in_addr_t ip;
+    in_addr_t mask;
 };
 
-static
-struct nw_dev_list_s *psp_get_dev_list(void)
+static struct nw_dev_list_s *psp_get_dev_list(void)
 {
     const unsigned int list_n = 64;
-    int cnt = 0;
+    int cnt                   = 0;
     struct ifconf ifc;
-    int sfd = -1;
+    int sfd                   = -1;
     struct nw_dev_list_s *ret = NULL;
     unsigned int i;
 
-#define IFREQCNT (list_n - 1)
-#define IFREQSIZE    ((unsigned)sizeof(struct ifreq) * IFREQCNT)
+#define IFREQCNT  (list_n - 1)
+#define IFREQSIZE ((unsigned)sizeof(struct ifreq) * IFREQCNT)
     ifc.ifc_ifcu.ifcu_req = malloc(IFREQSIZE);
-    ifc.ifc_len = IFREQSIZE;
+    ifc.ifc_len           = IFREQSIZE;
 
     ret = malloc(sizeof(ret[0]) * list_n);
 
     sfd = socket(PF_INET, SOCK_DGRAM, IPPROTO_IP);
 
-    if (!ifc.ifc_ifcu.ifcu_req ||
-	!ret ||
-	(sfd < 0)) goto error;
+    if (!ifc.ifc_ifcu.ifcu_req || !ret || (sfd < 0)) { goto error; }
 
-    if (ioctl(sfd, SIOCGIFCONF, &ifc) < 0) goto error;
+    if (ioctl(sfd, SIOCGIFCONF, &ifc) < 0) { goto error; }
 
     for (i = 0; i < MIN(IFREQCNT, ifc.ifc_len / sizeof(struct ifreq)); i++) {
-	struct ifreq *req = &ifc.ifc_ifcu.ifcu_req[i];
+        struct ifreq *req = &ifc.ifc_ifcu.ifcu_req[i];
 
-	/* Up ? */
-	if (ioctl(sfd, SIOCGIFFLAGS, req) < 0) continue;
-	if (!(req->ifr_ifru.ifru_flags & IFF_UP)) continue;
+        /* Up ? */
+        if (ioctl(sfd, SIOCGIFFLAGS, req) < 0) { continue; }
+        if (!(req->ifr_ifru.ifru_flags & IFF_UP)) { continue; }
 
-	/* Get IP */
-	if (ioctl(sfd, SIOCGIFADDR, req) < 0) continue;
-	ret[cnt].ip = ((struct sockaddr_in *)&req->ifr_ifru.ifru_addr)->sin_addr.s_addr;
+        /* Get IP */
+        if (ioctl(sfd, SIOCGIFADDR, req) < 0) { continue; }
+        ret[cnt].ip =
+            ((struct sockaddr_in *)&req->ifr_ifru.ifru_addr)->sin_addr.s_addr;
 
-	/* Get Netmask */
-	if (ioctl(sfd, SIOCGIFNETMASK, req) < 0) continue;
-	ret[cnt].mask = ((struct sockaddr_in *)&req->ifr_ifru.ifru_netmask)->sin_addr.s_addr;
-	cnt++;
+        /* Get Netmask */
+        if (ioctl(sfd, SIOCGIFNETMASK, req) < 0) { continue; }
+        ret[cnt].mask =
+            ((struct sockaddr_in *)&req->ifr_ifru.ifru_netmask)->sin_addr.s_addr;
+        cnt++;
     }
 
     ret[cnt].ip = 0;
- out:
-    if (ifc.ifc_ifcu.ifcu_req) free(ifc.ifc_ifcu.ifcu_req);
-    if (sfd >= 0) close(sfd);
+out:
+    if (ifc.ifc_ifcu.ifcu_req) { free(ifc.ifc_ifcu.ifcu_req); }
+    if (sfd >= 0) { close(sfd); }
     return ret;
     /* --- */
- error:
-    if (ret) free(ret);
+error:
+    if (ret) { free(ret); }
     ret = NULL;
     goto out;
 }
 
-static
-in_addr_t *psp_get_nw_list(char *str)
+static in_addr_t *psp_get_nw_list(char *str)
 {
     const unsigned list_n = 64;
-    in_addr_t *ret = malloc(sizeof(in_addr_t) * list_n);
-    char *tmp = strdup(str);
-    char *otmp = tmp;
-    unsigned cnt = 0;
+    in_addr_t *ret        = malloc(sizeof(in_addr_t) * list_n);
+    char *tmp             = strdup(str);
+    char *otmp            = tmp;
+    unsigned cnt          = 0;
 
-    if (!ret || !tmp) goto error;
+    if (!ret || !tmp) { goto error; }
 
     while ((cnt < list_n - 1) && str) {
-	char *s;
-	s = strsep(&str, " ,");
-	if (s && (strlen(s) > 0)) {
-	    in_addr_t ip;
-	    ip = psp_hostip(s);
-	    if (ip) {
-		ret[cnt] = ip;
-		cnt++;
-	    }
-	}
+        char *s;
+        s = strsep(&str, " ,");
+        if (s && (strlen(s) > 0)) {
+            in_addr_t ip;
+            ip = psp_hostip(s);
+            if (ip) {
+                ret[cnt] = ip;
+                cnt++;
+            }
+        }
     }
 
     ret[cnt] = 0;
-    if (otmp) free(otmp);
+    if (otmp) { free(otmp); }
     return ret;
     /* --- */
- error:
-    if (ret) free(ret);
-    if (otmp) free(otmp);
+error:
+    if (ret) { free(ret); }
+    if (otmp) { free(otmp); }
     return NULL;
 }
 
 
-static
-in_addr_t psp_getid_bynetwork(char *psp_network)
+static in_addr_t psp_getid_bynetwork(char *psp_network)
 {
-    in_addr_t *nw_list = NULL;
+    in_addr_t *nw_list                = NULL;
     struct nw_dev_list_s *nw_dev_list = NULL;
-    in_addr_t ret = (in_addr_t) 0;
+    in_addr_t ret                     = (in_addr_t)0;
     in_addr_t *nw;
     struct nw_dev_list_s *dev;
 
     nw_list = psp_get_nw_list(psp_network);
-    if (!nw_list || !nw_list[0]) goto out;
+    if (!nw_list || !nw_list[0]) { goto out; }
     nw_dev_list = psp_get_dev_list();
-    if (!nw_dev_list) goto out;
+    if (!nw_dev_list) { goto out; }
 
     for (nw = nw_list; *nw; nw++) {
-	for (dev = nw_dev_list; dev->ip; dev++) {
-	    if ((dev->ip & dev->mask) == (*nw & dev->mask)) {
-		ret = dev->ip;
-		goto nw_out;
-	    }
-	}
+        for (dev = nw_dev_list; dev->ip; dev++) {
+            if ((dev->ip & dev->mask) == (*nw & dev->mask)) {
+                ret = dev->ip;
+                goto nw_out;
+            }
+        }
     }
- nw_out:
- out:
-    if (nw_list) free(nw_list);
-    if (nw_dev_list) free(nw_dev_list);
+nw_out:
+out:
+    if (nw_list) { free(nw_list); }
+    if (nw_dev_list) { free(nw_dev_list); }
 
-    if (!ret)
-	return psp_getid_byname();
-    else
-	return ret;
+    if (!ret) {
+        return psp_getid_byname();
+    } else {
+        return ret;
+    }
 }
 
 
-
-static
-uint32_t psp_getid(void)
+static uint32_t psp_getid(void)
 {
 #ifndef STAND_ALONE
     char *psp_network = pscom.env.network;
@@ -224,13 +217,12 @@ uint32_t psp_getid(void)
     char *psp_network = getenv("PSP_NETWORK");
 #endif
     if (!psp_network || psp_network[0] == 0) {
-	/* use gethostbyname(gethostname) */
-	return ntohl(psp_getid_byname());
+        /* use gethostbyname(gethostname) */
+        return ntohl(psp_getid_byname());
     } else {
-	return ntohl(psp_getid_bynetwork(psp_network));
+        return ntohl(psp_getid_bynetwork(psp_network));
     }
 }
-
 
 
 #ifdef STAND_ALONE
@@ -249,9 +241,11 @@ int main(int argc, char **argv)
 }
 #endif
 
-/*
+/* clang-format off
+ *
  * Local Variables:
- *  compile-command: "gcc getid.c -DSTAND_ALONE -Wall -W -Wno-unused -O2 -o getid"
+ *  compile-command: "gcc getid.c -DSTAND_ALONE -Wall -W -Wno-unused -O2 -o * getid"
  * End:
  *
+ * clang-format on
  */

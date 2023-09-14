@@ -19,16 +19,15 @@
 #include <sys/types.h>
 #include "perf.h"
 int pscom_dprintf(const char *fmt, ...)
-	__attribute__ ((__format__ (__printf__, 1, 2)));
+    __attribute__((__format__(__printf__, 1, 2)));
 
 int pscom_dwrite(FILE *out, const char *_msg, size_t len, char *line_fmt);
 
 #ifndef DPRINT
-#define DPRINT(level,fmt,arg... ) do{		\
-    if ((level)<=pscom.env.debug){		\
-	pscom_dprintf(fmt "\n",##arg);		\
-    }						\
-}while(0)
+#define DPRINT(level, fmt, arg...)                                             \
+    do {                                                                       \
+        if ((level) <= pscom.env.debug) { pscom_dprintf(fmt "\n", ##arg); }    \
+    } while (0)
 #endif
 
 // Use this stream for debug output. (automic create pre/postfix on each line)
@@ -51,9 +50,14 @@ const char *pscom_msgtype_str(uint8_t msg_type);
 char *pscom_debug_req_str(pscom_req_t *req);
 
 #if 1
-#define D_TR(code) do { } while (0)
+#define D_TR(code)                                                             \
+    do {                                                                       \
+    } while (0)
 #else
-#define D_TR(code) do { code; } while (0)
+#define D_TR(code)                                                             \
+    do {                                                                       \
+        code;                                                                  \
+    } while (0)
 #endif
 
 /**
@@ -95,32 +99,34 @@ void pscom_debug_init(void);
 void pscom_dtime_init(void);
 
 /* Debug Level */
-#define D_FATAL	0
-#define D_BUG_EXT 0	/* Bug: External invalid usage (e.g. Usage before pscom_init()) */
-#define D_BUG	0
+#define D_FATAL 0
+#define D_BUG_EXT                                                              \
+    0 /* Bug: External invalid usage (e.g. Usage before pscom_init()) */
+#define D_BUG 0
 
-#define D_ERR	1
-#define D_WARNONCE 1	/* Warning, printed only once (usually "not implemented") */
+#define D_ERR 1
+#define D_WARNONCE                                                             \
+    1 /* Warning, printed only once (usually "not implemented") */
 
-#define D_WARN	2
+#define D_WARN 2
 
-#define D_INFO	3
+#define D_INFO 3
 
-#define D_DBG	4	/* Debug */
+#define D_DBG 4 /* Debug */
 
-#define D_DBG_V	5	/* Debug verbose */
+#define D_DBG_V 5 /* Debug verbose */
 
-#define D_TRACE	6
+#define D_TRACE 6
 
 /* Debug topic masks */
-#define D_VERSION	(D_INFO * !pscom.env.debug_version)
-#define D_CONTYPE	(D_INFO * !pscom.env.debug_contype)
-#define D_PARAM		(D_DBG * !pscom.env.debug_param)
-#define D_PARAM_DEFAULT	(D_DBG_V * (pscom.env.debug_param < 2))
-#define D_BYE_MSG	(D_INFO * !pscom.env.debug_bye_msg)
-#define D_SUSPEND	(D_INFO * !pscom.env.debug_precon)
-#define D_SUSPEND_DBG	(D_DBG * (pscom.env.debug_precon < 2))
-#define D_PRECON_TRACE	(D_TRACE * !pscom.env.debug_precon)
-#define D_STATS		(D_DBG * !pscom.env.debug_stats)	/* Statistics */
+#define D_VERSION       (D_INFO * !pscom.env.debug_version)
+#define D_CONTYPE       (D_INFO * !pscom.env.debug_contype)
+#define D_PARAM         (D_DBG * !pscom.env.debug_param)
+#define D_PARAM_DEFAULT (D_DBG_V * (pscom.env.debug_param < 2))
+#define D_BYE_MSG       (D_INFO * !pscom.env.debug_bye_msg)
+#define D_SUSPEND       (D_INFO * !pscom.env.debug_precon)
+#define D_SUSPEND_DBG   (D_DBG * (pscom.env.debug_precon < 2))
+#define D_PRECON_TRACE  (D_TRACE * !pscom.env.debug_precon)
+#define D_STATS         (D_DBG * !pscom.env.debug_stats) /* Statistics */
 
 #endif /* _PSCOM_DEBUG_H_ */

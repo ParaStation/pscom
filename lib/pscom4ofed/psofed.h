@@ -24,10 +24,10 @@ typedef struct context_info context_info_t;
 
 // contact endpoint info
 typedef struct psofed_info_msg_s {
-	uint16_t	version;/* == PSOFED_INFO_VERSION */
-	uint16_t	lid;	/* LID */
-	uint32_t	qp_num;	/* Queue pair  number */
-	uint32_t	use_src;/* id the sender should use as src */
+    uint16_t version; /* == PSOFED_INFO_VERSION */
+    uint16_t lid;     /* LID */
+    uint32_t qp_num;  /* Queue pair  number */
+    uint32_t use_src; /* id the sender should use as src */
 } psofed_info_msg_t;
 
 #define PSOFED_INFO_VERSION 0x0100
@@ -62,24 +62,26 @@ int psofed_init(void);
 psofed_con_info_t *psofed_con_create(void);
 
 /* free() wrapper */
-void	psofed_con_free(psofed_con_info_t *con_info);
+void psofed_con_free(psofed_con_info_t *con_info);
 
 /* Prepare con_info for psofed_con_connect()
  * Initialize internal structures
  * Use default_context, if context is NULL
  * Assign a "src" id for the connection
  */
-int	psofed_con_init(psofed_con_info_t *con_info, context_info_t *context, void *priv);
+int psofed_con_init(psofed_con_info_t *con_info, context_info_t *context,
+                    void *priv);
 
 /* Connect to peer described by info_msg */
-int	psofed_con_connect(psofed_con_info_t *con_info, psofed_info_msg_t *info_msg);
+int psofed_con_connect(psofed_con_info_t *con_info, psofed_info_msg_t *info_msg);
 
 /* Closing connection.
  * Cleanup all internal structures */
-void	psofed_con_cleanup(psofed_con_info_t *con_info);
+void psofed_con_cleanup(psofed_con_info_t *con_info);
 
 /* Get a info_msg usable for psofed_con_connect() at the other side. */
-void	psofed_con_get_info_msg(psofed_con_info_t *con_info /* in */, psofed_info_msg_t *info /* out */);
+void psofed_con_get_info_msg(psofed_con_info_t *con_info /* in */,
+                             psofed_info_msg_t *info /* out */);
 
 
 /*
@@ -87,10 +89,10 @@ void	psofed_con_get_info_msg(psofed_con_info_t *con_info /* in */, psofed_info_m
  */
 
 typedef struct psofed_recv_s {
-	void *data;			/* received data */
-	int len;			/* len or negative error value. */
-	psofed_con_info_t *con_info;	/* this message comes from */
-	void *priv;			/* from psofed_con_set_priv() */
+    void *data;                  /* received data */
+    int len;                     /* len or negative error value. */
+    psofed_con_info_t *con_info; /* this message comes from */
+    void *priv;                  /* from psofed_con_set_priv() */
 } psofed_recv_t;
 
 /* Receive a message from any connections.
@@ -109,7 +111,8 @@ int psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov, size_t size);
  * return 0, if call made no progress */
 int psofed_progress(context_info_t *context); //, int blocking);
 
-/* Suggest a value for psofed_pending_tokens. Result depends on psofed_recvq_size. */
+/* Suggest a value for psofed_pending_tokens. Result depends on
+ * psofed_recvq_size. */
 unsigned psofed_pending_tokens_suggestion(void);
 char *psofed_pending_tokens_suggestion_str(void);
 
@@ -119,8 +122,9 @@ char *psofed_pending_tokens_suggestion_str(void);
  */
 extern int psofed_debug;
 extern FILE *psofed_debug_stream; /* Stream to use for debug output */
-extern char *psofed_hca; /* hca name to use. Default: first hca */
-extern unsigned int psofed_port; /* port index to use. Default: 0 (means first active port) */
+extern char *psofed_hca;          /* hca name to use. Default: first hca */
+extern unsigned int psofed_port;  /* port index to use. Default: 0 (means first
+                                     active port) */
 extern unsigned int psofed_path_mtu; /* path mtu to use. */
 
 /* size (=buffers used) for send and receive queue. You must not change
@@ -128,18 +132,24 @@ extern unsigned int psofed_path_mtu; /* path mtu to use. */
 extern unsigned int psofed_sendq_size;
 extern unsigned int psofed_recvq_size;
 
-extern unsigned int psofed_compq_size; /* should be at least sendq_size + recvq_size !*/
+extern unsigned int psofed_compq_size; /* should be at least sendq_size +
+                                          recvq_size !*/
 extern unsigned int psofed_pending_tokens;
 
-extern unsigned int psofed_winsize; /* Do not send more then winsize unacked messsages */
+extern unsigned int psofed_winsize; /* Do not send more then winsize unacked
+                                       messsages */
 
-extern unsigned long psofed_resend_timeout; /* resend in usec. doubling the timeout on each resend.*/
-extern unsigned int psofed_resend_timeout_shift; /* Never wait longer then psofed_resend_timeout << psofed_resend_timeout_shift */
+extern unsigned long psofed_resend_timeout;      /* resend in usec. doubling the
+                                                    timeout on each resend.*/
+extern unsigned int psofed_resend_timeout_shift; /* Never wait longer then
+                                                    psofed_resend_timeout <<
+                                                    psofed_resend_timeout_shift
+                                                  */
 
 
-
-extern int psofed_event_count; /* bool. Be busy if outstanding_cq_entries is to high? */
-extern int psofed_lid_offset; /* int: offset to base LID (adaptive routing) */
+extern int psofed_event_count; /* bool. Be busy if outstanding_cq_entries is to
+                                  high? */
+extern int psofed_lid_offset;  /* int: offset to base LID (adaptive routing) */
 
 /*
  * Information

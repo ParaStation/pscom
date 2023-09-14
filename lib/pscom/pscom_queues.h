@@ -92,7 +92,8 @@ void _pscom_recvq_user_deq(pscom_req_t *req);
 
 void pscom_recvq_terminate_any_global();
 
-pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con, pscom_header_net_t *header);
+pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con,
+                                            pscom_header_net_t *header);
 
 
 /* used for debug: */
@@ -110,7 +111,8 @@ void _pscom_recvq_any_cleanup(struct list_head *recvq_any);
 void _pscom_recvq_ctrl_enq(pscom_con_t *con, pscom_req_t *req);
 void _pscom_recvq_ctrl_deq(pscom_con_t *con, pscom_req_t *req);
 
-pscom_req_t *_pscom_recvq_ctrl_find_and_deq(pscom_con_t *con, pscom_header_net_t *header);
+pscom_req_t *_pscom_recvq_ctrl_find_and_deq(pscom_con_t *con,
+                                            pscom_header_net_t *header);
 
 
 /*************
@@ -164,9 +166,9 @@ pscom_req_t *_pscom_recvq_rma_head(pscom_con_t *con);
 /*************
  * Recvq bcast
  */
-//void _pscom_recvq_bcast_enq(pscom_req_t *req);
-//void _pscom_recvq_bcast_deq(pscom_req_t *req);
-//void _pscom_net_recvq_bcast_deq(pscom_req_t *req);
+// void _pscom_recvq_bcast_enq(pscom_req_t *req);
+// void _pscom_recvq_bcast_deq(pscom_req_t *req);
+// void _pscom_net_recvq_bcast_deq(pscom_req_t *req);
 
 
 #endif /* _PSCOM_QUEUES_H_ */

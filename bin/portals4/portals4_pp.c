@@ -26,7 +26,7 @@
 
 #include <portals4.h>
 
-//#define TRACE(code) code
+// #define TRACE(code) code
 #define TRACE(code)
 
 #define MAX_SIZE   (8 * 1024 * 1024)
@@ -145,8 +145,7 @@ static void parse_opt(int argc, char **argv)
 
         c = getopt_long(argc, argv, "n:t:s:p:hv", long_options, &option_index);
 
-        if (c == -1)
-            break;
+        if (c == -1) { break; }
 
         switch (c) {
         case 0: break;
@@ -285,7 +284,12 @@ static void psportals4_init(void)
     /* initialize the network interface */
     PTL_CHECK(PtlNIInit(PTL_IFACE_DEFAULT, /* use the default interface */
                         (PTL_NI_MATCHING | PTL_NI_PHYSICAL),
-                        PTL_PID_ANY, /* let portals4 choose the pid */
+                        PTL_PID_ANY, /* let
+                                        portals4
+                                        choose
+                                        the
+                                        pid
+                                      */
                         NULL,        /* do not impose resource limits */
                         NULL,   /* do not retrieve the actual resource limits */
                         &nih)); /* handle to the network interface */
@@ -360,14 +364,16 @@ static inline void send_msg(unsigned len, unsigned last_msg, unsigned loops)
         PtlPut(mdh, /* local memory handle */
                0,   /* local offset */
                len, /* amount of bytes to be sent */
-               last_msg ? PTL_OC_ACK_REQ
-                        : PTL_NO_ACK_REQ, /* do not request an acknowledgment */
-               rmsg.pid,                  /* peer process ID */
-               rmsg.pti,                  /* remote portals index */
-               MATCH_BITS,                /* match bits */
-               0,                         /* remote offset */
-               NULL,                      /* local user pointer */
-               msg_header.header));       /* header */
+               last_msg ? PTL_OC_ACK_REQ : PTL_NO_ACK_REQ, /* do not
+                                                              request an
+                                                              acknowledgment
+                                                            */
+               rmsg.pid,                                   /* peer process ID */
+               rmsg.pti,            /* remote portals index */
+               MATCH_BITS,          /* match bits */
+               0,                   /* remote offset */
+               NULL,                /* local user pointer */
+               msg_header.header)); /* header */
 
     /* wait for the according event */
     if (last_msg) {
@@ -391,8 +397,7 @@ static inline unsigned recv_msg(uint64_t *last_msg)
         }
     } while (1);
 
-    if (last_msg)
-        *last_msg = event.hdr_data;
+    if (last_msg) { *last_msg = event.hdr_data; }
 
     return (unsigned)(event.rlength);
 }
@@ -466,8 +471,7 @@ static void do_pp_client(void)
                 loops = loops / 1.4142135;
                 t /= 1.4142135;
             }
-            if (loops < 1)
-                loops = 1;
+            if (loops < 1) { loops = 1; }
         }
     }
 
@@ -534,8 +538,7 @@ static int get_peer(void)
         SCALL(connect(fd, addrinfo->ai_addr, addrinfo->ai_addrlen));
     }
 
-    if (addrinfo)
-        freeaddrinfo(addrinfo);
+    if (addrinfo) { freeaddrinfo(addrinfo); }
     return fd;
 }
 

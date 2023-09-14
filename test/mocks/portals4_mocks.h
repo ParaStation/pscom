@@ -15,7 +15,13 @@
 
 #include "pscom_utest.h"
 
-static inline void enable_extended_ptl_put_mock(void) { pscom_utest.mock_functions.portals.extended_ptl_put = 1; }
-static inline void disable_extended_ptl_put_mock(void) { pscom_utest.mock_functions.portals.extended_ptl_put = 0; }
+static inline void enable_extended_ptl_put_mock(void)
+{
+    pscom_utest.mock_functions.portals.extended_ptl_put = 1;
+}
+static inline void disable_extended_ptl_put_mock(void)
+{
+    pscom_utest.mock_functions.portals.extended_ptl_put = 0;
+}
 
 #endif /* _PORTALS4_MOCKS_H_ */

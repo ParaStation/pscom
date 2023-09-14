@@ -22,56 +22,57 @@
 #include <math.h>
 
 struct list_head {
-	struct list_head *next, *prev;
+    struct list_head *next, *prev;
 };
 
 struct list_head ioq;
 
 
-static
-void deq(void)
+static void deq(void)
 {
-        /* fprintf(stderr, "%s: head %p %p %p\n", __func__, &ioq, ioq.next, ioq.prev);*/
-	while (ioq.next != &ioq) {
-		struct list_head *h = ioq.next;
-		h->prev->next = h->next;
-		h->next->prev = h->prev;
-        }
-	/* fprintf(stderr, "%s: head %p %p %p\n", __func__, &ioq, ioq.next, ioq.prev);*/
+    /* fprintf(stderr, "%s: head %p %p %p\n", __func__, &ioq, ioq.next,
+     * ioq.prev);*/
+    while (ioq.next != &ioq) {
+        struct list_head *h = ioq.next;
+        h->prev->next       = h->next;
+        h->next->prev       = h->prev;
+    }
+    /* fprintf(stderr, "%s: head %p %p %p\n", __func__, &ioq, ioq.next,
+     * ioq.prev);*/
 }
 
 
-
-static
-void sig_alarm(int sig)
+static void sig_alarm(int sig)
 {
-	fprintf(stderr, "\nError: GCC bug detected (see list_test.c)\n");
-	fprintf(stderr, "choose a different compiler version!\n\n");
-	exit(1);
+    fprintf(stderr, "\nError: GCC bug detected (see list_test.c)\n");
+    fprintf(stderr, "choose a different compiler version!\n\n");
+    exit(1);
 }
 
 
 int main(int argc, char **argv)
 {
-	struct list_head r;
+    struct list_head r;
 
-	ioq.next = &r;
-	r.next = &ioq;
+    ioq.next = &r;
+    r.next   = &ioq;
 
-	ioq.prev = &r;
-	r.prev = &ioq;
+    ioq.prev = &r;
+    r.prev   = &ioq;
 
-	signal(SIGALRM, sig_alarm);
-	alarm(2);
+    signal(SIGALRM, sig_alarm);
+    alarm(2);
 
-	deq();
+    deq();
 
-	return 0;
+    return 0;
 }
 
-/*
+/* clang-format off
+ *
  * Local Variables:
- *  compile-command: "gcc list_test.c -g -Wall -W -Wno-unused -O2 -o list_test && ./list_test"
+ *  compile-command: "gcc list_test.c -g -Wall -W -Wno-unused -O2 -o list_test * && ./list_test"
  * End:
  *
+ * clang-format on
  */

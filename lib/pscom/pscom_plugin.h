@@ -15,25 +15,29 @@
 #define PSCOM_PLUGIN_VERSION 0x0203
 
 typedef struct pscom_plugin {
-	char	name[8];
-	unsigned int version; // must be equal to PSCOM_PLUGIN_VERSION
-	unsigned int arch_id;	// PSCOM_ARCH_xyz
-	unsigned int priority;	// default priority (0 == disabled, prefer higher values)
-	unsigned int user_prio; // (0 == disabled, prefer higher values) Set by env PSP_{ARCH}
+    char name[8];
+    unsigned int version;   // must be equal to PSCOM_PLUGIN_VERSION
+    unsigned int arch_id;   // PSCOM_ARCH_xyz
+    unsigned int priority;  // default priority (0 == disabled, prefer higher
+                            // values)
+    unsigned int user_prio; // (0 == disabled, prefer higher values) Set by env
+                            // PSP_{ARCH}
 
-	void	(*init)(void);
-	void	(*destroy)(void);
-	void	(*sock_init)(pscom_sock_t *sock);
-	void	(*sock_destroy)(pscom_sock_t *sock);
+    void (*init)(void);
+    void (*destroy)(void);
+    void (*sock_init)(pscom_sock_t *sock);
+    void (*sock_destroy)(pscom_sock_t *sock);
 
-	int	(*con_init)(pscom_con_t *con); // return 0, if init succeeded, -1 for errors or disabled plugins.
-	void	(*con_handshake)(pscom_con_t *con, int type, void *data, unsigned size);
+    int (*con_init)(pscom_con_t *con); // return 0, if init succeeded, -1 for
+                                       // errors or disabled plugins.
+    void (*con_handshake)(pscom_con_t *con, int type, void *data, unsigned size);
 
-	struct list_head next;
+    struct list_head next;
 } pscom_plugin_t;
 
 
-/* Load and initialize all plugins. (also called by pscom_plugins_sock_init()) */
+/* Load and initialize all plugins. (also called by pscom_plugins_sock_init())
+ */
 void pscom_plugins_init(void);
 void pscom_plugins_destroy(void);
 

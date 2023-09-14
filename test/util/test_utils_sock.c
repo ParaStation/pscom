@@ -18,23 +18,23 @@
 
 int setup_dummy_sock(void **state)
 {
-	pscom_sock_t *new_sock = NULL;
+    pscom_sock_t *new_sock = NULL;
 
-	INIT_LIST_HEAD(&pscom.sockets);
-	INIT_LIST_HEAD(&pscom.recvq_any_global);
+    INIT_LIST_HEAD(&pscom.sockets);
+    INIT_LIST_HEAD(&pscom.recvq_any_global);
 
-	new_sock = pscom_open_sock(0, 0);
-	*state = (void *)new_sock;
+    new_sock = pscom_open_sock(0, 0);
+    *state   = (void *)new_sock;
 
-	return 0;
+    return 0;
 }
 
 
 int teardown_dummy_sock(void **state)
 {
-	pscom_sock_t *sock = (pscom_sock_t *)(*state);
+    pscom_sock_t *sock = (pscom_sock_t *)(*state);
 
-	free(sock);
+    free(sock);
 
-	return 0;
+    return 0;
 }

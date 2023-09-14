@@ -28,47 +28,50 @@
  */
 
 typedef struct shm_msg_s {
-	uint32_t len;
-	volatile uint32_t msg_type;
+    uint32_t len;
+    volatile uint32_t msg_type;
 } shm_msg_t;
 
 #if !(defined(__KNC__) || defined(__MIC__))
-#define SHM_BUFS 8
+#define SHM_BUFS   8
 #define SHM_BUFLEN (8192 - sizeof(shm_msg_t))
 #else
-/* On KNC use more, but much smaller shm buffers. Using direct shm to archive a good throughput. */
-#define SHM_BUFS 16
+/* On KNC use more, but much smaller shm buffers. Using direct shm to archive a
+ * good throughput. */
+#define SHM_BUFS   16
 #define SHM_BUFLEN ((1 * 1024) - sizeof(shm_msg_t))
 #endif
 
-#define SHM_MSGTYPE_NONE 0
-#define SHM_MSGTYPE_STD	 1
-#define SHM_MSGTYPE_DIRECT 2
+#define SHM_MSGTYPE_NONE        0
+#define SHM_MSGTYPE_STD         1
+#define SHM_MSGTYPE_DIRECT      2
 #define SHM_MSGTYPE_DIRECT_DONE 3
 
-#define SHM_DATA(buf, len) ((char*)(&(buf)->header) - (((len) + 7) & ~7))
+#define SHM_DATA(buf, len) ((char *)(&(buf)->header) - (((len) + 7) & ~7))
 
 typedef struct shm_buf_s {
-	uint8_t _data[SHM_BUFLEN];
-	shm_msg_t header;
+    uint8_t _data[SHM_BUFLEN];
+    shm_msg_t header;
 } shm_buf_t;
 
 typedef struct shm_com_s {
-	shm_buf_t	buf[SHM_BUFS];
+    shm_buf_t buf[SHM_BUFS];
 } shm_com_t;
 
 typedef struct shm_conn_s {
-	shm_com_t	*local_com;  /* local */
-	shm_com_t	*remote_com; /* remote */
-	int		recv_cur;
-	int		send_cur;
-	long		direct_offset; /* base offset for shm direct */
-	int		local_id;
-	int		remote_id;
-	void		*direct_base; /* shm direct base */
+    shm_com_t *local_com;  /* local */
+    shm_com_t *remote_com; /* remote */
+    int recv_cur;
+    int send_cur;
+    long direct_offset; /* base offset for shm direct */
+    int local_id;
+    int remote_id;
+    void *direct_base; /* shm direct base */
 
-	pscom_poll_t	poll_write_pending_io; // Polled if this shm_conn_t has pending io
-	struct shm_pending *shm_pending; /* first pending io request of this connection */
+    pscom_poll_t poll_write_pending_io; // Polled if this shm_conn_t has
+                                        // pending io
+    struct shm_pending *shm_pending;    /* first pending io request of this
+                                           connection */
 } shm_conn_t;
 
 
