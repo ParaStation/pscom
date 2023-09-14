@@ -121,6 +121,14 @@ $ export CPATH=pscom/install/dir/include:${CPATH}
 $ export PATH=pscom/install/dir/bin:${PATH}
 ```
 
+## Contributing
+To ensure that all commits conform to the coding style, the pre-commit hook should be activated. Therefore, you have to link this hook from the top-level source directory:
+```console
+$ ln -s ../../scripts/hooks/pre-commit .git/hooks/pre-commit
+```
+
+This automatically runs `clang-format` on all changed files. Currently, we rely on `clang-format` in version 16.0.6 for checking the coding style.
+
 ## More documentation
 - [Introduction and Concepts](doc/PscomConcepts.md)
 - [Repository Structure](doc/RepoStructure.md)
