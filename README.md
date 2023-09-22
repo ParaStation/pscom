@@ -1,4 +1,21 @@
 # ParaStation Communication Library
+* [Installation](#installation)
+    * [Prerequisites](#prerequisites)
+        * [Required](#required)
+        * [Optional](#optional)
+            * [Hardware-dependent](#hardware-dependent)
+            * [Other](#other)
+    * [Build configuration](#build-configuration)
+        * [Install prefix / location](#install-prefix-location)
+        * [Build type](#build-type)
+        * [Plugins](#plugins)
+        * [CUDA awareness](#cuda-awareness)
+        * [Unit tests](#unit-tests)
+        * [Code coverage analysis](#code-coverage-analysis)
+    * [Build & Install](#build-install)
+    * [Environment variables](#environment-variables)
+    * [Contributing](#contributing)
+    * [More documentation](#more-documentation)
 
 The ParaStation Communication Library (`pscom` for short) is an open-source low-level communication library, especially designed for the employment in HPC systems.
 
@@ -120,6 +137,14 @@ $ export LD_LIBRARY_PATH=pscom/install/dir/lib[64]:${LD_LIBRARY_PATH}
 $ export CPATH=pscom/install/dir/include:${CPATH}
 $ export PATH=pscom/install/dir/bin:${PATH}
 ```
+
+## Contributing
+To ensure that all commits conform to the coding style, the pre-commit hook should be activated. Therefore, you have to link this hook from the top-level source directory:
+```console
+$ ln -s ../../scripts/hooks/pre-commit .git/hooks/pre-commit
+```
+
+This automatically runs `clang-format` on all changed files. Currently, we rely on `clang-format` in version 16.0.6 for checking the coding style.
 
 ## More documentation
 - [Introduction and Concepts](doc/PscomConcepts.md)
