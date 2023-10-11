@@ -118,6 +118,7 @@ typedef enum PSCOM_con_type {
     PSCOM_CON_TYPE_UCP = 0x12, /**< UCP communication (e.g., for InfiniBand) */
     PSCOM_CON_TYPE_GW  = 0x13, /**< Communication via a gateway node */
     PSCOM_CON_TYPE_PORTALS = 0x14, /**< Portals4 communication (e.g., BXI) */
+    PSCOM_CON_TYPE_COUNT,          /**< Number of connection types*/
 } pscom_con_type_t;
 
 /**
@@ -182,6 +183,18 @@ typedef struct PSCOM_connection pscom_connection_t;
 typedef struct PSCOM_request pscom_request_t;
 typedef struct PSCOM_header_net pscom_header_net_t;
 typedef struct PSCOM_con_info pscom_con_info_t;
+
+
+/**
+ * @brief RMA memory region handle
+ */
+typedef struct PSCOM_memh *pscom_memh_t;
+
+
+/**
+ * @brief RMA remote key handle
+ */
+typedef struct PSCOM_rkey *pscom_rkey_t;
 
 
 /**

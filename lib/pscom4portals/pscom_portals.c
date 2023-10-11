@@ -559,12 +559,12 @@ static void pscom_portals_configure_eager(pscom_con_t *con)
 static void pscom_portals_configure_rndv_write(pscom_con_t *con)
 {
     /* memory (de-)registration */
-    con->rma_mem_register       = pscom_portals_rma_mem_register;
-    con->rma_mem_deregister     = pscom_portals_rma_mem_deregister;
-    con->rma_mem_register_check = NULL;
+    con->rndv.mem_register       = pscom_portals_rma_mem_register;
+    con->rndv.mem_deregister     = pscom_portals_rma_mem_deregister;
+    con->rndv.mem_register_check = NULL;
 
     /* communication */
-    con->rma_write = pscom_portals_rma_write;
+    con->rndv.rma_write = pscom_portals_rma_write;
 
     /* the rendezvous threshold */
     con->rendezvous_size = pscom.env.rendezvous_size_portals;
@@ -642,6 +642,10 @@ static void pscom_portals_sock_init(pscom_sock_t *sock)
     /* set up the arch_sock structure */
     arch_sock->arch.portals = (pscom_portals_sock_t *)&arch_sock->arch_sock_data;
     arch_sock->plugin_con_type = PSCOM_CON_TYPE_PORTALS;
+
+    arch_sock->rma.mem_register   = NULL;
+    arch_sock->rma.mem_deregister = NULL;
+    arch_sock->rma.rkey_buf_free  = free;
 
     /* add the new arch sock to the socket archs list */
     assert(get_arch_sock(sock, PSCOM_CON_TYPE_PORTALS) == NULL);

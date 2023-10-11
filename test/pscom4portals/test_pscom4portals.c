@@ -1158,7 +1158,7 @@ void test_portals_handle_message_drop(void **state)
  * \brief Test memory registration
  *
  * Given: A memory region to be registered for receiving
- * When: con->rma_mem_register is called
+ * When: con->rndv.mem_register is called
  * Then: it is successfully registered with the low-level portals layer
  */
 void test_portals_memory_registration(void **state)
@@ -1213,7 +1213,7 @@ void test_portals_memory_registration(void **state)
  * \brief Test failing memory registration
  *
  * Given: A memory region to be registered for receiving
- * When: con->rma_mem_register is called and the registration fails
+ * When: con->rndv.mem_register is called and the registration fails
  * Then: zero is returned
  */
 void test_portals_failed_memory_registration(void **state)
@@ -1233,7 +1233,7 @@ void test_portals_failed_memory_registration(void **state)
 
     will_return(__wrap_PtlMEAppend, PTL_NO_SPACE);
     expect_function_call(__wrap_PtlMEAppend);
-    assert_true(dummy_con->rma_mem_register(dummy_con, &rd) == 0);
+    assert_true(dummy_con->rndv.mem_register(dummy_con, &rd) == 0);
 }
 
 
@@ -1241,7 +1241,7 @@ void test_portals_failed_memory_registration(void **state)
  * \brief Test failing memory registration
  *
  * Given: A registered memory region with corresponding pscom_rendezvous_data_t
- * When: con->rma_mem_deregister is called
+ * When: con->rndv.mem_deregister is called
  * Then: the private data of the low-level layer should be released
  */
 void test_portals_mem_deregister_releases_resources(void **state)
@@ -1259,7 +1259,7 @@ void test_portals_mem_deregister_releases_resources(void **state)
     rd_portals->rma_write_rx.rma_mreg.priv      = bucket;
 
     expect_function_call(__wrap_PtlMEUnlink);
-    dummy_con->rma_mem_deregister(dummy_con, &rd);
+    dummy_con->rndv.mem_deregister(dummy_con, &rd);
 }
 
 
@@ -1267,7 +1267,7 @@ void test_portals_mem_deregister_releases_resources(void **state)
  * \brief Test RMA write
  *
  * Given: A rendezvous request
- * When: con->rma_write is called with correct parameters
+ * When: con->rndv.rma_write is called with correct parameters
  * Then: zero is returned
  */
 void test_portals_rma_write(void **state)
@@ -1284,15 +1284,15 @@ void test_portals_rma_write(void **state)
 
     expect_function_call(__wrap_PtlPut);
     will_return(__wrap_PtlPut, PTL_OK);
-    assert_true(
-        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == 0);
+    assert_true(dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg, NULL,
+                                          NULL) == 0);
 }
 
 
 /**
  * \brief Test RMA write for failing put operations
  *
- * Given: A rendezvous request and con->rma_write is called
+ * Given: A rendezvous request and con->rndv.rma_write is called
  * When: PtlPut fails
  * Then: it returns -1
  */
@@ -1311,8 +1311,8 @@ void test_portals_rma_write_fail_put(void **state)
 
     expect_function_call(__wrap_PtlPut);
     will_return(__wrap_PtlPut, PTL_ARG_INVALID);
-    assert_true(
-        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == -1);
+    assert_true(dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg, NULL,
+                                          NULL) == -1);
 }
 
 
@@ -1344,8 +1344,8 @@ void test_portals_rma_write_completion(void **state)
     expect_function_call(__wrap_PtlPut);
     will_return(__wrap_PtlPut, PTL_OK);
     void *priv = (void *)(0xDEADBEEF);
-    dummy_con->rma_write(dummy_con, src_buf, &rndv_msg,
-                         rma_write_completion_io_done, priv);
+    dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg,
+                              rma_write_completion_io_done, priv);
 
 
     /* receive ACK */
@@ -1377,7 +1377,7 @@ void test_portals_rma_write_completion(void **state)
  *
  * Given: A rendezvous request of a long message exceeding the rendezvous
  *        fragmentation size
- * When: con->rma_write is called with correct parameters
+ * When: con->rndv.rma_write is called with correct parameters
  * Then: the request is processes by sending multiple fragments
  */
 void test_portals_rma_write_fragmentation(void **state)
@@ -1408,8 +1408,8 @@ void test_portals_rma_write_fragmentation(void **state)
         expect_value(__wrap_PtlPut, length, fragment_size);
     }
 
-    assert_true(
-        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == 0);
+    assert_true(dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg, NULL,
+                                          NULL) == 0);
 
     disable_extended_ptl_put_mock();
 
@@ -1422,7 +1422,7 @@ void test_portals_rma_write_fragmentation(void **state)
  *
  * Given: A rendezvous request of a long message exceeding the rendezvous
  *        fragmentation size and remainder
- * When: con->rma_write is called with correct parameters
+ * When: con->rndv.rma_write is called with correct parameters
  * Then: the request is processes by sending multiple fragments
  */
 void test_portals_rma_write_fragmentation_remainder(void **state)
@@ -1459,8 +1459,8 @@ void test_portals_rma_write_fragmentation_remainder(void **state)
                  src_buf + full_fragment_cnt * fragment_size);
     expect_value(__wrap_PtlPut, length, remainder);
 
-    assert_true(
-        dummy_con->rma_write(dummy_con, src_buf, &rndv_msg, NULL, NULL) == 0);
+    assert_true(dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg, NULL,
+                                          NULL) == 0);
 
     disable_extended_ptl_put_mock();
 
@@ -1496,8 +1496,8 @@ void test_portals_rma_write_fail_ack(void **state)
     expect_function_call(__wrap_PtlPut);
     will_return(__wrap_PtlPut, PTL_OK);
     void *priv = (void *)(0xDEADBEEF);
-    dummy_con->rma_write(dummy_con, src_buf, &rndv_msg,
-                         rma_write_completion_io_done, priv);
+    dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg,
+                              rma_write_completion_io_done, priv);
 
 
     /* receive ACK */

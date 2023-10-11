@@ -229,10 +229,6 @@ static void pscom_ucp_init_con(pscom_con_t *con)
 
     con->close = pscom_ucp_con_close;
 
-    //	con->rma_mem_register = pscom_ucp_rma_mem_register;
-    //	con->rma_mem_deregister = pscom_ucp_rma_mem_deregister;
-    //	con->rma_read = pscom_ucp_rma_read;
-
     con->rendezvous_size = pscom.env.rendezvous_size_ucp;
 
     pscom_con_setup_ok(con);
@@ -264,6 +260,35 @@ static void pscom_ucp_init(void)
 static void pscom_ucp_destroy(void)
 {
 }
+
+
+static void pscom_ucp_sock_init(pscom_sock_t *sock)
+{
+    /* allocate space for a new arch sock */
+    pscom_arch_sock_t *arch_sock = malloc(sizeof(pscom_arch_sock_t));
+    /* set up the arch_sock structure */
+    arch_sock->plugin_con_type   = PSCOM_CON_TYPE_UCP;
+
+    arch_sock->rma.mem_register   = NULL;
+    arch_sock->rma.mem_deregister = NULL;
+    arch_sock->rma.rkey_buf_free  = free;
+
+    /* add the new arch sock to the socket archs list */
+    assert(get_arch_sock(sock, PSCOM_CON_TYPE_UCP) == NULL);
+    list_add_tail(&arch_sock->next, &sock->archs);
+}
+
+
+static void pscom_ucp_sock_destroy(pscom_sock_t *sock)
+{
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_UCP);
+    assert(arch_sock);
+
+    /* release resources associated with the arch_sock structure */
+    list_del_init(&arch_sock->next);
+    free(arch_sock);
+}
+
 
 #define PSCOM_INFO_UCP_ID PSCOM_INFO_ARCH_STEP1
 
@@ -335,8 +360,8 @@ pscom_plugin_t pscom_plugin_ucp = {
 
     .init          = pscom_ucp_init,
     .destroy       = pscom_ucp_destroy,
-    .sock_init     = NULL,
-    .sock_destroy  = NULL,
+    .sock_init     = pscom_ucp_sock_init,
+    .sock_destroy  = pscom_ucp_sock_destroy,
     .con_init      = pscom_ucp_con_init,
     .con_handshake = pscom_ucp_handshake,
 };

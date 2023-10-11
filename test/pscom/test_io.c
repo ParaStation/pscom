@@ -871,19 +871,19 @@ static int rma_write_error(pscom_con_t *con, void *src,
 }
 
 /**
- * \brief Test pscom_get_rma_read_receiver() for an error in con->rma_write
+ * \brief Test pscom_get_rma_read_receiver() for an error in con->rndv.rma_write
  *
  * Given: A rendezvous send requests and incomming PSCOM_MSGTYPE_RMA_READ
- * When: con->rma_write() fails
+ * When: con->rndv.rma_write() fails
  * Then: the request should be marked with an error; pending IO should be zero
  *       and the connection should be closed for writing
  */
 void test_pscom_get_rma_read_receiver_failing_rma_write(void **state)
 {
     /* obtain the dummy connection from the test setup */
-    pscom_con_t *recv_con = (pscom_con_t *)(*state);
-    recv_con->rma_read    = NULL;
-    recv_con->rma_write   = rma_write_error;
+    pscom_con_t *recv_con    = (pscom_con_t *)(*state);
+    recv_con->rndv.rma_read  = NULL;
+    recv_con->rndv.rma_write = rma_write_error;
 
     /* poen connection for reading and writing */
     recv_con->pub.state = PSCOM_CON_STATE_RW;
@@ -940,13 +940,13 @@ void test_rndv_recv_read_error(void **state)
     dummy_con_pair_t *con_pair = (dummy_con_pair_t *)(*state);
     pscom_con_t *recv_con, *send_con;
 
-    recv_con            = con_pair->recv_con;
-    recv_con->rma_read  = NULL;
-    recv_con->rma_write = rma_write_null;
+    recv_con                 = con_pair->recv_con;
+    recv_con->rndv.rma_read  = NULL;
+    recv_con->rndv.rma_write = rma_write_null;
 
-    send_con            = con_pair->send_con;
-    send_con->rma_read  = NULL;
-    send_con->rma_write = rma_write_null;
+    send_con                 = con_pair->send_con;
+    send_con->rndv.rma_read  = NULL;
+    send_con->rndv.rma_write = rma_write_null;
 
     /* open recv connection for reading and writing */
     recv_con->pub.state = PSCOM_CON_STATE_RW;

@@ -353,9 +353,9 @@ static void pscom_extoll_init_con(pscom_con_t *con)
 
     con->close = pscom_extoll_con_close;
 
-    con->rma_mem_register   = pscom_extoll_rma_mem_register;
-    con->rma_mem_deregister = pscom_extoll_rma_mem_deregister;
-    con->rma_read           = pscom_extoll_rma_read;
+    con->rndv.mem_register   = pscom_extoll_rma_mem_register;
+    con->rndv.mem_deregister = pscom_extoll_rma_mem_deregister;
+    con->rndv.rma_read       = pscom_extoll_rma_read;
 
     con->rendezvous_size = pscom.env.rendezvous_size_velo;
 
