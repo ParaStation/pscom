@@ -20,6 +20,7 @@ add_library(pscom SHARED
   pscom_group.c
   pscom_group_bcast.c
   pscom_io.c
+  pscom_rma.c
   pscom_listener.c
   pscom_ondemand.c
   pscom_plugin.c

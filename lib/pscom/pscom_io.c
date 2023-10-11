@@ -63,7 +63,7 @@ static inline void pscom_post_send_direct_inline(pscom_req_t *req,
 static inline void _pscom_post_send_direct_inline(pscom_con_t *con,
                                                   pscom_req_t *req,
                                                   pscom_msgtype_t msg_type);
-static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req);
+static inline void _pscom_post_rma_read_inline(pscom_req_t *rma_read_req);
 
 int pscom_read_is_at_message_start(pscom_con_t *con);
 void pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
@@ -705,7 +705,7 @@ static void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req,
     } else {
     rma_read_fallback:
         perf_add("rndv_fallback_rma_read");
-        _pscom_post_rma_read(rendezvous_req);
+        _pscom_post_rma_read_inline(rendezvous_req);
     }
 }
 
@@ -1462,7 +1462,7 @@ static inline void _pscom_post_send_rendezvous_inline(pscom_req_t *user_req,
 }
 
 
-static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req)
+static inline void _pscom_post_rma_read_inline(pscom_req_t *rma_read_req)
 {
     pscom_con_t *con     = get_con(rma_read_req->pub.connection);
     pscom_req_t *req_rma = pscom_req_create(sizeof(pscom_rendezvous_data_t), 0);
@@ -1510,6 +1510,10 @@ static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req)
     _pscom_post_send_direct(con, req_rma, PSCOM_MSGTYPE_RMA_READ);
 }
 
+void _pscom_post_rma_read(pscom_req_t *rma_read_req)
+{
+    _pscom_post_rma_read_inline(rma_read_req);
+}
 
 /* post the receive request req.
    Receiving up to req->xheader_len bytes to req->xheader and
@@ -1969,7 +1973,7 @@ void pscom_post_rma_read(pscom_request_t *request)
 
     pscom_lock();
     {
-        _pscom_post_rma_read(req);
+        _pscom_post_rma_read_inline(req);
     }
     pscom_unlock();
 }
