@@ -27,6 +27,11 @@ target_link_libraries(      pscom_info	PRIVATE pscom)
 target_include_directories( pscom_info  PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
 install(TARGETS             pscom_info	DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
+add_executable(             pscom_rma_get	pscom_rma_get.c)
+target_link_libraries(      pscom_rma_get	PRIVATE pscom)
+target_include_directories( pscom_rma_get	PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
+install(TARGETS             pscom_rma_get	DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
 add_executable(             pscom_test	pscom_test.c)
 target_include_directories( pscom_test	PRIVATE ${POPT_INCLUDE_DIRS})
 target_link_libraries(      pscom_test	PRIVATE pscom ${POPT_LIBRARIES})
