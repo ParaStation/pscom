@@ -29,7 +29,6 @@ For installations of ParaStation MPI, the default install directory is typically
 ### Required
 - CMake, at least version 3.10
 - C compiler with C99 support
-- `popt` library, a command line option parsing library
 
 ### Optional
 
@@ -43,6 +42,7 @@ For installations of ParaStation MPI, the default install directory is typically
 - CUDA libraries for CUDA awareness of `pscom`
 
 #### Other
+- `popt` library, a command line option parsing library used by some of the tools in the `bin` folder
 - Parastation Management (`psmgmt`) library
 - cmocka Library for unit tests
 
