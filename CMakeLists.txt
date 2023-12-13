@@ -14,6 +14,12 @@ cmake_minimum_required(VERSION 3.10)
 project(pscom
 	LANGUAGES C)
 
+# Set default install directory for pscom
+# if user did not provide CMAKE_INSTALL_PREFIX
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "/opt/parastation" CACHE PATH "Use default install prefix" FORCE)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(CMakeDependentOption)
 include(GNUInstallDirs)
