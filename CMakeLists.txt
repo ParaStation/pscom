@@ -62,7 +62,8 @@ if(NOT VISIBILITY_PROTECTED)
   add_compile_definitions(NO_PROTECTED_FUNC=1)
 endif(NOT VISIBILITY_PROTECTED)
 
-find_package(Popt REQUIRED)
+find_package(Popt)
+option_conditional(POPT_ENABLED "Enable popt" TRUE "POPT_FOUND" FALSE)
 
 find_package(IbVerbs)
 option_conditional(OPENIB_ENABLED "Enable pscom4openib" FALSE "IBVERBS_FOUND" FALSE)
@@ -150,6 +151,7 @@ if(EXTOLL_ENABLED)
 endif(EXTOLL_ENABLED)
 
 
+message(STATUS "POPT_ENABLED:         ${POPT_ENABLED}")
 message(STATUS "OPENIB_ENABLED:       ${OPENIB_ENABLED}")
 message(STATUS "OFED_ENABLED:         ${OFED_ENABLED}")
 message(STATUS "UCP_ENABLED:          ${UCP_ENABLED}")
