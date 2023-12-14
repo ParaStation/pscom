@@ -337,7 +337,7 @@ static int psgm_init_port(gmport_t *gmport)
         int pidx = free_ports[i];
         int unit;
         for (unit = 0; unit < last_unit; unit++) {
-            stat = gm_open(&gmport->port, unit, pidx, "psport4", GM_API_VERSION);
+            stat = gm_open(&gmport->port, unit, pidx, "pscom", GM_API_VERSION);
             if (stat == GM_SUCCESS) {
                 gmport->port_idx = pidx;
                 gmport->unit_idx = unit;
@@ -345,7 +345,7 @@ static int psgm_init_port(gmport_t *gmport)
             }
             if (stat == GM_NO_SUCH_DEVICE) { last_unit = unit; }
             psgm_dprint(5,
-                        "gm_open(%p, unit=%u, port_id=%u, \"psport4\", "
+                        "gm_open(%p, unit=%u, port_id=%u, \"pscom\", "
                         "GM_API_VERSION=0x%x) = %d",
                         &gmport->port, unit, pidx, GM_API_VERSION, stat);
         }
