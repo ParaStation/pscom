@@ -37,7 +37,6 @@ bin/mxm/mxm_util.c \
 bin/openib/openib_pp.c \
 bin/openib/openib_ud_pp.c \
 bin/portals4/portals4_pp.c \
-bin/porttest.c \
 bin/pscom.gdb \
 bin/pscom_bcast_pp.c \
 bin/pscom_bcast_test.c \
@@ -51,14 +50,9 @@ bin/pscom_rma_get.c \
 bin/pscom_request_create.c \
 bin/pscom_test.c \
 bin/pscom_test_fault.c \
-bin/pscp.c \
 bin/psm/pscom4psm_pp.c \
 bin/psm/psm2_pp.c \
 bin/psm/psm_pp.c \
-bin/pspipe.c \
-bin/psport4_pp.c \
-bin/psport_util.c \
-bin/psport_util.h \
 bin/test_nodes.c \
 bin/ucp/ucp_pp.c \
 cmake/Modules/CheckVisibilityProtected.cmake \
@@ -222,7 +216,6 @@ scripts/depcomp \
 scripts/install-sh \
 scripts/ltmain.sh \
 scripts/missing \
-scripts/parastation-config.sh \
 scripts/ps_ethernet.sh \
 scripts/rpm_noreq \
 scripts/test-driver \
