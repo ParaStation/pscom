@@ -76,11 +76,6 @@ if(PSMGMT_ENABLED)
   target_add_psmgmt(	test_nodes)
 endif(PSMGMT_ENABLED)
 
-
-if (PSMGMT_ENABLED)
-#  pscp
-endif (PSMGMT_ENABLED)
-
 if (MELLANOX_ENABLED)
 #  ps4_ib ps4_ib_pp ps4_ib_pp_rdma
 #
