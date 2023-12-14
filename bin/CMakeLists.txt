@@ -375,12 +375,9 @@ set(includedir ${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_INCLUDEDIR})
 
 configure_file(pscom_debug.sh pscom_debug @ONLY)
 configure_file(pscom.gdb pscom.gdb COPYONLY)
-configure_file(${CMAKE_SOURCE_DIR}/scripts/parastation-config.sh parastation-config @ONLY)
-
 
 install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/pscom_debug DESTINATION ${CMAKE_INSTALL_BINDIR})
 install(FILES pscom.gdb DESTINATION config)
-install(PROGRAMS ${CMAKE_CURRENT_BINARY_DIR}/parastation-config DESTINATION config)
 
 
 # # -- additional rules --
