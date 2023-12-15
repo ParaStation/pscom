@@ -118,6 +118,7 @@ typedef enum PSCOM_con_type {
     PSCOM_CON_TYPE_UCP = 0x12, /**< UCP communication (e.g., for InfiniBand) */
     PSCOM_CON_TYPE_GW  = 0x13, /**< Communication via a gateway node */
     PSCOM_CON_TYPE_PORTALS = 0x14, /**< Portals4 communication (e.g., BXI) */
+    PSCOM_CON_TYPE_COUNT,          /**< Number of connection types*/
 } pscom_con_type_t;
 
 /**
@@ -182,6 +183,18 @@ typedef struct PSCOM_connection pscom_connection_t;
 typedef struct PSCOM_request pscom_request_t;
 typedef struct PSCOM_header_net pscom_header_net_t;
 typedef struct PSCOM_con_info pscom_con_info_t;
+
+
+/**
+ * @brief RMA memory region handle
+ */
+typedef struct PSCOM_memh *pscom_memh_t;
+
+
+/**
+ * @brief RMA remote key handle
+ */
+typedef struct PSCOM_rkey *pscom_rkey_t;
 
 
 /**
@@ -1426,6 +1439,160 @@ const char *pscom_err_str(pscom_err_t error);
  * @return Pointer to a buffer containing the NULL-terminated string.
  */
 const char *pscom_op_str(pscom_op_t operation);
+
+
+/**
+ * @brief Memory region registration
+ *
+ * This routine registers a user-specified memory segment with pscom socket
+ * and the plugins associated with it.
+ *
+ * @param [in]  socket   The pscom socket handle.
+ * @param [in]  addr     The memory segment start address.
+ * @param [in]  length   The length of the memory segment.
+ * @param [out] memh     The memory region handle.
+ *
+ * @return  PSCOM_SUCCESS       success
+ * @return  PSCOM_ERR_STDERROR  memory registration error in plugin layer
+ * @return  PSCOM_ERR_INVALID   no valid socket or wrong address input
+ */
+pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,
+                               size_t length, pscom_memh_t *memh);
+
+
+/**
+ * @brief Remote key generation
+ *
+ * This routine generates a remote key associated with the pscom connection and
+ * plugin. The opaque key object in the remote key buffer is used to generate
+ * the remote key. And the generated remote key object can be used by pscom RMA
+ * routines.
+ *
+ * @param [in]  connection    The pscom connection handle.
+ * @param [in]  rkeybuf       The remote key buffer returned by memory
+ *                            registration from other processes.
+ * @param [in]  bufsize       The buffer size.
+ * @param [out] rkey          The remote key object used for RMA routines.
+ *
+ * @return  PSCOM_SUCCESS       success
+ * @return  PSCOM_ERR_STDERROR  remote key generation error in plugin layer or
+ *                              error in remote key buffer
+ */
+pscom_err_t pscom_rkey_generate(pscom_connection_t *connection, void *rkeybuf,
+                                size_t bufsize, pscom_rkey_t *rkey);
+
+
+/**
+ * @brief Memory region deregistration
+ *
+ * This routine deregisters the memory region and frees the related memory
+ * handle
+ *
+ * @param [in] memh    The memory region handle.
+ *
+ * @return  PSCOM_SUCCESS       success
+ * @return  PSCOM_ERR_STDERROR  deregistration error in plugin layer
+ */
+pscom_err_t pscom_mem_deregister(pscom_memh_t memh);
+
+
+/**
+ * @brief Remote key destroy
+ *
+ * This routine destroys the remote key and frees its space
+ *
+ * @param [in] rkey    The remote key handle.
+ *
+ * @return  PSCOM_SUCCESS       success
+ * @return  PSCOM_ERR_STDERROR  error in plugin layer
+ */
+pscom_err_t pscom_rkey_destroy(pscom_rkey_t rkey);
+
+
+/**
+ * @brief Pack remote key buffer
+ *
+ * This routine should be called after the registration of a memory region.
+ * It allocates an opaque buffer and packs the information of the memory
+ * region referenced by the region handle into it.
+ * This opaque rkey buffer should then be sent to the remote process, which
+ * can use it to generate a remote key for accessing the memory region.
+ *
+ * @param [out] rkeybuf   The remote key buffer returned from this routine.
+ * @param [out] bufsize   The size of this opaque rkey buffer.
+ * @param [in]  memh      The memory region handle.
+ *
+ * @return  PSCOM_SUCCESS       success
+ * @return  PSCOM_ERR_INVALID   no valid memory region handle
+ */
+pscom_err_t pscom_rkey_buffer_pack(void **rkeybuf, size_t *bufsize,
+                                   pscom_memh_t memh);
+
+
+/**
+ * @brief Remote key buffer release
+ *
+ * This routine frees the rkey buffer space which is allocated during the
+ * registration of a memory region.
+ * This should be called after the local completion of sending rkey_buffer to
+ * those porcesses, which need it to generate a remote key.
+ *
+ * @param [in] rkey buffer    the buffer to be released.
+ */
+void pscom_rkey_buffer_release(void *rkey_buffer);
+
+
+/**
+ * @brief Non-blocking RMA put operation.
+ *
+ * This routine triggers a put operation of a contiguous block of data to the
+ * memory of a remote process. The call returns immediately and the source data
+ * region specified in the @a request must not be used before the operation is
+ * completed, i.e., the io_done callback including the globally registered
+ * RMA callback is invoked. The execution of pscom_wait() or other
+ * similar functions, e.g., pscom_test_any(), will ensure progress.
+ *
+ * Mandatory fields in the @a request:
+ * - req->data_len (number of bytes to be written)
+ * - req->data (source address in the VA of the local process)
+ * - req->connection (associated connection)
+ * - req->ops.io_done
+ *
+ * @param [in] request         The request handle for tracking the progress.
+ * @param [in] remote_address  The destination address within the VA of the
+ *                             remote process.
+ * @param [in] rkey            The remote key handle.
+ *
+ */
+void pscom_post_rma_put(pscom_request_t *request, void *remote_address,
+                        pscom_rkey_t rkey);
+
+
+/**
+ * @brief Non-blocking RMA get operation.
+ *
+ * This routine triggers a get operation of a contiguous block of data from the
+ * memory of a remote process. The call returns immediately and the source data
+ * region specified in the @a request must not be used before the operation is
+ * completed, i.e., the io_done callback including the globally registered
+ * RMA callback is invoked. The execution of pscom_wait() or other
+ * similar functions, e.g., pscom_test_any(), will ensure progress.
+ *
+ * Mandatory fields in the @a request:
+ * - req->data_len (number of bytes to be gotten)
+ * - req->data (target address in the VA of the local process)
+ * - req->connection (associated connection)
+ * - req->ops.io_done
+ *
+ * @param [in] request        The request handle for tracking the progress.
+ * @param [in] remote_address The source address within the VA of the remote
+ *                            process.
+ * @param [in] rkey           The remote key handle.
+ *
+ */
+void pscom_post_rma_get(pscom_request_t *request, void *remote_address,
+                        pscom_rkey_t rkey);
+
 
 const char *pscom_socket_str(int nodeid, int portno);
 const char *pscom_socket_ondemand_str(int nodeid, int portno,

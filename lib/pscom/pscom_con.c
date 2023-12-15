@@ -727,11 +727,16 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
     pscom_poll_init(&con->poll_write);
 
     /* RMA */
-    con->rma_mem_register_check = NULL;
-    con->rma_mem_register       = NULL;
-    con->rma_mem_deregister     = NULL;
-    con->rma_read               = NULL;
-    con->rma_write              = NULL;
+    con->rndv.mem_register_check = NULL;
+    con->rndv.mem_register       = NULL;
+    con->rndv.mem_deregister     = NULL;
+    con->rndv.rma_read           = NULL;
+    con->rndv.rma_write          = NULL;
+
+    con->rma.rkey_generate = NULL;
+    con->rma.rkey_destroy  = NULL;
+    con->rma.put           = NULL;
+    con->rma.get           = NULL;
 
     con->rendezvous_size = pscom.env.rendezvous_size;
 

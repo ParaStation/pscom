@@ -367,7 +367,7 @@ static int pscom_openib_rma_read(pscom_req_t *rendezvous_req,
 
     perf_add("openib_rma_read");
 
-    if (con->rma_mem_register_check && !con->rma_mem_register_check(con, rd)) {
+    if (con->rndv.mem_register_check && !con->rndv.mem_register_check(con, rd)) {
         goto err_register;
     }
 
@@ -533,18 +533,18 @@ static void pscom_openib_init_con(pscom_con_t *con)
     con->close = pscom_openib_con_close;
 
 #ifdef IB_USE_RNDV
-    con->rma_mem_register   = pscom_openib_rma_mem_register;
-    con->rma_mem_deregister = pscom_openib_rma_mem_deregister;
+    con->rndv.mem_register   = pscom_openib_rma_mem_register;
+    con->rndv.mem_deregister = pscom_openib_rma_mem_deregister;
 
     if (psoib_rndv_fallbacks) {
-        con->rma_mem_register_check = pscom_openib_rma_mem_register_check;
+        con->rndv.mem_register_check = pscom_openib_rma_mem_register_check;
     } else {
-        con->rma_mem_register_check = NULL;
+        con->rndv.mem_register_check = NULL;
     }
 #ifdef IB_RNDV_RDMA_WRITE
-    con->rma_write = pscom_openib_rma_write;
+    con->rndv.rma_write = pscom_openib_rma_write;
 #else
-    con->rma_read = pscom_openib_rma_read;
+    con->rndv.rma_read = pscom_openib_rma_read;
 #endif
 
     con->rendezvous_size = pscom.env.rendezvous_size_openib;

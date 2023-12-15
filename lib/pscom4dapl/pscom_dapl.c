@@ -245,9 +245,9 @@ static void pscom_dapl_init_con(pscom_con_t *con)
 
     con->close = pscom_dapl_con_close;
 
-    con->rma_mem_register   = pscom_dapl_rma_mem_register;
-    con->rma_mem_deregister = pscom_dapl_rma_mem_deregister;
-    con->rma_read           = pscom_dapl_rma_read;
+    con->rndv.mem_register   = pscom_dapl_rma_mem_register;
+    con->rndv.mem_deregister = pscom_dapl_rma_mem_deregister;
+    con->rndv.rma_read       = pscom_dapl_rma_read;
 
     con->rendezvous_size = pscom.env.rendezvous_size_dapl;
 

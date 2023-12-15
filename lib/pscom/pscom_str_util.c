@@ -325,8 +325,11 @@ const char *pscom_con_type_str(pscom_con_type_t type)
 #pragma GCC diagnostic ignored "-Wdeprecated-declarations"
     case PSCOM_CON_TYPE_P4S: return "p4s <deprecated>";
 #pragma GCC diagnostic pop
+    case PSCOM_CON_TYPE_COUNT: goto err_exit;
     }
 
+err_exit:
+    /* return unknown type for debugging purpose */
     {
         static char buf[sizeof("type0xXXXXXXXX______")];
         snprintf(buf, sizeof(buf), "type0x%x", type);

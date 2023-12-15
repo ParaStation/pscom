@@ -63,7 +63,7 @@ static inline void pscom_post_send_direct_inline(pscom_req_t *req,
 static inline void _pscom_post_send_direct_inline(pscom_con_t *con,
                                                   pscom_req_t *req,
                                                   pscom_msgtype_t msg_type);
-static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req);
+static inline void _pscom_post_rma_read_inline(pscom_req_t *rma_read_req);
 
 int pscom_read_is_at_message_start(pscom_con_t *con);
 void pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
@@ -544,7 +544,7 @@ static pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con,
 
         _send_rma_read_answer(req_answer);
     } else {
-        assert(con->rma_write);
+        assert(con->rndv.rma_write);
 
         req_answer->pub.data_len = 0;
         req_answer->pub.data     = NULL;
@@ -553,8 +553,8 @@ static pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con,
                     pscom_debug_req_str(req_answer)));
 
         pscom_mverify(req_answer);
-        if (con->rma_write(con, rd_msg->data, rd_msg, _rma_write_done,
-                           req_answer)) {
+        if (con->rndv.rma_write(con, rd_msg->data, rd_msg, _rma_write_done,
+                                req_answer)) {
             pscom.stat.fallback_to_sw_rndv++;
             goto fallback_to_sw_rndv;
         }
@@ -566,13 +566,13 @@ static pscom_req_t *_pscom_get_rma_read_receiver(pscom_con_t *con,
 static void _pscom_rma_req_deregister(pscom_con_t *con,
                                       pscom_req_t *rma_read_req)
 {
-    if (con->rma_mem_deregister && rma_read_req->rndv_data) {
+    if (con->rndv.mem_deregister && rma_read_req->rndv_data) {
         pscom_rendezvous_data_t *rd = (pscom_rendezvous_data_t *)
                                           rma_read_req->rndv_data;
 
         assert(rma_read_req->pub.data_len > pscom_rendezvous_msg_len(0));
 
-        con->rma_mem_deregister(con, rd);
+        con->rndv.mem_deregister(con, rd);
         pscom_free(rd);
         rma_read_req->rndv_data = NULL;
     }
@@ -679,14 +679,14 @@ static void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req,
     rendezvous_req->pub.ops.io_done = pscom_rendezvous_read_data_io_done;
     rendezvous_req->partner_req     = user_recv_req;
 
-    if (rd->msg_arch_len && con->rma_read) {
+    if (rd->msg_arch_len && con->rndv.rma_read) {
 // #define RMA_CNT
 #ifdef RMA_CNT
         static unsigned work_cnt = 0;
         static unsigned fail_cnt = 0;
 #endif
         perf_add("rndv_con_rma_read");
-        if (con->rma_read(rendezvous_req, rd)) {
+        if (con->rndv.rma_read(rendezvous_req, rd)) {
 #ifdef RMA_CNT
             fail_cnt++;
             if (fail_cnt % 1000 == 0) {
@@ -705,7 +705,7 @@ static void _pscom_rendezvous_read_data(pscom_req_t *user_recv_req,
     } else {
     rma_read_fallback:
         perf_add("rndv_fallback_rma_read");
-        _pscom_post_rma_read(rendezvous_req);
+        _pscom_post_rma_read_inline(rendezvous_req);
     }
 }
 
@@ -782,9 +782,9 @@ static pscom_req_t *_pscom_get_rendezvous_fin_receiver(pscom_con_t *con,
     assert(req->magic == MAGIC_REQUEST);
     assert(user_req->magic == MAGIC_REQUEST);
 
-    if (con->rma_mem_deregister &&
+    if (con->rndv.mem_deregister &&
         (req->pub.data_len > pscom_rendezvous_msg_len(0))) {
-        con->rma_mem_deregister(con, rd);
+        con->rndv.mem_deregister(con, rd);
     }
 
     pscom_request_free(&req->pub);
@@ -1400,14 +1400,14 @@ static inline pscom_req_t *pscom_prepare_send_rendezvous_inline(
     rndv_req->pub.user = (void *)rd;
 
     /* net arch specific xheader: */
-    if (con->rma_mem_register && con->rma_mem_register_check &&
-        !con->rma_mem_register_check(con, rd)) {
+    if (con->rndv.mem_register && con->rndv.mem_register_check &&
+        !con->rndv.mem_register_check(con, rd)) {
         goto fallback_to_eager;
     }
 
     int len_arch = 0;
-    if (con->rma_read && con->rma_mem_register) {
-        len_arch = con->rma_mem_register(con, rd);
+    if (con->rndv.rma_read && con->rndv.mem_register) {
+        len_arch = con->rndv.mem_register(con, rd);
         if (!len_arch) { goto fallback_to_eager; }
         rd->msg_arch_len = len_arch;
     }
@@ -1462,7 +1462,7 @@ static inline void _pscom_post_send_rendezvous_inline(pscom_req_t *user_req,
 }
 
 
-static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req)
+static inline void _pscom_post_rma_read_inline(pscom_req_t *rma_read_req)
 {
     pscom_con_t *con     = get_con(rma_read_req->pub.connection);
     pscom_req_t *req_rma = pscom_req_create(sizeof(pscom_rendezvous_data_t), 0);
@@ -1480,18 +1480,18 @@ static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req)
     rd->msg.id              = rma_read_req;
     rma_read_req->rndv_data = NULL;
 
-    if (con->rma_write && con->rma_mem_register) {
+    if (con->rndv.rma_write && con->rndv.mem_register) {
 
         rd->msg.data     = rma_read_req->pub.data;
         rd->msg.data_len = rma_read_req->pub.data_len;
 
-        if (!con->rma_mem_register_check ||
-            (con->rma_mem_register_check &&
-             con->rma_mem_register_check(con, rd))) {
+        if (!con->rndv.mem_register_check ||
+            (con->rndv.mem_register_check &&
+             con->rndv.mem_register_check(con, rd))) {
 
-            len_arch = con->rma_mem_register(con, rd);
+            len_arch = con->rndv.mem_register(con, rd);
 
-            if (len_arch && con->rma_mem_deregister) {
+            if (len_arch && con->rndv.mem_deregister) {
                 rma_read_req->rndv_data = pscom_malloc(
                     sizeof(pscom_rendezvous_data_t));
                 memcpy(rma_read_req->rndv_data, rd,
@@ -1510,6 +1510,10 @@ static inline void _pscom_post_rma_read(pscom_req_t *rma_read_req)
     _pscom_post_send_direct(con, req_rma, PSCOM_MSGTYPE_RMA_READ);
 }
 
+void _pscom_post_rma_read(pscom_req_t *rma_read_req)
+{
+    _pscom_post_rma_read_inline(rma_read_req);
+}
 
 /* post the receive request req.
    Receiving up to req->xheader_len bytes to req->xheader and
@@ -1969,7 +1973,7 @@ void pscom_post_rma_read(pscom_request_t *request)
 
     pscom_lock();
     {
-        _pscom_post_rma_read(req);
+        _pscom_post_rma_read_inline(req);
     }
     pscom_unlock();
 }

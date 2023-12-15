@@ -47,6 +47,7 @@ bin/pscom_maxcon.c \
 bin/pscom_memusage.c \
 bin/pscom_ondemand.c \
 bin/pscom_pp.c \
+bin/pscom_rma_get.c \
 bin/pscom_request_create.c \
 bin/pscom_test.c \
 bin/pscom_test_fault.c \
@@ -119,6 +120,7 @@ lib/pscom/pscom_group.h \
 lib/pscom/pscom_group_bcast.c \
 lib/pscom/pscom_io.c \
 lib/pscom/pscom_io.h \
+lib/pscom/pscom_rma.c \
 lib/pscom/pscom_listener.c \
 lib/pscom/pscom_ondemand.c \
 lib/pscom/pscom_plugin.c \

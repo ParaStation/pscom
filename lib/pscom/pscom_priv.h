@@ -84,16 +84,123 @@ struct PSCOM_req {
     pscom_request_t pub;
 };
 
+
 typedef struct pscom_portals_sock pscom_portals_sock_t;
-typedef struct pscom_arch_sock {
+typedef struct pscom_arch_sock pscom_arch_sock_t;
+
+/* RMA functions */
+/**
+ * @brief Function pointer of memory region registration.
+ *
+ * This function registers the memory region starting from addr with length.
+ * The memory region will be registered in the plugin associated with arch_sock.
+ * A remote key buffer and its size will be returned.
+ *
+ * @param [in]  addr            The starting address of the memory region.
+ * @param [in]  length          The length of the memory region.
+ * @param [out] rkey_buf        The pointer to store the remote key buffer.
+ * @param [out] bufsize         The size of the remote key buffer.
+ * @param [in]  arch_sock       The arch_sock associated with certain plugin.
+ * @param [out] plugin_memh     The opaque handle of memory region in the
+ *                              plugin.
+ */
+typedef int (*pscom_rma_mem_register_fn_t)(void *addr, size_t length,
+                                           void **rkey_buf, uint16_t *bufsize,
+                                           pscom_arch_sock_t *arch_sock,
+                                           void **plugin_memh);
+
+/**
+ * @brief Function pointer of memory region de-registration.
+ *
+ * This function deregisters the memory region.
+ *
+ * @param [in] plugin_memh The opaque handle of memory region in the plugin.
+ */
+typedef int (*pscom_rma_mem_deregister_fn_t)(void *plugin_memh);
+
+/**
+ * @brief Function pointer of remote key generation.
+ *
+ * This function generates the remote key bound to the connection in the plugin.
+ * The remote key buffer received from the process which shares the memory
+ * region is used to generate the remote key in the plugin.
+ *
+ * @param [in]  con         The connection which the remote key is bound to.
+ * @param [in]  rekey_buf   The buffer used to generate remote key.
+ * @param [out] plugin_rkey The opaque handle of remote key in the plugin.
+ */
+typedef int (*pscom_rma_rkey_generate_fn_t)(pscom_con_t *con, void *rkey_buf,
+                                            void **plugin_rkey);
+
+/**
+ * @brief Function pointer of remote key destroy.
+ *
+ * This function destroys the remote key bound to the connection in the plugin.
+ *
+ * @param [in] plugin_rkey The opaque handle of remote key in the plugin.
+ */
+typedef int (*pscom_rma_rkey_destroy_fn_t)(void *plugin_rkey);
+
+
+/**
+ * @brief Function pointer of remote key buffer free.
+ *
+ * This function frees the remote key buffer allocated in the plugin.
+ *
+ * @param [in] rkey_buf The pointer to remote key buffer.
+ */
+typedef void (*pscom_rma_rkey_buf_free_fn_t)(void *rkey_buf);
+
+/**
+ * @brief Function pointer of RMA put.
+ *
+ * This function performs RMA put operation in the plugin via the connection.
+ * RMA put transfer the data in buffer to the target remote_addr. This operation
+ * is non-blocking, and req is used to track the progress.
+ *
+ * @param [in] con          The connection handle.
+ * @param [in] buffer       The source address in the local process.
+ * @param [in] length       The number of bytes to be sent.
+ * @param [in] remote_addr  The destination address at the remote process.
+ * @param [in] plugin_rkey  The remote key handle in the plugin.
+ * @param [in] req          The pscom request handle.
+ */
+typedef int (*pscom_rma_put_fn_t)(pscom_con_t *con, void *buffer, size_t length,
+                                  void *remote_addr, void *plugin_rkey,
+                                  pscom_req_t *req);
+
+/**
+ * @brief Function pointer of RMA get.
+ *
+ * This function performs RMA get operation in the plugin via the connection.
+ * RMA get will copy the data from the target remote_addr into the buffer.
+ * This operation is non-blocking, and req is used to track the progress.
+ *
+ * @param [in] con          The connection handle.
+ * @param [in] buffer       The target address in the local process.
+ * @param [in] length       The number of bytes to be sent.
+ * @param [in] remote_addr  The source address at the remote process.
+ * @param [in] plugin_rkey  The remote key handle in the plugin.
+ * @param [in] req          The pscom request handle.
+ */
+typedef int (*pscom_rma_get_fn_t)(pscom_con_t *con, void *buffer, size_t length,
+                                  void *remote_addr, void *plugin_rkey,
+                                  pscom_req_t *req);
+
+struct pscom_arch_sock {
     struct list_head next;
     pscom_con_type_t plugin_con_type;
+    struct {
+        pscom_rma_mem_register_fn_t mem_register;
+        pscom_rma_mem_deregister_fn_t mem_deregister;
+        pscom_rma_rkey_buf_free_fn_t rkey_buf_free;
+    } rma;
     union {
         psgm_sock_t gm;
         pscom_portals_sock_t *portals;
     } arch;
     char arch_sock_data[0];
-} pscom_arch_sock_t;
+};
 
 struct con_guard {
     int fd;
@@ -311,6 +418,21 @@ typedef struct pscom_backlog {
 typedef uint32_t pscom_con_id_t;
 
 
+/* RNDV protocol funcitons */
+typedef unsigned int (*pscom_rndv_mem_register_fn_t)(
+    pscom_con_t *con, struct pscom_rendezvous_data *rd);
+typedef int (*pscom_rndv_mem_register_check_fn_t)(pscom_con_t *con,
+                                                  pscom_rendezvous_data_t *rd);
+typedef void (*pscom_rndv_mem_deregister_fn_t)(pscom_con_t *con,
+                                               pscom_rendezvous_data_t *rd);
+typedef int (*pscom_rndv_rma_read_fn_t)(pscom_req_t *rendezvous_req,
+                                        pscom_rendezvous_data_t *rd);
+typedef int (*pscom_rndv_rma_write_fn_t)(pscom_con_t *con, void *src,
+                                         pscom_rendezvous_msg_t *des,
+                                         void (*io_done)(void *priv, int error),
+                                         void *priv);
+
+
 #define MAGIC_CONNECTION 0x78626c61
 struct PSCOM_con {
     unsigned long magic;
@@ -338,21 +460,28 @@ struct PSCOM_con {
 
     void (*close)(pscom_con_t *con);
 
-    /* RMA functions: */
-    /* register mem region for RMA. should return size of
-     * rd->msg.arch.xxx (this is used, to calculate the size of
-     * the rendezvous message). return 0 to disable arch read (in
-     * case of a failure). */
-    unsigned int (*rma_mem_register)(pscom_con_t *con,
-                                     pscom_rendezvous_data_t *rd);
-    int (*rma_mem_register_check)(pscom_con_t *con, pscom_rendezvous_data_t *rd);
-    /* deregister mem. */
-    void (*rma_mem_deregister)(pscom_con_t *con, pscom_rendezvous_data_t *rd);
-    /* return -1 on error.
-       see _pscom_rendezvous_read_data()  */
-    int (*rma_read)(pscom_req_t *rendezvous_req, pscom_rendezvous_data_t *rd);
-    int (*rma_write)(pscom_con_t *con, void *src, pscom_rendezvous_msg_t *des,
-                     void (*io_done)(void *priv, int error), void *priv);
+    struct {
+        /* RMA functions: */
+        /* register mem region for RMA. should return size of
+         * rd->msg.arch.xxx (this is used, to calculate the size of
+         * the rendezvous message). return 0 to disable arch read (in
+         * case of a failure). */
+        pscom_rndv_mem_register_fn_t mem_register;
+        pscom_rndv_mem_register_check_fn_t mem_register_check;
+        /* deregister mem. */
+        pscom_rndv_mem_deregister_fn_t mem_deregister;
+        /* return -1 on error.
+           see _pscom_rendezvous_read_data()  */
+        pscom_rndv_rma_read_fn_t rma_read;
+        pscom_rndv_rma_write_fn_t rma_write;
+    } rndv;
+
+    struct {
+        pscom_rma_rkey_generate_fn_t rkey_generate;
+        pscom_rma_rkey_destroy_fn_t rkey_destroy;
+        pscom_rma_put_fn_t put;
+        pscom_rma_get_fn_t get;
+    } rma;
 
     precon_t *precon; // Pre connection handshake data.
 
@@ -841,5 +970,75 @@ void _pscom_post_send_msgtype(pscom_request_t *request,
 // pointers
 #define PSCOM_PLUGIN_API_EXPORT_ONLY __attribute__((visibility("default")))
 #define PSCOM_SHM_API_EXPORT         API_EXPORT
+
+#define MAGIC_RKEYBUF              0x52425546
+#define MAGIC_MEMH                 0x4D454D48
+#define MAGIC_RKEY                 0x524B4559
+#define PSCOM_INVALID_RKEYBUF_SIZE (uint16_t) - 1
+
+/**
+ * @brief remote key buffer
+ *
+ * This remote key buffer is generated when registering memory region.
+ * This buffer contains information about the memory region and the data
+ * required to generate remote keys at the target side.
+ * Since the memory region is registered with all active plugins, the data
+ * to generate the remote key has to be stored in rkey_data for each of them
+ * and the corresponding data offset must also be set in rkey_data_offset.
+ * This buffer can be released after the local completion of sending this buffer
+ * to the processes which have an access to the memory region.
+ */
+typedef struct {
+    unsigned long magic;
+    size_t remote_len;
+    void *remote_addr; /**< used for internal rkey gen and remote check*/
+    uint16_t rkeydata_length;
+    uint16_t rkey_data_offset[PSCOM_CON_TYPE_COUNT]; /**< buffer size  returned
+                                                          from plugin */
+    char rkey_data[0]; /**< the buffer used for rkey gen in plugins */
+} pscom_rkey_buffer_t;
+
+/**
+ * @brief plugin memory region handle
+ *
+ * This memory region handle contains the plugin_memh generated in plugin layer.
+ * This handle will be added to the dynamic list in PSCOM_memh.
+ */
+typedef struct {
+    struct list_head next;
+    void *plugin_memh;            /**< plugin memory region handle */
+    pscom_arch_sock_t *arch_sock; /**< architecture-dependent socket to which
+                                       the arch_memh is bound to */
+} pscom_arch_memh_t;
+
+/**
+ * @brief memory region handle for RMA operations
+ *
+ * This handle contains general information and a list for dynamic management of
+ * the plugin memory handle.
+ */
+struct PSCOM_memh {
+    unsigned long magic;
+    void *addr;                      /**< address of allocated memory */
+    size_t length;                   /**< size of allocated memory */
+    pscom_sock_t *sock;              /**< associated socket */
+    struct list_head arch_memh_list; /**< list of memory handles in different
+                                          plugins */
+    void *rkey_buffer; /**< pointer to remote key buffer, to be released during
+                            de-registration */
+    size_t rkey_buffer_length; /**< length of remote key buffer */
+};
+
+/**
+ * @brief Remote memory key structure
+ */
+struct PSCOM_rkey {
+    unsigned long magic;
+    pscom_con_t *con;  /**< in which connection rkey is valid */
+    void *plugin_rkey; /**< opaque handle in pscom layer and get the real remote
+                            key in plugin layer */
+    void *remote_addr; /**< address of the memory region at target */
+    size_t remote_len; /**< length of memory region at target */
+};
 
 #endif /* _PSCOM_PRIV_H_ */

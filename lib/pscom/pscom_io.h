@@ -105,6 +105,7 @@ void pscom_greq_check_free(pscom_con_t *con, pscom_req_t *greq);
 int _pscom_update_recv_req(pscom_req_t *req);
 
 void pscom_post_send_direct(pscom_req_t *req, pscom_msgtype_t msg_type);
+void _pscom_post_rma_read(pscom_req_t *rma_read_req);
 
 pscom_req_t *_pscom_get_ctrl_receiver(pscom_con_t *con, pscom_header_net_t *nh);
 pscom_req_t *_pscom_get_bcast_receiver(pscom_con_t *con, pscom_header_net_t *nh);
