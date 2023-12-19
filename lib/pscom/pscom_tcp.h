@@ -9,12 +9,9 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-/*
- * psport_tcp.h: Header for tcp communication
- */
 
-#ifndef _PSPORT_TCP_H_
-#define _PSPORT_TCP_H_
+#ifndef _PSCOM_TCP_H_
+#define _PSCOM_TCP_H_
 
 #include "pscom_types.h"
 #include "pscom_plugin.h"
@@ -26,4 +23,4 @@ typedef struct tcp_conn_s {
 
 extern pscom_plugin_t pscom_plugin_tcp;
 
-#endif /* _PSPORT_TCP_H_ */
+#endif /* _PSCOM_TCP_H_ */

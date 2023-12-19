@@ -9,9 +9,6 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-/**
- * pscom_tcp.c: tcp communication
- */
 
 #include <unistd.h>
 #include <stdlib.h>

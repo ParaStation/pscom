@@ -1,6 +1,6 @@
 /* -*- linux-c -*- */
-#ifndef _PSPORT_UTIL_H_
-#define _PSPORT_UTIL_H_
+#ifndef _PSCOM_STR_UTIL_H_
+#define _PSCOM_STR_UTIL_H_
 
 
 #define INET_ADDR_SPLIT(addr)                                                  \
@@ -21,4 +21,4 @@ const char *pscom_inetstr(int addr);
 #define WHITE   "\033[37m"
 #define NORM    "\033[39m"
 
-#endif /* _PSPORT_UTIL_H_ */
+#endif /* _PSCOM_STR_UTIL_H_ */
