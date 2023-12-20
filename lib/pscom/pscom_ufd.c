@@ -234,8 +234,10 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
                replaced by the last pollfd and therefore
                associated with a different ufd_info.  this
                could be checked with
-               (ufd_local->ufd_pollfd_info[i] == ufd_info) */
-            if ((pollfd->revents & POLLOUT) &&
+               (ufd_local->ufd_pollfd_info[i] == ufd_info).
+               Also, be sure that the updated pollfd precon
+               is still valid before trying to write */
+            if (ufd_get_pollfd(ufd, ufd_info) && (pollfd->revents & POLLOUT) &&
                 (ufd_local->ufd_pollfd_info[i] == ufd_info)) {
                 pollfd->revents &= ~POLLOUT;
                 ufd_info->can_write(ufd, ufd_info);
