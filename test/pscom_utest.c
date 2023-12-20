@@ -23,6 +23,7 @@
 #include "pscom/test_env.h"
 #include "pscom/test_io.h"
 #include "pscom/test_plugin.h"
+#include "pscom/test_ufd.h"
 
 #include "pscom4portals/test_pscom4portals.h"
 #include "pscom4ucp/test_pscom4ucp.h"
@@ -238,6 +239,36 @@ int main(void)
     };
     total_tests += TEST_GROUP_SIZE(pscom_debug_tests);
     failed_tests += cmocka_run_group_tests(pscom_debug_tests, NULL, NULL);
+
+    /* pscom_ufd tests */
+    const struct CMUnitTest pscom_ufd_tests[] = {
+        cmocka_unit_test_setup_teardown(test_do_not_write_when_con_refused,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_do_not_write_con_reset_by_peer,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_do_not_read_when_stopped_precon,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(
+            test_do_not_progress_when_destroyed_precon, setup_dummy_precon,
+            teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_read_and_write_normally,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_only_write_when_no_pollin,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_do_not_read_if_global_ufd_is_gone,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_do_not_write_if_global_ufd_is_gone,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+    };
+    total_tests += TEST_GROUP_SIZE(pscom_ufd_tests);
+    failed_tests += cmocka_run_group_tests(pscom_ufd_tests, NULL, NULL);
 
 #ifdef UCP_ENABLED
     /* pscom4ucp tests */

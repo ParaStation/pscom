@@ -103,6 +103,7 @@ add_executable(		pscom_utest
   pscom/test_debug.c
   pscom/test_env.c
   pscom/test_io.c
+  pscom/test_ufd.c
   pscom/test_plugin.c
   util/test_utils_con.c
   util/test_utils_debug.c
