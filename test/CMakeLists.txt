@@ -120,8 +120,11 @@ target_link_options(	pscom_utest
   -Wl,--wrap=free
   -Wl,--wrap=memcpy
   -Wl,--wrap=malloc
+  -Wl,--wrap=read
   -Wl,--wrap=send
+  -Wl,--wrap=poll
   -Wl,--wrap=setsockopt
+  -Wl,--wrap=sched_yield
 #  -static
 )
 

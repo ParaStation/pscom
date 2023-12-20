@@ -36,8 +36,9 @@
 pscom_utest_t pscom_utest = {
     .mock_functions =
         {
-            .memcpy = 0,
-            .free   = 0,
+            .memcpy      = 0,
+            .free        = 0,
+            .sched_yield = 0,
             .malloc =
                 {
                     .enabled = 0,

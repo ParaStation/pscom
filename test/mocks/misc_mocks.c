@@ -17,6 +17,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <dlfcn.h>
+#include <poll.h>
 
 #include "mocks/misc_mocks.h"
 #include "pscom_utest.h"
@@ -114,6 +115,20 @@ char *__wrap_dlerror(void)
 
 
 /**
+ * \brief Mocking function for read()
+ */
+ssize_t __wrap_read(int fd, void *buf, size_t count)
+{
+    if (pscom_utest.mock_functions.read) {
+        errno = mock_type(int);
+        return mock_type(ssize_t);
+    }
+
+    return __real_read(fd, buf, count);
+}
+
+
+/**
  * \brief Mocking function for send()
  */
 ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags)
@@ -124,10 +139,37 @@ ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags)
 
 
 /**
+ * \brief Mocking function for poll()
+ */
+int __wrap_poll(struct pollfd *fds, nfds_t nfds, int timeout)
+{
+    fds->revents = mock_type(short);
+    return mock_type(int);
+}
+
+
+/**
  * \brief Mocking function for setsockopt()
  */
 int __wrap_setsockopt(int sockfd, int level, int optname, const void *optval,
                       socklen_t optlen)
 {
     return 0;
+}
+
+
+/**
+ * \brief Mocking function for sched_yield()
+ */
+int __wrap_sched_yield(void)
+{
+    if (pscom_utest.mock_functions.sched_yield) {
+        pscom_utest_sched_yield_mock_t mock_func = mock_type(
+            pscom_utest_sched_yield_mock_t);
+        void *mock_arg = mock_type(void *);
+
+        return mock_func(mock_arg);
+    }
+
+    return __real_sched_yield();
 }
