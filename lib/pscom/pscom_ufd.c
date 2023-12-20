@@ -220,7 +220,13 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
         /* ToDo: ufd_info still valid? Another thread might destruct *ufd_info
          */
 
-        if (pollfd->revents & POLLIN) {
+        /* here we obtain the global pollfd */
+        struct pollfd *pollfd_global = ufd_get_pollfd(ufd, ufd_info);
+
+        /* check that pollfd_global is still valid (fd !=1), ensure that the
+           precon has not been stopped, and that we received a POLLIN event */
+        if (pollfd_global && (pollfd_global->events & POLLIN) &&
+            (pollfd->revents & POLLIN)) {
             pollfd->revents &= ~POLLIN;
             ufd_info->can_read(ufd, ufd_info);
 
@@ -235,7 +241,10 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
                 ufd_info->can_write(ufd, ufd_info);
             }
             if (!(--nfds)) { goto return_1; }
-        } else if (pollfd->revents & POLLOUT) {
+
+            /* check that the global pollfd is valid and there is
+               and ongoin POLLOUT*/
+        } else if (pollfd_global && (pollfd->revents & POLLOUT)) {
             pollfd->revents &= ~POLLOUT;
             ufd_info->can_write(ufd, ufd_info);
             if (!(--nfds)) { goto return_1; }
