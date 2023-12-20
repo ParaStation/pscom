@@ -247,6 +247,8 @@ test/pscom/test_io.c \
 test/pscom/test_io.h \
 test/pscom/test_plugin.c \
 test/pscom/test_plugin.h \
+test/pscom/test_ufd.c \
+test/pscom/test_ufd.h \
 test/pscom4portals/test_pscom4portals.c \
 test/pscom4portals/test_pscom4portals.h \
 test/pscom4ucp/test_pscom4ucp.c \

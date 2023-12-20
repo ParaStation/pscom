@@ -103,6 +103,7 @@ add_executable(		pscom_utest
   pscom/test_debug.c
   pscom/test_env.c
   pscom/test_io.c
+  pscom/test_ufd.c
   pscom/test_plugin.c
   util/test_utils_con.c
   util/test_utils_debug.c
@@ -120,8 +121,11 @@ target_link_options(	pscom_utest
   -Wl,--wrap=free
   -Wl,--wrap=memcpy
   -Wl,--wrap=malloc
+  -Wl,--wrap=read
   -Wl,--wrap=send
+  -Wl,--wrap=poll
   -Wl,--wrap=setsockopt
+  -Wl,--wrap=sched_yield
 #  -static
 )
 

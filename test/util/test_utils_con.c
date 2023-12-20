@@ -19,6 +19,7 @@
 
 #include "pscom_priv.h"
 #include "pscom_con.h"
+#include "pscom_precon.h"
 
 #include "test_utils_con.h"
 #include "test_utils_sock.h"
@@ -57,6 +58,21 @@ int setup_dummy_con_pair(void **state)
 }
 
 
+int setup_dummy_precon(void **state)
+{
+    /* create a new connection */
+    setup_dummy_con(state);
+    pscom_con_t *con = *state;
+
+    /* create a new precon */
+    precon_t *precon = pscom_precon_create(con);
+
+    *state = (void *)precon;
+
+    return 0;
+}
+
+
 int teardown_dummy_con(void **state)
 {
     pscom_con_t *con   = (pscom_con_t *)(*state);
@@ -80,6 +96,24 @@ int teardown_dummy_con_pair(void **state)
     teardown_dummy_con(&con_pair->recv_con);
 
     free(con_pair);
+
+    return 0;
+}
+
+
+int teardown_dummy_precon(void **state)
+{
+    precon_t *precon   = (precon_t *)(*state);
+    pscom_sock_t *sock = get_sock(precon->con->pub.socket);
+
+    /* free connection-related resources */
+    if (precon->magic == MAGIC_PRECON) { pscom_precon_destroy(precon); }
+
+    /* destroy the dummy socket */
+    teardown_dummy_sock((void **)&sock);
+
+    /* cleanup poll readers */
+    pscom_poll_cleanup_init(&precon->poll_read);
 
     return 0;
 }

@@ -16,6 +16,8 @@ typedef struct pscom_utest {
     struct {
         unsigned int memcpy;
         unsigned int free;
+        unsigned int read;
+        unsigned int sched_yield;
         struct {
             unsigned int enabled;
             void *addr;

@@ -23,4 +23,7 @@ int teardown_dummy_con(void **state);
 int setup_dummy_con_pair(void **state);
 int teardown_dummy_con_pair(void **state);
 
+int setup_dummy_precon(void **state);
+int teardown_dummy_precon(void **state);
+
 #endif /* _PSCOM_UTIL_CON_H_*/
