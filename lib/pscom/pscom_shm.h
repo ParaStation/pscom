@@ -13,8 +13,8 @@
  * pscom_shm.h: Header for sharedmem communication
  */
 
-#ifndef _PSPORT_SHM_H_
-#define _PSPORT_SHM_H_
+#ifndef _PSCOM_SHM_H_
+#define _PSCOM_SHM_H_
 
 #include <sys/ipc.h>
 #include <sys/shm.h>
@@ -77,4 +77,4 @@ typedef struct shm_conn_s {
 
 extern pscom_plugin_t pscom_plugin_shm;
 
-#endif /* _PSPORT_SHM_H_ */
+#endif /* _PSCOM_SHM_H_ */

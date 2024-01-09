@@ -9,9 +9,6 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-/**
- * psport_gm.h: Header for GM communication
- */
 
 #ifndef _PSGM_H_
 #define _PSGM_H_

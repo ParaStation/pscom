@@ -9,9 +9,6 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-/**
- * psport_gm.c: GM Myrinet communication
- */
 
 #include <stdio.h>
 #include <string.h>

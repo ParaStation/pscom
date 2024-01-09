@@ -9,9 +9,6 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-/**
- * psport_shm.c: Shared Mem communication
- */
 
 #include "pscom_shm.h"
 

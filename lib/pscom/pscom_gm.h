@@ -9,12 +9,9 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-/**
- * psport_gm.h: Header for GM communication
- */
 
-#ifndef _PSPORT_GM_H_
-#define _PSPORT_GM_H_
+#ifndef _PSCOM_GM_H_
+#define _PSCOM_GM_H_
 
 #include "pscom_types.h"
 
@@ -29,4 +26,4 @@ typedef struct psgm_sock {
     pscom_poll_t poll_read;
 } psgm_sock_t;
 
-#endif /* _PSPORT_GM_H_ */
+#endif /* _PSCOM_GM_H_ */
