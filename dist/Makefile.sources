@@ -12,16 +12,19 @@
 PKG_NAME=pscom
 
 SOURCE_FILES= \
+.clang-format \
 .gitignore \
 CMakeLists.txt \
 ChangeLog \
 LICENSE.QPL \
+README.md \
 bin/CMakeLists.txt \
 bin/dapl/dapl_pp.c \
 bin/dapl/dapl_pp_lowlevel.c \
 bin/dump.c \
 bin/elan/elan_pp_lowlevel.c \
 bin/examples/pscom_dispatch.c \
+bin/extoll/CMakeLists.txt \
 bin/extoll/extoll_one_message.c \
 bin/extoll/extoll_pp_lowlevel.c \
 bin/extoll/extoll_pp_velo.c \
@@ -34,8 +37,10 @@ bin/mellanox/ps4_ib_pp.c \
 bin/mellanox/ps4_ib_pp_rdma.c \
 bin/mxm/mxm_pp.c \
 bin/mxm/mxm_util.c \
+bin/openib/CMakeLists.txt \
 bin/openib/openib_pp.c \
 bin/openib/openib_ud_pp.c \
+bin/portals4/CMakeLists.txt \
 bin/portals4/portals4_pp.c \
 bin/pscom.gdb \
 bin/pscom_bcast_pp.c \
@@ -46,14 +51,16 @@ bin/pscom_maxcon.c \
 bin/pscom_memusage.c \
 bin/pscom_ondemand.c \
 bin/pscom_pp.c \
-bin/pscom_rma_get.c \
 bin/pscom_request_create.c \
+bin/pscom_rma_get.c \
 bin/pscom_test.c \
 bin/pscom_test_fault.c \
+bin/psm/CMakeLists.txt \
 bin/psm/pscom4psm_pp.c \
 bin/psm/psm2_pp.c \
 bin/psm/psm_pp.c \
 bin/test_nodes.c \
+bin/ucp/CMakeLists.txt \
 bin/ucp/ucp_pp.c \
 cmake/Modules/CheckVisibilityProtected.cmake \
 cmake/Modules/FindCMocka.cmake \
@@ -72,10 +79,21 @@ dist/.gitignore \
 dist/Makefile \
 dist/Makefile.sources \
 dist/pscom.spec.templ \
+doc/PscomConcepts.md \
+doc/PscomInterface.md \
 doc/README_any_source_receives.txt \
+doc/RepoStructure.md \
+doc/RuntimeConfig.md \
 doc/Verbindungsaufbau.txt \
 doc/bcast.txt \
 doc/connection_states_closing.drawio \
+doc/doxygen/Doxyfile \
+doc/img/pscom_connectivity_instant.svg \
+doc/img/pscom_connectivity_ondemand.svg \
+doc/img/pscom_init_cleanup.svg \
+doc/img/pscom_msg_recv.svg \
+doc/img/pscom_msg_send.svg \
+doc/img/pscom_overview.svg \
 include/CMakeLists.txt \
 include/gm_compat.h \
 include/ps_perf.h \
@@ -114,7 +132,6 @@ lib/pscom/pscom_group.h \
 lib/pscom/pscom_group_bcast.c \
 lib/pscom/pscom_io.c \
 lib/pscom/pscom_io.h \
-lib/pscom/pscom_rma.c \
 lib/pscom/pscom_listener.c \
 lib/pscom/pscom_ondemand.c \
 lib/pscom/pscom_plugin.c \
@@ -128,6 +145,7 @@ lib/pscom/pscom_queues.c \
 lib/pscom/pscom_queues.h \
 lib/pscom/pscom_req.c \
 lib/pscom/pscom_req.h \
+lib/pscom/pscom_rma.c \
 lib/pscom/pscom_shm.c \
 lib/pscom/pscom_shm.h \
 lib/pscom/pscom_sock.c \
@@ -213,6 +231,7 @@ scripts/config.guess \
 scripts/config.sub \
 scripts/convert.pl \
 scripts/depcomp \
+scripts/hooks/pre-commit \
 scripts/install-sh \
 scripts/ltmain.sh \
 scripts/missing \

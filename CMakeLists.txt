@@ -14,6 +14,12 @@ cmake_minimum_required(VERSION 3.10)
 project(pscom
 	LANGUAGES C)
 
+# Set default install directory for pscom
+# if user did not provide CMAKE_INSTALL_PREFIX
+if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(CMAKE_INSTALL_PREFIX "/opt/parastation" CACHE PATH "Use default install prefix" FORCE)
+endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(CMakeDependentOption)
 include(GNUInstallDirs)
@@ -56,7 +62,8 @@ if(NOT VISIBILITY_PROTECTED)
   add_compile_definitions(NO_PROTECTED_FUNC=1)
 endif(NOT VISIBILITY_PROTECTED)
 
-find_package(Popt REQUIRED)
+find_package(Popt)
+option_conditional(POPT_ENABLED "Enable popt" TRUE "POPT_FOUND" FALSE)
 
 find_package(IbVerbs)
 option_conditional(OPENIB_ENABLED "Enable pscom4openib" FALSE "IBVERBS_FOUND" FALSE)
@@ -144,6 +151,7 @@ if(EXTOLL_ENABLED)
 endif(EXTOLL_ENABLED)
 
 
+message(STATUS "")
 message(STATUS "OPENIB_ENABLED:       ${OPENIB_ENABLED}")
 message(STATUS "OFED_ENABLED:         ${OFED_ENABLED}")
 message(STATUS "UCP_ENABLED:          ${UCP_ENABLED}")
@@ -151,11 +159,16 @@ message(STATUS "PORTALS4_ENABLED:     ${PORTALS4_ENABLED}")
 message(STATUS "PSM2_ENABLED:         ${PSM2_ENABLED}")
 message(STATUS "EXTOLL_ENABLED:       ${EXTOLL_ENABLED}  ${EXTOLL_OPTIONS}")
 message(STATUS "DAPL_ENABLED:         ${DAPL_ENABLED}")
+message(STATUS "")
 message(STATUS "CUDA_ENABLED:         ${CUDA_ENABLED}")
 message(STATUS "PSSHMALLOC_ENABLED:   ${PSSHMALLOC_ENABLED}")
 message(STATUS "")
 message(STATUS "PSMGMT_ENABLED:       ${PSMGMT_ENABLED}")
+message(STATUS "POPT_ENABLED:         ${POPT_ENABLED}")
+message(STATUS "")
 message(STATUS "UTEST_ENABLED:        ${UTEST_ENABLED}")
 message(STATUS "COVERAGE_ENABLED:     ${COVERAGE_ENABLED}")
+message(STATUS "")
 message(STATUS "CMAKE_BUILD_TYPE:     ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
+message(STATUS "")

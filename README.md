@@ -21,15 +21,14 @@ The ParaStation Communication Library (`pscom` for short) is an open-source low-
 
 # Installation
 
-This guide describes the installation of `pscom` to a custom location `/path/to/pscom/install/dir/` on your system.
-For installations of ParaStation MPI, this directory is typically a global directory called `/opt/parastation/`.
+This guide describes the installation of `pscom`.
+For installations of ParaStation MPI, the default install directory is typically `/opt/parastation/`.
 
 ## Prerequisites
 
 ### Required
 - CMake, at least version 3.10
 - C compiler with C99 support
-- `popt` library, a command line option parsing library
 
 ### Optional
 
@@ -43,6 +42,7 @@ For installations of ParaStation MPI, this directory is typically a global direc
 - CUDA libraries for CUDA awareness of `pscom`
 
 #### Other
+- `popt` library, a command line option parsing library used by some of the tools in the `bin` folder
 - Parastation Management (`psmgmt`) library
 - cmocka Library for unit tests
 
@@ -63,7 +63,7 @@ Alternatively, for some libraries it is possible to specify the local install di
 
 ### Install prefix / location
 To install `pscom` in a custom location, pass `-DCMAKE_INSTALL_PREFIX=pscom/install/dir/` to CMake.
-Default install location is `/usr/local` on UNIX, see [here](https://cmake.org/cmake/help/v3.24/variable/CMAKE_INSTALL_PREFIX.html).
+Default install location is `/opt/parastation`.
 This location will be used, if `CMAKE_INSTALL_PREFIX` is not explicitly set.
 
 ### Build type
@@ -106,21 +106,15 @@ $ mkdir build
 $ cd build
 ```
 
-Execute from within this newly created folder
+Execute the following from within this newly created folder to compile `pscom` for the default installation path `/opt/parastation`:
 
 ```console
-$ cmake <your config parameters here> ..
+$ cmake ..
 $ make
 ```
 
-Cmake will report any missing dependencies. Check the output of CMake carefully.
-
-**Example:** To compile `pscom` with installation directory `/opt/parastation` run
-
-```console
-$ cmake -DCMAKE_INSTALL_PREFIX=/opt/parastation ..
-$ make
-```
+CMake will report any missing dependencies. Check the output of CMake carefully.
+Add `-DCMAKE_INSTALL_PREFIX=custom/install/path` as additional config parameter to the CMake line to change the installation path.
 Finally, to install `pscom` in your system (superuser rights might be required depending on the install location), run
 
 ```console
