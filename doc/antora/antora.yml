@@ -1,0 +1,5 @@
+name: pscom
+title: pscom
+version: latest
+nav:
+- modules/ROOT/nav.adoc
