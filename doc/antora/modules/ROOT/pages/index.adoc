@@ -1,33 +1,87 @@
-= Welcome to pscom
-:navtitle: pscom
+= Introduction and Concepts
 
-This is the automatic start page for version *{page-component-display-version}* of Component B.
+The ParaStation Communication Library (`pscom` for short) is an open-source low-level communication library, especially designed for the employment in HPC systems.
+Although it mainly serves as the lower-level communication substrate of ParaStation MPI (`psmpi`), it can also be used independently as a light-weight communication layer.
+In ParaStation MPI, `pscom` provides the communication substrate for the so-called PSP device, which uses the `pscom` interface at the bottom and implements MPICH's ADI3 interface at the top (see also the following figure).
 
-Component B is one of two documentation components in the Antora Demo.
-The other docs component, Component A, can be accessed using the component selector menu (aka component drawer) at the bottom of the menu on the left side of the page.
+image::pscom-overview.svg[Overview diagram of pscom]
 
-== Page source
+== Asynchronous peer-to-peer connections
 
-This page is sourced from the AsciiDoc file named [.path]_index.adoc_ that is located at [.path]_demo-component-b/docs/modules/ROOT/pages_.
+The `pscom` uses peer-to-peer connections between two entities for data exchange.
+For example in the use case of ParaStation MPI these entities are MPI processes.
+In general, peer-to-peer communication can happen in two ways:
 
-=== Why is this the home page of Component B?
+* *Connection-oriented:* A communication session is established before any datagram is transmitted so that the data is delivered in the correct order to the upper communication layer (typical example: TCP).
+* *Connection-less:* Each datagram is addressed and routed individually so that data can arrive out of order at the upper communication layer (typical example: UDP).
 
-This page is automatically used as the start page of Component B because it is stored in the ROOT module and named [.path]_index.adoc_.
+The `pscom` uses *connection-oriented* communication.
+A bi-directional communication channel is established before data is transmitted using the channel.
+However, the communication API of the `pscom` is asynchronous, i.e., progress on any bi-directional communication channel has to be triggered explicitly by the user.
 
-=== Why is this the home page of the Antora Demo site?
+== Request-based communication management
 
-This page is used as the home page for the Antora Demo because it is assigned as the site `start_page` in the Demo site's playbook file [.path]_site.yml_.
+The central data structures managed by `pscom` are connections and requests.
+Connections are the abstraction of bi-directional and reliable communication channels accepting send and receive requests.
+The progress engine of `pscom` manages pending requests by queuing and dispatching messages based on address and tag information embedded in message headers.
 
-== Cross reference syntax to target this page
+The general session management of `pscom` is based on the Berkeley Socket API using the pseudo TCP/IP-based <<_plugins_for_different_interconnects,plugin>> for the initial connection establishment.
+Subsequently, other plugins are able to use these socket connections for the exchange of further information, e.g., the necessary resources for the establishment of IB connections.
+Upper layer communication interfaces, i.e., the MPI layer of ParaStation MPI, establish `pscom` connections by explicit and asymmetric API calls in terms of listen, connect, and accept.
 
-To create a cross reference *to this page from another page in the ROOT module of Component B*, the xref syntax would be `\xref:index.adoc[]`.
+The `pscom` offers an xref:interfaces.adoc#_instant_connectivity[instant connection establishment mechanism] and one for xref:interfaces.adoc#_on_demand_connectivity_psp_ondemand1[on-demand connection establishment] upon the first write on the connection.
+In both cases, TCP is used for the initial connection and then the best possible available plugin is chosen (based on priorities) for any further communication.
 
-To create a cross reference *to this page from a page in Module One of Component B*, the xref syntax would be `\xref:ROOT:index.adoc[]`.
+== Plugins for different interconnects
 
-=== Always target the latest version of this page
+The `pscom` library supports a large variety of interconnects that are (or have been) commonly used in the HPC domain.
+Therefore, it exhibits a flexible architecture featuring plugins for all the different interfaces and protocols.
+These plugins are loaded and selected at runtime of the library by a predefined priority/fall-back scheme, favoring those interconnects promising faster communication.
+However, as the lowest common denominator, socket-based communication via the TCP/IP protocol serves as kind of pseudo plugin firmly included into the library that always has to be available.
 
-To create a cross reference *to the latest version of this page from a page in Component A*, the xref syntax would be `\xref:component-b::index.adoc[]`.
+[cols="1,3"]
+|===
+| Plugin | Description
 
-=== Target a specific version of this page
+| TCP
+| TCP/ IP (e.g., Ethernet)
 
-To create a cross reference *to version 1.0 of this page from a page in Component A*, the xref syntax would be `\xref:1.0@component-b::index.adoc[]`.
+| Gateway (PSGW)
+| Bridge transparently between different networks (closed source feature)
+
+| DAPL
+| Direct Access Progamming Library, Generic API for RDMA-capable hardware
+
+| GM
+| GM Myrinet
+
+| ELAN
+| Support for Quadrics Elan network
+
+| OpenIB
+| OpenIB /Infiniband (Verbs interface)
+
+| Extoll
+| Support for the EXTOLL network
+
+| Velo
+| Support for the EXTOLL network
+
+| MXM
+| Mellanox Messaging Accelerator (IB)
+
+| OFED
+| OFED/Infiniband (in Unreliable Datagam (UD) mode)
+
+| PSM
+| Performance Scaled Messaging API (e.g., Omni-Path)
+
+| UCP
+| UCX framework for HPC network programming
+
+| Portals
+| Portals4 communication (e.g., for BXI)
+
+| SHM
+| Intra-host communication over shared memory
+|===

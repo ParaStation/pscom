@@ -1,1 +1,4 @@
 * xref:index.adoc[]
+* xref:interfaces.adoc[]
+* xref:repo-structure.adoc[]
+* xref:runtime-config.adoc[]
