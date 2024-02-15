@@ -96,7 +96,7 @@ endif(CUDA_ENABLED)
 find_package(Psmgmt)
 option_conditional(PSMGMT_ENABLED "Enable psmgmt" TRUE "PSMGMT_FOUND" FALSE)
 
-find_package(CMocka)
+find_package_with_hints(Cmocka "/usr" "cmocka.h" "cmocka" "Default location where to search cmocka library.")
 option_conditional(UTEST_ENABLED "Enable unit tests ('ctest' or Target 'utest')" TRUE "CMOCKA_FOUND" FALSE)
 
 
