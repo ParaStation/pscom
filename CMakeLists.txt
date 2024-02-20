@@ -21,6 +21,7 @@ if(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
+include(AddCudaTarget)
 include(FindPackageWithHints)
 include(CMakeDependentOption)
 include(GNUInstallDirs)
@@ -63,29 +64,29 @@ if(NOT VISIBILITY_PROTECTED)
   add_compile_definitions(NO_PROTECTED_FUNC=1)
 endif(NOT VISIBILITY_PROTECTED)
 
-find_package(Popt)
+find_package_with_hints(Popt "/usr" "popt.h" "popt" "Default location where to search popt.")
 option_conditional(POPT_ENABLED "Enable popt" TRUE "POPT_FOUND" FALSE)
 
-find_package(IbVerbs)
+find_package_with_hints(IbVerbs "/usr" "infiniband/verbs.h" "ibverbs" "Default location where to search the IB verbs library.")
 option_conditional(OPENIB_ENABLED "Enable pscom4openib" FALSE "IBVERBS_FOUND" FALSE)
 option_conditional(OFED_ENABLED "Enable pscom4ofed" TRUE "IBVERBS_FOUND" FALSE)
 
-find_package(Ucp)
+find_package_with_hints(Ucp "/usr" "ucp/api/ucp.h ucp/api/ucp_def.h" "ucp" "Default location where to search UCX library.")
 option_conditional(UCP_ENABLED "Enable pscom4ucp" TRUE "UCP_FOUND" FALSE)
 
-find_package(Portals4)
+find_package_with_hints(Portals4 "/usr" "portals4.h" "portals" "Default location where to search Portals4 library.")
 option_conditional(PORTALS4_ENABLED "Enable pscom4portals" TRUE "PORTALS4_FOUND" FALSE)
 
-find_package(Psm2)
+find_package_with_hints(Psm2 "/usr" "psm2.h psm2_mq.h" "psm" "Default location where to search PSM2 library.")
 option_conditional(PSM2_ENABLED "Enable pscom4psm" TRUE "PSM2_FOUND" FALSE)
 
 find_package(Extoll)
 option_conditional(EXTOLL_ENABLED "Enable pscom4extoll and pscom4velo" TRUE "EXTOLL_FOUND" FALSE)
 
-find_package(Dapl)
+find_package_with_hints(Dapl "/usr" "dat/udat.h" "dat" "Default location where to search DAPL library.")
 option_conditional(DAPL_ENABLED "Enable pscom4dapl" TRUE "DAPL_FOUND" FALSE)
 
-find_package(Cuda)
+find_package_with_hints(Cuda "/usr/local/cuda" "cuda.h driver_types.h" "cuda" "Default location where to search CUDA.")
 option_conditional(CUDA_ENABLED "Enable cuda awareness" FALSE "CUDA_FOUND" FALSE)
 
 if(CUDA_ENABLED)
