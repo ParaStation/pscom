@@ -12,6 +12,7 @@
 #include <errno.h>
 #include <stdarg.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <setjmp.h>
