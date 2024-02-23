@@ -12,42 +12,29 @@
 function(link_to_lib source)
   # Collect symlinks to all libraries in the current directory for
   # convenience. (LD_LIBRARY_PATH usage without installing the libraries)
-  add_custom_target(lib${source} ALL
+  add_custom_target(
+    lib${source} ALL
     ln -sf "${CMAKE_CURRENT_BINARY_DIR}/${source}/lib${source}.so*" .
     DEPENDS ${source}
-    BYPRODUCTS lib${source}.so
-    )
+    BYPRODUCTS lib${source}.so)
 endfunction()
-
 
 function(plugin_common plugin)
   target_include_directories(
-    ${plugin}
-    BEFORE PRIVATE .
-    BEFORE PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
-    )
+    ${plugin} BEFORE
+    PRIVATE . BEFORE
+    PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
 
-  target_link_libraries(
-    ${plugin}
-    PRIVATE pscom
-    )
+  target_link_libraries(${plugin} PRIVATE pscom)
 
   target_compile_options(
     ${plugin}
     PRIVATE -fvisibility=hidden
-    PRIVATE -flto
-    )
+    PRIVATE -flto)
 
-  target_link_options(
-    ${plugin}
-    PRIVATE -flto
-    )
+  target_link_options(${plugin} PRIVATE -flto)
 
-  set_target_properties(
-    ${plugin}
-    PROPERTIES
-    NO_SONAME TRUE
-    )
+  set_target_properties(${plugin} PROPERTIES NO_SONAME TRUE)
 
   if(CUDA_ENABLED)
     target_add_cuda(${plugin})
@@ -56,27 +43,27 @@ function(plugin_common plugin)
   install(TARGETS ${plugin} DESTINATION "${CMAKE_INSTALL_LIBDIR}")
 endfunction()
 
-
 function(add_static_target target)
   string(TOUPPER ${target} uc_target)
 
-  get_target_property(${uc_target}_SOURCES	${target} SOURCES)
-  get_target_property(${uc_target}_INCLUDE_DIRECTORIES	${target} INCLUDE_DIRECTORIES)
-  get_target_property(${uc_target}_COMPILE_DEFINITIONS	${target} COMPILE_DEFINITIONS)
-  get_target_property(${uc_target}_LINK_LIBRARIES	${target} LINK_LIBRARIES)
+  get_target_property(${uc_target}_SOURCES ${target} SOURCES)
+  get_target_property(${uc_target}_INCLUDE_DIRECTORIES ${target}
+                      INCLUDE_DIRECTORIES)
+  get_target_property(${uc_target}_COMPILE_DEFINITIONS ${target}
+                      COMPILE_DEFINITIONS)
+  get_target_property(${uc_target}_LINK_LIBRARIES ${target} LINK_LIBRARIES)
 
-  add_library(${target}-static STATIC
-    EXCLUDE_FROM_ALL
-    ${${uc_target}_SOURCES}
-    )
+  add_library(${target}-static STATIC EXCLUDE_FROM_ALL ${${uc_target}_SOURCES})
 
-  target_include_directories(${target}-static PRIVATE ${${uc_target}_INCLUDE_DIRECTORIES})
+  target_include_directories(${target}-static
+                             PRIVATE ${${uc_target}_INCLUDE_DIRECTORIES})
   target_link_libraries(${target}-static PRIVATE ${${uc_target}_LINK_LIBRARIES})
 
   # Only include compile definitions if there are any
-  if (${uc_target}_COMPILE_DEFINITIONS)
-    target_compile_definitions(${target}-static PRIVATE ${${uc_target}_COMPILE_DEFINITIONS})
-  endif (${uc_target}_COMPILE_DEFINITIONS)
+  if(${uc_target}_COMPILE_DEFINITIONS)
+    target_compile_definitions(${target}-static
+                               PRIVATE ${${uc_target}_COMPILE_DEFINITIONS})
+  endif(${uc_target}_COMPILE_DEFINITIONS)
 
   if(CUDA_ENABLED)
     target_add_cuda(${target}-static)
@@ -87,70 +74,58 @@ function(add_static_target target)
   endif(COVERAGE_ENABLED)
 endfunction()
 
-
 add_subdirectory(pscom)
 link_to_lib(pscom)
 
-
-if (PSSHMALLOC_ENABLED)
+if(PSSHMALLOC_ENABLED)
   add_subdirectory(psmalloc)
   link_to_lib(psmalloc)
-endif (PSSHMALLOC_ENABLED)
+endif(PSSHMALLOC_ENABLED)
 
-
-if (OPENIB_ENABLED)
+if(OPENIB_ENABLED)
   add_subdirectory(pscom4openib)
   link_to_lib(pscom4openib)
-endif (OPENIB_ENABLED)
+endif(OPENIB_ENABLED)
 
-
-if (OFED_ENABLED)
+if(OFED_ENABLED)
   add_subdirectory(pscom4ofed)
   link_to_lib(pscom4ofed)
-endif (OFED_ENABLED)
+endif(OFED_ENABLED)
 
-
-if (UCP_ENABLED)
+if(UCP_ENABLED)
   add_subdirectory(pscom4ucp)
   link_to_lib(pscom4ucp)
-endif (UCP_ENABLED)
+endif(UCP_ENABLED)
 
-
-if (PSM2_ENABLED)
+if(PSM2_ENABLED)
   add_subdirectory(pscom4psm)
   link_to_lib(pscom4psm)
-endif (PSM2_ENABLED)
+endif(PSM2_ENABLED)
 
-
-if (EXTOLL_ENABLED)
+if(EXTOLL_ENABLED)
   add_subdirectory(pscom4extoll)
   link_to_lib(pscom4extoll)
 
   add_subdirectory(pscom4velo)
   link_to_lib(pscom4velo)
-endif (EXTOLL_ENABLED)
+endif(EXTOLL_ENABLED)
 
-
-if (DAPL_ENABLED)
+if(DAPL_ENABLED)
   add_subdirectory(pscom4dapl)
-endif (DAPL_ENABLED)
+endif(DAPL_ENABLED)
 
-
-if (ELAN_ENABLED)
+if(ELAN_ENABLED)
   add_subdirectory(pscom4elan)
-endif (ELAN_ENABLED)
+endif(ELAN_ENABLED)
 
-
-if (GM_ENABLED)
+if(GM_ENABLED)
   add_subdirectory(pscom4gm)
-endif (GM_ENABLED)
+endif(GM_ENABLED)
 
-
-if (MXM_ENABLED)
+if(MXM_ENABLED)
   add_subdirectory(pscom4mxm)
-endif (MXM_ENABLED)
+endif(MXM_ENABLED)
 
-
-if (PORTALS4_ENABLED)
+if(PORTALS4_ENABLED)
   add_subdirectory(pscom4portals)
-endif (PORTALS4_ENABLED)
+endif(PORTALS4_ENABLED)

@@ -15,14 +15,12 @@ if(PSM2_ENABLED)
     target_include_directories(
       psm2_pp
       PRIVATE ${PSM2_INCLUDE_DIRS}
-      PRIVATE ${POPT_INCLUDE_DIRS}
-      )
+      PRIVATE ${POPT_INCLUDE_DIRS})
 
     target_link_libraries(
       psm2_pp
       PRIVATE ${PSM2_LIBRARIES}
-      PRIVATE ${POPT_LIBRARIES}
-      )
+      PRIVATE ${POPT_LIBRARIES})
 
     add_executable(pscom4psm_pp pscom4psm_pp.c)
     target_include_directories(
@@ -31,13 +29,11 @@ if(PSM2_ENABLED)
       PRIVATE ${POPT_INCLUDE_DIRS}
       PRIVATE ${PROJECT_BINARY_DIR}/include
       PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
-      PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4psm
-      )
+      PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4psm)
 
     target_link_libraries(
       pscom4psm_pp
       PRIVATE ${PSM2_LIBRARIES}
-      PRIVATE ${POPT_LIBRARIES}
-      )
+      PRIVATE ${POPT_LIBRARIES})
   endif(POPT_ENABLED)
 endif(PSM2_ENABLED)

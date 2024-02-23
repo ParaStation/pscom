@@ -9,20 +9,10 @@
 # file.
 #
 
-add_library(
-  pscom4extoll SHARED
-  pscom_extoll.c
-  psextoll.c
-)
+add_library(pscom4extoll SHARED pscom_extoll.c psextoll.c)
 
-target_include_directories(
-  pscom4extoll
-  PRIVATE ${EXTOLL_INCLUDE_DIRS}
-)
+target_include_directories(pscom4extoll PRIVATE ${EXTOLL_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4extoll
-  PRIVATE ${EXTOLL_RMA2_LIBRARY}
-)
+target_link_libraries(pscom4extoll PRIVATE ${EXTOLL_RMA2_LIBRARY})
 
 plugin_common(pscom4extoll)

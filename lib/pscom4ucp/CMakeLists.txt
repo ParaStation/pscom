@@ -9,21 +9,11 @@
 # file.
 #
 
-add_library(
-  pscom4ucp SHARED
-  pscom_ucp.c
-  psucp.c
-)
+add_library(pscom4ucp SHARED pscom_ucp.c psucp.c)
 
-target_include_directories(
-  pscom4ucp
-  PRIVATE ${UCP_INCLUDE_DIRS}
-)
+target_include_directories(pscom4ucp PRIVATE ${UCP_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4ucp
-  PRIVATE ${UCP_LIBRARIES}
-)
+target_link_libraries(pscom4ucp PRIVATE ${UCP_LIBRARIES})
 
 plugin_common(pscom4ucp)
 

@@ -15,10 +15,6 @@ if(PORTALS4_ENABLED)
     portals4_pp
     PRIVATE ${PORTALS4_INCLUDE_DIRS}
     PRIVATE ${PROJECT_BINARY_DIR}/include
-    PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
-    )
-  target_link_libraries(
-    portals4_pp
-    PRIVATE ${PORTALS4_LIBRARIES}
-    )
+    PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
+  target_link_libraries(portals4_pp PRIVATE ${PORTALS4_LIBRARIES})
 endif(PORTALS4_ENABLED)

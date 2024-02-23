@@ -9,20 +9,10 @@
 # file.
 #
 
-add_library(
-  pscom4mxm SHARED
-  pscom_mxm.c
-  psmxm.c
-)
+add_library(pscom4mxm SHARED pscom_mxm.c psmxm.c)
 
-target_include_directories(
-  pscom4mxm
-  PRIVATE ${MXM_INCLUDE_DIRS}
-)
+target_include_directories(pscom4mxm PRIVATE ${MXM_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4mxm
-  PRIVATE ${MXM_LIBRARIES}
-)
+target_link_libraries(pscom4mxm PRIVATE ${MXM_LIBRARIES})
 
 plugin_common(pscom4mxm)

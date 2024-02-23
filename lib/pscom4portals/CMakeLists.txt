@@ -8,21 +8,11 @@
 # file.
 #
 
-add_library(
-  pscom4portals SHARED
-  pscom_portals.c
-  psptl.c
-)
+add_library(pscom4portals SHARED pscom_portals.c psptl.c)
 
-target_include_directories(
-  pscom4portals
-  PRIVATE ${PORTALS4_INCLUDE_DIRS}
-)
+target_include_directories(pscom4portals PRIVATE ${PORTALS4_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4portals
-  PRIVATE ${PORTALS4_LIBRARIES}
-)
+target_link_libraries(pscom4portals PRIVATE ${PORTALS4_LIBRARIES})
 
 plugin_common(pscom4portals)
 

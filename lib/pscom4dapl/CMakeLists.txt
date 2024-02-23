@@ -9,20 +9,10 @@
 # file.
 #
 
-add_library(
-  pscom4dapl SHARED
-  pscom_dapl.c
-  psdapl.c
-)
+add_library(pscom4dapl SHARED pscom_dapl.c psdapl.c)
 
-target_include_directories(
-  pscom4dapl
-  PRIVATE ${DAPL_INCLUDE_DIRS}
-)
+target_include_directories(pscom4dapl PRIVATE ${DAPL_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4dapl
-  PRIVATE ${DAPL_LIBRARIES}
-)
+target_link_libraries(pscom4dapl PRIVATE ${DAPL_LIBRARIES})
 
 plugin_common(pscom4dapl)
