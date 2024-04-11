@@ -1,4 +1,3 @@
-
 if(NOT COMMAND target_link_options)
   # Legacy partial implementation of:
   # target_link_options(<target> PUBLIC [items1...])
@@ -9,7 +8,7 @@ if(NOT COMMAND target_link_options)
     set(multiValueArgs PRIVATE)
 
     cmake_parse_arguments(ARGS "${options}" "${oneValueArgs}"
-      "${multiValueArgs}" ${ARGN} )
+                          "${multiValueArgs}" ${ARGN})
 
     set(ARGS_TARGET ${ARGS_UNPARSED_ARGUMENTS})
 
@@ -21,9 +20,9 @@ if(NOT COMMAND target_link_options)
 
     foreach(_priv ${ARGS_PRIVATE})
       set_property(
-	TARGET ${ARGS_TARGET}
-	APPEND_STRING
-	PROPERTY LINK_FLAGS " ${_priv}")
+        TARGET ${ARGS_TARGET}
+        APPEND_STRING
+        PROPERTY LINK_FLAGS " ${_priv}")
     endforeach()
   endfunction()
 
