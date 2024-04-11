@@ -39,6 +39,49 @@ function check_diff {
     fi
 }
 
+LOCAL_MIRROR=/tmp/${USER}/pscom-tmp-mirror
+TMP_FILENAME=/tmp/${USER}/pscom-tmp-file
+TMP_DIFF=/tmp/${USER}/pscom-tmp-diff
+CLANG_FORMAT=clang-format
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+function check_format {
+    format=${1}
+    files=${2}
+
+    formatter=$(echo ${format} | cut -d" " -f1)
+    # Show files that are being checked
+    echo "Running '${formatter}' on the following files:"
+    for file in $files; do
+        echo "* ${file}"
+    done
+    echo
+
+    for file in $files; do
+        echo -ne "Processing ${file} ... "
+        cp ${file} ${TMP_FILENAME}
+
+        ${format} ${file} 2>&1
+        ret=$?
+        if [[ "${formatter}" == "${CLANG_FORMAT}" && ${apply} == true ]]; then
+            # Run clang-format twice as we sometimes see idempotency
+            ${format} ${file} 2>&1
+            check_diff ${file} ${TMP_FILENAME}
+            ret=$?
+        fi
+
+        if [ $ret != 0 ]; then
+            echo -e "${RED}failed${NC}"
+            return 1
+        else
+            echo -e "${GREEN}done${NC}"
+        fi
+    done
+    return 0
+}
 
 apply=false
 args=$(getopt haf: $*) ; errcode=$?; set -- $args
@@ -63,16 +106,6 @@ while :; do
     esac
 done
 
-LOCAL_MIRROR=/tmp/${USER}/pscom-tmp-mirror
-TMP_FILENAME=/tmp/${USER}/pscom-tmp-file
-TMP_DIFF=/tmp/${USER}/pscom-tmp-diff
-CLANG_FORMAT=clang-format
-
-
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 # Only work on a copy if changes shall not be applied
 if [ "${apply}" != true ]; then
     git checkout-index --prefix=$LOCAL_MIRROR/ -af
@@ -88,12 +121,13 @@ if [ -z ${file} ]; then
     echo -n "Determine modified files ... "
     # This will check the previous commit again when not amending a commit, but
     # that should be ok if the patches are correct.
-    files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1)
+    files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.h' '*.c')
     echo -e "${GREEN}done${NC}"
 else
-    files_to_check=${file}
+    if [[ ($file == *.c || $file == *.h) ]]; then
+        files_to_check=${file}
+    fi
 fi
-
 
 if [ "${apply}" != true ]; then
     # Everything else happens in the temporary build tree
@@ -102,33 +136,13 @@ fi
 
 ret=0
 
-# Show files that are being checked
-echo "Running '${CLANG_FORMAT}' on the following files:"
-for file in $files_to_check; do
-    echo "* ${file}"
-done
-echo
-
-# Iterate all files
-# (This won't work if we ever have a file with a space in the name)
-for file in $files_to_check; do
-    if [[ ($file == *.c || $file == *.h) ]]; then
-        echo -n "Processing ${file} ... "
-        cp ${file} ${TMP_FILENAME}
-
-        # Run clang-format twice as we sometimes see idempotency
-        ${CLANG_FORMAT} -i ${file} > /dev/null 2>&1
-        ${CLANG_FORMAT} -i ${file} > /dev/null 2>&1
-
-        check_diff ${file} ${TMP_FILENAME}
-        if [ $? != 0 ] ; then
-            echo -e "${RED}failed${NC}"
-            ret=1
-        else
-            echo -e "${GREEN}done${NC}"
-        fi
-    fi
-done
+if [ ${#files_to_check} != 0 ]; then
+    # Iterate all .c and .h files with clang-format
+    # (This won't work if we ever have a file with a space in the name)
+    cmd="${CLANG_FORMAT} -i"
+    check_format "${cmd}" "${files_to_check}"
+    ret=$?
+fi
 
 if [ "${apply}" != true ]; then
     # Cleanup temporary files
@@ -136,8 +150,7 @@ if [ "${apply}" != true ]; then
     popd > /dev/null
 fi
 
-if [ $ret != 0 ] ; then
+if [ $ret != 0 ]; then
     echo -e "${RED}== CODE CLEANUP SCRIPT FAILED ==${NC}"
     exit $ret
 fi
-
