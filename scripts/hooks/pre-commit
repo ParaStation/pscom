@@ -43,6 +43,9 @@ LOCAL_MIRROR=/tmp/${USER}/pscom-tmp-mirror
 TMP_FILENAME=/tmp/${USER}/pscom-tmp-file
 TMP_DIFF=/tmp/${USER}/pscom-tmp-diff
 CLANG_FORMAT=clang-format
+CMAKE_FORMAT=cmake-format
+CMAKE_LINT=cmakelint
+
 
 GREEN='\033[0;32m'
 RED='\033[0;31m'
@@ -66,7 +69,8 @@ function check_format {
 
         ${format} ${file} 2>&1
         ret=$?
-        if [[ "${formatter}" == "${CLANG_FORMAT}" && ${apply} == true ]]; then
+        if [[ "${formatter}" == "${CLANG_FORMAT}" ||
+                ("${formatter}" == "${CMAKE_FORMAT}" && ${apply} == true) ]]; then
             # Run clang-format twice as we sometimes see idempotency
             ${format} ${file} 2>&1
             check_diff ${file} ${TMP_FILENAME}
@@ -122,12 +126,20 @@ if [ -z ${file} ]; then
     # This will check the previous commit again when not amending a commit, but
     # that should be ok if the patches are correct.
     files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.h' '*.c')
+    # `cmake_files_to_check` - grep the cmake files with the exclusion of the modules in the `cmake/Modules` directory.
+    # Those files can be moved or reused from other projects with different formatting and then our formatting should not
+    # be applied to them.
+    cmake_files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.cmake' '*CMakeLists.txt' \
+        | grep -E -v '^cmake/Modules/')
     echo -e "${GREEN}done${NC}"
 else
     if [[ ($file == *.c || $file == *.h) ]]; then
         files_to_check=${file}
+    elif [[ ($file == *CMakeLists.txt || $file == *.cmake) ]]; then
+        cmake_files_to_check=${file}
     fi
 fi
+
 
 if [ "${apply}" != true ]; then
     # Everything else happens in the temporary build tree
@@ -141,7 +153,30 @@ if [ ${#files_to_check} != 0 ]; then
     # (This won't work if we ever have a file with a space in the name)
     cmd="${CLANG_FORMAT} -i"
     check_format "${cmd}" "${files_to_check}"
-    ret=$?
+    clang_ret=$?
+fi
+
+if [ ${#cmake_files_to_check} != 0 ]; then
+    # Iterate through all the cmake-specific files with cmake-format
+    if [ "${apply}" != true ]; then
+        # Exit with status code 0 if formatting would not change
+        # file contents, or status code 1 if it would
+        cmake_format_cmd="${CMAKE_FORMAT} --config=.cmakeformatrc --check"
+    else
+        # Write the formatted version of the file in place
+        cmake_format_cmd="${CMAKE_FORMAT} --config=.cmakeformatrc --in-place"
+    fi
+    check_format "${cmake_format_cmd}" "${cmake_files_to_check}"
+    cmake_ret=$?
+
+    # Iterate through all the cmake-specific files with cmakelint
+    cmake_format_cmd="${CMAKE_LINT} --config=.cmakelintrc --quiet"
+    check_format "${cmake_format_cmd}" "${cmake_files_to_check}"
+    cmakelint_ret=$?
+fi
+
+if [[ ${clang_ret} == 1 || ${cmake_ret} == 1 || ${cmakelint_ret} == 1 ]]; then
+    ret=1
 fi
 
 if [ "${apply}" != true ]; then
