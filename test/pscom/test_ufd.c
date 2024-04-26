@@ -23,6 +23,12 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// Helper functions
 ////////////////////////////////////////////////////////////////////////////////
+static void delete_pollfd(ufd_t *ufd, ufd_info_t *ufd_info)
+{
+    ufd_del(ufd, ufd_info);
+    function_called();
+}
+
 static void check_can_read(ufd_t *ufd, ufd_info_t *ufd_info)
 {
     function_called();
@@ -129,6 +135,91 @@ void test_do_not_write_con_reset_by_peer(void **state)
     assert_true(precon->ufd_info.pollfd_idx == -1);
 
     disable_read_mock();
+
+    /* disable threaded mode */
+    pscom.threaded = 0;
+}
+
+
+/**
+ * \brief Test the avoidance of writing when global pollfd has been cleared
+ *
+ * Given: A multi-threaded environment
+ * When: clearing global pollfd while reading
+ * Then: there will not be a write due to an outdated local pollfd
+ */
+void test_do_not_write_when_pollfd_is_cleared(void **state)
+{
+    /* create and initialize the precon object */
+    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_assign_fd(precon, 0x42);
+
+    /* enabled threaded mode */
+    pscom.threaded = 1;
+
+    /* set POLLIN and POLLOUT events*/
+    ufd_event_set(&pscom.ufd, &precon->ufd_info, POLLIN | POLLOUT);
+
+    /* remove pollfd */
+    precon->ufd_info.can_read = &delete_pollfd;
+    expect_function_call_any(delete_pollfd);
+
+    will_return(__wrap_poll, (POLLIN | POLLOUT));
+    will_return(__wrap_poll, 1);
+
+    /* we cannot write due to the removed pollfd */
+    precon->ufd_info.can_write = &check_can_write;
+
+    /* There is a valid pollfd equals to the current ufd_info */
+    assert_true(pscom.ufd.ufd_pollfd_info[0] == &precon->ufd_info);
+
+    pscom_progress(0);
+
+    /* No valid pollfd anymore after deleting it */
+    assert_true(pscom.ufd.ufd_pollfd_info[0] == NULL);
+
+    /* disable threaded mode */
+    pscom.threaded = 0;
+}
+
+
+/**
+ * \brief Test write after reading when global pollfd is not updated
+ *
+ * Given: A multi-threaded environment
+ * When: global pollfd is not updated while reading
+ * Then: there will be a write as POLLOUT is in the flags
+ */
+void test_write_when_pollfd_is_not_updated(void **state)
+{
+    /* create and initialize the precon object */
+    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_assign_fd(precon, 0x42);
+
+    /* enabled threaded mode */
+    pscom.threaded = 1;
+
+    /* set POLLIN and POLLOUT events*/
+    ufd_event_set(&pscom.ufd, &precon->ufd_info, POLLIN | POLLOUT);
+
+    /* we read without updating the current pollfd */
+    precon->ufd_info.can_read = &check_can_read;
+    expect_function_call_any(check_can_read);
+
+    will_return(__wrap_poll, (POLLIN | POLLOUT));
+    will_return(__wrap_poll, 1);
+
+    /* we will be able to write with the current pollfd */
+    precon->ufd_info.can_write = &check_can_write;
+    expect_function_call_any(check_can_write);
+
+    /* There is a valid pollfd equals to the current ufd_info */
+    assert_true(pscom.ufd.ufd_pollfd_info[0] == &precon->ufd_info);
+
+    pscom_progress(0);
+
+    /* There is still a valid pollfd equals to the current ufd_info */
+    assert_true(pscom.ufd.ufd_pollfd_info[0] == &precon->ufd_info);
 
     /* disable threaded mode */
     pscom.threaded = 0;
