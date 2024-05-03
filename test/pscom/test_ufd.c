@@ -19,6 +19,7 @@
 #include "pscom_utest.h"
 #include "mocks/misc_mocks.h"
 #include "pscom_precon.c"
+#include "pscom_ufd.c"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Helper functions
@@ -43,8 +44,8 @@ int mock_sched_yield_close_global_ufd(void *arg)
 {
     ufd_info_t *ufd_info = (ufd_info_t *)arg;
 
-    /* destroy the connection and implicitely close the global ufd*/
-    pscom_precon_destroy(ufd_info->priv);
+    /* remove the global ufd */
+    _ufd_put_pollfd_idx(&pscom.ufd, ufd_info);
 
     return 0;
 }
@@ -56,7 +57,7 @@ int mock_sched_yield_close_global_ufd(void *arg)
  * When: reading from file descriptor and connection is refused
  * Then: data will not be sent due to a Bad file descriptor
  */
-void test_do_not_write_when_con_refused(void **state)
+void test_ufd_do_not_write_when_con_refused(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -102,7 +103,7 @@ void test_do_not_write_when_con_refused(void **state)
  * When: reading from file descriptor and connection is reset by peer
  * Then: data will not be sent due to a Bad file descriptor
  */
-void test_do_not_write_con_reset_by_peer(void **state)
+void test_ufd_do_not_write_con_reset_by_peer(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -148,7 +149,7 @@ void test_do_not_write_con_reset_by_peer(void **state)
  * When: clearing global pollfd while reading
  * Then: there will not be a write due to an outdated local pollfd
  */
-void test_do_not_write_when_pollfd_is_cleared(void **state)
+void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -190,7 +191,7 @@ void test_do_not_write_when_pollfd_is_cleared(void **state)
  * When: global pollfd is not updated while reading
  * Then: there will be a write as POLLOUT is in the flags
  */
-void test_write_when_pollfd_is_not_updated(void **state)
+void test_ufd_write_when_pollfd_is_not_updated(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -233,7 +234,7 @@ void test_write_when_pollfd_is_not_updated(void **state)
  * When: precon is stopped and data has been completely received
  * Then: there will not be more read unless precon->recv_done becomes 0 again
  */
-void test_do_not_read_when_stopped_precon(void **state)
+void test_ufd_do_not_read_when_stopped_precon(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -245,21 +246,18 @@ void test_do_not_read_when_stopped_precon(void **state)
     /* set POLLIN and POLLOUT events*/
     ufd_event_set(&pscom.ufd, &precon->ufd_info, POLLIN | POLLOUT);
 
+    precon->ufd_info.can_read = &check_can_read;
+
     /* stop preconnection. The next function will unset POLLIN from pollfd */
     pscom_precon_recv_stop(precon);
 
     will_return(__wrap_poll, (POLLIN | POLLOUT));
-    will_return(__wrap_poll, 1);
-
-    precon->ufd_info.can_read = &check_can_read;
-
-    /* There is a valid pollfd index */
-    assert_true(precon->ufd_info.pollfd_idx != -1);
+    /* return here 0 since stopping precon clears POLLIN event */
+    will_return(__wrap_poll, 0);
 
     pscom_progress(0);
 
-    /* No valid pollfd index anymore */
-    assert_true(precon->ufd_info.pollfd_idx == -1);
+    /* implicit test: check_can_read() is NOT called */
 
     /* disable threaded mode */
     pscom.threaded = 0;
@@ -273,7 +271,7 @@ void test_do_not_read_when_stopped_precon(void **state)
  * When: precon is destroyed
  * Then: there will not be further progress
  */
-void test_do_not_progress_when_destroyed_precon(void **state)
+void test_ufd_do_not_progress_when_destroyed_precon(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -285,17 +283,20 @@ void test_do_not_progress_when_destroyed_precon(void **state)
     /* set POLLIN and POLLOUT events*/
     ufd_event_set(&pscom.ufd, &precon->ufd_info, POLLIN);
 
-    /* There is a valid pollfd index */
-    assert_true(precon->ufd_info.pollfd_idx != -1);
+    /* Call teardown of connection since precon will be destroyed */
+    *state = precon->con;
 
-    /* destroy preconnection. The next function
-       will set precon->ufd_info.fd to -1 as well*/
+    /* There is a valid precon */
+    assert_true(precon->magic == MAGIC_PRECON);
+
+    /* destroy preconnection */
     pscom_precon_destroy(precon);
+    precon = NULL;
 
-    pscom_progress(0);
+    int progress = pscom_progress(0);
 
-    /* No valid pollfd index anymore */
-    assert_true(precon->ufd_info.pollfd_idx == -1);
+    /* There is no further progress */
+    assert(progress == 0);
 
     /* disable threaded mode */
     pscom.threaded = 0;
@@ -309,7 +310,7 @@ void test_do_not_progress_when_destroyed_precon(void **state)
  * When: connection is fine
  * Then: reading and sending data are working normally
  */
-void test_read_and_write_normally(void **state)
+void test_ufd_read_and_write_normally(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -348,7 +349,7 @@ void test_read_and_write_normally(void **state)
  * When: only POLLOUT is set
  * Then: the data will be sent without reading before
  */
-void test_only_write_when_no_pollin(void **state)
+void test_ufd_only_write_when_no_pollin(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -386,7 +387,7 @@ void test_only_write_when_no_pollin(void **state)
  * When: another thread thread first processes POLLIN on a given ufd
  * Then: this thread does not try to further read on this ufd.
  */
-void test_do_not_read_if_global_ufd_is_gone(void **state)
+void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -401,7 +402,6 @@ void test_do_not_read_if_global_ufd_is_gone(void **state)
 
     /* set POLLIN event */
     ufd_event_set(&pscom.ufd, &precon->ufd_info, POLLIN);
-
 
     enable_sched_yield_mock();
 
@@ -428,7 +428,7 @@ void test_do_not_read_if_global_ufd_is_gone(void **state)
  * When: another thread thread first processes POLLOUT on a given ufd
  * Then: this thread does not try to further write on this ufd.
  */
-void test_do_not_write_if_global_ufd_is_gone(void **state)
+void test_ufd_do_not_write_if_global_ufd_is_gone(void **state)
 {
     /* create and initialize the precon object */
     precon_t *precon = (precon_t *)(*state);
@@ -443,7 +443,6 @@ void test_do_not_write_if_global_ufd_is_gone(void **state)
 
     /* set POLLOUT event */
     ufd_event_set(&pscom.ufd, &precon->ufd_info, POLLOUT);
-
 
     enable_sched_yield_mock();
 

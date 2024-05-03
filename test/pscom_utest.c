@@ -243,36 +243,36 @@ int main(void)
 
     /* pscom_ufd tests */
     const struct CMUnitTest pscom_ufd_tests[] = {
-        cmocka_unit_test_setup_teardown(test_do_not_write_when_con_refused,
+        cmocka_unit_test_setup_teardown(test_ufd_do_not_write_when_con_refused,
                                         setup_dummy_precon,
                                         teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_do_not_write_con_reset_by_peer,
-                                        setup_dummy_precon,
-                                        teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_do_not_write_when_pollfd_is_cleared,
-                                        setup_dummy_precon,
-                                        teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_write_when_pollfd_is_not_updated,
-                                        setup_dummy_precon,
-                                        teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_do_not_read_when_stopped_precon,
+        cmocka_unit_test_setup_teardown(test_ufd_do_not_write_con_reset_by_peer,
                                         setup_dummy_precon,
                                         teardown_dummy_precon),
         cmocka_unit_test_setup_teardown(
-            test_do_not_progress_when_destroyed_precon, setup_dummy_precon,
+            test_ufd_do_not_write_when_pollfd_is_cleared, setup_dummy_precon,
             teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_read_and_write_normally,
+        cmocka_unit_test_setup_teardown(
+            test_ufd_write_when_pollfd_is_not_updated, setup_dummy_precon,
+            teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_ufd_do_not_read_when_stopped_precon,
                                         setup_dummy_precon,
                                         teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_only_write_when_no_pollin,
+        cmocka_unit_test_setup_teardown(
+            test_ufd_do_not_progress_when_destroyed_precon, setup_dummy_precon,
+            teardown_dummy_con),
+        cmocka_unit_test_setup_teardown(test_ufd_read_and_write_normally,
                                         setup_dummy_precon,
                                         teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_do_not_read_if_global_ufd_is_gone,
+        cmocka_unit_test_setup_teardown(test_ufd_only_write_when_no_pollin,
                                         setup_dummy_precon,
                                         teardown_dummy_precon),
-        cmocka_unit_test_setup_teardown(test_do_not_write_if_global_ufd_is_gone,
-                                        setup_dummy_precon,
-                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(
+            test_ufd_do_not_read_if_global_ufd_is_gone, setup_dummy_precon,
+            teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(
+            test_ufd_do_not_write_if_global_ufd_is_gone, setup_dummy_precon,
+            teardown_dummy_precon),
     };
     total_tests += TEST_GROUP_SIZE(pscom_ufd_tests);
     failed_tests += cmocka_run_group_tests(pscom_ufd_tests, NULL, NULL);
