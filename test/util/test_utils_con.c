@@ -113,8 +113,5 @@ int teardown_dummy_precon(void **state)
     /* destroy the dummy socket */
     teardown_dummy_sock((void **)&sock);
 
-    /* cleanup poll readers */
-    pscom_poll_cleanup_init(&precon->poll_read);
-
     return 0;
 }
