@@ -18,13 +18,11 @@ if(UCP_ENABLED)
       PRIVATE ${POPT_INCLUDE_DIRS}
       PRIVATE ${PROJECT_BINARY_DIR}/include
       PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
-      PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4ucp
-      )
+      PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4ucp)
 
     target_link_libraries(
       ucp_pp
       PRIVATE ${UCP_LIBRARIES}
-      PRIVATE ${POPT_LIBRARIES}
-      )
+      PRIVATE ${POPT_LIBRARIES})
   endif(POPT_ENABLED)
 endif(UCP_ENABLED)

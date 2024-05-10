@@ -9,7 +9,8 @@
 # file.
 #
 
-add_library(pscom SHARED
+add_library(
+  pscom SHARED
   pscom.c
   pscom_async.c
   pscom_con.c
@@ -35,8 +36,7 @@ add_library(pscom SHARED
   pscom_tcp.c
   pscom_ufd.c
   pslib.c
-  psshmalloc.c
-)
+  psshmalloc.c)
 
 add_dependencies(pscom vc_version)
 
@@ -44,46 +44,32 @@ target_include_directories(
   pscom
   PRIVATE .
   PRIVATE ${PROJECT_BINARY_DIR}/include
-
-  PUBLIC  ${PROJECT_SOURCE_DIR}/include
-)
+  PUBLIC ${PROJECT_SOURCE_DIR}/include)
 
 target_link_libraries(
   pscom
   PRIVATE dl
-  PRIVATE pthread
-)
+  PRIVATE pthread)
 
 target_compile_definitions(
   pscom
   PRIVATE LIBPSCOM
-  PRIVATE LIBDIR="${CMAKE_INSTALL_LIBDIR}"
-)
+  PRIVATE LIBDIR="${CMAKE_INSTALL_LIBDIR}")
 
 target_compile_options(
   pscom
   PRIVATE -fvisibility=hidden
-  PRIVATE -flto
-)
+  PRIVATE -flto)
 
-target_link_options(
-  pscom
-  PRIVATE -flto
-)
+target_link_options(pscom PRIVATE -flto)
 
-set_target_properties(pscom
-  PROPERTIES
-  VERSION "2.0.0"
-  SOVERSION "2"
-)
-
+set_target_properties(pscom PROPERTIES VERSION "2.0.0" SOVERSION "2")
 
 if(CUDA_ENABLED)
   target_add_cuda(pscom)
 endif(CUDA_ENABLED)
 
 install(TARGETS pscom DESTINATION "${CMAKE_INSTALL_LIBDIR}")
-
 
 # Static libpscom for utests
 add_static_target(pscom)

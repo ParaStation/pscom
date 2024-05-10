@@ -45,6 +45,8 @@ For installations of ParaStation MPI, the default install directory is typically
 - `popt` library, a command line option parsing library used by some of the tools in the `bin` folder
 - Parastation Management (`psmgmt`) library
 - cmocka Library for unit tests
+- Python packages `cmake-format`, `cmakelint` and `PyYaml` for CMake style checking. Install them via Python's package management system, e.g `pip3 install cmake-format cmakelint PyYaml`.
+
 
 If CMake does not detect a library on your system that is required for a plugin or feature you want to use, check if the install directory of that library is contained in your system's and compiler's library and header environment paths, e.g., `LIBRARY_PATH`, `LD_LIBRARY_PATH`, `PATH`, and `C_PATH`.
 Alternatively, for some libraries it is possible to specify the local install directory in your system by passing the following options to CMake:
@@ -138,7 +140,9 @@ To ensure that all commits conform to the coding style, the pre-commit hook shou
 $ ln -s ../../scripts/hooks/pre-commit .git/hooks/pre-commit
 ```
 
-This automatically runs `clang-format` on all changed files. Currently, we rely on `clang-format` in version 16.0.6 for checking the coding style.
+This automatically runs `clang-format`, `cmake-format` and `cmakelint` on all changed files. Currently, we rely on `clang-format` in version 16.0.6, `cmake-format` in version 0.16.13 and `cmakelint` in version 1.4.2 for checking the coding style.
+`cmake-format` configuration file is YAML file that needs `PyYaml` (our version 6.0.1) for parsing.
+
 
 ## More documentation
 - [Introduction and Concepts](doc/PscomConcepts.md)

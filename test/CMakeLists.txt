@@ -10,17 +10,17 @@
 #
 
 # "make utest" : Build and call all utests
-add_custom_target(utest
-  COMMAND	${CMAKE_CURRENT_BINARY_DIR}/pscom_utest
-  COMMAND	"${CMAKE_SOURCE_DIR}/scripts/testlocal.sh"
-  DEPENDS	utest-build
-  )
+add_custom_target(
+  utest
+  COMMAND ${CMAKE_CURRENT_BINARY_DIR}/pscom_utest
+  COMMAND "${CMAKE_SOURCE_DIR}/scripts/testlocal.sh"
+  DEPENDS utest-build)
 
 # "make utest-build" : Build all tests (but do not call them)
-add_custom_target(utest-build
-  DEPENDS	pscom_utest
-  DEPENDS	pscom_pp
-  )
+add_custom_target(
+  utest-build
+  DEPENDS pscom_utest
+  DEPENDS pscom_pp)
 
 #
 # ctest
@@ -29,29 +29,26 @@ add_custom_target(utest-build
 # rebuild the tests, if test dependencies change!
 # The "build-tests" pseudo test tries to compensate for this missing feature.
 add_test(
-  NAME	build-tests
-  COMMAND	"${CMAKE_MAKE_PROGRAM}" utest-build
-  WORKING_DIRECTORY	${CMAKE_BINARY_DIR}
-  )
+  NAME build-tests
+  COMMAND "${CMAKE_MAKE_PROGRAM}" utest-build
+  WORKING_DIRECTORY ${CMAKE_BINARY_DIR})
 
-
-add_test(
-  NAME pscom_utest
-  COMMAND ${CMAKE_COMMAND} -E env "PSP_UTEST_OUTPUT=xml" ${PROJECT_BINARY_DIR}/test/pscom_utest
-  )
+add_test(NAME pscom_utest
+         COMMAND ${CMAKE_COMMAND} -E env "PSP_UTEST_OUTPUT=xml"
+                 ${PROJECT_BINARY_DIR}/test/pscom_utest)
 
 add_test(
-  NAME	testlocal
-  COMMAND	"${CMAKE_SOURCE_DIR}/scripts/testlocal.sh"
-  WORKING_DIRECTORY	"${CMAKE_BINARY_DIR}/bin"
-  )
+  NAME testlocal
+  COMMAND "${CMAKE_SOURCE_DIR}/scripts/testlocal.sh"
+  WORKING_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 #
 # Code coverage
 #
 if(COVERAGE_ENABLED)
   # Disable any optimizations and add necessary compiler flags
   string(REGEX REPLACE "-Og" "-O0" CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}")
-  set(CMAKE_C_FLAGS_DEBUG "${CMAKE_C_FLAGS_DEBUG}  -fprofile-arcs -ftest-coverage")
+  set(CMAKE_C_FLAGS_DEBUG
+      "${CMAKE_C_FLAGS_DEBUG}  -fprofile-arcs -ftest-coverage")
 
   # Check prerequisites
   find_program(GCOV_PATH gcov)
@@ -66,38 +63,36 @@ if(COVERAGE_ENABLED)
   set(COVERAGE_NAME "pscom-coverage")
 
   # XML coverage report
-  add_custom_target(coverage
-      # Run tests
-      pscom_utest
-
-      # Running gcovr for XML generation
-      COMMAND ${GCOVR_PATH} --xml -s
-          -r ${PROJECT_SOURCE_DIR}
-	  -e ${PROJECT_SOURCE_DIR}/test
-          --object-directory=${PROJECT_BINARY_DIR}
-	  -o ${COVERAGE_NAME}.xml
-      # Running gcovr for HTML generation
-      COMMAND ${CMAKE_COMMAND} -E make_directory ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}
-      COMMAND ${GCOVR_PATH} --html --html-details
-          -r ${PROJECT_SOURCE_DIR}
-	  -e ${PROJECT_SOURCE_DIR}/test
-          --object-directory=${PROJECT_BINARY_DIR}
-	  -o ${COVERAGE_NAME}/index.html
-      BYPRODUCTS ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}.xml ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}
-      WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
-      DEPENDS pscom_utest
-      VERBATIM
-      COMMENT "Running gcovr to produce HTML and XML code coverage report."
-  )
+  add_custom_target(
+    coverage
+    # Run tests
+    pscom_utest
+    # Running gcovr for XML generation
+    COMMAND
+      ${GCOVR_PATH} --xml -s -r ${PROJECT_SOURCE_DIR} -e
+      ${PROJECT_SOURCE_DIR}/test --object-directory=${PROJECT_BINARY_DIR} -o
+      ${COVERAGE_NAME}.xml
+    # Running gcovr for HTML generation
+    COMMAND ${CMAKE_COMMAND} -E make_directory
+            ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}
+    COMMAND
+      ${GCOVR_PATH} --html --html-details -r ${PROJECT_SOURCE_DIR} -e
+      ${PROJECT_SOURCE_DIR}/test --object-directory=${PROJECT_BINARY_DIR} -o
+      ${COVERAGE_NAME}/index.html
+    BYPRODUCTS ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}.xml
+               ${PROJECT_BINARY_DIR}/${COVERAGE_NAME}
+    WORKING_DIRECTORY ${PROJECT_BINARY_DIR}
+    DEPENDS pscom_utest
+    VERBATIM
+    COMMENT "Running gcovr to produce HTML and XML code coverage report.")
 endif(COVERAGE_ENABLED)
-
 
 #
 # Test build rules
 #
 
-add_executable(		pscom_utest
-  EXCLUDE_FROM_ALL
+add_executable(
+  pscom_utest EXCLUDE_FROM_ALL
   mocks/misc_mocks.c
   pscom_utest.c
   pscom/test_debug.c
@@ -108,11 +103,11 @@ add_executable(		pscom_utest
   util/test_utils_con.c
   util/test_utils_debug.c
   util/test_utils_env.c
-  util/test_utils_sock.c
-  )
+  util/test_utils_sock.c)
 
 # Mocked functions
-target_link_options(	pscom_utest
+target_link_options(
+  pscom_utest
   PRIVATE
   -Wl,--wrap=dlsym
   -Wl,--wrap=dlopen
@@ -126,58 +121,40 @@ target_link_options(	pscom_utest
   -Wl,--wrap=poll
   -Wl,--wrap=setsockopt
   -Wl,--wrap=sched_yield
-#  -static
+  #  -static
 )
 
-target_link_libraries(	pscom_utest
-  PRIVATE
-  pscom-static
-  ${CMOCKA_LIBRARIES}
-  )
+target_link_libraries(pscom_utest PRIVATE pscom-static ${CMOCKA_LIBRARIES})
 
-target_include_directories(	pscom_utest
-  PRIVATE
-  .
-  ${PROJECT_SOURCE_DIR}/lib/pscom
-  ${PROJECT_SOURCE_DIR}/include
-  ${CMOCKA_INCLUDE_DIR}
-  )
+target_include_directories(
+  pscom_utest PRIVATE . ${PROJECT_SOURCE_DIR}/lib/pscom
+                      ${PROJECT_SOURCE_DIR}/include ${CMOCKA_INCLUDE_DIR})
 
 if(UCP_ENABLED)
-  target_link_options(pscom_utest
+  target_link_options(
+    pscom_utest
     PRIVATE
     -Wl,--wrap=ucp_config_read
     -Wl,--wrap=ucp_config_release
     -Wl,--wrap=ucp_init_version
     -Wl,--wrap=ucp_worker_create
     -Wl,--wrap=ucp_worker_get_address
-    -Wl,--wrap=ucs_status_string
-  )
+    -Wl,--wrap=ucs_status_string)
 
-  target_include_directories(pscom_utest
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/lib/pscom4ucp
-    ${UCP_INCLUDE_DIRS}
-  )
+  target_include_directories(
+    pscom_utest PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4ucp ${UCP_INCLUDE_DIRS})
 
-  target_sources(pscom_utest
-    PRIVATE
-    mocks/ucx_mocks.c
-    pscom4ucp/test_pscom4ucp.c
-  )
+  target_sources(pscom_utest PRIVATE mocks/ucx_mocks.c
+                                     pscom4ucp/test_pscom4ucp.c)
 
-  target_link_libraries(pscom_utest
-    PRIVATE
-    pscom4ucp-static
-  )
+  target_link_libraries(pscom_utest PRIVATE pscom4ucp-static)
 
-  target_compile_definitions(pscom_utest
-    PRIVATE UCP_ENABLED
-  )
+  target_compile_definitions(pscom_utest PRIVATE UCP_ENABLED)
 endif(UCP_ENABLED)
 
 if(PORTALS4_ENABLED)
-  target_link_options(pscom_utest
+  target_link_options(
+    pscom_utest
     PRIVATE
     -Wl,--wrap=PtlNIInit
     -Wl,--wrap=PtlNIFini
@@ -194,34 +171,24 @@ if(PORTALS4_ENABLED)
     -Wl,--wrap=PtlPTFree
     -Wl,--wrap=PtlPut
     -Wl,--wrap=PtlMEAppend
-    -Wl,--wrap=PtlMEUnlink
-  )
+    -Wl,--wrap=PtlMEUnlink)
 
-  target_include_directories(pscom_utest
-    PRIVATE
-    ${PROJECT_SOURCE_DIR}/lib/pscom4portals
-    ${PORTALS4_INCLUDE_DIRS}
-  )
+  target_include_directories(
+    pscom_utest PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4portals
+                        ${PORTALS4_INCLUDE_DIRS})
 
-  target_sources(pscom_utest
-    PRIVATE
-    mocks/portals4_mocks.c
-    pscom4portals/test_pscom4portals.c
-  )
+  target_sources(pscom_utest PRIVATE mocks/portals4_mocks.c
+                                     pscom4portals/test_pscom4portals.c)
 
-  target_link_libraries(pscom_utest
-    PRIVATE
-    pscom4portals-static
-  )
+  target_link_libraries(pscom_utest PRIVATE pscom4portals-static)
 
-  target_compile_definitions(pscom_utest
-    PRIVATE PORTALS4_ENABLED
-  )
+  target_compile_definitions(pscom_utest PRIVATE PORTALS4_ENABLED)
 endif(PORTALS4_ENABLED)
 
 # CUDA-related configuration
 if(CUDA_ENABLED)
-  target_link_options(	pscom_utest
+  target_link_options(
+    pscom_utest
     PRIVATE
     -Wl,--wrap=cuInit
     -Wl,--wrap=cuCtxGetCurrent
@@ -240,15 +207,10 @@ if(CUDA_ENABLED)
     -Wl,--wrap=cuMemcpyHtoDAsync_v2
     -Wl,--wrap=cuStreamSynchronize
     -Wl,--wrap=cuStreamDestroy_v2
-    -Wl,--wrap=cuStreamCreate
-    )
+    -Wl,--wrap=cuStreamCreate)
 
-  target_sources(	pscom_utest
-    PRIVATE
-    mocks/cuda_mocks.c
-    pscom/test_cuda.c
-    util/test_utils_cuda.c
-    )
+  target_sources(pscom_utest PRIVATE mocks/cuda_mocks.c pscom/test_cuda.c
+                                     util/test_utils_cuda.c)
 
   target_add_cuda(pscom_utest)
 endif(CUDA_ENABLED)

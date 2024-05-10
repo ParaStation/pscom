@@ -1,0 +1,13 @@
+#
+# ParaStation
+#
+# Copyright (C) 2023-2024 ParTec AG, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+
+# --filter= options: https://pypi.org/project/cmakelint/
+# "-" disable option
+# "+" enable option
+filter=-convention/filename,-linelength,-package/consistency,-readability/logic,-readability/mixedcase,-readability/wonkycase,-syntax,-whitespace/eol,+whitespace/extra,-whitespace/indent,-whitespace/mismatch,-whitespace/newline,-whitespace/tabs

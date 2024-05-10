@@ -9,9 +9,6 @@
 # file.
 #
 
-add_library(
-  psmalloc SHARED
-  psmalloc.c
-)
+add_library(psmalloc SHARED psmalloc.c)
 
 plugin_common(psmalloc)

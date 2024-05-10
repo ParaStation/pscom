@@ -9,20 +9,10 @@
 # file.
 #
 
-add_library(
-  pscom4openib SHARED
-  pscom_openib.c
-  psoib.c
-)
+add_library(pscom4openib SHARED pscom_openib.c psoib.c)
 
-target_include_directories(
-  pscom4openib
-  PRIVATE ${IBVERBS_INCLUDE_DIRS}
-)
+target_include_directories(pscom4openib PRIVATE ${IBVERBS_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4openib
-  PRIVATE ${IBVERBS_LIBRARIES}
-)
+target_link_libraries(pscom4openib PRIVATE ${IBVERBS_LIBRARIES})
 
 plugin_common(pscom4openib)

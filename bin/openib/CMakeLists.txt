@@ -14,11 +14,9 @@ if(OPENIB_ENABLED)
     function(openib_target target firstsrc)
       add_executable(
         ${target}
-        ${firstsrc}
-        ${PROJECT_SOURCE_DIR}/lib/pscom/pscom_dprint.c
+        ${firstsrc} ${PROJECT_SOURCE_DIR}/lib/pscom/pscom_dprint.c
         ${PROJECT_SOURCE_DIR}/lib/pscom/pscom_env.c
-        ${PROJECT_SOURCE_DIR}/lib/pscom/pslib.c
-        )
+        ${PROJECT_SOURCE_DIR}/lib/pscom/pslib.c)
 
       add_dependencies(${target} vc_version)
 
@@ -26,8 +24,7 @@ if(OPENIB_ENABLED)
         ${target}
         PRIVATE ${IBVERBS_LIBRARIES}
         PRIVATE ${POPT_LIBRARIES}
-        PRIVATE dl
-        )
+        PRIVATE dl)
 
       target_include_directories(
         ${target}
@@ -35,11 +32,10 @@ if(OPENIB_ENABLED)
         PRIVATE ${POPT_INCLUDE_DIRS}
         PRIVATE ${PROJECT_BINARY_DIR}/include
         PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom
-        PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4openib
-        )
+        PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom4openib)
     endfunction()
 
-    openib_target(openib_pp	openib_pp.c)
-    openib_target(openib_ud_pp	openib_ud_pp.c)
+    openib_target(openib_pp openib_pp.c)
+    openib_target(openib_ud_pp openib_ud_pp.c)
   endif(POPT_ENABLED)
 endif(OPENIB_ENABLED)

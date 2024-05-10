@@ -39,6 +39,53 @@ function check_diff {
     fi
 }
 
+LOCAL_MIRROR=/tmp/${USER}/pscom-tmp-mirror
+TMP_FILENAME=/tmp/${USER}/pscom-tmp-file
+TMP_DIFF=/tmp/${USER}/pscom-tmp-diff
+CLANG_FORMAT=clang-format
+CMAKE_FORMAT=cmake-format
+CMAKE_LINT=cmakelint
+
+
+GREEN='\033[0;32m'
+RED='\033[0;31m'
+NC='\033[0m' # No Color
+
+function check_format {
+    format=${1}
+    files=${2}
+
+    formatter=$(echo ${format} | cut -d" " -f1)
+    # Show files that are being checked
+    echo "Running '${formatter}' on the following files:"
+    for file in $files; do
+        echo "* ${file}"
+    done
+    echo
+
+    for file in $files; do
+        echo -ne "Processing ${file} ... "
+        cp ${file} ${TMP_FILENAME}
+
+        ${format} ${file} 2>&1
+        ret=$?
+        if [[ "${formatter}" == "${CLANG_FORMAT}" ||
+                ("${formatter}" == "${CMAKE_FORMAT}" && ${apply} == true) ]]; then
+            # Run clang-format twice as we sometimes see idempotency
+            ${format} ${file} 2>&1
+            check_diff ${file} ${TMP_FILENAME}
+            ret=$?
+        fi
+
+        if [ $ret != 0 ]; then
+            echo -e "${RED}failed${NC}"
+            return 1
+        else
+            echo -e "${GREEN}done${NC}"
+        fi
+    done
+    return 0
+}
 
 apply=false
 args=$(getopt haf: $*) ; errcode=$?; set -- $args
@@ -63,16 +110,6 @@ while :; do
     esac
 done
 
-LOCAL_MIRROR=/tmp/${USER}/pscom-tmp-mirror
-TMP_FILENAME=/tmp/${USER}/pscom-tmp-file
-TMP_DIFF=/tmp/${USER}/pscom-tmp-diff
-CLANG_FORMAT=clang-format
-
-
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-NC='\033[0m' # No Color
-
 # Only work on a copy if changes shall not be applied
 if [ "${apply}" != true ]; then
     git checkout-index --prefix=$LOCAL_MIRROR/ -af
@@ -88,10 +125,19 @@ if [ -z ${file} ]; then
     echo -n "Determine modified files ... "
     # This will check the previous commit again when not amending a commit, but
     # that should be ok if the patches are correct.
-    files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1)
+    files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.h' '*.c')
+    # `cmake_files_to_check` - grep the cmake files with the exclusion of the modules in the `cmake/Modules` directory.
+    # Those files can be moved or reused from other projects with different formatting and then our formatting should not
+    # be applied to them.
+    cmake_files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.cmake' '*CMakeLists.txt' \
+        | grep -E -v '^cmake/Modules/')
     echo -e "${GREEN}done${NC}"
 else
-    files_to_check=${file}
+    if [[ ($file == *.c || $file == *.h) ]]; then
+        files_to_check=${file}
+    elif [[ ($file == *CMakeLists.txt || $file == *.cmake) ]]; then
+        cmake_files_to_check=${file}
+    fi
 fi
 
 
@@ -102,33 +148,36 @@ fi
 
 ret=0
 
-# Show files that are being checked
-echo "Running '${CLANG_FORMAT}' on the following files:"
-for file in $files_to_check; do
-    echo "* ${file}"
-done
-echo
+if [ ${#files_to_check} != 0 ]; then
+    # Iterate all .c and .h files with clang-format
+    # (This won't work if we ever have a file with a space in the name)
+    cmd="${CLANG_FORMAT} -i"
+    check_format "${cmd}" "${files_to_check}"
+    clang_ret=$?
+fi
 
-# Iterate all files
-# (This won't work if we ever have a file with a space in the name)
-for file in $files_to_check; do
-    if [[ ($file == *.c || $file == *.h) ]]; then
-        echo -n "Processing ${file} ... "
-        cp ${file} ${TMP_FILENAME}
-
-        # Run clang-format twice as we sometimes see idempotency
-        ${CLANG_FORMAT} -i ${file} > /dev/null 2>&1
-        ${CLANG_FORMAT} -i ${file} > /dev/null 2>&1
-
-        check_diff ${file} ${TMP_FILENAME}
-        if [ $? != 0 ] ; then
-            echo -e "${RED}failed${NC}"
-            ret=1
-        else
-            echo -e "${GREEN}done${NC}"
-        fi
+if [ ${#cmake_files_to_check} != 0 ]; then
+    # Iterate through all the cmake-specific files with cmake-format
+    if [ "${apply}" != true ]; then
+        # Exit with status code 0 if formatting would not change
+        # file contents, or status code 1 if it would
+        cmake_format_cmd="${CMAKE_FORMAT} --config=.cmakeformatrc --check"
+    else
+        # Write the formatted version of the file in place
+        cmake_format_cmd="${CMAKE_FORMAT} --config=.cmakeformatrc --in-place"
     fi
-done
+    check_format "${cmake_format_cmd}" "${cmake_files_to_check}"
+    cmake_ret=$?
+
+    # Iterate through all the cmake-specific files with cmakelint
+    cmake_format_cmd="${CMAKE_LINT} --config=.cmakelintrc --quiet"
+    check_format "${cmake_format_cmd}" "${cmake_files_to_check}"
+    cmakelint_ret=$?
+fi
+
+if [[ ${clang_ret} == 1 || ${cmake_ret} == 1 || ${cmakelint_ret} == 1 ]]; then
+    ret=1
+fi
 
 if [ "${apply}" != true ]; then
     # Cleanup temporary files
@@ -136,8 +185,7 @@ if [ "${apply}" != true ]; then
     popd > /dev/null
 fi
 
-if [ $ret != 0 ] ; then
+if [ $ret != 0 ]; then
     echo -e "${RED}== CODE CLEANUP SCRIPT FAILED ==${NC}"
     exit $ret
 fi
-

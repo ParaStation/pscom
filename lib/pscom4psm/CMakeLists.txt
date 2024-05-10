@@ -9,19 +9,10 @@
 # file.
 #
 
-add_library(
-  pscom4psm SHARED
-  pscom_psm.c
-)
+add_library(pscom4psm SHARED pscom_psm.c)
 
-target_include_directories(
-  pscom4psm
-  PRIVATE ${PSM2_INCLUDE_DIRS}
-)
+target_include_directories(pscom4psm PRIVATE ${PSM2_INCLUDE_DIRS})
 
-target_link_libraries(
-  pscom4psm
-  PRIVATE ${PSM2_LIBRARIES}
-)
+target_link_libraries(pscom4psm PRIVATE ${PSM2_LIBRARIES})
 
 plugin_common(pscom4psm)
