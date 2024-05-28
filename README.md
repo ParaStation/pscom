@@ -46,6 +46,7 @@ For installations of ParaStation MPI, the default install directory is typically
 - Parastation Management (`psmgmt`) library
 - cmocka Library for unit tests
 - Python packages `cmake-format`, `cmakelint` and `PyYaml` for CMake style checking. Install them via Python's package management system, e.g `pip3 install cmake-format cmakelint PyYaml`.
+- `clang-format` for applying the coding style (cf. [Contributing](#contributing))
 
 
 If CMake does not detect a library on your system that is required for a plugin or feature you want to use, check if the install directory of that library is contained in your system's and compiler's library and header environment paths, e.g., `LIBRARY_PATH`, `LD_LIBRARY_PATH`, `PATH`, and `C_PATH`.
