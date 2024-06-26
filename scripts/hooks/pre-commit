@@ -51,6 +51,20 @@ GREEN='\033[0;32m'
 RED='\033[0;31m'
 NC='\033[0m' # No Color
 
+# Ensure formaters and linters are available
+COMMANDS_TO_CHECK=(
+    "${CLANG_FORMAT}"
+    "${CMAKE_FORMAT}"
+    "${CMAKE_LINT}"
+)
+for command_to_check in "${COMMANDS_TO_CHECK[@]}"; do
+    if ! command -v "${command_to_check}" != 0 &> /dev/null; then
+        echo -e "${RED}[ERROR]${NC} '${command_to_check}' could not be found. Abort!"
+        exit 1
+    fi
+done
+
+
 function check_format {
     format=${1}
     files=${2}
