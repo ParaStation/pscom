@@ -660,6 +660,10 @@ struct PSCOM {
                                            // !is_psshm_ptr(data)
         unsigned int shm_direct_failed;    // failed shm direct because
                                            // !is_psshm_ptr(malloc(data))
+#ifdef PSCOM_CUDA_AWARENESS
+        unsigned int gpu_staging;   // counts all gpu buffer staging
+        unsigned int gpu_unstaging; // counts all gpu buffer unstaging
+#endif                              /* PSCOM_CUDA_AWARENESS */
     } stat;
 };
 

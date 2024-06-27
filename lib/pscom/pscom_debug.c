@@ -285,6 +285,10 @@ void pscom_dump_reqstat(FILE *out)
                 pscom.stat.rendezvous_reqs, pscom.stat.fallback_to_eager,
                 pscom.stat.fallback_to_sw_rndv);
     }
+#ifdef PSCOM_CUDA_AWARENESS
+    fprintf(out, "GPUBufStg:%u GPUBufUnstg:%u\n", pscom.stat.gpu_staging,
+            pscom.stat.gpu_unstaging);
+#endif /* PSCOM_CUDA_AWARENESS */
 }
 
 

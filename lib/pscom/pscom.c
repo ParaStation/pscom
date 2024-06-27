@@ -90,6 +90,10 @@ pscom_t pscom = {
             .shm_direct            = 0,
             .shm_direct_nonshmptr  = 0,
             .shm_direct_failed     = 0,
+#ifdef PSCOM_CUDA_AWARENESS
+            .gpu_staging   = 0,
+            .gpu_unstaging = 0,
+#endif /* PSCOM_CUDA_AWARENESS */
         },
 };
 

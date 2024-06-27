@@ -74,6 +74,7 @@ static inline void _pscom_stage_buffer(pscom_req_t *req, unsigned copy)
             pscom_memcpy_device2host(req->pub.data, req->stage_buf,
                                      req->pub.data_len);
         }
+        pscom.stat.gpu_staging++;
     }
 }
 
@@ -92,6 +93,7 @@ static inline void _pscom_unstage_buffer(pscom_req_t *req, unsigned copy)
         free(req->pub.data);
         req->pub.data  = req->stage_buf;
         req->stage_buf = NULL;
+        pscom.stat.gpu_unstaging++;
     }
 }
 
