@@ -1137,4 +1137,98 @@ void test_pscom_unstage_buffer_host_mem(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_post_recv()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_post_recv() for staging
+ *
+ * Given: CUDA-awareness is enabled and
+ *        non-CUDA-aware connection
+ * When: pscom_post_recv() is called
+ * Then: buffer staging should not be called
+ */
+void test_cuda_post_recv_without_staging(void **state)
+{
+    /* enable CUDA support */
+    pscom.env.cuda = 1;
+
+    /* obtain dummy connection from the test setup */
+    pscom_con_t *recv_con = (pscom_con_t *)(*state);
+
+    /* create non-CUDA-aware connection*/
+    recv_con->is_gpu_aware = 0;
+
+    /* create a pscom request */
+    pscom_req_t *req         = pscom_req_create(0, 0);
+    int buffer               = 42;
+    req->pub.connection      = &recv_con->pub;
+    req->pub.data            = (void *)&buffer;
+    req->pub.data_len        = sizeof(buffer);
+    req->pub.header.data_len = sizeof(buffer);
+    req->stage_buf           = NULL;
+    pscom_request_t *request = &req->pub;
+
+    /* post a recv request (i.e., start reading) */
+    pscom_post_recv(request);
+    assert_int_equal(pscom.stat.gpu_staging, 0);
+    assert_int_equal(pscom.stat.gpu_unstaging, 0);
+
+    request->state |= PSCOM_REQ_STATE_DONE;
+    /* free the request */
+    pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_post_send()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_post_send() for staging
+ *
+ * Given: CUDA-awareness is enabled and
+ *        non-CUDA-aware connection
+ * When: pscom_post_send() is called
+ * Then: buffer staging should not be called
+ */
+void test_cuda_post_send_without_staging(void **state)
+{
+    /* enable CUDA support */
+    pscom.env.cuda = 1;
+
+    /* obtain dummy connection from the test setup */
+    pscom_con_t *send_con = (pscom_con_t *)(*state);
+
+    /* create non-CUDA-aware connection*/
+    send_con->is_gpu_aware = 0;
+
+    /* create a pscom request */
+    pscom_req_t *req         = pscom_req_create(0, 0);
+    int buffer               = 42;
+    req->pub.connection      = &send_con->pub;
+    req->pub.data            = (void *)&buffer;
+    req->pub.data_len        = sizeof(buffer);
+    req->pub.header.data_len = sizeof(buffer);
+    req->stage_buf           = NULL;
+    pscom_request_t *request = &req->pub;
+
+    /* post a send request (i.e., start writing) */
+    pscom_post_send(request);
+    assert_int_equal(pscom.stat.gpu_staging, 0);
+    assert_int_equal(pscom.stat.gpu_unstaging, 0);
+
+
+    request->state |= PSCOM_REQ_STATE_DONE;
+    /* free the request */
+    pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 1;
 }

@@ -55,4 +55,7 @@ void test_pscom_unstage_buffer_dev_mem(void **state);
 void test_pscom_unstage_buffer_dev_mem_no_copy(void **state);
 void test_pscom_unstage_buffer_dev_mem_err_req(void **state);
 void test_pscom_unstage_buffer_host_mem(void **state);
+
+void test_cuda_post_recv_without_staging(void **state);
+void test_cuda_post_send_without_staging(void **state);
 #endif /* _TEST_CUDA_H_ */
