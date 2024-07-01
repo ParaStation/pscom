@@ -1087,6 +1087,13 @@ void pscom_read_done(pscom_con_t *con, char *buf, size_t len)
         if (req) {
             req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
 
+            /*
+             * stage buffer just before IO is started for the first time (i.e.,
+             * when the actual connection type incl. GPU awareness is known) to
+             * avoid undesired staging for on-demand connections
+             */
+            _pscom_stage_buffer(req, 0);
+
             /* only write to the request (memcpy) if len > 0 */
             if (len) {
                 l = pscom_req_write(req, buf, len);
@@ -1139,6 +1146,15 @@ pscom_req_t *pscom_write_get_iov(pscom_con_t *con, struct iovec iov[2])
 
         if (req->cur_data.iov_len || req->cur_header.iov_len) {
             req->pub.state |= PSCOM_REQ_STATE_IO_STARTED;
+
+            /*
+             * stage buffer just before IO is started for the first time (i.e.,
+             * when the actual connection type incl. GPU awareness is known) to
+             * avoid undesired staging for on-demand connections
+             */
+            _pscom_stage_buffer(req, 1);
+
+
             return req;
         }
     }
@@ -1606,8 +1622,6 @@ void pscom_post_recv(pscom_request_t *request)
     D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
                 pscom_debug_req_str(req)));
 
-    _pscom_stage_buffer(req, 0);
-
     pscom_lock();
     {
         pscom_req_t *genreq;
@@ -1839,8 +1853,6 @@ void _pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
-
-    _pscom_stage_buffer(req, 1);
 
     if (req->pub.data_len < con->rendezvous_size) {
         perf_add("reset_send_direct");

@@ -39,6 +39,9 @@ int setup_dummy_con(void **state)
     /* create a new connection on that sock */
     pscom_con_t *con = pscom_con_create(sock);
 
+    /* reset pscom statistics */
+    memset(&pscom.stat, 0, sizeof(pscom.stat));
+
     *state = (void *)con;
 
     return 0;

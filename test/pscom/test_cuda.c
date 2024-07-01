@@ -125,10 +125,13 @@ void test_is_cuda_enabled_returns_one_if_enabled(void **state)
 {
     (void)state;
 
-    /* disable CUDA support */
+    /* enable CUDA support */
     pscom.env.cuda = 1;
 
     assert_int_equal(pscom_is_cuda_enabled(), 1);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -164,6 +167,7 @@ void test_cuda_init_cuInit_error(void **state)
 
     /* enable CUDA support */
     pscom.env.cuda = 1;
+
 #ifdef CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE
     will_return(__wrap_cuInit, CUDA_ERROR_COMPAT_NOT_SUPPORTED_ON_DEVICE);
 #else
@@ -171,6 +175,9 @@ void test_cuda_init_cuInit_error(void **state)
 #endif
     assert_int_equal(pscom_cuda_init(), PSCOM_ERR_STDERROR);
     assert_int_equal(errno, EFAULT);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -300,6 +307,9 @@ void test_cuda_cleanup_destroys_cuda_streams(void **state)
 
 
     assert_int_equal(pscom_cuda_cleanup(), PSCOM_SUCCESS);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -325,6 +335,9 @@ void test_cuda_cleanup_for_failing_stream_destroy(void **state)
 
     assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
     assert_int_equal(errno, EFAULT);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 
@@ -351,6 +364,9 @@ void test_cuda_cleanup_for_inactive_device(void **state)
 
     assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
     assert_int_equal(errno, EFAULT);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 
@@ -377,6 +393,9 @@ void test_cuda_cleanup_for_unclear_device_status(void **state)
 
     assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
     assert_int_equal(errno, EFAULT);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 
@@ -401,6 +420,9 @@ void test_cuda_cleanup_for_cuda_deinitialized(void **state)
 
     assert_int_equal(pscom_cuda_cleanup(), PSCOM_ERR_STDERROR);
     assert_int_equal(errno, EFAULT);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 
@@ -455,6 +477,9 @@ void test_buffer_needs_staging_con_not_cuda_aware(void **state)
     setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1,
                                  CUDA_SUCCESS);
     assert_int_equal(_pscom_buffer_needs_staging(test_addr, NULL), 1);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -475,6 +500,9 @@ void test_buffer_needs_staging_con_cuda_aware(void **state)
     /* test any pointer */
     assert_int_equal(_pscom_buffer_needs_staging((void *)0x42, &test_con), 0);
     assert_int_equal(_pscom_buffer_needs_staging(NULL, &test_con), 0);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -522,6 +550,9 @@ void test_is_gpu_mem_get_attributes_fails(void **state)
     setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1,
                                  CUDA_ERROR_INVALID_VALUE);
     assert_int_equal(_pscom_is_gpu_mem(test_addr, 42), 0);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -545,6 +576,9 @@ void test_is_gpu_mem_managed_memory(void **state)
     setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_HOST, 1, 1,
                                  CUDA_SUCCESS);
     assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 0);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -565,6 +599,9 @@ void test_is_gpu_mem_device_memory(void **state)
     setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1,
                                  CUDA_SUCCESS);
     assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 1);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -588,6 +625,9 @@ void test_is_gpu_mem_wrapper_device_memory(void **state)
     setup_cuPointerGetAttributes(test_addr, CU_MEMORYTYPE_DEVICE, 0, 1,
                                  CUDA_SUCCESS);
     assert_int_equal(pscom_is_gpu_mem(test_addr), 1);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -614,6 +654,9 @@ void test_is_gpu_mem_sync_memop_disabled(void **state)
     will_return(__wrap_cuPointerSetAttribute, CUDA_SUCCESS);
     expect_function_calls(__wrap_cuPointerSetAttribute, 1);
     assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 1);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -635,6 +678,9 @@ void test_is_gpu_mem_sync_memop_enabled(void **state)
                                  CUDA_SUCCESS);
 
     assert_int_equal(_pscom_is_gpu_mem(test_addr, 1), 1);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -671,6 +717,9 @@ void test_pscom_memcpy_gpu_safe_from_user_host_mem(void **state)
     disable_memcpy_mock();
 
     assert_int_equal(dst, src);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -701,6 +750,9 @@ void test_pscom_memcpy_gpu_safe_from_user_device_mem(void **state)
     will_return(cuMemcpy_generic, CUDA_SUCCESS);
 
     pscom_memcpy_gpu_safe_from_user(&dst, &src, sizeof(int));
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -736,6 +788,9 @@ void test_pscom_memcpy_gpu_safe_from_user_creates_cuda_stream(void **state)
     will_return(cuMemcpy_generic, CUDA_SUCCESS);
 
     pscom_memcpy_gpu_safe_from_user(&dst, &src, sizeof(int));
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -772,6 +827,9 @@ void test_pscom_memcpy_gpu_safe_to_user_host_mem(void **state)
     disable_memcpy_mock();
 
     assert_int_equal(dst, src);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -802,6 +860,9 @@ void test_pscom_memcpy_gpu_safe_to_user_device_mem(void **state)
     will_return(cuMemcpy_generic, CUDA_SUCCESS);
 
     pscom_memcpy_gpu_safe_to_user(&dst, &src, sizeof(int));
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -836,6 +897,9 @@ void test_pscom_memcpy_gpu_safe_default_host_mem(void **state)
     pscom_memcpy_gpu_safe_default(&dst, &src, sizeof(int));
     disable_memcpy_mock();
     assert_int_equal(dst, src);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -866,6 +930,9 @@ void test_pscom_memcpy_gpu_safe_default_device_mem(void **state)
     will_return(cuMemcpy_generic, CUDA_SUCCESS);
 
     pscom_memcpy_gpu_safe_default(&dst, &src, sizeof(int));
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -902,6 +969,9 @@ void test_pscom_memcpy_host_mem(void **state)
     disable_memcpy_mock();
 
     assert_int_equal(dst, src);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -945,6 +1015,9 @@ void test_pscom_stage_buffer_dev_mem_no_con(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -982,6 +1055,9 @@ void test_pscom_stage_buffer_host_mem(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -1028,6 +1104,9 @@ void test_pscom_unstage_buffer_dev_mem(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -1065,6 +1144,9 @@ void test_pscom_unstage_buffer_dev_mem_err_req(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -1100,6 +1182,9 @@ void test_pscom_unstage_buffer_dev_mem_no_copy(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
 }
 
 /**
@@ -1137,4 +1222,98 @@ void test_pscom_unstage_buffer_host_mem(void **state)
 
     /* free the request */
     pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_post_recv()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_post_recv() for staging
+ *
+ * Given: CUDA-awareness is enabled and
+ *        non-CUDA-aware connection
+ * When: pscom_post_recv() is called
+ * Then: buffer staging should not be called
+ */
+void test_cuda_post_recv_without_staging(void **state)
+{
+    /* enable CUDA support */
+    pscom.env.cuda = 1;
+
+    /* obtain dummy connection from the test setup */
+    pscom_con_t *recv_con = (pscom_con_t *)(*state);
+
+    /* create non-CUDA-aware connection*/
+    recv_con->is_gpu_aware = 0;
+
+    /* create a pscom request */
+    pscom_req_t *req         = pscom_req_create(0, 0);
+    int buffer               = 42;
+    req->pub.connection      = &recv_con->pub;
+    req->pub.data            = (void *)&buffer;
+    req->pub.data_len        = sizeof(buffer);
+    req->pub.header.data_len = sizeof(buffer);
+    req->stage_buf           = NULL;
+    pscom_request_t *request = &req->pub;
+
+    /* post a recv request (i.e., start reading) */
+    pscom_post_recv(request);
+    assert_int_equal(pscom.stat.gpu_staging, 0);
+    assert_int_equal(pscom.stat.gpu_unstaging, 0);
+
+    request->state |= PSCOM_REQ_STATE_DONE;
+    /* free the request */
+    pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 0;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_post_send()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_post_send() for staging
+ *
+ * Given: CUDA-awareness is enabled and
+ *        non-CUDA-aware connection
+ * When: pscom_post_send() is called
+ * Then: buffer staging should not be called
+ */
+void test_cuda_post_send_without_staging(void **state)
+{
+    /* enable CUDA support */
+    pscom.env.cuda = 1;
+
+    /* obtain dummy connection from the test setup */
+    pscom_con_t *send_con = (pscom_con_t *)(*state);
+
+    /* create non-CUDA-aware connection*/
+    send_con->is_gpu_aware = 0;
+
+    /* create a pscom request */
+    pscom_req_t *req         = pscom_req_create(0, 0);
+    int buffer               = 42;
+    req->pub.connection      = &send_con->pub;
+    req->pub.data            = (void *)&buffer;
+    req->pub.data_len        = sizeof(buffer);
+    req->pub.header.data_len = sizeof(buffer);
+    req->stage_buf           = NULL;
+    pscom_request_t *request = &req->pub;
+
+    /* post a send request (i.e., start writing) */
+    pscom_post_send(request);
+    assert_int_equal(pscom.stat.gpu_staging, 0);
+    assert_int_equal(pscom.stat.gpu_unstaging, 0);
+
+
+    request->state |= PSCOM_REQ_STATE_DONE;
+    /* free the request */
+    pscom_req_free(req);
+
+    /* disable CUDA support */
+    pscom.env.cuda = 1;
 }

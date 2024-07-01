@@ -435,6 +435,10 @@ int main(void)
         cmocka_unit_test(test_pscom_unstage_buffer_dev_mem_no_copy),
         cmocka_unit_test(test_pscom_unstage_buffer_dev_mem_err_req),
         cmocka_unit_test(test_pscom_unstage_buffer_host_mem),
+        cmocka_unit_test_setup_teardown(test_cuda_post_send_without_staging,
+                                        setup_dummy_con, teardown_dummy_con),
+        cmocka_unit_test_setup_teardown(test_cuda_post_recv_without_staging,
+                                        setup_dummy_con, teardown_dummy_con),
     };
     total_tests += TEST_GROUP_SIZE(pscom_cuda_tests);
     failed_tests += cmocka_run_group_tests(pscom_cuda_tests, NULL, NULL);
