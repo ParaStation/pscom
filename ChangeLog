@@ -1,3 +1,41 @@
+2024-07-30  Simon Pickartz  <pickartz@par-tec.com>	-	5.8.0-0rc1
+
+2024-07-01  Anna Karbownik  <anna.karbownik@par-tec.com>
+
+	* Fix: Avoid staging of GPU buffers for on-demand connections.
+
+	* Improvement: Add statistics on (un-)staging of GPU buffers.
+
+2024-05-11  Jesus Camacho  <jesus.camacho@par-tec.com>
+
+	* Improvement: Add ufd documentation.
+
+	* Fix: Avoid reading from NULL pointer in case of multi-threading
+	and on-demand connections enabled.
+
+2024-01-16  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Improvement: Make popt dependency optional (can be enabled/disabled
+	by setting the CMake variable `POPT_ENABLED` accordingly).
+
+	* Improvement: Make `/opt/parastation` the default installation path.
+
+	* Cleanup: Remove psport4 legacy tools.
+
+2023-12-20  Jesus Camacho  <jesus.camacho@par-tec.com>
+
+	* Fix: Avoid reading/writing on closed file descriptors in case of
+	multi-threaded applications and on-demand connections.
+
+2023-12-15  Xu Huang  <huang@par-tec.com>
+
+	* New: Add concept of memory regions and remote keys for RMA
+	communication.
+
+2023-03-20  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Documentation: Improve and extend the documentation.
+
 2023-03-14  Simon Pickartz  <pickartz@par-tec.com>	-	5.7.0-1
 
 2023-02-23  Simon Pickartz  <pickartz@par-tec.com>	-	5.7.0-0rc1
