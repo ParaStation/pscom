@@ -9,31 +9,35 @@
  * file.
  */
 
-#include <stdarg.h>
+#include <stdarg.h> /* IWYU pragma: keep */
 #include <stdio.h>
 #include <stddef.h>
-#include <stdint.h>
+#include <stdint.h> /* IWYU pragma: keep */
 #include <stdlib.h>
-#include <setjmp.h>
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <string.h>
 #include <cmocka.h>
 
 #include "pscom_utest.h"
-#include "pscom/test_cuda.h"
 #include "pscom/test_debug.h"
 #include "pscom/test_env.h"
 #include "pscom/test_io.h"
 #include "pscom/test_plugin.h"
 #include "pscom/test_ufd.h"
 
-#include "pscom4portals/test_pscom4portals.h"
 #include "pscom4ucp/test_pscom4ucp.h"
+#include "pscom4portals/test_pscom4portals.h"
 
 #include "util/test_utils_con.h"
-#include "util/test_utils_cuda.h"
 #include "util/test_utils_debug.h"
 #include "util/test_utils_env.h"
 #include "util/test_utils_sock.h"
+
+#ifdef PSCOM_CUDA_AWARENESS
+#include "pscom/test_cuda.h"
+#include "util/test_utils_cuda.h"
+#endif /* PSCOM_CUDA_AWARENESS */
+
 
 pscom_utest_t pscom_utest = {
     .mock_functions =

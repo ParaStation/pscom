@@ -8,20 +8,22 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <setjmp.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
 
-#include "pscom_utest.h"
 #include "mocks/misc_mocks.h"
 
-#include "pscom_priv.h"
+#include "list.h"
+#include "pscom.h"
 #include "pscom_env.h"
+#include "pscom_priv.h"
 
 #include "util/test_utils_env.h"
 
