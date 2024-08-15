@@ -15,13 +15,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <math.h>
-#include <fcntl.h>
 #include <assert.h>
 #include <popt.h>
-#include <ctype.h>
-#include <sys/types.h>
 #include <unistd.h>
 #include <stdarg.h>
 
@@ -89,7 +84,6 @@ static void parse_opt(int argc, char **argv)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#include <sys/time.h>
 
 static void exit_on_error(pscom_err_t rc, char *fmt, ...)
     __attribute__((__format__(__printf__, 2, 3)));

@@ -9,15 +9,19 @@
  * file.
  */
 
-#include "pscom_debug.h"
 #include "pscom_env.h"
-#include "pscom_util.h"
-#include <errno.h>
-#include <stdlib.h>
-#include "pscom_priv.h"
-#include "vc_version.h"
-#include "pslib.h"
 
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <strings.h>
+
+#include "pscom_debug.h"
+#include "pscom_priv.h"
+#include "pscom_util.h"
+#include "pslib.h"
+#include "vc_version.h"
 
 /**
  * @brief Dedicated setter for parsing PSP_DEBUG_OUT
@@ -46,7 +50,6 @@ static pscom_err_t pscom_env_parser_set_debug_out(void *buf,
     {                                                                          \
         pscom_env_parser_set_debug_out, pscom_env_parser_get_config_str        \
     }
-
 
 static pscom_env_table_entry_t pscom_env_table[] = {
     {"DEBUG_OUT", NULL,

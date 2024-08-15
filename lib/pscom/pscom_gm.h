@@ -13,7 +13,7 @@
 #ifndef _PSCOM_GM_H_
 #define _PSCOM_GM_H_
 
-#include "pscom_types.h"
+#include "pscom_priv.h"
 
 typedef struct psgm_conn {
     struct psgm_con_info *gmcon;

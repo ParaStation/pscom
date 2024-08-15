@@ -7,19 +7,18 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
+#include "psptl.h"
 
 #include <assert.h>
 #include <errno.h>
 #include <portals4.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
+#include <sys/uio.h>
 
 #include "pscom_debug.h"
-#include "pscom_priv.h"
 #include "pscom_util.h"
-#include "psptl.h"
+
 
 /* define some ME-related flags */
 #define PSPTL_PUT_FLAGS                                                        \

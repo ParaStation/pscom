@@ -10,15 +10,9 @@
  */
 
 #include <stdio.h>
-#include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
-#include <math.h>
 
-#include "pscom.h"
 #include "pscom_priv.h"
+
 
 #undef PSCOM_CUDA_AWARENESS
 
@@ -28,6 +22,7 @@ pscom_t pscom; // fake pscom
 #endif
 
 #ifdef OFED
+#include "psofed.h"
 #include "psofed.c"
 pscom_t pscom; // fake pscom
 #endif

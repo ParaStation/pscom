@@ -14,6 +14,8 @@
 #include "pscom_ufd.h"
 #include "pscom_priv.h"
 
+#include "list.h"
+
 typedef void async_cb_t(ufd_t *ufd, ufd_info_t *ufd_info);
 typedef void pscom_timer_cb_t(void *priv);
 

@@ -11,18 +11,14 @@
  * pscom_rma_get.c: RMA over pscom
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <signal.h>
-#include <math.h>
-#include <fcntl.h>
 #include <assert.h>
 #include <getopt.h>
-#include <ctype.h>
-#include <limits.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
 
 #include "pscom.h"
+
 
 #define MAXMSIZE_DEFAULT (4 * 1024 * 1024)
 #define MINMSIZE_DEFAULT 0

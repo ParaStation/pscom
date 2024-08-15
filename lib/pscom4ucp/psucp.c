@@ -8,18 +8,23 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-
 #include "psucp.h"
-#include "pscom_priv.h"
-#include "pscom_util.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/uio.h>
 
 #include <ucp/api/ucp.h>
 #include <ucp/api/ucp_def.h>
+#include <ucp/api/ucp_compat.h> /* IWYU pragma: keep */
 
-#include <stdlib.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
+#include "list.h"
+#include "pscom_env.h" /* IWYU pragma: keep */
+#include "pscom_debug.h"
+#include "pscom_priv.h"
+#include "pscom_util.h"
 
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))

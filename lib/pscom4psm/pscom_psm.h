@@ -15,17 +15,7 @@
 #ifndef _PSCOM_PSM_H_
 #define _PSCOM_PSM_H_
 
-#include <sys/uio.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <inttypes.h>
-
-#include "pscom_types.h"
 #include "pscom_priv.h"
-#include "pscom_util.h"
-#include "pscom_debug.h"
-#include "pscom_io.h"
 
 
 /*

@@ -15,8 +15,8 @@
 #ifndef _PSEXTOLL_H_
 #define _PSEXTOLL_H_
 
-#include <stdint.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/uio.h>
 
 // Compat stuff for missing Extoll includes:

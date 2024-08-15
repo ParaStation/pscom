@@ -9,16 +9,23 @@
  * file.
  */
 #define _GNU_SOURCE
-#include "pscom_priv.h"
-#include <string.h>
-#include <ctype.h>
-#include <stdlib.h>
+#include "pscom_plugin.h"
+
+#include <assert.h>
 #include <dlfcn.h>
-#include <sys/types.h>
-#include <sys/stat.h>
 #include <errno.h>
-#include <unistd.h>
+#include <stdio.h>
+#include <string.h>
+#include <strings.h>
+#include <sys/stat.h>
+
+#include "list.h"
+#include "pscom.h"
+#include "pscom_debug.h"
 #include "pscom_env.h"
+#include "pscom_priv.h"
+#include "pscom_shm.h"
+#include "pscom_tcp.h"
 
 LIST_HEAD(pscom_plugins);
 

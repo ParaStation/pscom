@@ -12,6 +12,8 @@
 #ifndef _PSCOM_ENV_H_
 #define _PSCOM_ENV_H_
 
+#include <stddef.h>
+
 #include "pscom.h"
 #include "list.h"
 

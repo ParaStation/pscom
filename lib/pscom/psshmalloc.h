@@ -12,6 +12,9 @@
 #ifndef _SHMMALLOC_H_
 #define _SHMMALLOC_H_
 
+#include <stddef.h>
+
+
 struct Psshm {
     void *base; /* base pointer of shared mem segment */
     void *end;  /* = base + size */

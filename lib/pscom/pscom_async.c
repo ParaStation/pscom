@@ -12,11 +12,11 @@
 #include <fcntl.h> // Obtain O_* constant definitions
 #include <unistd.h>
 #include <limits.h>
+#include <poll.h>
 #include <pthread.h>
-#include <stdio.h>
+#include <sched.h>
 #include <string.h>
 #include <stdlib.h>
-#include <sys/time.h>
 
 #include <assert.h>
 #include "pscom_async.h"

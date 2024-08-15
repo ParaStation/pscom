@@ -12,12 +12,12 @@
 #ifndef _PSCOM_DEBUG_H_
 #define _PSCOM_DEBUG_H_
 
-#include "pscom_types.h"
-#include <unistd.h>
 #include <stdint.h>
 #include <stdio.h>
-#include <sys/types.h>
-#include "perf.h"
+
+#include "pscom_priv.h"
+
+
 int pscom_dprintf(const char *fmt, ...)
     __attribute__((__format__(__printf__, 1, 2)));
 

@@ -8,14 +8,17 @@
  * file.
  */
 
-#include "pscom_priv.h"
-#include "pscom_con.h"
-#include "pscom_io.h"
-#include "pscom_req.h"
-#include <stdlib.h>
-#include <stdio.h>
+#include <assert.h>
 #include <errno.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+#include "list.h"
+#include "pscom.h"
+#include "pscom_io.h"
+#include "pscom_priv.h"
 
 PSCOM_API_EXPORT
 pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,

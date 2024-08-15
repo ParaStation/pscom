@@ -10,11 +10,22 @@
  */
 
 #define _GNU_SOURCE
-#include "pscom_priv.h"
 #include "pscom_debug.h"
+#include <assert.h>
+#include <poll.h>
+#include <pthread.h>
 #include <signal.h>
-#include <stdlib.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/uio.h>
+
+#include "list.h"
+
+#include "pscom.h"
+#include "pscom_env.h"
+#include "pscom_priv.h"
+#include "pscom_ufd.h"
 
 #ifndef PSCOM_ALLIN
 /* MPI2 Header: */

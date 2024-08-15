@@ -11,7 +11,13 @@
 
 #ifndef _PSCOM_CON_H_
 #define _PSCOM_CON_H_
+
+#include <assert.h>
+#include "list.h"
+#include "pscom.h"
+#include "pscom_env.h"
 #include "pscom_priv.h"
+#include "pscom_ufd.h"
 
 pscom_err_t pscom_con_connect_via_tcp(pscom_con_t *con, int nodeid, int portno);
 pscom_err_t pscom_con_connect_loopback(pscom_con_t *con);
