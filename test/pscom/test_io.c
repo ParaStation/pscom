@@ -9,19 +9,20 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <setjmp.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
-#include <errno.h>
+#include <sys/uio.h>
 
+#include "list.h"
+#include "pscom.h"
 #include "pscom_con.h"
-#include "pscom_io.h"
+#include "pscom_env.h"
 #include "pscom_priv.h"
 #include "pscom_queues.h"
-#include "pscom_util.h"
 #include "pscom_req.h"
 
 #include "util/test_utils_con.h"

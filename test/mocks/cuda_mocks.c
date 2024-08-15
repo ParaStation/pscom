@@ -9,16 +9,15 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <stdio.h>
-#include <setjmp.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
 #include <cuda.h>
-#include <cuda_runtime.h>
-#include <driver_types.h>
+#include <stddef.h>
+#include <stdio.h>
 
 #include "mocks/misc_mocks.h"
 

@@ -11,6 +11,8 @@
 #ifndef _PSCOM_UTIL_DEBUG_H_
 #define _PSCOM_UTIL_DEBUG_H_
 
+#include <stddef.h>
+
 typedef struct env_vars_backup {
     size_t count;
     char **backup_values;

@@ -8,27 +8,29 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
 #include <stdlib.h>
-#include <setjmp.h>
+#include <string.h>
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
-
-#include <errno.h>
 
 #include <portals4.h>
 
-#include "pscom_priv.h"
-#include "pscom_utest.h"
 #include "mocks/misc_mocks.h"
 #include "mocks/portals4_mocks.h"
-
-#include "pscom_portals.h"
-#include "psptl.h"
-
 #include "util/test_utils_con.h"
 #include "util/test_utils_sock.h"
+
+#include "list.h"
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_priv.h"
+
+#include "psptl.h"
 
 #include "pscom_portals.c" /* we need to access some static functions */
 #include "psptl.c"         /* we need to access some static functions */

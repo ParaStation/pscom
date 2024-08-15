@@ -11,8 +11,6 @@
 #ifndef _PORTALS4_MOCKS_H_
 #define _PORTALS4_MOCKS_H_
 
-#include <stddef.h>
-
 #include "pscom_utest.h"
 
 static inline void enable_extended_ptl_put_mock(void)
