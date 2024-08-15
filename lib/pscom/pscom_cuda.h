@@ -5,8 +5,11 @@
 
 #ifdef PSCOM_CUDA_AWARENESS
 
-#include <cuda.h>
-#include <driver_types.h>
+#include <stdlib.h>
+
+#include "pscom.h"
+#include "pscom_env.h"
+
 
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 

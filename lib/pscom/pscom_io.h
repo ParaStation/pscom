@@ -12,7 +12,11 @@
 #ifndef _PSCOM_IO_H_
 #define _PSCOM_IO_H_
 
+#include "list.h"
+#include "pscom.h"
 #include "pscom_cuda.h"
+#include "pscom_debug.h"
+#include "pscom_priv.h"
 
 static inline void _pscom_step(void)
 {

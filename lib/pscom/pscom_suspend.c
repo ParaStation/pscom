@@ -9,10 +9,19 @@
  * file.
  */
 
+#include <assert.h>
+#include <string.h>
+
+#include "list.h"
+#include "pscom.h"
 #include "pscom_con.h"
+#include "pscom_debug.h"
 #include "pscom_io.h"
+#include "pscom_poll.h"
+#include "pscom_priv.h"
 #include "pscom_queues.h"
 #include "pscom_sock.h"
+
 
 static void _pscom_con_send_resume(pscom_con_t *con);
 

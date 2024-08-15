@@ -13,16 +13,12 @@
  * pscom_pp.c: PingPong over pscom
  */
 
+#include <assert.h>
+#include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <math.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <getopt.h>
-#include <ctype.h>
-#include <limits.h>
+#include <unistd.h>
 
 #include "pscom.h"
 

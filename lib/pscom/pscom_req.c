@@ -9,12 +9,19 @@
  * file.
  */
 
-#include "pscom_cuda.h"
 #include "pscom_req.h"
-#include "pscom_util.h"
 
+#include <assert.h>
+#include <pthread.h>
 #include <stdlib.h>
+#include <sys/uio.h>
 
+#include "list.h"
+#include "pscom.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_priv.h"
+#include "pscom_util.h"
 
 // ToDo: disable:
 #define ENABLE_REQUEST_MONITORING 1

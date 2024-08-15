@@ -14,16 +14,14 @@
  *
  */
 #define _GNU_SOURCE
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
-#include <math.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <popt.h>
-#include <ctype.h>
-#include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
@@ -34,6 +32,7 @@
 
 #include <ucp/api/ucp.h>
 #include <ucp/api/ucp_def.h>
+#include <ucp/api/ucp_compat.h>
 
 
 #define VERSION "UCP_PP1.0"

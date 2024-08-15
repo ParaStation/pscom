@@ -13,7 +13,7 @@
 #define _PSCOM_PRIV_H_
 
 #include "pscom.h"
-#include "pscom_types.h"
+#include "pscom_types.h" /* IWYU pragma: export */
 #include "pscom_poll.h"
 #include "list.h"
 #include "pscom_ufd.h"
@@ -21,7 +21,10 @@
 #include <pthread.h>
 #include <unistd.h>
 #include <assert.h>
+#include <arpa/inet.h>
+#include <sys/socket.h>
 #include <sys/types.h>
+#include <sys/uio.h>
 
 #include "pscom_tcp.h"
 #include "pscom_shm.h"

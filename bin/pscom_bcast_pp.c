@@ -16,12 +16,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <math.h>
-#include <fcntl.h>
 #include <assert.h>
 #include <popt.h>
-#include <ctype.h>
 
 #include "pscom.h"
 

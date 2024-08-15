@@ -22,14 +22,14 @@ extern "C" {
 #endif
 #endif
 
+#include <assert.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <string.h>
-#include <assert.h>
-#include <sys/socket.h>
-#include <sys/uio.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+#include <sys/types.h>
+
+struct in_addr;
+struct sockaddr_in;
 
 
 #ifndef PSCOM_CUDA_AWARENESS

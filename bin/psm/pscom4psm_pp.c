@@ -14,35 +14,26 @@
  *
  */
 #define _GNU_SOURCE
+#include <arpa/inet.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
 #include <unistd.h>
-#include <math.h>
 #include <fcntl.h>
 #include <assert.h>
 #include <popt.h>
-#include <ctype.h>
-#include <sys/types.h>
 #include <sys/socket.h>
+#include <sys/uio.h>
 #include <netdb.h>
 #include <netinet/in.h>
 #include <error.h>
 #include <errno.h>
 #include <inttypes.h>
-#include "pscom_types.h"
+#include "pscom_priv.h"
 #define VERSION "PSCOM4PSM_PP1.0"
 
 #undef PSCOM_CUDA_AWARENESS
-
-struct PSCOM {
-    struct {
-        unsigned int readahead;
-        unsigned int psm_uniq_id;
-        int debug_stats;
-    } env;
-};
 
 pscom_t pscom = {.env = {.readahead = 100, .psm_uniq_id = 0, .debug_stats = 0}};
 

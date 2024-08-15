@@ -12,6 +12,7 @@
 #ifndef _PSPSM_H_
 #define _PSPSM_H_
 
+#include <inttypes.h>
 
 /*
  * Contact endpoint info

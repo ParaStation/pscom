@@ -14,11 +14,11 @@
 #include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <signal.h>
 #include <popt.h>
-#include <assert.h>
 #include <error.h>
+
 #include "pscom.h"
+
 
 #define BLACK   "\033[30m"
 #define RED     "\033[31m"

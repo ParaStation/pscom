@@ -10,6 +10,9 @@
  */
 
 #include "pscom_poll.h"
+
+#include <stddef.h>
+
 #include "pscom_priv.h"
 
 void pscom_poll_list_init(pscom_poll_list_t *poll_list)

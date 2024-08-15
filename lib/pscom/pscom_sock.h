@@ -12,6 +12,7 @@
 #ifndef _PSCOM_SOCK_H_
 #define _PSCOM_SOCK_H_
 
+#include "pscom.h"
 #include "pscom_priv.h"
 
 pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno);

@@ -12,18 +12,25 @@
 
 #include "pscom_shm.h"
 
-#include <unistd.h>
-#include <string.h>
+#include <assert.h>
+#include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <sys/ipc.h>
+#include <sys/shm.h>
 #include <sys/uio.h>
-#include <errno.h>
+
+#include "list.h"
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_precon.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
-#include "pscom_precon.h"
-#include "pscom_con.h"
 #include "psshmalloc.h"
-#include "pscom_cuda.h"
+
 
 pscom_env_table_entry_t pscom_env_table_shm[] = {
     {"RENDEZVOUS", PSCOM_ENV_UINT_INF_STR,

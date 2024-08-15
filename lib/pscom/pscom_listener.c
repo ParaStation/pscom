@@ -9,7 +9,14 @@
  * file.
  */
 
+#include <assert.h>
+#include <poll.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "pscom_debug.h"
 #include "pscom_priv.h"
+#include "pscom_ufd.h"
 
 
 void pscom_listener_init(struct pscom_listener *listener,
