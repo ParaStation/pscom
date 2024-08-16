@@ -13,6 +13,8 @@ PKG_NAME=pscom
 
 SOURCE_FILES= \
 .clang-format \
+.cmakeformatrc \
+.cmakelintrc \
 .gitignore \
 CMakeLists.txt \
 ChangeLog \
@@ -66,6 +68,7 @@ cmake/Modules/AddCudaTarget.cmake \
 cmake/Modules/CheckVisibilityProtected.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindPackageWithHints.cmake \
+cmake/Modules/FindProgramWithHints.cmake \
 cmake/Modules/FindPsmgmt.cmake \
 cmake/Modules/Legacy.cmake \
 cmake/Modules/OptionConditional.cmake \
@@ -230,6 +233,7 @@ scripts/install-sh \
 scripts/ltmain.sh \
 scripts/missing \
 scripts/ps_ethernet.sh \
+scripts/pscom.imp \
 scripts/rpm_noreq \
 scripts/test-driver \
 scripts/testlocal.sh \
