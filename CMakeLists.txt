@@ -91,7 +91,7 @@ find_package_with_hints(Portals4 "/usr" "portals4.h" "portals"
 option_conditional(PORTALS4_ENABLED "Enable pscom4portals" TRUE
                    "PORTALS4_FOUND" FALSE)
 
-find_package_with_hints(Psm2 "/usr" "psm2.h psm2_mq.h" "psm"
+find_package_with_hints(Psm2 "/usr" "psm2.h psm2_mq.h" "psm2"
                         "Default location where to search PSM2 library.")
 option_conditional(PSM2_ENABLED "Enable pscom4psm" TRUE "PSM2_FOUND" FALSE)
 
