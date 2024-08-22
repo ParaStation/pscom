@@ -22,12 +22,6 @@
 #include <unistd.h>
 #include <assert.h>
 
-#ifdef PSCOM_CUDA_AWARENESS
-// ToDo: Fix me. psextoll.c should not depend on pscom_priv.h just to get a
-// working pscom_memcpy_from_iov.
-#include "pscom_priv.h"
-#endif
-
 #include "pscom_util.h"
 #include "psextoll.h"
 
