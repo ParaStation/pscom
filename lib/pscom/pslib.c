@@ -11,15 +11,18 @@
 
 #define _GNU_SOURCE
 #include "pslib.h"
-#include <dlfcn.h>
-#include <stdlib.h>
-#include <wordexp.h>
-#include <errno.h>
+
 #include <ctype.h>
+#include <dlfcn.h>
+#include <errno.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <wordexp.h>
+
 #include "pscom.h"
-#include "pscom_priv.h"
 #include "pscom_debug.h"
-#include "pslib.h"
+
 
 typedef struct psinfo_s psinfo_t;
 

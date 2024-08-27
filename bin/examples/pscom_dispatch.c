@@ -27,15 +27,15 @@
  *  wait for              dispatch        hellos
  *  hellos
  */
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <errno.h>
 #include <string.h>
-#include <signal.h>
-#include <math.h>
 #include <error.h>
+
 #include "pscom.h"
+
 
 unsigned arg_listenport = 5060;
 pscom_socket_t *pscom_socket;

@@ -7,20 +7,28 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-#include "pscom_priv.h"
+
 #include "pscom_portals.h"
-#include "pscom_async.h"
-#include "pscom_con.h"
-#include "pscom_precon.h"
 
 #include <assert.h>
 #include <errno.h>
+#include <stdint.h>
 #include <stdlib.h>
-#include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
+#include <sys/uio.h>
+
+#include "list.h"
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_precon.h"
+#include "pscom_priv.h"
 
 #include "psptl.h"
+
 
 /**
  * @brief pscom4portals-specific socket structure

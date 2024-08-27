@@ -13,20 +13,25 @@
  * pscom_ofed.c: OFED/Infiniband communication (in UD mode)
  */
 
+#include "pscom_ofed.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+#include "list.h"
+
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_precon.h"
+#include "pscom_priv.h"
 #include "psofed.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
-
-#include "pscom_priv.h"
-#include "pscom_con.h"
-#include "pscom_precon.h"
-#include "pscom_ofed.h"
 
 static pscom_err_t
 pscom_ofed_env_parser_set_pending_tokens(void *buf, const char *config_val)

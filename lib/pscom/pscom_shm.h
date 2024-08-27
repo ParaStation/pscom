@@ -16,13 +16,11 @@
 #ifndef _PSCOM_SHM_H_
 #define _PSCOM_SHM_H_
 
-#include <sys/ipc.h>
-#include <sys/shm.h>
 #include <stdint.h>
-#include "list.h"
-#include "pscom_types.h"
-#include "pscom_poll.h"
 #include "pscom_plugin.h"
+#include "pscom_poll.h"
+
+
 /*
  * Shared memory structs
  */

@@ -8,17 +8,30 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-#include "pscom_priv.h"
 #include "pscom_precon.h"
-#include "pscom_str_util.h"
-#include "pscom_con.h"
-#include "pscom_util.h"
-#include <netinet/tcp.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdlib.h>
+
+#include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
-#include <sys/time.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <netinet/tcp.h>
+#include <poll.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "list.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_priv.h"
+#include "pscom_str_util.h"
+#include "pscom_util.h"
+
 
 pscom_env_table_entry_t pscom_env_table_precon[] = {
     {"SO_SNDBUF", "32768", "The SO_SNDBUF size of the precon/TCP connections.",

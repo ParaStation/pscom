@@ -13,23 +13,18 @@
  * psofed.c: OFED/Infiniband communication (in UD mode)
  */
 
+#include "psofed.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <infiniband/verbs.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
-#include <sys/resource.h> // getrlimit
-#include <sys/time.h>
+#include <sys/resource.h>
 
-/* #include <sysfs/libsysfs.h> */
-#include <infiniband/verbs.h>
-
-#include "pscom_priv.h"
-#include "pscom_util.h"
-#include "psofed.h"
 #include "list.h"
+#include "pscom_util.h"
 
 /* Size of the send, receive and completion queue */
 #define _SIZE_SEND_QUEUE 1024

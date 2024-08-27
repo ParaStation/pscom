@@ -14,8 +14,11 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/uio.h>
-#include <unistd.h>
+
+#include "list.h"
+
 
 /* some forward declarations */
 typedef struct psptl_con_info psptl_con_info_t;

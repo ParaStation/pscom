@@ -9,12 +9,13 @@
  * file.
  */
 
+#include "test_utils_sock.h"
+
 #include <stdlib.h>
 
+#include "list.h"
 #include "pscom_priv.h"
-#include "pscom_con.h"
 
-#include "test_utils_sock.h"
 
 int setup_dummy_sock(void **state)
 {

@@ -9,15 +9,15 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stdio.h>
-#include <stddef.h>
-#include <stdint.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
 #include <stdlib.h>
-#include <setjmp.h>
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <string.h>
 #include <cmocka.h>
 
+#include "list.h"
 #include "pscom_priv.h"
 #include "pscom_con.h"
 #include "pscom_precon.h"

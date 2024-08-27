@@ -12,27 +12,23 @@
  * psextoll.c: EXTOLL communication
  */
 
+#include "psextoll.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <limits.h>
+#include <rma2.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/resource.h>
-#include <unistd.h>
-#include <assert.h>
-#include <limits.h>
+#include <velo2.h>
+#include <velo2_mod.h>
 
-#ifdef PSCOM_CUDA_AWARENESS
-// ToDo: Fix me. psextoll.c should not depend on pscom_priv.h just to get a
-// working pscom_memcpy_from_iov.
 #include "pscom_priv.h"
-#endif
-
+#include "pscom_poll.h"
 #include "pscom_util.h"
-#include "pscom_env.h"
-#include "pscom_priv.h"
-#include "psextoll.h"
+
 
 /* Size of the send, receive and completion queue */
 #define _SIZE_SEND_QUEUE 16

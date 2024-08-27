@@ -9,17 +9,21 @@
  * file.
  */
 
-#include "pscom_priv.h"
 #include "pscom_str_util.h"
 
+#include <arpa/inet.h>
+#include <errno.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <netdb.h>
-#include <errno.h>
 #include <sys/socket.h>
-#include <netinet/in.h>
-#include <arpa/inet.h>
+
+#include "pscom.h"
+#include "pscom_debug.h"
+#include "pscom_priv.h"
 
 
 /* Take a service name, and a service type, and return a port number.  If the

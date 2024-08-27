@@ -9,21 +9,25 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <setjmp.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
+#include <cuda.h>
 #include <errno.h>
+#include <stddef.h>
+#include <stdlib.h>
 
-#include "pscom_utest.h"
 #include "mocks/misc_mocks.h"
 
-#include "pscom_priv.h"
+#include "pscom.h"
 #include "pscom_cuda.h"
-#include "pscom_util.h"
+#include "pscom_env.h"
+#include "pscom_priv.h"
 #include "pscom_req.h"
+#include "pscom_util.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Some test setup functions

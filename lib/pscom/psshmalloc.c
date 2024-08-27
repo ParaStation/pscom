@@ -9,16 +9,8 @@
  * file.
  */
 
-#include <sys/ipc.h>
-#include <sys/shm.h>
-#include <assert.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <malloc.h>
-#include <string.h>
-
 #include "psshmalloc.h"
-#include "pscom_env.h"
+
 #include "pscom_priv.h"
 
 

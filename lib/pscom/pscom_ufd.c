@@ -57,16 +57,17 @@
  * ufd_info.
  */
 
-
 #include "pscom_ufd.h"
+
+#include <assert.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
 #include "pscom_priv.h"
 #include "pscom_util.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
 
 void pscom_dump_info(FILE *out);
 

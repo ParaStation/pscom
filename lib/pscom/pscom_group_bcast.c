@@ -9,8 +9,17 @@
  * file.
  */
 
-#include <stdlib.h>
 #include "pscom_group.h"
+
+#include <assert.h>
+#include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
+
+#include "pscom.h"
+#include "pscom_io.h"
+#include "pscom_priv.h"
+#include "pscom_req.h"
 
 // #define USE_ASYNCHRONOUS_BCAST 1
 

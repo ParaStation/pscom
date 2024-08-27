@@ -10,13 +10,13 @@
  * file.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
+#include <assert.h>
 #include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h> /* IWYU pragma: keep */
 #include <unistd.h>
 #include <string.h>
 #include <signal.h>
-#include <sys/time.h>
 #include <errno.h>
 
 #include <popt.h>

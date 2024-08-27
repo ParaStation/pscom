@@ -10,18 +10,21 @@
  */
 
 #define _GNU_SOURCE
-#include <signal.h>
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <string.h>
-#include <wordexp.h>
 #include <errno.h>
-#include <time.h>
+#include <signal.h>
+#include <stdarg.h>
+#include <stdio.h>
+#include <bits/types/cookie_io_functions_t.h>
+#include <stdlib.h>
+#include <string.h>
 #include <sys/time.h>
+#include <sys/types.h> /* IWYU pragma: keep */
+#include <time.h>
+#include <unistd.h>
+#include <wordexp.h>
+
 #include "pscom_debug.h"
+#include "pscom_env.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
 

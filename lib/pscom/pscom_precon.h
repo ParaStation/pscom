@@ -11,6 +11,13 @@
 #ifndef _PSCOM_PRECON_H_
 #define _PSCOM_PRECON_H_
 
+#include <stddef.h>
+
+#include "pscom.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_types.h"
+#include "pscom_ufd.h"
 
 #define PSCOM_INFO_FD_ERROR                                                    \
     0x0ffffe /* int errno; Pseudo message. Error in read(). */

@@ -9,16 +9,24 @@
  * file.
  */
 
-#include "pscom_priv.h"
-#include "pscom_con.h"
 #include "pscom_io.h"
+
+#include <assert.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/uio.h>
+
+#include "perf.h"
+#include "pscom_con.h"
+#include "pscom_cuda.h"
+#include "pscom_env.h"
+#include "pscom_priv.h"
 #include "pscom_queues.h"
 #include "pscom_req.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include "pscom_str_util.h"
 #include "pscom_util.h"
-#include "pscom_cuda.h"
+
 
 static inline size_t header_length(pscom_header_net_t *header);
 static inline int header_complete(void *buf, size_t size);

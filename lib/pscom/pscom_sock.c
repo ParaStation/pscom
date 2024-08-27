@@ -10,17 +10,29 @@
  */
 
 #include "pscom_sock.h"
-#include "pscom_con.h"
-#include "pscom_io.h"
-#include "pslib.h"
-#include "pscom_precon.h"
-#include "pscom_util.h"
-#include <stdlib.h>
-#include <unistd.h>
-#include <fcntl.h>
+
+#include <arpa/inet.h>
+#include <assert.h>
 #include <errno.h>
+#include <fcntl.h>
+#include <netinet/in.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
-#include <sys/time.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
+#include "list.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_io.h"
+#include "pscom_plugin.h"
+#include "pscom_priv.h"
+#include "pscom_util.h"
+#include "pslib.h"
+
 
 static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 {

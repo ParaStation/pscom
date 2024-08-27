@@ -10,8 +10,12 @@
  */
 
 #include "pscom_group.h"
-#include <stdlib.h>
+
 #include <assert.h>
+#include <stdlib.h>
+
+#include "pscom_io.h"
+#include "pscom_req.h"
 
 
 pscom_group_t *_pscom_group_find(pscom_sock_t *sock, uint32_t group_id)

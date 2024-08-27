@@ -14,7 +14,7 @@
 #ifndef _PSCOM_UFD_H_
 #define _PSCOM_UFD_H_
 
-#include <sys/poll.h>
+#include <poll.h>
 #include "list.h"
 
 struct ufd_s;

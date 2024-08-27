@@ -15,8 +15,8 @@
 #ifndef _PSEXTOLL_H_
 #define _PSEXTOLL_H_
 
-#include <stdint.h>
 #include <stdio.h>
+#include <sys/types.h>
 #include <sys/uio.h>
 
 #define DISABLE_RMA2 1
@@ -25,8 +25,8 @@
 // typedef struct RMA2_Connection_s RMA2_Connection;
 // typedef struct RMA2_Endpoint_s RMA2_Endpoint;
 // typedef struct RMA2_Region_s RMA2_Region;
-#include "rma2.h"  /* Extoll librma interface */
-#include "velo2.h" /* Extoll libvelo interface */
+#include <rma2.h>  /* Extoll librma interface */
+#include <velo2.h> /* Extoll libvelo interface */
 #include "list.h"
 
 /* rma2.h includes extoll/include/list.h which clash with pscom/list.h.

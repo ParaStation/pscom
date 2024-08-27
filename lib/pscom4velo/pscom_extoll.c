@@ -12,21 +12,25 @@
  * pscom_extoll.c: EXTOLL communication
  */
 
+#include "pscom_extoll.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <stdio.h>
+#include <sys/uio.h>
+
+#include "list.h"
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_io.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_precon.h"
+#include "pscom_priv.h"
 #include "psextoll.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
-
-#include "pscom_priv.h"
-#include "pscom_io.h"
-#include "pscom_con.h"
-#include "pscom_precon.h"
-#include "pscom_extoll.h"
 
 static pscom_env_table_entry_t pscom_env_table_velo[] = {
     {"RENDEZVOUS", "1024", "The rendezvous threshold for pscom4velo.",

@@ -24,6 +24,7 @@ endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(AddCudaTarget)
 include(FindPackageWithHints)
+include(FindProgramWithHints)
 include(CMakeDependentOption)
 include(GNUInstallDirs)
 include(CTest)
@@ -121,6 +122,11 @@ option_conditional(
   UTEST_ENABLED "Enable unit tests ('ctest' or Target 'utest')" TRUE
   "CMOCKA_FOUND" FALSE)
 
+find_program_with_hints(Iwyu "include-what-you-use" "/usr/bin"
+                        "Default location whre to search iwyu binary.")
+option_conditional(IWYU_ENABLED "Enable include-what-you-use analysis" FALSE
+                   "IWYU_FOUND" FALSE)
+
 #
 # Build direct shared memory communication (default: no)
 #
@@ -129,6 +135,17 @@ option(PSSHMALLOC_ENABLED "Enable psshmalloc" OFF)
 if(PSSHMALLOC_ENABLED)
   add_compile_definitions(PSCOM_PSSHMALLOC_ENABLED=1)
 endif(PSSHMALLOC_ENABLED)
+
+#
+# Enable IWYU analysis during compilation?
+#
+if(IWYU_ENABLED)
+  set(CMAKE_C_INCLUDE_WHAT_YOU_USE
+      "${IWYU_BIN};-Xiwyu;--no_fwd_decls;-Xiwyu;--mapping_file=${PROJECT_SOURCE_DIR}/scripts/pscom.imp"
+      CACHE STRING
+            "If IWYU_ENABLED is set, IWYU is run with the following options."
+            FORCE)
+endif(IWYU_ENABLED)
 
 add_subdirectory(include)
 add_subdirectory(lib)
@@ -188,6 +205,7 @@ message(STATUS "POPT_ENABLED:         ${POPT_ENABLED}")
 message(STATUS "")
 message(STATUS "UTEST_ENABLED:        ${UTEST_ENABLED}")
 message(STATUS "COVERAGE_ENABLED:     ${COVERAGE_ENABLED}")
+message(STATUS "IWYU_ENABLED:         ${IWYU_ENABLED}")
 message(STATUS "")
 message(STATUS "CMAKE_BUILD_TYPE:     ${CMAKE_BUILD_TYPE}")
 message(STATUS "CMAKE_INSTALL_PREFIX: ${CMAKE_INSTALL_PREFIX}")
