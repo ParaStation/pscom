@@ -30,6 +30,7 @@ void pscom_listener_init(struct pscom_listener *listener,
 
     listener->usercnt   = 0;
     listener->activecnt = 0;
+    listener->suspend   = 0;
 }
 
 
@@ -91,11 +92,59 @@ void pscom_listener_active_inc(struct pscom_listener *listener)
 
 void pscom_listener_active_dec(struct pscom_listener *listener)
 {
-    listener->activecnt--;
+    /* In suspended state we can have active counter == 0 when entering this
+     * function; make sure that we do not decrement 0. */
+    if (listener->activecnt > 0) {
+        listener->activecnt--;
+    } else {
+        assert(listener->suspend == 1);
+    }
 
     if (!listener->activecnt) {
         ufd_del(&pscom.ufd, &listener->ufd_info);
 
         pscom_listener_user_dec(listener);
     }
+}
+
+
+/* Add ufd_info back to the pscom ufd list and start listening again,
+ * must be used in pair with pscom_listener_suspend */
+void pscom_listener_resume(struct pscom_listener *listener)
+{
+    assert(listener->suspend == 1);
+    assert(listener->usercnt > 1);
+
+    listener->suspend = 0;
+    listener->activecnt++;
+
+    /* Start polling again on fd */
+    ufd_add(&pscom.ufd, &listener->ufd_info);
+    ufd_event_set(&pscom.ufd, &listener->ufd_info, POLLIN);
+
+    /* Decrement user counter again (undo increment from previous suspend) */
+    pscom_listener_user_dec(listener);
+}
+
+
+/* Remove ufd_info from the pscom ufd list and stop listening
+ * The fd is not closed! Use pscom_listener_resume to start listening again. */
+void pscom_listener_suspend(struct pscom_listener *listener)
+{
+    assert(listener->suspend == 0);
+    assert(listener->activecnt > 0);
+
+    listener->suspend = 1;
+
+    /* Need to decrement active counter here so that ondemand connections
+     * can re-add the fd to the udf list to complete their connections and
+     * remove it again once they are done. */
+    listener->activecnt--;
+
+    /* Remove fd from polling */
+    ufd_del(&pscom.ufd, &listener->ufd_info);
+
+    /* Increment user counter to prevent fd from being closed in suspended
+     * state, this is needed for ondemand connections */
+    pscom_listener_user_inc(listener);
 }

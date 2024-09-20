@@ -587,6 +587,7 @@ struct PSCOM_sock {
         unsigned usercnt; // Count the users of the listening fd. (keep fd open,
                           // if > 0) (pscom_listen and "on demand" connections)
         unsigned activecnt; // Count active listeners. (poll on fd, if > 0)
+        unsigned suspend;   // Suspend listening and remove ufd info
     } listen;
 
     unsigned int recv_req_cnt_any; // count all ANY_SOURCE receive requests on
@@ -923,6 +924,9 @@ void pscom_listener_user_dec(struct pscom_listener *listener);
 /* active listening on fd */
 void pscom_listener_active_inc(struct pscom_listener *listener);
 void pscom_listener_active_dec(struct pscom_listener *listener);
+/* suspend/ resume for listening */
+void pscom_listener_resume(struct pscom_listener *listener);
+void pscom_listener_suspend(struct pscom_listener *listener);
 
 static inline void _pscom_con_ref_hold(pscom_con_t *con)
 {
