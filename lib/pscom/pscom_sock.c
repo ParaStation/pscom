@@ -61,7 +61,7 @@ static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 }
 
 
-static void pscom_sock_stop_listen(pscom_sock_t *sock)
+void pscom_sock_stop_listen(pscom_sock_t *sock)
 {
     assert(sock->magic == MAGIC_SOCKET);
 
@@ -81,7 +81,7 @@ static void pscom_sock_stop_listen(pscom_sock_t *sock)
 }
 
 
-static void pscom_sock_close(pscom_sock_t *sock)
+void pscom_sock_close(pscom_sock_t *sock)
 {
     struct list_head *pos, *next;
     int retry_cnt                      = 0;
