@@ -139,36 +139,48 @@ typedef struct {
 
 /* initialize the precon module */
 void pscom_precon_init(void);
-
-/* Create a precon object */
-pscom_precon_t *pscom_precon_create(pscom_con_t *con);
-
-/* Destroy a precon object. Cleanup and free all internal resources. */
-void pscom_precon_destroy(pscom_precon_t *pre);
-
-/* Connect a precon via tcp to nodeid:portno. Return 0 on sucess, -1 on error
- * with errno set. */
-int pscom_precon_tcp_connect(pscom_precon_t *pre, int nodeid, int portno);
-
-/* Assign the fd to precon. fd is typically from a previous fd =
- * accept(listen_fd). */
-void pscom_precon_assign_fd(pscom_precon_t *pre, int fd);
+void pscom_precon_provider_init(void);
 
 /* Send a message of type type */
-void pscom_precon_send(pscom_precon_t *pre, unsigned type, void *data,
+void pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
                        unsigned size);
 
-/* Start receiving. */
-void pscom_precon_recv_start(pscom_precon_t *pre);
-
 /* Send a PSCOM_INFO_ARCH_NEXT message and disable current plugin */
-void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *pre);
-/* Send a con_info message of type CON_INFO, CON_INFO_DEMAND or BACK_CONNECT*/
-void pscom_precon_send_PSCOM_INFO_CON_INFO(pscom_precon_t *pre, int type);
+void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon);
 
-/* Close the precon: Stop receiving data, flush Sendqueue. */
-void pscom_precon_close(pscom_precon_t *pre);
+/* Print handshake information */
+const char *pscom_info_type_str(int type);
 
-void pscom_precon_handshake(pscom_precon_t *pre);
+void pscom_precon_info_dump(pscom_precon_t *precon, char *op, int type,
+                            void *data, unsigned size);
+
+/* select and try plugin for connection */
+void plugin_connect_next(pscom_con_t *con);
+
+void plugin_connect_first(pscom_con_t *con);
+
+pscom_precon_t *pscom_precon_create(pscom_con_t *con);
+
+void pscom_precon_destroy(pscom_precon_t *precon);
+
+static inline void pscom_precon_recv_start(pscom_precon_t *precon)
+{
+    pscom_precon_provider.recv_start(precon);
+}
+
+static inline void pscom_precon_recv_stop(pscom_precon_t *precon)
+{
+    pscom_precon_provider.recv_stop(precon);
+}
+
+static inline int pscom_precon_connect(pscom_con_t *con, int nodeid, int portno)
+{
+    return pscom_precon_provider.connect(con, nodeid, portno);
+}
+
+static inline int pscom_precon_guard_setup(pscom_precon_t *precon)
+{
+    return pscom_precon_provider.guard_setup(precon);
+}
 
 #endif /* _PSCOM_PRECON_H_ */

@@ -24,6 +24,7 @@
 #include <sys/socket.h>
 #include <unistd.h>
 
+#include "pscom_precon.h"
 #include "list.h"
 #include "pscom_con.h"
 #include "pscom_debug.h"
@@ -32,6 +33,18 @@
 #include "pscom_str_util.h"
 #include "pscom_util.h"
 
+/* array serving as the "registry" for the precon providers */
+static pscom_precon_provider_t
+    *pscom_precon_provider_registry[PSCOM_PRECON_TYPE_COUNT] = {
+        /* Add new provider XYZ here and use macro PSCOM_PRECON_PROVIDER_XYZ in
+           pscom_precon_xyz.h to initialize the respective array entry with
+           index PSCOM_PRECON_TYPE_XYZ accordingly.
+        */
+};
+
+/* the actual precon provider as a global/singleton object */
+PSCOM_PLUGIN_API_EXPORT
+pscom_precon_provider_t pscom_precon_provider;
 
 pscom_env_table_entry_t pscom_env_table_precon[] = {
     {"SO_SNDBUF", "32768", "The SO_SNDBUF size of the precon/TCP connections.",
@@ -63,7 +76,7 @@ static void pscom_precon_recv_stop(pscom_precon_t *pre);
 static void pscom_precon_check_end(pscom_precon_t *pre);
 
 
-static const char *pscom_info_type_str(int type)
+const char *pscom_info_type_str(int type)
 {
     switch (type) {
     case PSCOM_INFO_FD_EOF: return "FD_EOF";
@@ -91,8 +104,8 @@ static const char *pscom_info_type_str(int type)
     }
 }
 
-static void pscom_precon_info_dump(pscom_precon_t *pre, char *op, int type,
-                                   void *data, unsigned size)
+void pscom_precon_info_dump(pscom_precon_t *pre, char *op, int type, void *data,
+                            unsigned size)
 {
     const char *plugin_name = pre->plugin ? pre->plugin->name : "";
 
@@ -349,13 +362,13 @@ static void _plugin_connect_next(pscom_con_t *con, int first)
 }
 
 
-static void plugin_connect_next(pscom_con_t *con)
+void plugin_connect_next(pscom_con_t *con)
 {
     _plugin_connect_next(con, 0);
 }
 
 
-static void plugin_connect_first(pscom_con_t *con)
+void plugin_connect_first(pscom_con_t *con)
 {
     _plugin_connect_next(con, 1);
 }
@@ -631,43 +644,6 @@ static void pscom_precon_handle_receive(pscom_precon_t *pre, uint32_t type,
 }
 
 
-void pscom_precon_destroy(pscom_precon_t *pre)
-{
-    assert(pre->magic == MAGIC_PRECON);
-    int fd = pre->ufd_info.fd;
-
-    if (fd != -1) {
-        ufd_del(&pscom.ufd, &pre->ufd_info);
-        pre->ufd_info.fd = -1;
-    }
-
-    pscom_precon_count--;
-    pscom_poll_cleanup_init(&pre->poll_read);
-
-    free(pre->send);
-    pre->send     = NULL;
-    pre->send_len = 0;
-    free(pre->recv);
-    pre->recv     = NULL;
-    pre->recv_len = 0;
-
-    if (pre->closefd_on_cleanup && fd != -1) {
-        int rc = close(fd);
-        if (!rc) {
-            DPRINT(D_PRECON_TRACE, "precon(%p): close(%d)", pre, fd);
-        } else {
-            DPRINT(D_WARN, "precon(%p): close(%d) : %s", pre, fd,
-                   strerror(errno));
-        }
-    } else {
-        DPRINT(D_PRECON_TRACE, "precon(%p): done", pre);
-    }
-
-    pre->magic = 0;
-    free(pre);
-}
-
-
 static int pscom_precon_isconnected(pscom_precon_t *pre)
 {
     return pre->ufd_info.fd != -1;
@@ -935,34 +911,25 @@ check_read_error:
 }
 
 
+void pscom_precon_provider_init(void)
+{
+    memset(&pscom_precon_provider, 0, sizeof(pscom_precon_provider_t));
+    pscom_precon_provider =
+        *pscom_precon_provider_registry[pscom.env.precon_type];
+    assert(pscom_precon_provider.precon_type ==
+           (pscom_precon_type_t)pscom.env.precon_type);
+    INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
+    pscom_precon_provider.precon_count = 0;
+    pscom_precon_provider.init();
+}
+
+
 PSCOM_PLUGIN_API_EXPORT
-void pscom_precon_send(pscom_precon_t *pre, unsigned type, void *data,
+void pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
                        unsigned size)
 {
-    assert(pre->magic == MAGIC_PRECON);
-    uint32_t ntype    = htonl(type);
-    uint32_t nsize    = htonl(size);
-    unsigned msg_size = size + (unsigned)(sizeof(ntype) + sizeof(nsize));
-    char *msg;
-
-    pscom_precon_info_dump(pre, "send", type, data, size);
-
-    /* allocate msg_size bytes after existing pre->send */
-    pre->send = realloc(pre->send, pre->send_len + msg_size);
-    assert(pre->send);
-    msg = pre->send + pre->send_len;
-    pre->send_len += msg_size;
-
-    /* append the message to pre->send */
-    memcpy(msg, &ntype, sizeof(ntype));
-    msg += sizeof(ntype);
-    memcpy(msg, &nsize, sizeof(nsize));
-    msg += sizeof(nsize);
-    memcpy(msg, data, size);
-    msg += size;
-
-    /* Send */
-    ufd_event_set(&pscom.ufd, &pre->ufd_info, POLLOUT);
+    assert(precon->magic == MAGIC_PRECON);
+    pscom_precon_provider.send(precon, type, data, size);
 }
 
 
@@ -970,24 +937,6 @@ void pscom_precon_close(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     pscom_precon_recv_stop(pre);
-}
-
-
-void pscom_precon_recv_start(pscom_precon_t *pre)
-{
-    assert(pre->magic == MAGIC_PRECON);
-    ufd_event_set(&pscom.ufd, &pre->ufd_info, POLLIN);
-    pre->recv_done = 0;
-}
-
-
-static void pscom_precon_recv_stop(pscom_precon_t *pre)
-{
-    assert(pre->magic == MAGIC_PRECON);
-    if (pscom_precon_isconnected(pre)) {
-        ufd_event_clr(&pscom.ufd, &pre->ufd_info, POLLIN);
-    }
-    pre->recv_done = 1;
 }
 
 
@@ -1093,39 +1042,15 @@ static int pscom_precon_do_read_poll(pscom_poll_t *poll)
 
 pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 {
-    pscom_precon_t *pre = malloc(sizeof(*pre));
+    pscom_precon_t *precon = pscom_precon_provider.create(con);
 
-    assert(pre);
+    // add to list
+    INIT_LIST_HEAD(&precon->next);
+    assert(list_empty(&precon->next));
+    list_add_tail(&precon->next, &pscom_precon_provider.precon_list);
+    pscom_precon_provider.precon_count++;
 
-    memset(pre, 0, sizeof(*pre));
-    pre->magic = MAGIC_PRECON;
-
-    pre->con = con;
-
-    pre->recv_done          = 1; // No recv
-    pre->closefd_on_cleanup = 1; // Default: Close fd on cleanup. Only
-                                 // PSCOM_CON_TYPE_TCP will overwrite this.
-    pre->back_connect       = 0; // Not a back connect
-    pre->connect            = 0;
-    pre->stalled_cnt        = 0;
-
-    pre->ufd_info.fd         = -1;
-    pre->ufd_info.pollfd_idx = -1;
-
-    pre->last_reconnect = pre->last_print_stat = pscom_wtime_usec();
-
-    pscom_poll_init(&pre->poll_read);
-
-    pscom_poll_start(&pre->poll_read, pscom_precon_do_read_poll,
-                     &pscom.poll_read);
-
-    pre->stat_send     = 0;
-    pre->stat_recv     = 0;
-    pre->stat_poll_cnt = 0;
-
-    pscom_precon_count++;
-
-    return pre;
+    return precon;
 }
 
 
@@ -1198,4 +1123,17 @@ void pscom_precon_init(void)
 {
     pscom_env_table_register_and_parse("pscom PRECON", "PRECON_",
                                        pscom_env_table_precon);
+}
+
+
+void pscom_precon_destroy(pscom_precon_t *precon)
+{
+    assert(precon->magic == MAGIC_PRECON);
+    pscom_precon_provider.destroy(precon);
+
+    // remove precon from list
+    list_del_init(&precon->next);
+    pscom_precon_provider.precon_count--;
+    // free space
+    free(precon);
 }
