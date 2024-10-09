@@ -27,6 +27,7 @@ add_library(
   pscom_plugin.c
   pscom_poll.c
   pscom_precon.c
+  pscom_precon_tcp.c
   pscom_queues.c
   pscom_req.c
   pscom_shm.c

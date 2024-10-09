@@ -271,12 +271,12 @@ struct PSCOM_env {
     int debug;
     int debug_req;
     char *debug_out;
-    unsigned int so_sndbuf;
-    unsigned int so_rcvbuf;
+    unsigned int tcp_so_sndbuf;
+    unsigned int tcp_so_rcvbuf;
     int tcp_nodelay;
     unsigned int tcp_backlog;
-    unsigned int precon_reconnect_timeout;
-    unsigned int precon_connect_stalled_max;
+    unsigned int precon_tcp_reconnect_timeout;
+    unsigned int precon_tcp_connect_stalled_max;
     int unexpected_receives;
     int sched_yield;
     unsigned int rendezvous_size;

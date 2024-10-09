@@ -32,10 +32,13 @@
 #include "pscom_priv.h"
 #include "pscom_str_util.h"
 #include "pscom_util.h"
+#include "pscom_precon_tcp.h"
 
 /* array serving as the "registry" for the precon providers */
+extern pscom_precon_provider_t pscom_provider_tcp;
 static pscom_precon_provider_t
     *pscom_precon_provider_registry[PSCOM_PRECON_TYPE_COUNT] = {
+        [PSCOM_PRECON_TYPE_TCP] = &pscom_provider_tcp,
         /* Add new provider XYZ here and use macro PSCOM_PRECON_PROVIDER_XYZ in
            pscom_precon_xyz.h to initialize the respective array entry with
            index PSCOM_PRECON_TYPE_XYZ accordingly.
