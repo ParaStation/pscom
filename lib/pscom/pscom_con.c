@@ -860,7 +860,7 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
     int portno = con->arch.ondemand.portno;
     int rc;
 
-    precon_t *pre = pscom_precon_create(con);
+    pscom_precon_t *pre = pscom_precon_create(con);
 
     rc = pscom_precon_tcp_connect(pre, nodeid, portno);
     if (rc >= 0) {
@@ -894,8 +894,8 @@ void pscom_ondemand_indirect_connect(pscom_con_t *con)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 {
-    precon_t *pre    = con->precon;
-    int call_cleanup = (con->pub.state == PSCOM_CON_STATE_ACCEPTING);
+    pscom_precon_t *pre = con->precon;
+    int call_cleanup    = (con->pub.state == PSCOM_CON_STATE_ACCEPTING);
     if (pre) {
         pscom_precon_close(pre);
         /* pre destroys itself in pscom_precon_check_end()
@@ -916,7 +916,7 @@ void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_con_setup_ok(pscom_con_t *con)
 {
-    precon_t *pre               = con->precon;
+    pscom_precon_t *pre         = con->precon;
     pscom_sock_t *sock          = get_sock(con->pub.socket);
     pscom_con_state_t con_state = con->pub.state;
 
@@ -977,7 +977,7 @@ void pscom_con_setup_ok(pscom_con_t *con)
 pscom_err_t pscom_con_connect_via_tcp(pscom_con_t *con, int nodeid, int portno)
 {
     pscom_sock_t *sock = get_sock(con->pub.socket);
-    precon_t *pre;
+    pscom_precon_t *pre;
 
     /* ToDo: Set connection state to "connecting". Suspend send and recieve
      * queues! */
@@ -1143,7 +1143,7 @@ static void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_con_guard_start(pscom_con_t *con)
 {
-    precon_t *pre = con->precon;
+    pscom_precon_t *pre = con->precon;
     int fd;
     assert(pre);
     assert(pre->magic == MAGIC_PRECON);

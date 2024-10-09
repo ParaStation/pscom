@@ -607,8 +607,8 @@ static int pscom_shm_con_init(pscom_con_t *con)
 static void pscom_shm_handshake(pscom_con_t *con, int type, void *data,
                                 unsigned size)
 {
-    precon_t *pre   = con->precon;
-    shm_conn_t *shm = &con->arch.shm;
+    pscom_precon_t *pre = con->precon;
+    shm_conn_t *shm     = &con->arch.shm;
 
     switch (type) {
     case PSCOM_INFO_ARCH_REQ: {

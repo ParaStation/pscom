@@ -486,7 +486,7 @@ struct PSCOM_con {
         pscom_rma_get_fn_t get;
     } rma;
 
-    precon_t *precon; // Pre connection handshake data.
+    pscom_precon_t *precon; // Pre connection handshake data.
 
     unsigned int rendezvous_size;
     unsigned int recv_req_cnt; // count all receive requests on this connection

@@ -69,7 +69,7 @@ int setup_dummy_precon(void **state)
     pscom_con_t *con = *state;
 
     /* create a new precon */
-    precon_t *precon = pscom_precon_create(con);
+    pscom_precon_t *precon = pscom_precon_create(con);
 
     *state = (void *)precon;
 
@@ -107,8 +107,8 @@ int teardown_dummy_con_pair(void **state)
 
 int teardown_dummy_precon(void **state)
 {
-    precon_t *precon   = (precon_t *)(*state);
-    pscom_sock_t *sock = get_sock(precon->con->pub.socket);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
+    pscom_sock_t *sock     = get_sock(precon->con->pub.socket);
 
     /* free connection-related resources */
     if (precon->magic == MAGIC_PRECON) { pscom_precon_destroy(precon); }

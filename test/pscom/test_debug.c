@@ -106,7 +106,7 @@ void test_debug_precon_broken_pipe(void **state)
 
     /* create and initialize the precon object */
     pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    precon_t *precon       = pscom_precon_create(dummy_con);
+    pscom_precon_t *precon = pscom_precon_create(dummy_con);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* start writing on the precon and generate EPIPE */
@@ -156,7 +156,7 @@ void test_debug_precon_io_error(void **state)
 
     /* create and initialize the precon object */
     pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    precon_t *precon       = pscom_precon_create(dummy_con);
+    pscom_precon_t *precon = pscom_precon_create(dummy_con);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* start writing on the precon and generate EPIPE */

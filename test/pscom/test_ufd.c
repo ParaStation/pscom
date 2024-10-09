@@ -65,7 +65,7 @@ int mock_sched_yield_close_global_ufd(void *arg)
 void test_ufd_do_not_write_when_con_refused(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -111,7 +111,7 @@ void test_ufd_do_not_write_when_con_refused(void **state)
 void test_ufd_do_not_write_con_reset_by_peer(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -157,7 +157,7 @@ void test_ufd_do_not_write_con_reset_by_peer(void **state)
 void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -199,7 +199,7 @@ void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
 void test_ufd_write_when_pollfd_is_not_updated(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -242,7 +242,7 @@ void test_ufd_write_when_pollfd_is_not_updated(void **state)
 void test_ufd_do_not_read_when_stopped_precon(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -279,7 +279,7 @@ void test_ufd_do_not_read_when_stopped_precon(void **state)
 void test_ufd_do_not_progress_when_destroyed_precon(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -318,7 +318,7 @@ void test_ufd_do_not_progress_when_destroyed_precon(void **state)
 void test_ufd_read_and_write_normally(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -357,7 +357,7 @@ void test_ufd_read_and_write_normally(void **state)
 void test_ufd_only_write_when_no_pollin(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* enabled threaded mode */
@@ -395,7 +395,7 @@ void test_ufd_only_write_when_no_pollin(void **state)
 void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* set the can_red/can_write callbacks */
@@ -436,7 +436,7 @@ void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
 void test_ufd_do_not_write_if_global_ufd_is_gone(void **state)
 {
     /* create and initialize the precon object */
-    precon_t *precon = (precon_t *)(*state);
+    pscom_precon_t *precon = (pscom_precon_t *)(*state);
     pscom_precon_assign_fd(precon, 0x42);
 
     /* set the can_red/can_write callbacks */

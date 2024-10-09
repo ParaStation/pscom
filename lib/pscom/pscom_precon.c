@@ -57,20 +57,10 @@ pscom_env_table_entry_t pscom_env_table_precon[] = {
 };
 
 
-typedef struct {
-    /* supported version range from sender,
-       overlap must be non empty. */
-    uint32_t ver_from;
-    uint32_t ver_to;
-} pscom_info_version_t;
-
-#define VER_FROM 0x0200
-#define VER_TO   0x0200
-
 static unsigned pscom_precon_count = 0;
 
-static void pscom_precon_recv_stop(precon_t *pre);
-static void pscom_precon_check_end(precon_t *pre);
+static void pscom_precon_recv_stop(pscom_precon_t *pre);
+static void pscom_precon_check_end(pscom_precon_t *pre);
 
 
 static const char *pscom_info_type_str(int type)
@@ -101,7 +91,7 @@ static const char *pscom_info_type_str(int type)
     }
 }
 
-static void pscom_precon_info_dump(precon_t *pre, char *op, int type,
+static void pscom_precon_info_dump(pscom_precon_t *pre, char *op, int type,
                                    void *data, unsigned size)
 {
     const char *plugin_name = pre->plugin ? pre->plugin->name : "";
@@ -144,7 +134,7 @@ static void pscom_precon_info_dump(precon_t *pre, char *op, int type,
 }
 
 
-static void pscom_precon_print_stat(precon_t *pre)
+static void pscom_precon_print_stat(pscom_precon_t *pre)
 {
     int fd         = pre->ufd_info.fd;
     char state[10] = "no fd";
@@ -324,8 +314,8 @@ static int con_is_connecting_peer(pscom_con_t *con)
 
 static void _plugin_connect_next(pscom_con_t *con, int first)
 {
-    precon_t *pre      = con->precon;
-    pscom_sock_t *sock = get_sock(con->pub.socket);
+    pscom_precon_t *pre = con->precon;
+    pscom_sock_t *sock  = get_sock(con->pub.socket);
     assert(pre->magic == MAGIC_PRECON);
     assert(con->magic == MAGIC_CONNECTION);
     assert(first ? !pre->plugin : 1); // if first, pre->plugin has to be NULL!
@@ -374,7 +364,7 @@ static void plugin_connect_first(pscom_con_t *con)
 /************************************************************************
  * pscom_precon functions
  */
-static const char *pscom_precon_str(precon_t *pre)
+static const char *pscom_precon_str(pscom_precon_t *pre)
 {
     static char buf[sizeof("xxx.xxx.xxx.xxx:portxx_____     ")];
     snprintf(buf, sizeof(buf), INET_ADDR_FORMAT ":%u",
@@ -383,7 +373,7 @@ static const char *pscom_precon_str(precon_t *pre)
 }
 
 
-static void pscom_precon_terminate(precon_t *pre)
+static void pscom_precon_terminate(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
 
@@ -405,7 +395,7 @@ static void pscom_precon_terminate(precon_t *pre)
 
 
 PSCOM_PLUGIN_API_EXPORT
-void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(precon_t *pre)
+void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     pre->plugin = NULL; // reject following STEPx and OK messages
@@ -413,7 +403,7 @@ void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(precon_t *pre)
 }
 
 
-static void pscom_precon_send_PSCOM_INFO_VERSION(precon_t *pre)
+static void pscom_precon_send_PSCOM_INFO_VERSION(pscom_precon_t *pre)
 {
     pscom_info_version_t ver;
     assert(pre->magic == MAGIC_PRECON);
@@ -430,7 +420,7 @@ static void pscom_precon_send_PSCOM_INFO_VERSION(precon_t *pre)
  *  - PSCOM_INFO_CON_INFO_DEMAND
  *  - PSCOM_INFO_BACK_CONNECT
  */
-void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type)
+void pscom_precon_send_PSCOM_INFO_CON_INFO(pscom_precon_t *pre, int type)
 {
     pscom_info_con_info_t msg_con_info;
     assert(pre->magic == MAGIC_PRECON);
@@ -446,7 +436,7 @@ void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type)
 }
 
 
-static void pscom_precon_abort_plugin(precon_t *pre)
+static void pscom_precon_abort_plugin(pscom_precon_t *pre)
 {
     pscom_con_t *con = pre->con;
     if (pre->plugin && con) {
@@ -457,7 +447,7 @@ static void pscom_precon_abort_plugin(precon_t *pre)
 }
 
 
-static void pscom_precon_handle_receive(precon_t *pre, uint32_t type,
+static void pscom_precon_handle_receive(pscom_precon_t *pre, uint32_t type,
                                         void *data, unsigned size)
 {
     int err;
@@ -641,7 +631,7 @@ static void pscom_precon_handle_receive(precon_t *pre, uint32_t type,
 }
 
 
-void pscom_precon_destroy(precon_t *pre)
+void pscom_precon_destroy(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     int fd = pre->ufd_info.fd;
@@ -678,13 +668,13 @@ void pscom_precon_destroy(precon_t *pre)
 }
 
 
-static int pscom_precon_isconnected(precon_t *pre)
+static int pscom_precon_isconnected(pscom_precon_t *pre)
 {
     return pre->ufd_info.fd != -1;
 }
 
 
-static void pscom_precon_connect_terminate(precon_t *pre)
+static void pscom_precon_connect_terminate(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
 
@@ -696,7 +686,7 @@ static void pscom_precon_connect_terminate(precon_t *pre)
 }
 
 
-static int pscom_precon_is_obsolete_backconnect(precon_t *pre)
+static int pscom_precon_is_obsolete_backconnect(pscom_precon_t *pre)
 {
     // A back connect is obsolete when it's associated
     // pscon_con_t con is not ONDEMAND anymore.
@@ -707,7 +697,7 @@ static int pscom_precon_is_obsolete_backconnect(precon_t *pre)
 }
 
 
-static void pscom_precon_terminate_backconnect(precon_t *pre)
+static void pscom_precon_terminate_backconnect(pscom_precon_t *pre)
 {
     pscom_precon_connect_terminate(pre);
     DPRINT(D_DBG_V,
@@ -721,7 +711,7 @@ static void pscom_precon_terminate_backconnect(precon_t *pre)
 }
 
 
-static void pscom_precon_reconnect(precon_t *pre)
+static void pscom_precon_reconnect(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     assert(pre->connect);
@@ -759,7 +749,7 @@ error:
 }
 
 
-static void pscom_precon_check_end(precon_t *pre)
+static void pscom_precon_check_end(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     if ((pre->send_len == 0) && pre->recv_done) {
@@ -783,7 +773,7 @@ static void pscom_precon_check_end(precon_t *pre)
 
 static void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
-    precon_t *pre = (precon_t *)ufd_info->priv;
+    pscom_precon_t *pre = (pscom_precon_t *)ufd_info->priv;
     int len;
     assert(pre->magic == MAGIC_PRECON);
 
@@ -846,7 +836,7 @@ static void pscom_precon_do_write(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 
 static void pscom_precon_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
-    precon_t *pre = (precon_t *)ufd_info->priv;
+    pscom_precon_t *pre = (pscom_precon_t *)ufd_info->priv;
     assert(pre->magic == MAGIC_PRECON);
     assert(!pre->con || pre->con->magic == MAGIC_CONNECTION);
 
@@ -946,7 +936,8 @@ check_read_error:
 
 
 PSCOM_PLUGIN_API_EXPORT
-void pscom_precon_send(precon_t *pre, unsigned type, void *data, unsigned size)
+void pscom_precon_send(pscom_precon_t *pre, unsigned type, void *data,
+                       unsigned size)
 {
     assert(pre->magic == MAGIC_PRECON);
     uint32_t ntype    = htonl(type);
@@ -975,14 +966,14 @@ void pscom_precon_send(precon_t *pre, unsigned type, void *data, unsigned size)
 }
 
 
-void pscom_precon_close(precon_t *pre)
+void pscom_precon_close(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     pscom_precon_recv_stop(pre);
 }
 
 
-void pscom_precon_recv_start(precon_t *pre)
+void pscom_precon_recv_start(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     ufd_event_set(&pscom.ufd, &pre->ufd_info, POLLIN);
@@ -990,7 +981,7 @@ void pscom_precon_recv_start(precon_t *pre)
 }
 
 
-static void pscom_precon_recv_stop(precon_t *pre)
+static void pscom_precon_recv_stop(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
     if (pscom_precon_isconnected(pre)) {
@@ -1000,7 +991,7 @@ static void pscom_precon_recv_stop(precon_t *pre)
 }
 
 
-void pscom_precon_assign_fd(precon_t *pre, int con_fd)
+void pscom_precon_assign_fd(pscom_precon_t *pre, int con_fd)
 {
     assert(pre->magic == MAGIC_PRECON);
     assert(pre->ufd_info.fd == -1);
@@ -1018,7 +1009,7 @@ void pscom_precon_assign_fd(precon_t *pre, int con_fd)
 }
 
 
-int pscom_precon_tcp_connect(precon_t *pre, int nodeid, int portno)
+int pscom_precon_tcp_connect(pscom_precon_t *pre, int nodeid, int portno)
 {
     int fd;
     assert(pre->magic == MAGIC_PRECON);
@@ -1040,7 +1031,7 @@ int pscom_precon_tcp_connect(precon_t *pre, int nodeid, int portno)
 /* Print statistic about this precon */
 static int pscom_precon_do_read_poll(pscom_poll_t *poll)
 {
-    precon_t *pre = list_entry(poll, precon_t, poll_read);
+    pscom_precon_t *pre = list_entry(poll, pscom_precon_t, poll_read);
     assert(pre->magic == MAGIC_PRECON);
     unsigned long now = pscom_wtime_usec();
 
@@ -1100,9 +1091,9 @@ static int pscom_precon_do_read_poll(pscom_poll_t *poll)
 }
 
 
-precon_t *pscom_precon_create(pscom_con_t *con)
+pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 {
-    precon_t *pre = malloc(sizeof(*pre));
+    pscom_precon_t *pre = malloc(sizeof(*pre));
 
     assert(pre);
 
@@ -1138,7 +1129,7 @@ precon_t *pscom_precon_create(pscom_con_t *con)
 }
 
 
-void pscom_precon_handshake(precon_t *pre)
+void pscom_precon_handshake(pscom_precon_t *pre)
 {
     assert(pre->magic == MAGIC_PRECON);
 
@@ -1171,7 +1162,7 @@ void pscom_con_accept(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
     pscom_sock_t *sock = ufd_info->priv;
     int listen_fd      = pscom_listener_get_fd(&sock->listen);
     while (1) {
-        precon_t *pre;
+        pscom_precon_t *pre;
         struct sockaddr_in addr;
         socklen_t addrlen = sizeof(addr);
 

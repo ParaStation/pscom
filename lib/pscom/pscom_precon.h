@@ -12,7 +12,9 @@
 #define _PSCOM_PRECON_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
+#include "list.h"
 #include "pscom.h"
 #include "pscom_plugin.h"
 #include "pscom_poll.h"
@@ -43,10 +45,17 @@
 #define PSCOM_INFO_ARCH_STEP3 0x100015
 #define PSCOM_INFO_ARCH_STEP4 0x100016
 
-
 #define MAGIC_PRECON 0x4a656e73
-typedef struct precon {
-    /* Pre connection data. Used for the initial TCP handshake. */
+
+typedef enum {
+    PSCOM_PRECON_TYPE_TCP    = 0,
+    PSCOM_PRECON_TYPE_RRCOMM = 1,
+    PSCOM_PRECON_TYPE_COUNT
+} pscom_precon_type_t;
+
+
+/* common part of tcp and rrcomm plugin, used for general precon functions */
+typedef struct PSCOM_precon {
     unsigned long magic;
     ufd_info_t ufd_info;
     unsigned send_len; // Length of send
@@ -79,7 +88,44 @@ typedef struct precon {
                                  // (==plugin_cur or NULL)
     pscom_plugin_t *_plugin_cur; // Current plugin iterator (used to loop
                                  // through all plugins)
-} precon_t;
+
+    struct list_head next; // add to precon plugin list
+    char precon_data[0];
+} pscom_precon_t;
+
+
+/* Global pre-connection struct containing shared functions and variables. Used
+ * for the initial TCP or RRcomm handshaking. Global RRcomm variables will be
+ * added here.
+ */
+typedef struct PSCOM_precon_provider {
+    struct list_head precon_list; // List of precon objests, either tcp or rrcom
+    int precon_count;
+    pscom_precon_type_t precon_type;
+    void (*init)(void);
+    void (*send)(pscom_precon_t *precon, unsigned type, void *data,
+                 unsigned size);
+    pscom_precon_t *(*create)(pscom_con_t *con);
+    void (*destroy)(pscom_precon_t *precon);
+    void (*recv_start)(pscom_precon_t *precon);
+    void (*recv_stop)(pscom_precon_t *precon);
+    int (*connect)(pscom_con_t *con, int nodeid, int portno);
+    int (*guard_setup)(pscom_precon_t *precon);
+    char precon_provider_data[0];
+} pscom_precon_provider_t;
+
+extern pscom_precon_provider_t pscom_precon_provider;
+
+
+#define VER_FROM 0x0200
+#define VER_TO   0x0200
+
+typedef struct {
+    /* supported version range from sender,
+       overlap must be non empty. */
+    uint32_t ver_from;
+    uint32_t ver_to;
+} pscom_info_version_t;
 
 
 typedef struct {
@@ -95,33 +141,34 @@ typedef struct {
 void pscom_precon_init(void);
 
 /* Create a precon object */
-precon_t *pscom_precon_create(pscom_con_t *con);
+pscom_precon_t *pscom_precon_create(pscom_con_t *con);
 
 /* Destroy a precon object. Cleanup and free all internal resources. */
-void pscom_precon_destroy(precon_t *pre);
+void pscom_precon_destroy(pscom_precon_t *pre);
 
 /* Connect a precon via tcp to nodeid:portno. Return 0 on sucess, -1 on error
  * with errno set. */
-int pscom_precon_tcp_connect(precon_t *pre, int nodeid, int portno);
+int pscom_precon_tcp_connect(pscom_precon_t *pre, int nodeid, int portno);
 
 /* Assign the fd to precon. fd is typically from a previous fd =
  * accept(listen_fd). */
-void pscom_precon_assign_fd(precon_t *pre, int fd);
+void pscom_precon_assign_fd(pscom_precon_t *pre, int fd);
 
 /* Send a message of type type */
-void pscom_precon_send(precon_t *pre, unsigned type, void *data, unsigned size);
+void pscom_precon_send(pscom_precon_t *pre, unsigned type, void *data,
+                       unsigned size);
 
 /* Start receiving. */
-void pscom_precon_recv_start(precon_t *pre);
+void pscom_precon_recv_start(pscom_precon_t *pre);
 
 /* Send a PSCOM_INFO_ARCH_NEXT message and disable current plugin */
-void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(precon_t *pre);
+void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *pre);
 /* Send a con_info message of type CON_INFO, CON_INFO_DEMAND or BACK_CONNECT*/
-void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type);
+void pscom_precon_send_PSCOM_INFO_CON_INFO(pscom_precon_t *pre, int type);
 
 /* Close the precon: Stop receiving data, flush Sendqueue. */
-void pscom_precon_close(precon_t *pre);
+void pscom_precon_close(pscom_precon_t *pre);
 
-void pscom_precon_handshake(precon_t *pre);
+void pscom_precon_handshake(pscom_precon_t *pre);
 
 #endif /* _PSCOM_PRECON_H_ */

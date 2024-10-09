@@ -192,7 +192,7 @@ static void pscom_tcp_sock_init(pscom_sock_t *sock)
 static void pscom_tcp_handshake(pscom_con_t *con, int type, void *data,
                                 unsigned size)
 {
-    precon_t *pre = con->precon;
+    pscom_precon_t *pre = con->precon;
     switch (type) {
     case PSCOM_INFO_ARCH_REQ:
         pre->closefd_on_cleanup = 0; // Keep fd after usage
