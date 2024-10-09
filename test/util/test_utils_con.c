@@ -21,6 +21,7 @@
 #include "pscom_priv.h"
 #include "pscom_con.h"
 #include "pscom_precon.h"
+#include "pscom_precon_tcp.h"
 
 #include "test_utils_con.h"
 #include "test_utils_sock.h"
@@ -107,14 +108,15 @@ int teardown_dummy_con_pair(void **state)
 
 int teardown_dummy_precon(void **state)
 {
-    pscom_precon_t *precon = (pscom_precon_t *)(*state);
-    pscom_sock_t *sock     = get_sock(precon->con->pub.socket);
+    pscom_precon_t *precon      = (pscom_precon_t *)(*state);
+    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
+    pscom_con_t *con            = pre_tcp->con;
 
     /* free connection-related resources */
     if (precon->magic == MAGIC_PRECON) { pscom_precon_destroy(precon); }
 
-    /* destroy the dummy socket */
-    teardown_dummy_sock((void **)&sock);
+    /* destroy the dummy connection and socket */
+    teardown_dummy_con((void **)&con);
 
     return 0;
 }

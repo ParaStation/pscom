@@ -15,6 +15,7 @@
 
 #include "list.h"
 #include "pscom_priv.h"
+#include "pscom_precon.h"
 
 
 int setup_dummy_sock(void **state)
@@ -23,6 +24,11 @@ int setup_dummy_sock(void **state)
 
     INIT_LIST_HEAD(&pscom.sockets);
     INIT_LIST_HEAD(&pscom.recvq_any_global);
+    /* init provider with TCP */
+    INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
+    pscom_precon_provider.precon_count = 0;
+    pscom_precon_provider.precon_type  = PSCOM_PRECON_TYPE_TCP;
+    pscom_precon_provider_init();
 
     new_sock = pscom_open_sock(0, 0);
     *state   = (void *)new_sock;
