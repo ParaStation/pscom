@@ -11,15 +11,12 @@
 #ifndef _PSCOM_PRECON_H_
 #define _PSCOM_PRECON_H_
 
-#include <stddef.h>
 #include <stdint.h>
 
 #include "list.h"
 #include "pscom.h"
 #include "pscom_plugin.h"
-#include "pscom_poll.h"
 #include "pscom_types.h"
-#include "pscom_ufd.h"
 
 #define PSCOM_INFO_FD_ERROR                                                    \
     0x0ffffe /* int errno; Pseudo message. Error in read(). */
@@ -57,31 +54,6 @@ typedef enum {
 /* common part of tcp and rrcomm plugin, used for general precon functions */
 typedef struct PSCOM_precon {
     unsigned long magic;
-    ufd_info_t ufd_info;
-    unsigned send_len; // Length of send
-    unsigned recv_len; // Length of recv
-    char *send;        // Send buffer
-    char *recv;        // Receive buffer
-
-    unsigned recv_done : 1;
-    unsigned closefd_on_cleanup : 1; // Call close(fd) on cleanup?
-    unsigned back_connect : 1;       // Is this a back connect precon?
-    unsigned connect : 1;            // Bool: fd used with connect()?
-    unsigned stalled_cnt : 8;        // Stalled connection counter
-
-    int nodeid, portno; // Retry connect to nodeid:portno on ECONNREFUSED
-    unsigned reconnect_cnt;
-
-    pscom_con_t *con;
-    pscom_sock_t *sock;
-
-    unsigned long last_print_stat; // usec of last print_stat
-    unsigned long last_reconnect;  // usec of last reconnect
-    pscom_poll_t poll_read;        // timeout handling
-
-    size_t stat_send;       // bytes send
-    size_t stat_recv;       // bytes received
-    unsigned stat_poll_cnt; // loops in poll
 
     /* state information */
     pscom_plugin_t *plugin;      // The plugin handling the handshake messages

@@ -32,6 +32,7 @@
 #include "pscom_priv.h"
 #include "pscom_util.h"
 #include "pslib.h"
+#include "pscom_precon_tcp.h"
 
 
 static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
@@ -199,7 +200,7 @@ static pscom_sock_t *pscom_sock_create(size_t userdata_size)
     sock->pub.ops.default_recv = NULL;
 
     sock->pub.listen_portno = -1;
-    pscom_listener_init(&sock->listen, pscom_con_accept, sock);
+    pscom_listener_init(&sock->listen, pscom_con_accept_tcp, sock);
 
     sock->con_type_mask                = ~0ULL;
     sock->pub.userdata_size            = userdata_size;

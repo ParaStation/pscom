@@ -342,7 +342,7 @@ pscom_err_t pscom_init(int pscom_version)
     pscom_pslib_init();
     pscom_env_init();
     pscom_debug_init();
-    pscom_precon_init();
+    pscom_precon_provider_init();
 
 #ifdef PSCOM_CUDA_AWARENESS
     if ((init = pscom_cuda_init()) != PSCOM_SUCCESS) { goto out; }

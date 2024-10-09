@@ -10,10 +10,6 @@
  * file.
  */
 
-#include "pscom_tcp.h"
-
-#include <assert.h>
-#include <errno.h>
 #include <fcntl.h>
 #include <poll.h>
 #include <string.h>
@@ -21,6 +17,8 @@
 #include <sys/types.h> /* IWYU pragma: keep */
 #include <sys/uio.h>
 #include <unistd.h>
+#include <errno.h>
+#include <assert.h>
 
 #include "pscom.h"
 #include "pscom_con.h"
@@ -28,7 +26,8 @@
 #include "pscom_precon.h"
 #include "pscom_priv.h"
 #include "pscom_ufd.h"
-
+#include "pscom_tcp.h"
+#include "pscom_precon_tcp.h"
 
 static void tcp_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
@@ -192,14 +191,19 @@ static void pscom_tcp_sock_init(pscom_sock_t *sock)
 static void pscom_tcp_handshake(pscom_con_t *con, int type, void *data,
                                 unsigned size)
 {
-    pscom_precon_t *pre = con->precon;
+    pscom_precon_t *precon = con->precon; // should be changed if rrcom is used
+    pscom_precon_tcp_t *pre_tcp = NULL;
     switch (type) {
     case PSCOM_INFO_ARCH_REQ:
-        pre->closefd_on_cleanup = 0; // Keep fd after usage
-        pscom_precon_send(pre, PSCOM_INFO_ARCH_OK, NULL, 0);
+        pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
+        pre_tcp->closefd_on_cleanup = 0; // Keep fd after usage
+        pscom_precon_send(precon, PSCOM_INFO_ARCH_OK, NULL, 0);
         break;
     case PSCOM_INFO_ARCH_OK:
-        if (pre) { tcp_set_fd(con, pre->ufd_info.fd); }
+        if (precon) {
+            pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
+            tcp_set_fd(con, pre_tcp->ufd_info.fd);
+        }
         break;
     case PSCOM_INFO_EOF: tcp_init_con(con); break;
     }
