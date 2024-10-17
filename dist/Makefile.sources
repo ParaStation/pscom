@@ -137,6 +137,8 @@ lib/pscom/pscom_poll.c \
 lib/pscom/pscom_poll.h \
 lib/pscom/pscom_precon.c \
 lib/pscom/pscom_precon.h \
+lib/pscom/pscom_precon_tcp.c \
+lib/pscom/pscom_precon_tcp.h \
 lib/pscom/pscom_priv.h \
 lib/pscom/pscom_queues.c \
 lib/pscom/pscom_queues.h \
