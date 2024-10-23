@@ -11,13 +11,12 @@
 #ifndef _PSCOM_PRECON_H_
 #define _PSCOM_PRECON_H_
 
-#include <stddef.h>
+#include <stdint.h>
 
+#include "list.h"
 #include "pscom.h"
 #include "pscom_plugin.h"
-#include "pscom_poll.h"
 #include "pscom_types.h"
-#include "pscom_ufd.h"
 
 #define PSCOM_INFO_FD_ERROR                                                    \
     0x0ffffe /* int errno; Pseudo message. Error in read(). */
@@ -43,43 +42,62 @@
 #define PSCOM_INFO_ARCH_STEP3 0x100015
 #define PSCOM_INFO_ARCH_STEP4 0x100016
 
-
 #define MAGIC_PRECON 0x4a656e73
-typedef struct precon {
-    /* Pre connection data. Used for the initial TCP handshake. */
+
+typedef enum {
+    PSCOM_PRECON_TYPE_TCP    = 0,
+    PSCOM_PRECON_TYPE_RRCOMM = 1,
+    PSCOM_PRECON_TYPE_COUNT
+} pscom_precon_type_t;
+
+
+/* common part of tcp and rrcomm plugin, used for general precon functions */
+typedef struct PSCOM_precon {
     unsigned long magic;
-    ufd_info_t ufd_info;
-    unsigned send_len; // Length of send
-    unsigned recv_len; // Length of recv
-    char *send;        // Send buffer
-    char *recv;        // Receive buffer
-
-    unsigned recv_done : 1;
-    unsigned closefd_on_cleanup : 1; // Call close(fd) on cleanup?
-    unsigned back_connect : 1;       // Is this a back connect precon?
-    unsigned connect : 1;            // Bool: fd used with connect()?
-    unsigned stalled_cnt : 8;        // Stalled connection counter
-
-    int nodeid, portno; // Retry connect to nodeid:portno on ECONNREFUSED
-    unsigned reconnect_cnt;
-
-    pscom_con_t *con;
-    pscom_sock_t *sock;
-
-    unsigned long last_print_stat; // usec of last print_stat
-    unsigned long last_reconnect;  // usec of last reconnect
-    pscom_poll_t poll_read;        // timeout handling
-
-    size_t stat_send;       // bytes send
-    size_t stat_recv;       // bytes received
-    unsigned stat_poll_cnt; // loops in poll
 
     /* state information */
     pscom_plugin_t *plugin;      // The plugin handling the handshake messages
                                  // (==plugin_cur or NULL)
     pscom_plugin_t *_plugin_cur; // Current plugin iterator (used to loop
                                  // through all plugins)
-} precon_t;
+
+    struct list_head next; // add to precon plugin list
+    char precon_data[0];
+} pscom_precon_t;
+
+
+/* Global pre-connection struct containing shared functions and variables. Used
+ * for the initial TCP or RRcomm handshaking. Global RRcomm variables will be
+ * added here.
+ */
+typedef struct PSCOM_precon_provider {
+    struct list_head precon_list; // List of precon objests, either tcp or rrcom
+    int precon_count;
+    pscom_precon_type_t precon_type;
+    void (*init)(void);
+    void (*send)(pscom_precon_t *precon, unsigned type, void *data,
+                 unsigned size);
+    pscom_precon_t *(*create)(pscom_con_t *con);
+    void (*destroy)(pscom_precon_t *precon);
+    void (*recv_start)(pscom_precon_t *precon);
+    void (*recv_stop)(pscom_precon_t *precon);
+    int (*connect)(pscom_con_t *con, int nodeid, int portno);
+    int (*guard_setup)(pscom_precon_t *precon);
+    char precon_provider_data[0];
+} pscom_precon_provider_t;
+
+extern pscom_precon_provider_t pscom_precon_provider;
+
+
+#define VER_FROM 0x0200
+#define VER_TO   0x0200
+
+typedef struct {
+    /* supported version range from sender,
+       overlap must be non empty. */
+    uint32_t ver_from;
+    uint32_t ver_to;
+} pscom_info_version_t;
 
 
 typedef struct {
@@ -93,35 +111,48 @@ typedef struct {
 
 /* initialize the precon module */
 void pscom_precon_init(void);
-
-/* Create a precon object */
-precon_t *pscom_precon_create(pscom_con_t *con);
-
-/* Destroy a precon object. Cleanup and free all internal resources. */
-void pscom_precon_destroy(precon_t *pre);
-
-/* Connect a precon via tcp to nodeid:portno. Return 0 on sucess, -1 on error
- * with errno set. */
-int pscom_precon_tcp_connect(precon_t *pre, int nodeid, int portno);
-
-/* Assign the fd to precon. fd is typically from a previous fd =
- * accept(listen_fd). */
-void pscom_precon_assign_fd(precon_t *pre, int fd);
+void pscom_precon_provider_init(void);
 
 /* Send a message of type type */
-void pscom_precon_send(precon_t *pre, unsigned type, void *data, unsigned size);
-
-/* Start receiving. */
-void pscom_precon_recv_start(precon_t *pre);
+void pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
+                       unsigned size);
 
 /* Send a PSCOM_INFO_ARCH_NEXT message and disable current plugin */
-void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(precon_t *pre);
-/* Send a con_info message of type CON_INFO, CON_INFO_DEMAND or BACK_CONNECT*/
-void pscom_precon_send_PSCOM_INFO_CON_INFO(precon_t *pre, int type);
+void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon);
 
-/* Close the precon: Stop receiving data, flush Sendqueue. */
-void pscom_precon_close(precon_t *pre);
+/* Print handshake information */
+const char *pscom_info_type_str(int type);
 
-void pscom_precon_handshake(precon_t *pre);
+void pscom_precon_info_dump(pscom_precon_t *precon, char *op, int type,
+                            void *data, unsigned size);
+
+/* select and try plugin for connection */
+void plugin_connect_next(pscom_con_t *con);
+
+void plugin_connect_first(pscom_con_t *con);
+
+pscom_precon_t *pscom_precon_create(pscom_con_t *con);
+
+void pscom_precon_destroy(pscom_precon_t *precon);
+
+static inline void pscom_precon_recv_start(pscom_precon_t *precon)
+{
+    pscom_precon_provider.recv_start(precon);
+}
+
+static inline void pscom_precon_recv_stop(pscom_precon_t *precon)
+{
+    pscom_precon_provider.recv_stop(precon);
+}
+
+static inline int pscom_precon_connect(pscom_con_t *con, int nodeid, int portno)
+{
+    return pscom_precon_provider.connect(con, nodeid, portno);
+}
+
+static inline int pscom_precon_guard_setup(pscom_precon_t *precon)
+{
+    return pscom_precon_provider.guard_setup(precon);
+}
 
 #endif /* _PSCOM_PRECON_H_ */

@@ -174,6 +174,10 @@ static pscom_env_table_entry_t pscom_env_table[] = {
     {"DEBUG_PRECON", "0", "Trace the pre-connection handshake.",
      &pscom.env.debug_precon, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_INT},
 
+    {"PRECON_TYPE", "0",
+     "Type of the pre-connection provider to be used (TCP=0, RRCOMM=1).",
+     &pscom.env.precon_type, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_UINT},
+
 #ifdef PSCOM_CUDA_AWARENESS
     {"CUDA", "0", "Enable/disable CUDA awareness.", &pscom.env.cuda,
      PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_INT},

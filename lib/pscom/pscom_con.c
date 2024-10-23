@@ -9,9 +9,6 @@
  * file.
  */
 
-#include "pscom_con.h"
-
-#include <errno.h>
 #include <netinet/in.h>
 #include <poll.h>
 #include <stdio.h>
@@ -21,6 +18,7 @@
 #include <sys/uio.h>
 #include <unistd.h>
 
+#include "pscom_con.h"
 #include "pscom_async.h"
 #include "pscom_debug.h"
 #include "pscom_io.h"
@@ -28,6 +26,7 @@
 #include "pscom_precon.h"
 #include "pscom_queues.h"
 #include "pscom_req.h"
+#include "pscom_ufd.h"
 #include "pslib.h"
 
 static void _pscom_con_destroy(pscom_con_t *con);
@@ -854,53 +853,16 @@ static int pscom_is_valid_con(pscom_con_t *con)
 }
 
 
-void pscom_ondemand_indirect_connect(pscom_con_t *con)
-{
-    int nodeid = con->arch.ondemand.node_id;
-    int portno = con->arch.ondemand.portno;
-    int rc;
-
-    precon_t *pre = pscom_precon_create(con);
-
-    rc = pscom_precon_tcp_connect(pre, nodeid, portno);
-    if (rc >= 0) {
-        /* Request a back connect. There are three reasons for
-           a failing tcp_connect: 1.) Problems to connect,
-           caused by network congestion or busy peer (e.g. tcp
-           backlog to small). In this case the connection con
-           should be terminated with an error. 2.) Peer is
-           connecting to us at the same time and the listening
-           tcp port is already closed. This is not an error
-           and we must not terminate the connection con.
-           3.) Peer has no receive request on this con and is
-           not watching for POLLIN on the listening fd. This
-           is currently unhandled and cause a connection error! */
-
-        /* Send a rconnect request */
-        DPRINT(D_PRECON_TRACE, "precon(%p): send backcon %.8s to %.8s", pre,
-               con->pub.socket->local_con_info.name,
-               con->pub.remote_con_info.name);
-        pscom_precon_send_PSCOM_INFO_CON_INFO(pre, PSCOM_INFO_BACK_CONNECT);
-
-        pre->back_connect = 1; /* This is a back connect. */
-
-        pscom_precon_recv_start(pre); // Wait for the PSCOM_INFO_BACK_ACK
-    } else {
-        pscom_precon_destroy(pre);
-    }
-}
-
-
 PSCOM_PLUGIN_API_EXPORT
 void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 {
-    precon_t *pre    = con->precon;
-    int call_cleanup = (con->pub.state == PSCOM_CON_STATE_ACCEPTING);
-    if (pre) {
-        pscom_precon_close(pre);
-        /* pre destroys itself in pscom_precon_check_end()
+    pscom_precon_t *precon = con->precon;
+    int call_cleanup       = (con->pub.state == PSCOM_CON_STATE_ACCEPTING);
+    if (precon) {
+        pscom_precon_recv_stop(precon);
+        /* precon destroys itself in pscom_precon_check_end()
            after the send buffer is drained.*/
-        // pscom_precon_destroy(pre); con->precon = NULL;
+        // pscom_precon_destroy(precon); con->precon = NULL;
     }
 
     con->pub.state = PSCOM_CON_STATE_CLOSED;
@@ -916,12 +878,11 @@ void pscom_con_setup_failed(pscom_con_t *con, pscom_err_t err)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_con_setup_ok(pscom_con_t *con)
 {
-    precon_t *pre               = con->precon;
     pscom_sock_t *sock          = get_sock(con->pub.socket);
     pscom_con_state_t con_state = con->pub.state;
 
-    if (pre) {
-        pscom_precon_destroy(pre);
+    if (con->precon) {
+        pscom_precon_destroy(con->precon);
         con->precon = NULL;
     }
     if (list_empty(&con->next)) {
@@ -971,46 +932,6 @@ void pscom_con_setup_ok(pscom_con_t *con)
                pscom_con_type_str(con->pub.type));
     }
     pscom_con_setup(con);
-}
-
-
-pscom_err_t pscom_con_connect_via_tcp(pscom_con_t *con, int nodeid, int portno)
-{
-    pscom_sock_t *sock = get_sock(con->pub.socket);
-    precon_t *pre;
-
-    /* ToDo: Set connection state to "connecting". Suspend send and recieve
-     * queues! */
-    pre                              = pscom_precon_create(con);
-    con->precon                      = pre;
-    con->pub.remote_con_info.node_id = nodeid;
-    if (!con->pub.remote_con_info.name[0]) {
-        snprintf(con->pub.remote_con_info.name,
-                 sizeof(con->pub.remote_con_info.name), ":%u", portno);
-    }
-    pre->plugin = NULL;
-
-    if (list_empty(&con->next)) {
-        list_add_tail(&con->next, &sock->connections);
-    }
-
-    if (pscom_precon_tcp_connect(pre, nodeid, portno) < 0) { goto err_connect; }
-
-    con->pub.state = PSCOM_CON_STATE_CONNECTING;
-    pscom_precon_handshake(pre);
-
-    if (con->pub.state == PSCOM_CON_STATE_CLOSED) { goto err_connect; }
-
-    return PSCOM_SUCCESS;
-    /* --- */
-// err_init_failed:
-err_connect:
-    if (errno != ENOPROTOOPT) {
-        // if (errno == ENOPROTOOPT) _plugin_connect_next() already called
-        // pscom_con_setup_failed().
-        pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
-    }
-    return PSCOM_ERR_STDERROR;
 }
 
 
@@ -1094,7 +1015,7 @@ pscom_err_t pscom_con_connect(pscom_con_t *con, int nodeid, int portno)
         rc = pscom_con_connect_loopback(con);
     } else {
         /* Initial connection via TCP */
-        rc = pscom_con_connect_via_tcp(con, nodeid, portno);
+        rc = pscom_precon_connect(con, nodeid, portno);
     }
     return rc;
 }
@@ -1143,16 +1064,15 @@ static void pscom_guard_readable(ufd_t *ufd, ufd_info_t *ufd_info)
 PSCOM_PLUGIN_API_EXPORT
 void pscom_con_guard_start(pscom_con_t *con)
 {
-    precon_t *pre = con->precon;
     int fd;
-    assert(pre);
-    assert(pre->magic == MAGIC_PRECON);
-    if (!pscom.env.guard) { return; }
 
-    fd                      = pre->ufd_info.fd;
-    pre->closefd_on_cleanup = 0;
-    con->con_guard.fd       = fd;
-    DPRINT(D_PRECON_TRACE, "precon(%p): Start guard on fd %d", pre, fd);
+    if (!pscom.env.guard) { return; }
+    /* get fd from precon and set cleanup to 0 such that fd will not be closed
+     * when precon tcp is destroyed */
+    fd                = pscom_precon_guard_setup(con->precon);
+    con->con_guard.fd = fd;
+    /* todo: add error handling when fd =-1 if rrcomm is used */
+    DPRINT(D_PRECON_TRACE, "precon(%p): Start guard on fd %d", con->precon, fd);
     _pscom_con_ref_hold(con);
     pscom_async_on_readable(fd, pscom_guard_readable, con);
 }

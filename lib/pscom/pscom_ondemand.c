@@ -15,9 +15,10 @@
 #include "list.h"
 #include "pscom.h"
 #include "pscom_con.h"
+#include "pscom_precon_tcp.h"
+#include "pscom_str_util.h"
 #include "pscom_debug.h"
 #include "pscom_priv.h"
-#include "pscom_str_util.h"
 
 static void pscom_ondemand_read_start(pscom_con_t *con);
 static void pscom_ondemand_read_stop(pscom_con_t *con);
@@ -63,7 +64,7 @@ static void pscom_ondemand_direct_connect(pscom_con_t *con)
     pscom_ondemand_cleanup(con);
 
     /* reopen via tcp connection */
-    int rc = pscom_con_connect_via_tcp(con, nodeid, portno);
+    int rc = pscom_precon_connect_tcp(con, nodeid, portno);
 
     if (rc) {
         /* connect failed. set error falgs */
@@ -77,7 +78,7 @@ static void pscom_ondemand_write_start(pscom_con_t *con)
     if (pscom_name_is_lower(con->arch.ondemand.name,
                             con->pub.socket->local_con_info.name)) {
         pscom_ondemand_read_start(con); // be prepared for the back connect
-        pscom_ondemand_indirect_connect(con);
+        pscom_precon_ondemand_backconnect_tcp(con);
     } else {
         pscom_sock_t *sock = get_sock(con->pub.socket);
 

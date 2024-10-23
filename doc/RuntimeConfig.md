@@ -104,13 +104,13 @@ If none of the rendezvous environment variables are set (neither on plugin nor o
 
 
 ### Precon options (TCP plugin)
-| Option                           | Description         |
-|----------------------------------|---------------------|
-| `PSP_PRECON_SO_SNDBUF`           | The `SO_SNDBUF` size of the precon/TCP connections. |
-| `PSP_PRECON_SO_RCVBUF`           | The `SO_RCVBUF` size of the precon/TCP connections. |
-| `PSP_PRECON_TCP_NODELAY`         | Enable/disable `TCP_NODELAY` for the precon/TCP connections. |
-| `PSP_PRECON_RECONNECT_TIMEOUT`   | The reconnect timeout for the precon in milliseconds. |
-| `PSP_PRECON_CONNECT_STALLED_MAX` | Declare after `(`PSP_CONNECT_STALLED` * `PSP_RECONNECT_TIMEOUT`)[ms]` without any received bytes the `connect()` as failed. Retry.  |
+| Option                               | Description         |
+|--------------------------------------|---------------------|
+| `PSP_PRECON_TCP_SO_SNDBUF`           | The `SO_SNDBUF` size of the precon/TCP connections. |
+| `PSP_PRECON_TCP_SO_RCVBUF`           | The `SO_RCVBUF` size of the precon/TCP connections. |
+| `PSP_PRECON_TCP_NODELAY`             | Enable/disable `TCP_NODELAY` for the precon/TCP connections. |
+| `PSP_PRECON_TCP_RECONNECT_TIMEOUT`   | The reconnect timeout for the precon in milliseconds. |
+| `PSP_PRECON_TCP_CONNECT_STALLED_MAX` | Declare after `(`PSP_CONNECT_STALLED` * `PSP_RECONNECT_TIMEOUT`)[ms]` without any received bytes the `connect()` as failed. Retry.  |
 
 ### OpenIB plugin options
 | Option                            | Description         |

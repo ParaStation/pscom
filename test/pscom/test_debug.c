@@ -13,7 +13,7 @@
 #include <stdint.h> /* IWYU pragma: keep */
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
-
+#include <assert.h>
 #include <errno.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -26,6 +26,7 @@
 #include "pscom_precon.h"
 #include "pscom_priv.h"
 #include "pscom_ufd.h"
+#include "pscom_precon_tcp.h"
 
 #include "util/test_utils_debug.h"
 /**
@@ -105,15 +106,19 @@ void test_debug_precon_broken_pipe(void **state)
     ufd_init(&pscom.ufd);
 
     /* create and initialize the precon object */
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    precon_t *precon       = pscom_precon_create(dummy_con);
-    pscom_precon_assign_fd(precon, 0x42);
+    pscom_con_t *dummy_con      = (pscom_con_t *)(*state);
+    /* only precon tcp is tested */
+    pscom_precon_t *precon      = pscom_precon_create(dummy_con);
+    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
+    assert(precon->magic == MAGIC_PRECON);
+    assert(pre_tcp->magic == MAGIC_PRECON);
+    pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* start writing on the precon and generate EPIPE */
     will_return(__wrap_send, EPIPE);
     will_return(__wrap_send, -1);
-    precon->send_len = 42;
-    precon->ufd_info.can_write(NULL, &precon->ufd_info);
+    pre_tcp->send_len = 42;
+    pre_tcp->ufd_info.can_write(NULL, &pre_tcp->ufd_info);
 
     /* write something to stderr so we can retrieve it via read() */
     fprintf(stderr, "EOF");
@@ -155,15 +160,17 @@ void test_debug_precon_io_error(void **state)
     ufd_init(&pscom.ufd);
 
     /* create and initialize the precon object */
-    pscom_con_t *dummy_con = (pscom_con_t *)(*state);
-    precon_t *precon       = pscom_precon_create(dummy_con);
-    pscom_precon_assign_fd(precon, 0x42);
+    pscom_con_t *dummy_con      = (pscom_con_t *)(*state);
+    /* only precon tcp is tested */
+    pscom_precon_t *precon      = pscom_precon_create(dummy_con);
+    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
+    pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* start writing on the precon and generate EPIPE */
     will_return(__wrap_send, EIO);
     will_return(__wrap_send, -1);
-    precon->send_len = 42;
-    precon->ufd_info.can_write(NULL, &precon->ufd_info);
+    pre_tcp->send_len = 42;
+    pre_tcp->ufd_info.can_write(NULL, &pre_tcp->ufd_info);
 
     /* write something to stderr so we can retrieve it via read() */
     fprintf(stderr, "EOF");

@@ -47,10 +47,10 @@ For the type definition of `PSCOM_connection` see `include/pscom.h`.
 
 * `pscom_connect(...)` calls `pscom_con_connect(...)` to establish the connection
     - either via loopback for local connection using `pscom_con_connect_loopback(...)`
-    -  or initially via TCP (`pscom_con_connect_via_tcp(...)`, see below) and then use TCP to establish a better (the best) connection depending on the available plugins and their priorities
+    -  or initially via TCP (`pscom_con_connect_tcp(...)`, see below) and then use TCP to establish a better (the best) connection depending on the available plugins and their priorities
     - Plugins can use the TCP connection to communicate the required information for connection establishment in their own `con_connect(...)` function (part of the plugin)
 * To wait for and accept incoming connections, the following function is used:
-    - `pscom_wait_any()` to wait for progress/ activity on any communication channel (polling, see `pscom_progress(...)` and `pscom_con_accept(...)`)
+    - `pscom_wait_any()` to wait for progress/ activity on any communication channel (polling, see `pscom_progress(...)` and `pscom_con_accept_tcp(...)`)
     - Also when accepting incoming connections, the best connection plug-in is determined
 
 
@@ -63,21 +63,21 @@ For the type definition of `PSCOM_connection` see `include/pscom.h`.
 * On-demand connections are enabled by setting the environment variable `PSP_ONDEMAND=1`
 * `pscom_con` objects are initializedby calling `pscom_connect_ondemand(...)` in `pscom_connect_socket_str(...)` which calls `pscom_con_connect_ondemand(...)`
 * Upon the first write attempt on this connection, the `pscom_ondemand_write_start(...)` function will trigger connection establishment
-* If the own name is (lexicographically) lower than the remote name, indirect connection establishment is done via `pscom_ondemand_indirect_connect(...)`
-    - Calling `pscom_precon_tcp_connect(...)` to create a TCP connection
+* If the own name is (lexicographically) lower than the remote name, indirect connection establishment is done via `pscom_precon_ondemand_backconnect_tcp(...)`
+    - Calling `pscom_precon_connect_tcp(...)` to create a TCP connection
     - If the connect via TCP does not succeed, there are three possible reasons
         1. Problems to connect, caused by network congestion or busy peer (e.g., TCP backlog too small). In this case the connection should be terminated with an error.
         2. Peer is connecting to us at the same time and the listening TCP port is already closed. This is not an error and we must not terminate the connection.
         3. Peer has no receive request on this connection and is not watching for POLLIN on the listening file descriptor. This is currently unhandled and causes a connection error
-    - If the TCP connection is successful, send "call-me-back" message via `pscom_precon_send_PSCOM_INFO_CON_INFO(...)` as a trigger
+    - If the TCP connection is successful, send "call-me-back" message via `pscom_precon_send_PSCOM_INFO_CON_INFO_tcp(...)` as a trigger
 * If the own name is (lexicographically) greater or equal to the remote name direct connection establishment is done via `pscom_ondemand_direct_connect(...)`
     - Closing the "on demand" connection via `pscom_ondemand_cleanup(...)`
-    - Re-opening TCP via `pscom_con_connect_via_tcp(...)` (finding the best connection/ plugin)
+    - Re-opening TCP via `pscom_con_connect_tcp(...)` (finding the best connection/ plugin)
 
 ## Initial information exchange via TCP
 - After a TCP connection has been established, some initial information such as the version number or whether it is a "call-me-back" (aka "back-connect") on-demand connection is exchanged
 - The sending of the info messages is done asynchronously via the handling of `ufd_events`
-- In `pscom_con_connect_via_tcp(...)` the function `pscom_precon_handshake()` is called to
+- In `pscom_con_connect_tcp(...)` the function `pscom_precon_handshake()` is called to
     1. enable receiving
     2. send initial connection information for any connection that is in the state `PSCOM_CON_STATE_CONNECTING`
     3. call the plugin's handshake function
