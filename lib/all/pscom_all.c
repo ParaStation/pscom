@@ -49,6 +49,7 @@
 #include "../pscom/pscom_plugin.c"
 
 #include "../pscom/pscom_precon.c"
+#include "../pscom/pscom_precon_tcp.c"
 #include "../pscom/pscom_queues.c"
 #include "../pscom/pscom_req.c"
 #include "../pscom/pscom_shm.c"
