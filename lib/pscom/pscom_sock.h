@@ -16,5 +16,7 @@
 #include "pscom_priv.h"
 
 pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno);
+void pscom_sock_stop_listen(pscom_sock_t *sock);
+void pscom_sock_close(pscom_sock_t *sock);
 
 #endif /* _PSCOM_SOCK_H_ */

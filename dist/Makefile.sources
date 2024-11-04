@@ -257,6 +257,8 @@ test/pscom/test_env.c \
 test/pscom/test_env.h \
 test/pscom/test_io.c \
 test/pscom/test_io.h \
+test/pscom/test_listen.c \
+test/pscom/test_listen.h \
 test/pscom/test_plugin.c \
 test/pscom/test_plugin.h \
 test/pscom/test_ufd.c \
@@ -275,5 +277,7 @@ test/util/test_utils_debug.c \
 test/util/test_utils_debug.h \
 test/util/test_utils_env.c \
 test/util/test_utils_env.h \
+test/util/test_utils_listen.c \
+test/util/test_utils_listen.h \
 test/util/test_utils_sock.c \
 test/util/test_utils_sock.h

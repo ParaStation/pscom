@@ -98,11 +98,13 @@ add_executable(
   pscom/test_debug.c
   pscom/test_env.c
   pscom/test_io.c
+  pscom/test_listen.c
   pscom/test_ufd.c
   pscom/test_plugin.c
   util/test_utils_con.c
   util/test_utils_debug.c
   util/test_utils_env.c
+  util/test_utils_listen.c
   util/test_utils_sock.c)
 
 # Mocked functions

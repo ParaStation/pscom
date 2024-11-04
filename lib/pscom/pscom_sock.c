@@ -61,7 +61,7 @@ static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 }
 
 
-static void pscom_sock_stop_listen(pscom_sock_t *sock)
+void pscom_sock_stop_listen(pscom_sock_t *sock)
 {
     assert(sock->magic == MAGIC_SOCKET);
 
@@ -69,12 +69,19 @@ static void pscom_sock_stop_listen(pscom_sock_t *sock)
         return;
     }
 
+    if (sock->listen.suspend) {
+        /* We are in listen suspend, need to dec the user counter to make it
+         * match the increment in pscom_listener_suspend. Only by doing so,
+         * the fd will be closed if there are no more active users. */
+        pscom_listener_user_dec(&sock->listen);
+    }
+
     pscom_listener_active_dec(&sock->listen);
     sock->pub.listen_portno = -1;
 }
 
 
-static void pscom_sock_close(pscom_sock_t *sock)
+void pscom_sock_close(pscom_sock_t *sock)
 {
     struct list_head *pos, *next;
     int retry_cnt                      = 0;
@@ -607,4 +614,30 @@ void pscom_con_type_mask_restore(pscom_socket_t *socket,
 
     mask->magic = 0;
     free(mask);
+}
+
+
+PSCOM_API_EXPORT
+void pscom_suspend_listen(pscom_socket_t *socket)
+{
+    pscom_lock();
+    {
+        pscom_sock_t *sock = get_sock(socket);
+        assert(sock->magic == MAGIC_SOCKET);
+        pscom_listener_suspend(&sock->listen);
+    }
+    pscom_unlock();
+}
+
+
+PSCOM_API_EXPORT
+void pscom_resume_listen(pscom_socket_t *socket)
+{
+    pscom_lock();
+    {
+        pscom_sock_t *sock = get_sock(socket);
+        assert(sock->magic == MAGIC_SOCKET);
+        pscom_listener_resume(&sock->listen);
+    }
+    pscom_unlock();
 }

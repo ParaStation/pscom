@@ -552,6 +552,26 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno);
 void pscom_stop_listen(pscom_socket_t *socket);
 
 
+#define PSCOM_HAS_LISTEN_SUSPEND_RESUME 1
+
+/**
+ * @brief Suspend listening for new connections on the port by deactivating
+ * the ufd entry in the progress engine.
+ *
+ * @param [in] socket The listening socket.
+ */
+void pscom_suspend_listen(pscom_socket_t *socket);
+
+
+/**
+ * @brief Resume listening on the port by adding the udf entry back to the
+ * progress engine.
+ *
+ * @param [in] socket The listening socket.
+ */
+void pscom_resume_listen(pscom_socket_t *socket);
+
+
 /**
  * @brief Flush the send queue of a connection.
  *
