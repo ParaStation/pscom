@@ -247,6 +247,12 @@ int main(void)
 
     /* pscom_ufd tests */
     const struct CMUnitTest pscom_ufd_tests[] = {
+        cmocka_unit_test_setup_teardown(test_ufd_init_set_and_cleanup,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(test_ufd_init_set_and_cleanup_threaded,
+                                        setup_dummy_precon,
+                                        teardown_dummy_precon),
         cmocka_unit_test_setup_teardown(test_ufd_do_not_write_when_con_refused,
                                         setup_dummy_precon,
                                         teardown_dummy_precon),
@@ -276,6 +282,12 @@ int main(void)
             teardown_dummy_precon),
         cmocka_unit_test_setup_teardown(
             test_ufd_do_not_write_if_global_ufd_is_gone, setup_dummy_precon,
+            teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(
+            test_ufd_do_not_read_when_array_is_updated, setup_dummy_precon,
+            teardown_dummy_precon),
+        cmocka_unit_test_setup_teardown(
+            test_ufd_do_not_write_when_array_is_updated, setup_dummy_precon,
             teardown_dummy_precon),
     };
     total_tests += TEST_GROUP_SIZE(pscom_ufd_tests);
