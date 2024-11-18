@@ -83,6 +83,8 @@ int teardown_dummy_con(void **state)
     pscom_con_t *con   = (pscom_con_t *)(*state);
     pscom_sock_t *sock = get_sock(con->pub.socket);
 
+    pscom.threaded = 0;
+
     /* free connection-related resources */
     if (!con->state.destroyed) { pscom_con_ref_release(con); }
 
