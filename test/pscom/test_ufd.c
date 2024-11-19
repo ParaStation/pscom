@@ -18,7 +18,6 @@
 #include <errno.h>
 #include <poll.h>
 
-#include "list.h"
 #include "mocks/misc_mocks.h"
 #include "pscom_precon.h"
 #include "pscom_priv.h"
@@ -27,6 +26,8 @@
 #include "pscom_precon.c"
 #include "pscom_precon_tcp.h"
 #include "pscom_ufd.c"
+
+#include "util/test_utils_ufd.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// Helper functions
@@ -66,9 +67,8 @@ int mock_sched_yield_close_global_ufd(void *arg)
  */
 void test_ufd_do_not_write_when_con_refused(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -76,7 +76,7 @@ void test_ufd_do_not_write_when_con_refused(void **state)
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* set POLLIN and POLLOUT events*/
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
 
     pre_tcp->recv_done = 0;
     enable_read_mock();
@@ -100,9 +100,8 @@ void test_ufd_do_not_write_when_con_refused(void **state)
 
     disable_read_mock();
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -115,9 +114,8 @@ void test_ufd_do_not_write_when_con_refused(void **state)
  */
 void test_ufd_do_not_write_con_reset_by_peer(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -125,7 +123,7 @@ void test_ufd_do_not_write_con_reset_by_peer(void **state)
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* set POLLIN and POLLOUT events*/
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
 
     pre_tcp->recv_done = 0;
     enable_read_mock();
@@ -149,9 +147,8 @@ void test_ufd_do_not_write_con_reset_by_peer(void **state)
 
     disable_read_mock();
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -164,9 +161,8 @@ void test_ufd_do_not_write_con_reset_by_peer(void **state)
  */
 void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -174,7 +170,7 @@ void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* set POLLIN and POLLOUT events*/
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
 
     /* remove pollfd */
     pre_tcp->ufd_info.can_read = &delete_pollfd;
@@ -187,16 +183,15 @@ void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
     pre_tcp->ufd_info.can_write = &check_can_write;
 
     /* There is a valid pollfd equals to the current ufd_info */
-    assert_true(pscom.ufd.ufd_pollfd_info[0] == &pre_tcp->ufd_info);
+    assert_true(ufd->ufd_pollfd_info[0] == &pre_tcp->ufd_info);
 
     pscom_progress(0);
 
     /* No valid pollfd anymore after deleting it */
-    assert_true(pscom.ufd.ufd_pollfd_info[0] == NULL);
+    assert_true(ufd->ufd_pollfd_info[0] == NULL);
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -209,9 +204,8 @@ void test_ufd_do_not_write_when_pollfd_is_cleared(void **state)
  */
 void test_ufd_write_when_pollfd_is_not_updated(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -219,7 +213,7 @@ void test_ufd_write_when_pollfd_is_not_updated(void **state)
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* set POLLIN and POLLOUT events*/
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
 
     /* we read without updating the current pollfd */
     pre_tcp->ufd_info.can_read = &check_can_read;
@@ -233,16 +227,15 @@ void test_ufd_write_when_pollfd_is_not_updated(void **state)
     expect_function_call_any(check_can_write);
 
     /* There is a valid pollfd equals to the current ufd_info */
-    assert_true(pscom.ufd.ufd_pollfd_info[0] == &pre_tcp->ufd_info);
+    assert_true(ufd->ufd_pollfd_info[0] == &pre_tcp->ufd_info);
 
     pscom_progress(0);
 
     /* There is still a valid pollfd equals to the current ufd_info */
-    assert_true(pscom.ufd.ufd_pollfd_info[0] == &pre_tcp->ufd_info);
+    assert_true(ufd->ufd_pollfd_info[0] == &pre_tcp->ufd_info);
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -255,9 +248,8 @@ void test_ufd_write_when_pollfd_is_not_updated(void **state)
  */
 void test_ufd_do_not_read_when_stopped_precon(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -265,7 +257,7 @@ void test_ufd_do_not_read_when_stopped_precon(void **state)
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* set POLLIN and POLLOUT events*/
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
 
     pre_tcp->ufd_info.can_read = &check_can_read;
 
@@ -280,9 +272,8 @@ void test_ufd_do_not_read_when_stopped_precon(void **state)
 
     /* implicit test: check_can_read() is NOT called */
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -295,9 +286,8 @@ void test_ufd_do_not_read_when_stopped_precon(void **state)
  */
 void test_ufd_do_not_progress_when_destroyed_precon(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -305,7 +295,7 @@ void test_ufd_do_not_progress_when_destroyed_precon(void **state)
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
     /* set POLLIN and POLLOUT events*/
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN);
 
     /* Call teardown of connection since precon will be destroyed */
     *state = pre_tcp->con;
@@ -322,9 +312,8 @@ void test_ufd_do_not_progress_when_destroyed_precon(void **state)
     /* There is no further progress */
     assert(progress == 0);
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -337,16 +326,15 @@ void test_ufd_do_not_progress_when_destroyed_precon(void **state)
  */
 void test_ufd_read_and_write_normally(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN | POLLOUT);
 
     will_return(__wrap_poll, (POLLIN | POLLOUT));
     will_return(__wrap_poll, 1);
@@ -364,9 +352,8 @@ void test_ufd_read_and_write_normally(void **state)
     /* There is still a valid pollfd index */
     assert_true(pre_tcp->ufd_info.pollfd_idx != -1);
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -379,16 +366,15 @@ void test_ufd_read_and_write_normally(void **state)
  */
 void test_ufd_only_write_when_no_pollin(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     pscom_precon_assign_fd_tcp(pre_tcp, 0x42);
 
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLOUT);
 
     will_return(__wrap_poll, POLLOUT);
     will_return(__wrap_poll, 1);
@@ -405,9 +391,8 @@ void test_ufd_only_write_when_no_pollin(void **state)
     /* There is still a valid pollfd index */
     assert_true(pre_tcp->ufd_info.pollfd_idx != -1);
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -420,9 +405,8 @@ void test_ufd_only_write_when_no_pollin(void **state)
  */
 void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -434,7 +418,7 @@ void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
     pre_tcp->ufd_info.can_write = &check_can_write;
 
     /* set POLLIN event */
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLIN);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLIN);
 
     enable_sched_yield_mock();
 
@@ -449,9 +433,8 @@ void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
 
     disable_sched_yield_mock();
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
 
 
@@ -464,9 +447,8 @@ void test_ufd_do_not_read_if_global_ufd_is_gone(void **state)
  */
 void test_ufd_do_not_write_if_global_ufd_is_gone(void **state)
 {
-    /* enable threaded mode and initialize ufd */
-    pscom.threaded = 1;
-    ufd_init(&pscom.ufd);
+    /* initialize and do checks with the global ufd object in threaded mode */
+    ufd_t *ufd = test_utils_init_ufd_threaded(&pscom.ufd);
 
     /* create and initialize the precon object */
     pscom_precon_t *precon      = (pscom_precon_t *)(*state);
@@ -478,7 +460,7 @@ void test_ufd_do_not_write_if_global_ufd_is_gone(void **state)
     pre_tcp->ufd_info.can_write = &check_can_write;
 
     /* set POLLOUT event */
-    ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLOUT);
+    ufd_event_set(ufd, &pre_tcp->ufd_info, POLLOUT);
 
     enable_sched_yield_mock();
 
@@ -493,7 +475,6 @@ void test_ufd_do_not_write_if_global_ufd_is_gone(void **state)
 
     disable_sched_yield_mock();
 
-    /* disable threaded mode and clean up ufd */
-    pscom.threaded = 0;
-    ufd_cleanup(&pscom.ufd);
+    /* clean up ufd and disable threaded mode */
+    test_utils_cleanup_ufd_threaded(ufd);
 }
