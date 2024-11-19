@@ -274,4 +274,6 @@ test/util/test_utils_debug.h \
 test/util/test_utils_env.c \
 test/util/test_utils_env.h \
 test/util/test_utils_sock.c \
-test/util/test_utils_sock.h
+test/util/test_utils_sock.h \
+test/util/test_utils_ufd.c \
+test/util/test_utils_ufd.h
