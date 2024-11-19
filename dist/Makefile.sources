@@ -280,4 +280,6 @@ test/util/test_utils_env.h \
 test/util/test_utils_listen.c \
 test/util/test_utils_listen.h \
 test/util/test_utils_sock.c \
-test/util/test_utils_sock.h
+test/util/test_utils_sock.h \
+test/util/test_utils_ufd.c \
+test/util/test_utils_ufd.h
