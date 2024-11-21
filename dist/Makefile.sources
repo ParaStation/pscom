@@ -53,6 +53,9 @@ bin/pscom_maxcon.c \
 bin/pscom_memusage.c \
 bin/pscom_ondemand.c \
 bin/pscom_pp.c \
+bin/pscom_rma_get.c \
+bin/pscom_rma_sync_notify.c \
+bin/pscom_rma_sync_ctrl.c \
 bin/pscom_request_create.c \
 bin/pscom_rma_get.c \
 bin/pscom_test.c \
@@ -147,6 +150,7 @@ lib/pscom/pscom_queues.h \
 lib/pscom/pscom_req.c \
 lib/pscom/pscom_req.h \
 lib/pscom/pscom_rma.c \
+lib/pscom/pscom_rma.h \
 lib/pscom/pscom_shm.c \
 lib/pscom/pscom_shm.h \
 lib/pscom/pscom_sock.c \
