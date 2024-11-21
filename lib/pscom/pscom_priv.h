@@ -81,6 +81,9 @@ struct PSCOM_req {
 
     struct pscom_rendezvous_data *rndv_data;
 
+    /* used to store result_addr for get_acc, fetch&op and comp&swap */
+    void *rma_result;
+
     void (*write_hook)(pscom_req_t *req, char *buf, size_t len);
 
     unsigned int req_no; // debug counter
@@ -731,6 +734,18 @@ typedef uint8_t pscom_msgtype_t;
 #define PSCOM_MSGTYPE_SUSPEND         9
 #define PSCOM_MSGTYPE_GW_ENVELOPE     10
 
+/* RMA tags via send/recv */
+#define PSCOM_MSGTYPE_RMA_PUT                  11
+#define PSCOM_MSGTYPE_RMA_GET_REP              12
+#define PSCOM_MSGTYPE_RMA_ACCUMULATE           13
+#define PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP   14
+#define PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP     15
+#define PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP 16
+#define PSCOM_MSGTYPE_RMA_GET_REQ              17
+#define PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REQ   18
+#define PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REQ     19
+#define PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REQ 20
+
 #ifdef PSCOM_CUDA_AWARENESS
 #define PSCOM_IF_CUDA(yes, no) yes
 #else
@@ -951,6 +966,14 @@ void pscom_post_send_msgtype(pscom_request_t *request, pscom_msgtype_t msg_type)
 void _pscom_post_send_msgtype(pscom_request_t *request,
                               pscom_msgtype_t msg_type);
 
+
+/* number of RMA communication functions defined in MPI */
+#define MAX_RMA_OP PSCOM_RMA_OP_COUNT
+
+/* define the global callbacks for RMA communications via two-sided semantics */
+typedef void (*rma_target_callback)(pscom_request_t *req);
+typedef void (*rma_origin_callback)(pscom_request_t *req);
+
 #ifndef ENABLE_PLUGIN_LOADING
 #define ENABLE_PLUGIN_LOADING 1
 #endif
@@ -982,10 +1005,10 @@ void _pscom_post_send_msgtype(pscom_request_t *request,
 #define PSCOM_PLUGIN_API_EXPORT_ONLY __attribute__((visibility("default")))
 #define PSCOM_SHM_API_EXPORT         API_EXPORT
 
-#define MAGIC_RKEYBUF              0x52425546
-#define MAGIC_MEMH                 0x4D454D48
-#define MAGIC_RKEY                 0x524B4559
-#define PSCOM_INVALID_RKEYBUF_SIZE (uint16_t) - 1
+#define MAGIC_RKEYBUF                0x52425546
+#define MAGIC_MEMH                   0x4D454D48
+#define MAGIC_RKEY                   0x524B4559
+#define PSCOM_INVALID_RKEYBUF_OFFSET (uint16_t) - 1
 
 /**
  * @brief remote key buffer
@@ -1002,7 +1025,8 @@ void _pscom_post_send_msgtype(pscom_request_t *request,
 typedef struct {
     unsigned long magic;
     size_t remote_len;
-    void *remote_addr; /**< used for internal rkey gen and remote check*/
+    void *remote_addr; /**< used for internal rkey gen and remote check */
+    void *remote_memh; /**< sent to remote */
     uint16_t rkeydata_length;
     uint16_t rkey_data_offset[PSCOM_CON_TYPE_COUNT]; /**< buffer size  returned
                                                           from plugin */
@@ -1038,6 +1062,8 @@ struct PSCOM_memh {
     void *rkey_buffer; /**< pointer to remote key buffer, to be released during
                             de-registration */
     size_t rkey_buffer_length; /**< length of remote key buffer */
+    rma_target_callback target_cbs[MAX_RMA_OP]; /**< callback when payload
+                                                   arrives */
 };
 
 /**
@@ -1050,6 +1076,7 @@ struct PSCOM_rkey {
                             key in plugin layer */
     void *remote_addr; /**< address of the memory region at target */
     size_t remote_len; /**< length of memory region at target */
+    void *remote_memh; /**< pointer of memory region at target */
 };
 
 #endif /* _PSCOM_PRIV_H_ */

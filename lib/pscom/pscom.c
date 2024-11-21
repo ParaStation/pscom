@@ -39,6 +39,7 @@
 #include "pscom_ufd.h"
 #include "pscom_version.h"
 #include "pslib.h"
+#include "pscom_rma.h"
 
 #ifdef PSCOM_CUDA_AWARENESS
 #include "pscom_cuda.h"
@@ -344,6 +345,7 @@ pscom_err_t pscom_init(int pscom_version)
     pscom_env_init();
     pscom_debug_init();
     pscom_precon_provider_init();
+    pscom_rma_init();
 
 #ifdef PSCOM_CUDA_AWARENESS
     if ((init = pscom_cuda_init()) != PSCOM_SUCCESS) { goto out; }

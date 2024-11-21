@@ -31,6 +31,7 @@
 #include "../pscom/pscom_ondemand.c"
 #include "../pscom/pscom_poll.c"
 #include "../pscom/pscom_version.c"
+#include "../pscom/pscom_rma.c"
 
 #ifdef PSCOM_ALLIN_PSM2
 #include "../pscom4psm/pscom_psm.c"
