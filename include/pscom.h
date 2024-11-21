@@ -40,7 +40,7 @@ struct sockaddr_in;
 #define PSCOM_CUDA_AWARENESS_SUPPORT
 #endif
 
-#define PSCOM_ABI_VERSION_MAJOR 3
+#define PSCOM_ABI_VERSION_MAJOR 4
 #define PSCOM_ABI_VERSION_MINOR 0
 
 
@@ -1772,58 +1772,6 @@ pscom_err_t pscom_rkey_buffer_pack(void **rkeybuf, size_t *bufsize,
 void pscom_rkey_buffer_release(void *rkey_buffer);
 
 
-/**
- * @brief Non-blocking RMA put operation.
- *
- * This routine triggers a put operation of a contiguous block of data to the
- * memory of a remote process. The call returns immediately and the source data
- * region specified in the @a request must not be used before the operation is
- * completed, i.e., the io_done callback including the globally registered
- * RMA callback is invoked. The execution of pscom_wait() or other
- * similar functions, e.g., pscom_test_any(), will ensure progress.
- *
- * Mandatory fields in the @a request:
- * - req->data_len (number of bytes to be written)
- * - req->data (source address in the VA of the local process)
- * - req->connection (associated connection)
- * - req->ops.io_done
- *
- * @param [in] request         The request handle for tracking the progress.
- * @param [in] remote_address  The destination address within the VA of the
- *                             remote process.
- * @param [in] rkey            The remote key handle.
- *
- */
-void pscom_post_rma_put(pscom_request_t *request, void *remote_address,
-                        pscom_rkey_t rkey);
-
-
-/**
- * @brief Non-blocking RMA get operation.
- *
- * This routine triggers a get operation of a contiguous block of data from the
- * memory of a remote process. The call returns immediately and the source data
- * region specified in the @a request must not be used before the operation is
- * completed, i.e., the io_done callback including the globally registered
- * RMA callback is invoked. The execution of pscom_wait() or other
- * similar functions, e.g., pscom_test_any(), will ensure progress.
- *
- * Mandatory fields in the @a request:
- * - req->data_len (number of bytes to be gotten)
- * - req->data (target address in the VA of the local process)
- * - req->connection (associated connection)
- * - req->ops.io_done
- *
- * @param [in] request        The request handle for tracking the progress.
- * @param [in] remote_address The source address within the VA of the remote
- *                            process.
- * @param [in] rkey           The remote key handle.
- *
- */
-void pscom_post_rma_get(pscom_request_t *request, void *remote_address,
-                        pscom_rkey_t rkey);
-
-
 const char *pscom_socket_str(int nodeid, int portno);
 const char *pscom_socket_ondemand_str(int nodeid, int portno,
                                       const char name[8]);
@@ -1861,6 +1809,162 @@ void pscom_env_get_dir(char **val, const char *name);
 extern char *(*pscom_env_get)(const char *name);
 extern int (*pscom_env_set)(const char *name, const char *value, int overwrite);
 
+
+/**
+ * @brief Non-blocking RMA put operation.
+ *
+ * This routine triggers a put operation of a contiguous block of data to the
+ * memory of a remote process. The call returns immediately and the source data
+ * region specified in the @a request and @a rma_params must not be used before
+ * the operation is completed, i.e., the io_done callback including the globally
+ * registered RMA callback is invoked. Addtional information, e.g., data type,
+ * synchronization, has to be defined by user in the extended headers.
+ *
+ * Mandatory fields in the @a request @a rma_params:
+ * - request->rma.origin_addr the source address at the local process
+ * - request->rma.target_addr the destination address at the target
+ * - request->ops.io_done     the local callback, optional
+ * - request->rma.rkey        the remote key
+ *
+ * @param [in] request       The request handle for tracking the progress.
+ */
+void pscom_post_rma_put(pscom_request_t *request);
+
+
+/**
+ * @brief Non-blocking RMA get operation.
+ *
+ * This routine triggers a get operation of a contiguous block of data from the
+ * memory of a remote process. The call returns immediately and the source data
+ * region specified in the @a request and @a rma_params must not be used before
+ * the operation is completed, i.e., the io_done callback including the globally
+ * registered RMA callback is invoked. Addtional information, e.g., data type,
+ * synchronization, has to be defined by user in the extended headers.
+ *
+ * Mandatory fields in the @a request @a rma_params:
+ * - request->rma.origin_addr the target address at the local process
+ * - request->rma.target_addr the source address at the target
+ * - request->ops.io_done     the local callback, optional
+ * - request->rma.rkey        the remote key
+ *
+ * @param [in] request     The request handle for tracking the progress.
+ */
+void pscom_post_rma_get(pscom_request_t *request);
+
+
+/**
+ * @brief Non-blocking RMA accumulate operation.
+ *
+ * This routine triggers an accumulate operation of a contiguous block of data
+ * to the memory of a remote process. The call returns immediately and the
+ * source data region specified in the @a request and @a rma_params must not be
+ * used before the operation is completed, i.e., the io_done callback including
+ * the globally registered RMA callback is invoked. Addtional information, e.g.,
+ * operation type, data type, synchronization, has to be defined by user in the
+ * extended headers.
+ *
+ * Mandatory fields in the @a request @a rma_params:
+ * - request->rma.origin_addr the source address at the local process
+ * - request->rma.target_addr the destination address at the target
+ * - request->ops.io_done     the local callback, optional
+ * - request->rma.rkey        the remote key
+ *
+ * @param [in] request       The request handle for tracking the progress.
+ */
+void pscom_post_rma_accumulate(pscom_request_t *request);
+
+
+/**
+ * @brief Non-blocking RMA atomic get accumualte operation.
+ *
+ * This routine triggers a get operation of a contiguous block of data from the
+ * memory of a remote process and an accumulate operation to the target buffer.
+ * The call returns immediately and the source data region specified in the
+ * @a request and @a rma_params must not be used before the operation is
+ * completed, i.e., the io_done callback including the globally registered RMA
+ * callback is invoked. Addtional information, e.g., operation type, data type,
+ * synchronization, has to be defined by user in the extended headers.
+ *
+ * Mandatory fields in the @a request @a rma_params:
+ * - request->rma.origin_addr the source address at the local process
+ * - request->rma.target_addr the destination address at the target
+ * - request->rma.result_addr the result address to receive data from
+ *                            target buffer
+ * - request->ops.io_done     the local callback, optional
+ * - request->rma.rkey        the remote key
+ *
+ * @param [in] request       The request handle for tracking the progress.
+ */
+void pscom_post_rma_get_accumulate(pscom_request_t *request);
+
+
+/**
+ * @brief Non-blocking RMA atomic fetch and op operation.
+ *
+ * This routine is a simplified version of general get accumulate operation.
+ * It triggers a get operation of one element of data from the
+ * memory of a remote process and an accumulate operation to the target buffer.
+ * The call returns immediately and the source data
+ * region specified in the @a request and @a rma_params must not be used before
+ * the operation is completed, i.e., the io_done callback including the globally
+ * registered RMA callback is invoked. Addtional information, e.g., operation
+ * type, data type, synchronization, has to be defined by user in the extended
+ * headers.
+ *
+ * Mandatory fields in the @a request @a rma_params:
+ * - request->rma.origin_addr the source address at the local process
+ * - request->rma.target_addr the destination address at the target
+ * - request->rma.result_addr the result address to receive data from
+ *                            target buffer
+ * - request->ops.io_done     the local callback, optional
+ * - request->rma.rkey        the remote key
+ *
+ * @param [in] request       The request handle for tracking the progress.
+ */
+void pscom_post_rma_fetch_op(pscom_request_t *request);
+
+
+/**
+ * @brief Non-blocking RMA atomic compare and swap operation.
+ *
+ * This routine triggers a get operation of one element of data from the
+ * memory of a remote process and a put operation to the target buffer
+ * which is dependent on the compare result.
+ * The call returns immediately and the source data region specified in the
+ * @a request and @a rma_params must not be used before the operation is
+ * completed, i.e., the io_done callback including the globally registered RMA
+ * callback is invoked. Addtional information, e.g., operation type, data type,
+ * synchronization, has to be defined by user in the extended headers.
+ *
+ * Mandatory fields in the @a request @a rma_params:
+ * - request->rma.origin_addr  the origin address at the local process
+ * - request->rma.compare_addr the compare address to be compared with
+ *                             target buffer
+ * - request->rma.result_addr  the result address to receive data from
+ *                             target buffer
+ * - request->rma.target_addr  the destination address at the target
+ * - request->ops.io_done      the local callback, optional
+ * - request->rma.rkey         the remote key
+ *
+ * @param [in] request       The request handle for tracking the progress.
+ */
+void pscom_post_rma_compare_swap(pscom_request_t *request);
+
+/**
+ * @brief Register RMA callbacks at memory region for the target side.
+ *
+ * Register callbacks for RMA operations at memory region. When RMA request is
+ * complete at the memory region, the registered callback function will be
+ * called.
+ *
+ * @param [in] target_callback The callback at the target side
+ * @param [in] memh            The memory region where the callback is
+ *                             registered
+ * @param [in] rma_op          The RMA operation type for which the callaback is
+ *                             registered
+ */
+void pscom_register_rma_callbacks(void (*target_callback)(pscom_request_t *req),
+                                  pscom_memh_t memh, pscom_rma_op_t rma_op);
 
 #ifdef __cplusplus
 } /* extern "C" */

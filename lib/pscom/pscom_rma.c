@@ -367,31 +367,160 @@ err_exit:
 }
 
 
-/* Prototype functions for RMA put with remote key parameter. */
+static inline void pscom_post_rma_get_req(pscom_req_t *rma_read_req)
+{
+    pscom_con_t *con     = get_con(rma_read_req->pub.connection);
+    pscom_req_t *req_rma = pscom_req_create(rma_read_req->pub.xheader_len, 0);
+    pscom_xheader_rma_get_t *xheader_get = &req_rma->pub.xheader.rma_get;
+
+    rma_read_req->pub.state = PSCOM_REQ_STATE_RMA_READ_REQUEST |
+                              PSCOM_REQ_STATE_POSTED;
+
+    pscom_lock();
+    {
+        _pscom_recvq_rma_enq(con, rma_read_req);
+    }
+    pscom_unlock();
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(rma_read_req)));
+
+    /* to-do  how to avoid memory copy */
+    memcpy(&req_rma->pub.header, &rma_read_req->pub.header,
+           sizeof(pscom_header_net_t) + rma_read_req->pub.xheader_len);
+
+    xheader_get->common.id = (void *)rma_read_req;
+
+    req_rma->pub.xheader_len = rma_read_req->pub.xheader_len;
+    req_rma->pub.ops.io_done = pscom_request_free;
+
+    req_rma->pub.connection = &con->pub;
+    pscom_post_send_direct(req_rma, PSCOM_MSGTYPE_RMA_GET_REQ);
+}
+
+static inline void pscom_post_rma_get_accumulate_req(pscom_req_t *rma_read_req,
+                                                     uint8_t msg_type)
+{
+    pscom_con_t *con     = get_con(rma_read_req->pub.connection);
+    pscom_req_t *req_rma = pscom_req_create(rma_read_req->pub.xheader_len, 0);
+    pscom_xheader_rma_get_accumulate_t *xheader_get_acc =
+        &req_rma->pub.xheader.rma_get_accumulate;
+
+    rma_read_req->pub.state = PSCOM_REQ_STATE_RMA_READ_REQUEST |
+                              PSCOM_REQ_STATE_POSTED;
+
+    pscom_lock();
+    {
+        _pscom_recvq_rma_enq(con, rma_read_req);
+    }
+    pscom_unlock();
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(rma_read_req)));
+
+    /* to-do  how to avoid memory copy */
+    memcpy(&req_rma->pub.header, &rma_read_req->pub.header,
+           sizeof(pscom_header_net_t) + rma_read_req->pub.xheader_len);
+
+    xheader_get_acc->common.id = (void *)rma_read_req;
+
+    rma_read_req->rndv_data = NULL;
+
+    req_rma->pub.xheader_len = rma_read_req->pub.xheader_len;
+    req_rma->pub.ops.io_done = pscom_request_free;
+    req_rma->pub.data        = rma_read_req->pub.data;
+    req_rma->pub.data_len    = rma_read_req->pub.data_len;
+
+    req_rma->pub.connection = &con->pub;
+    pscom_post_send_direct(req_rma, msg_type);
+}
+
+
+static inline void pscom_post_rma_compare_swap_req(pscom_req_t *rma_read_req,
+                                                   void *origin_addr,
+                                                   void *compare_addr,
+                                                   void *result_addr)
+{
+    pscom_con_t *con     = get_con(rma_read_req->pub.connection);
+    pscom_req_t *req_rma = pscom_req_create(rma_read_req->pub.xheader_len, 0);
+    pscom_xheader_rma_compare_swap_t *xheader_get_acc =
+        &req_rma->pub.xheader.rma_compare_swap;
+
+    rma_read_req->pub.state = PSCOM_REQ_STATE_RMA_READ_REQUEST |
+                              PSCOM_REQ_STATE_POSTED;
+
+    pscom_lock();
+    {
+        _pscom_recvq_rma_enq(con, rma_read_req);
+    }
+    pscom_unlock();
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(rma_read_req)));
+
+    /* how to avoid memory copy? */
+    memcpy(&req_rma->pub.header, &rma_read_req->pub.header,
+           sizeof(pscom_header_net_t) + rma_read_req->pub.xheader_len);
+    /* set id of req_rma as the pointer to rma_read_req */
+    xheader_get_acc->common.id = (void *)rma_read_req;
+
+    /* if we use the following solution to avoid deadlock, the id and
+     * rma_result are not used when the request is returned to io_done,
+     * because they are sent to the target */
+    rma_read_req->pub.xheader.rma_get.common.id = compare_addr;
+    rma_read_req->pub.data                      = result_addr;
+    rma_read_req->rma_result                    = origin_addr;
+    // io done is fixed.
+
+    rma_read_req->rndv_data = NULL;
+
+    /* Comments: to avoid deadlock of neighbour communnication all the data
+    including compare buffer and origin buffer will be sent to target before
+    comparison, this will increase overhead. A better way is to get the result
+    from target buffer and compare it with compare buffer at origin, if equal,
+    send origin to target to overwrite target buffer but this will cause
+    deadlock */
+    /* allocate space for the compare and origin buffer and copy them into
+     * buffer, the buffer will be sent by req_rma req to the target */
+    size_t data_len   = rma_read_req->pub.data_len;
+    req_rma->pub.data = malloc(2 * data_len);
+    memcpy(req_rma->pub.data, compare_addr, data_len);
+    memcpy((char *)req_rma->pub.data + data_len, origin_addr, data_len);
+    req_rma->pub.xheader_len = rma_read_req->pub.xheader_len;
+    req_rma->pub.ops.io_done = pscom_rma_request_free_send_buffer;
+    req_rma->pub.data_len    = 2 * data_len;
+    req_rma->pub.connection  = &con->pub;
+    pscom_post_send_direct(req_rma, PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REQ);
+}
+
+
 PSCOM_API_EXPORT
-void pscom_post_rma_put(pscom_request_t *request, void *remote_address,
-                        pscom_rkey_t rkey)
+void pscom_post_rma_put(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
 
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_rkey_t rkey = request->rma.rkey;
+    request->data     = request->rma.origin_addr;
+    assert(rkey);
+    assert(rkey->magic == MAGIC_RKEY);
 
     pscom_con_t *con = get_con(request->connection);
     /* If plugin implements rma put, then use this: */
-    if (con->rma.put) {
-        if (con->rma.put(con, request->data, request->data_len, remote_address,
-                         rkey->plugin_rkey, req)) {
+    if (con->rma.put && rkey->plugin_rkey != NULL) {
+        if (con->rma.put(con, request->data, request->data_len,
+                         request->rma.target_addr, rkey->plugin_rkey, req)) {
             request->state |= PSCOM_REQ_STATE_ERROR;
         }
         return;
     }
     /* ...otherwise fall-back to two-sided protocol. */
+    request->xheader.rma_put.common.dest = request->rma.target_addr;
+    request->xheader.rma_put.common.memh = rkey->remote_memh;
 
-    request->xheader.rma_write.dest = remote_address;
-
-    if (rkey) {
+    if (rkey->remote_addr != NULL && rkey->remote_len != 0) {
         char *req_addr_start  = (char *)request->xheader.rma_write.dest;
         char *req_addr_end    = req_addr_start + request->data_len;
         char *rkey_addr_start = (char *)rkey->remote_addr;
@@ -406,38 +535,42 @@ void pscom_post_rma_put(pscom_request_t *request, void *remote_address,
         }
     }
 
-    req->pub.xheader_len = sizeof(req->pub.xheader.rma_write);
-    pscom_post_send_direct(req, PSCOM_MSGTYPE_RMA_WRITE);
+    if (req->pub.ops.io_done == NULL) {
+        req->pub.ops.io_done = pscom_request_free;
+    }
+    pscom_post_send_direct(req, PSCOM_MSGTYPE_RMA_PUT);
     return;
 }
 
-/* Prototype functions for RMA get with remote key parameter. See pscom_rma_get
- * test in /bin folder for a usage example. */
+
 PSCOM_API_EXPORT
-void pscom_post_rma_get(pscom_request_t *request, void *remote_address,
-                        pscom_rkey_t rkey)
+void pscom_post_rma_get(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
 
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_rkey_t rkey = request->rma.rkey;
+    request->data     = request->rma.origin_addr;
+    assert(rkey);
+    assert(rkey->magic == MAGIC_RKEY);
 
     pscom_con_t *con = get_con(request->connection);
     /* If plugin implements rma get, then use this: */
-    if (con->rma.get) {
-        if (con->rma.get(con, request->data, request->data_len, remote_address,
-                         rkey->plugin_rkey, req)) {
+    if (con->rma.get && rkey->plugin_rkey != NULL) {
+        if (con->rma.get(con, request->data, request->data_len,
+                         request->rma.target_addr, rkey->plugin_rkey, req)) {
             request->state |= PSCOM_REQ_STATE_ERROR;
         }
         return;
     }
     /* ...otherwise fall-back to two-sided protocol. */
+    request->xheader.rma_get.common.src     = request->rma.target_addr;
+    request->xheader.rma_get.common.src_len = request->data_len;
+    request->xheader.rma_get.common.memh    = rkey->remote_memh;
 
-    request->xheader.rma_read.src     = remote_address;
-    request->xheader.rma_read.src_len = request->data_len;
-
-    if (rkey) {
+    if (rkey->remote_addr != NULL && rkey->remote_len != 0) {
         char *req_addr_start = (char *)request->xheader.rma_read.src;
         char *req_addr_end = req_addr_start + request->xheader.rma_read.src_len;
         char *rkey_addr_start = (char *)rkey->remote_addr;
@@ -452,11 +585,127 @@ void pscom_post_rma_get(pscom_request_t *request, void *remote_address,
         }
     }
 
-    pscom_lock();
-    {
-        _pscom_post_rma_read(req);
+    request->header.msg_type = PSCOM_MSGTYPE_RMA_GET_REP;
+    if (req->pub.ops.io_done == NULL) {
+        req->pub.ops.io_done = pscom_request_free;
     }
-    pscom_unlock();
 
+    pscom_post_rma_get_req(req);
     return;
+}
+
+
+PSCOM_API_EXPORT
+void pscom_post_rma_accumulate(pscom_request_t *request)
+{
+    pscom_req_t *req = get_req(request);
+
+    assert(req->magic == MAGIC_REQUEST);
+    assert(request->state & PSCOM_REQ_STATE_DONE);
+    assert(request->connection != NULL);
+    pscom_rkey_t rkey = request->rma.rkey;
+    assert(rkey);
+    assert(rkey->magic == MAGIC_RKEY);
+
+    request->data                               = request->rma.origin_addr;
+    request->xheader.rma_accumulate.common.dest = request->rma.target_addr;
+    request->xheader.rma_accumulate.common.memh = rkey->remote_memh;
+
+    if (req->pub.ops.io_done == NULL) {
+        req->pub.ops.io_done = pscom_request_free;
+    }
+    pscom_post_send_direct(req, PSCOM_MSGTYPE_RMA_ACCUMULATE);
+    return;
+}
+
+
+PSCOM_API_EXPORT
+void pscom_post_rma_get_accumulate(pscom_request_t *request)
+{
+    pscom_req_t *req = get_req(request);
+
+    assert(req->magic == MAGIC_REQUEST);
+    assert(request->state & PSCOM_REQ_STATE_DONE);
+    assert(request->connection != NULL);
+    pscom_rkey_t rkey = request->rma.rkey;
+    assert(rkey);
+    assert(rkey->magic == MAGIC_RKEY);
+
+    request->data                                  = request->rma.origin_addr;
+    request->xheader.rma_get_accumulate.common.src = request->rma.target_addr;
+    request->xheader.rma_get_accumulate.common.src_len = request->data_len;
+
+    req->rma_result                                 = request->rma.result_addr;
+    request->xheader.rma_get_accumulate.common.memh = rkey->remote_memh;
+
+    request->header.msg_type = PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP;
+    if (req->pub.ops.io_done == NULL) {
+        req->pub.ops.io_done = pscom_request_free;
+    }
+
+    pscom_post_rma_get_accumulate_req(req, PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REQ);
+}
+
+PSCOM_API_EXPORT
+void pscom_post_rma_fetch_op(pscom_request_t *request)
+{
+    pscom_req_t *req = get_req(request);
+
+    assert(req->magic == MAGIC_REQUEST);
+    assert(request->state & PSCOM_REQ_STATE_DONE);
+    assert(request->connection != NULL);
+    pscom_rkey_t rkey = request->rma.rkey;
+    assert(rkey);
+    assert(rkey->magic == MAGIC_RKEY);
+
+    request->data                                = request->rma.origin_addr;
+    request->xheader.rma_fetch_op.common.src     = request->rma.target_addr;
+    request->xheader.rma_fetch_op.common.src_len = request->data_len;
+    req->rma_result                              = request->rma.result_addr;
+    request->xheader.rma_fetch_op.common.memh    = rkey->remote_memh;
+
+    request->header.msg_type = PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP;
+    if (req->pub.ops.io_done == NULL) {
+        req->pub.ops.io_done = pscom_request_free;
+    }
+
+    pscom_post_rma_get_accumulate_req(req, PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REQ);
+}
+
+
+PSCOM_API_EXPORT
+void pscom_post_rma_compare_swap(pscom_request_t *request)
+{
+    pscom_req_t *req = get_req(request);
+
+    assert(req->magic == MAGIC_REQUEST);
+    assert(request->state & PSCOM_REQ_STATE_DONE);
+    assert(request->connection != NULL);
+    pscom_rkey_t rkey = request->rma.rkey;
+    assert(rkey);
+    assert(rkey->magic == MAGIC_RKEY);
+
+    request->data                                    = request->rma.origin_addr;
+    request->xheader.rma_compare_swap.common.src     = request->rma.target_addr;
+    request->xheader.rma_compare_swap.common.src_len = request->data_len;
+    request->xheader.rma_compare_swap.common.memh    = rkey->remote_memh;
+
+    request->header.msg_type = PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP;
+    if (req->pub.ops.io_done == NULL) {
+        req->pub.ops.io_done = pscom_request_free;
+    }
+
+    pscom_post_rma_compare_swap_req(req, request->rma.origin_addr,
+                                    request->rma.compare_addr,
+                                    request->rma.result_addr);
+}
+
+
+PSCOM_API_EXPORT
+void pscom_register_rma_callbacks(void (*target_callback)(pscom_request_t *req),
+                                  pscom_memh_t memh, pscom_rma_op_t rma_op)
+{
+    if (memh == NULL) { return; }
+    uint8_t handler           = (uint8_t)rma_op;
+    memh->target_cbs[handler] = target_callback;
 }
