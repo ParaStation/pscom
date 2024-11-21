@@ -168,6 +168,22 @@ typedef enum PSCOM_op {
     PSCOM_OP_RW      = 4, /**< Read or write */
 } pscom_op_t;
 
+#define PSCOM_HAS_TWO_SIDED_RMA
+
+/**
+ * @brief RMA operations in pscom.
+ *
+ */
+typedef enum PSCOM_rma_op {
+    PSCOM_RMA_PUT              = 0,
+    PSCOM_RMA_GET              = 1,
+    PSCOM_RMA_ACCUMULATE       = 2,
+    PSCOM_RMA_GET_ACCUMULATE   = 3,
+    PSCOM_RMA_FETCH_AND_OP     = 4,
+    PSCOM_RMA_COMPARE_AND_SWAP = 5,
+    PSCOM_RMA_OP_COUNT
+} pscom_rma_op_t;
+
 /**< The request refers to a send operation */
 #define PSCOM_REQ_STATE_SEND_REQUEST 0x00000001
 /**< The request refers to a receive operation */
@@ -232,7 +248,136 @@ typedef struct PSCOM_rkey *pscom_rkey_t;
 
 
 /**
- * @brief Extended header used for RMA write operations.
+ * @brief Extended core header used for RMA write operations, e.g., put and
+ * accumulate.
+ */
+typedef struct PSCOM_rma_put_data {
+    void *dest; /**< Destination address on the target node */
+    void *memh; /**< Pointer of destination memory region */
+} pscom_rma_put_data_t;
+
+
+/**
+ * @brief Extended header used for RMA put operations.
+ * user is the user-defined data structure sent to the target
+ * side.
+ */
+typedef struct PSCOM_xheader_rma_put {
+    pscom_rma_put_data_t common;
+    /* defined in psmpi, used for RMA communications via pscom RMA APIs */
+#ifdef PSCOM_XHEADER_RMA_PUT_USER_TYPE
+    PSCOM_XHEADER_RMA_PUT_USER_TYPE user;
+#else
+    char user[0];
+#endif
+} pscom_xheader_rma_put_t;
+
+
+/**
+ * @brief Extended header used for RMA accumulate operations.
+ * user is the user-defined data structure sent to the target
+ * side.
+ */
+typedef struct PSCOM_xheader_rma_accumulate {
+    pscom_rma_put_data_t common;
+    /* defined in psmpi, used for RMA communications via pscom RMA APIs */
+#ifdef PSCOM_XHEADER_RMA_ACCUMULATE_USER_TYPE
+    PSCOM_XHEADER_RMA_ACCUMULATE_USER_TYPE user;
+#else
+    char user[0];
+#endif
+} pscom_xheader_rma_accumulate_t;
+
+
+/**
+ * @brief Extended core header used for RMA get operations, e.g., get, get
+ * accumulate, fop, and cas
+ */
+typedef struct PSCOM_rma_get_data {
+    void *id;         /**< Unique ID to match read requests at the
+                           requester */
+    void *src;        /**< Source address on the target node */
+    uint64_t src_len; /**< The number of bytes to read from src */
+    void *memh;       /**< Pointer of destination memory region */
+} pscom_rma_get_data_t;
+
+
+/**
+ * @brief Extended core header used for RMA get operations.
+ * user is the user-defined data structure sent to
+ * the target side.
+ */
+typedef struct PSCOM_xheader_rma_get {
+    pscom_rma_get_data_t common;
+    /* defined in psmpi, used for RMA communications via pscom RMA APIs */
+#ifdef PSCOM_XHEADER_RMA_GET_USER_TYPE
+    PSCOM_XHEADER_RMA_GET_USER_TYPE user;
+#else
+    char user[0];
+#endif
+} pscom_xheader_rma_get_t;
+
+
+/**
+ * @brief Extended core header used for RMA get accumulate operations.
+ * user is the user-defined data structure sent to
+ * the target side.
+ */
+typedef struct PSCOM_xheader_rma_get_accumulate {
+    pscom_rma_get_data_t common;
+    /* defined in psmpi, used for RMA communications via pscom RMA APIs */
+#ifdef PSCOM_XHEADER_RMA_GET_ACCUMULATE_USER_TYPE
+    PSCOM_XHEADER_RMA_GET_ACCUMULATE_USER_TYPE user;
+#else
+    char user[0];
+#endif
+} pscom_xheader_rma_get_accumulate_t;
+
+
+/**
+ * @brief Extended core header used for RMA get operations.
+ * user is the user-defined data structure sent to
+ * the target side.
+ */
+typedef struct PSCOM_xheader_rma_fetch_op {
+    pscom_rma_get_data_t common;
+    /* defined in psmpi, used for RMA communications via pscom RMA APIs */
+#ifdef PSCOM_XHEADER_RMA_FETCH_OP_USER_TYPE
+    PSCOM_XHEADER_RMA_FETCH_OP_USER_TYPE user;
+#else
+    char user[0];
+#endif
+} pscom_xheader_rma_fetch_op_t;
+
+
+/**
+ * @brief Extended core header used for RMA get operations.
+ * user is the user-defined data structure sent to
+ * the target side.
+ */
+typedef struct PSCOM_xheader_rma_compare_swap {
+    pscom_rma_get_data_t common;
+    /* defined in psmpi, used for RMA communications via pscom RMA APIs */
+#ifdef PSCOM_XHEADER_RMA_COMPARE_SWAP_USER_TYPE
+    PSCOM_XHEADER_RMA_COMPARE_SWAP_USER_TYPE user;
+#else
+    char user[0];
+#endif
+} pscom_xheader_rma_compare_swap_t;
+
+
+/**
+ * @brief Extended header used for RMA get/get_accumulate/fetch&op/compare&swap.
+ */
+typedef struct PSCOM_xheader_rma_get_answer {
+    void *id;  /* general use */
+    void *req; /* used for compare&swap operation*/
+} pscom_xheader_rma_get_answer_t;
+
+
+/**
+ * @brief Extended header used for RMA write operations based on rendezvous
+ * protocol.
  */
 typedef struct PSCOM_xheader_rma_write {
     void *dest; /**< Destination address on the target node */
@@ -240,7 +385,8 @@ typedef struct PSCOM_xheader_rma_write {
 
 
 /**
- * @brief Extended header used for RMA read operations.
+ * @brief Extended header used for RMA read operations based on rendezvous
+ * protocol.
  */
 typedef struct PSCOM_xheader_rma_read {
     void *id;         /**< Unique ID to match read requests at the
@@ -285,11 +431,33 @@ typedef struct PSCOM_xheader_bcast {
  * types.
  */
 typedef union PSCOM_xheader {
-    pscom_xheader_rma_read_t rma_read;
-    pscom_xheader_rma_read_answer_t rma_read_answer;
-    pscom_xheader_rma_write_t rma_write;
-    pscom_xheader_rendezvous_fin_t ren_fin;
+    /* RNDV xheaders */
+    pscom_xheader_rma_read_t rma_read; /* rendezvous xheader based on RMA read
+                                        */
+    pscom_xheader_rma_read_answer_t rma_read_answer; /* rendezvous xheader for
+                                                        RMA read reply */
+    pscom_xheader_rma_write_t rma_write;    /* rendezvous xheader based on RMA
+                                               write */
+    pscom_xheader_rendezvous_fin_t ren_fin; /* rendezvous xheader for finish tag
+                                             */
+    /* RMA xheaders */
+    /* xheader for RMA get operation */
+    pscom_xheader_rma_get_t rma_get;
+    /* xheader for replying RMA get/get_acc/fop/cas operation */
+    pscom_xheader_rma_get_answer_t rma_get_answer;
+    /* xheader for RMA put operation */
+    pscom_xheader_rma_put_t rma_put;
+    /* xheader for RMA acc operation */
+    pscom_xheader_rma_accumulate_t rma_accumulate;
+    /* xheader for RMA get acc operation */
+    pscom_xheader_rma_get_accumulate_t rma_get_accumulate;
+    /* xheader for RMA fop operation */
+    pscom_xheader_rma_fetch_op_t rma_fetch_op;
+    /* xheader for RMA cas operation */
+    pscom_xheader_rma_compare_swap_t rma_compare_swap;
+
     pscom_xheader_bcast_t bcast;
+    /* defined in psmpi, e.g., used for RMA synchronization */
 #ifdef PSCOM_XHEADER_USER_TYPE
     PSCOM_XHEADER_USER_TYPE user;
 #else
@@ -331,6 +499,14 @@ struct PSCOM_request {
                                          (relevant for receive requests
                                          only, and may be NULL for the "any
                                          source on any socket" case) */
+
+    struct PSCOM_request_rma {
+        void *origin_addr;  /**< RMA source address */
+        void *target_addr;  /**< RMA destination address */
+        void *compare_addr; /**< RMA address for compare and swap */
+        void *result_addr;  /**< RMA result address for get/get acc */
+        pscom_rkey_t rkey;  /**< remote key */
+    } rma;
 
     struct PSCOM_request_ops {
         /**
@@ -933,7 +1109,7 @@ static inline pscom_err_t pscom_recv_any(pscom_socket_t *socket, void *xheader,
 */
 
 /**
- * @brief Non-blocking RMA write operation.
+ * @brief Non-blocking RMA write operation for RNDV protocol.
  *
  * This routine triggers a write operation of a contiguous block of data to the
  * memory of a remote process. The call returns immediately and the source data
@@ -956,7 +1132,7 @@ void pscom_post_rma_write(pscom_request_t *request);
 
 
 /**
- * @brief Non-blocking RMA read operation.
+ * @brief Non-blocking RMA read operation for RNDV protocol.
  *
  * This routine triggers a write operation of a contiguous block of data to the
  * memory of a remote process. The call returns immediately and the source data
