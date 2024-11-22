@@ -1,3 +1,27 @@
+2024-12-03  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Fix: Remove bin/test_nodes program due to incompatibility to
+	  psmgmt >= 6.0.0. This also removes pscom's optional dependency
+	  on psmgmt.
+
+	* Fix: Add iwyu exception to use signal.h for symbol SIGIO for
+	  compatibility with iwyu version 0.22.
+
+2024-11-22  Carsten Clauss  <clauss@par-tec.com>
+
+	* Fix: Tag ufd elements to fix multi-threading.
+
+	* Fix: Reset threaded mode in unit tests to prevent a deadlock.
+
+	* Fix: Fix valgrind warnings in I/O unit tests.
+
+2024-08-27  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Improvement: Add CMake option to run include-what-you-use (IWYU)
+	  and apply it to the code base.
+
+	* Fix: Correct typo in library name of libpsm2 in CMake.
+
 2024-08-02  Simon Pickartz  <pickartz@par-tec.com>	-	5.8.0-1
 
 2024-07-30  Simon Pickartz  <pickartz@par-tec.com>	-	5.8.0-0rc1
