@@ -143,8 +143,10 @@ ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags)
  */
 int __wrap_poll(struct pollfd *fds, nfds_t nfds, int timeout)
 {
-    fds->revents = mock_type(short);
-    return mock_type(int);
+    short revents = mock_type(short);
+    int retval    = mock_type(int);
+    for (int i = 0; i < retval; i++) { fds[i].revents = revents; }
+    return retval;
 }
 
 

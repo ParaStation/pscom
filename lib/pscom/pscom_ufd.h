@@ -15,6 +15,7 @@
 #define _PSCOM_UFD_H_
 
 #include <poll.h>
+#include <stdint.h>
 #include "list.h"
 
 struct ufd_s;
@@ -55,6 +56,9 @@ struct ufd_s {
     ufd_info_t *ufd_pollfd_info[PSCOM_MAX_UFDS]; /**< point back from idx
                                                     ufd_pollfd[idx] to ufd_info
                                                   */
+    uint64_t *ufd_tag;                           /**< Array of unique tags
+                                                    (only allocated when threaded)
+                                                  */
 
     unsigned int n_ufd_pollfd; /**< current number of pollfds */
 };
@@ -68,6 +72,16 @@ struct ufd_s {
  * @param [in] ufd     ufd pointer
  */
 void ufd_init(ufd_t *ufd);
+
+
+/**
+ * @brief Free ufd
+ *
+ * This function releases the dynamically allocated memory
+ *
+ * @param [in] ufd     ufd pointer
+ */
+void ufd_cleanup(ufd_t *ufd);
 
 
 /**

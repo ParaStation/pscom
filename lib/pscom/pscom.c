@@ -255,6 +255,7 @@ static void pscom_cleanup(void)
     }
     perf_print();
 
+    ufd_cleanup(&pscom.ufd);
     pscom_env_cleanup();
 
     DPRINT(D_BYE_MSG, "Byee.");
