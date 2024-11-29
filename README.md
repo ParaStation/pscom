@@ -100,6 +100,11 @@ To enable the unit tests, pass `-DUTEST_ENABLED=1` to CMake. Unit tests require 
 ### Code coverage analysis
 Code coverage analysis is only available if unit tests are enabled. The feature is disabled by default. To enable code coverage analysis, pass `-DCOVERAGE_ENABLED=1` to CMake.
 
+### Performance analysis
+With the help of the performance analysis infrastructure of pscom (`perf` code module) it is possible to calculate and print the CPU cycles and time spent on specific parts of the code. To enable this feature, pass `-DPERF_ENABLED=1` to CMake.
+
+To use this feature, add instructions `perf_add("my_identifier");` to the code. For each `perf_add` instruction, pscom prints the CPU cycles/ time difference to the previous `perf_add` statement along with the provided identifier. To reset the time measurements, i.e., start again from 0.0, add a `perf_add` line with an identifier that has the prefix `"reset_"`. All measurement results are printed per process in the `atexit` handler of pscom.
+
 ## Build & install
 It is highly recommended to run CMake from a separate folder.
 In the top level `pscom` directory, execute
