@@ -61,7 +61,6 @@ bin/psm/CMakeLists.txt \
 bin/psm/pscom4psm_pp.c \
 bin/psm/psm2_pp.c \
 bin/psm/psm_pp.c \
-bin/test_nodes.c \
 bin/ucp/CMakeLists.txt \
 bin/ucp/ucp_pp.c \
 cmake/Modules/AddCudaTarget.cmake \
@@ -69,7 +68,6 @@ cmake/Modules/CheckVisibilityProtected.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindPackageWithHints.cmake \
 cmake/Modules/FindProgramWithHints.cmake \
-cmake/Modules/FindPsmgmt.cmake \
 cmake/Modules/Legacy.cmake \
 cmake/Modules/OptionConditional.cmake \
 dist/.gitignore \
