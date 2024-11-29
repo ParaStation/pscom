@@ -147,6 +147,14 @@ if(IWYU_ENABLED)
             FORCE)
 endif(IWYU_ENABLED)
 
+#
+# Enable perf infrastructure?
+#
+option(
+  PERF_ENABLED
+  "enable perf (performance analysis) infrastructure. (Default is disabled.)"
+  OFF)
+
 add_subdirectory(include)
 add_subdirectory(lib)
 add_subdirectory(bin)
@@ -205,6 +213,7 @@ message(STATUS "POPT_ENABLED:         ${POPT_ENABLED}")
 message(STATUS "")
 message(STATUS "UTEST_ENABLED:        ${UTEST_ENABLED}")
 message(STATUS "COVERAGE_ENABLED:     ${COVERAGE_ENABLED}")
+message(STATUS "PERF_ENABLED:         ${PERF_ENABLED}")
 message(STATUS "IWYU_ENABLED:         ${IWYU_ENABLED}")
 message(STATUS "")
 message(STATUS "CMAKE_BUILD_TYPE:     ${CMAKE_BUILD_TYPE}")

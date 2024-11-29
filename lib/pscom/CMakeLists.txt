@@ -39,6 +39,10 @@ add_library(
   pslib.c
   psshmalloc.c)
 
+if(PERF_ENABLED)
+  target_compile_definitions(pscom PRIVATE -DPERF_ENABLED)
+endif(PERF_ENABLED)
+
 add_dependencies(pscom vc_version)
 
 target_include_directories(

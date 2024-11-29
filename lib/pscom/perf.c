@@ -17,7 +17,7 @@
 #include "perf.h"
 #include "pscom_util.h"
 
-#ifdef ENABLE_PERF
+#ifdef PERF_ENABLED
 #include "ps_perf.h"
 
 #include <sys/time.h>
@@ -108,4 +108,4 @@ void perf_add(char *id)
     if (logpos == &perf_log[LOG_SIZE]) { perf_print(); }
 }
 
-#endif /* ENABLE_PERF */
+#endif /* PERF_ENABLED */
