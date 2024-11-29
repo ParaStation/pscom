@@ -113,9 +113,6 @@ if(CUDA_ENABLED)
   add_compile_definitions(PSCOM_CUDA_AWARENESS=1)
 endif(CUDA_ENABLED)
 
-find_package(Psmgmt)
-option_conditional(PSMGMT_ENABLED "Enable psmgmt" TRUE "PSMGMT_FOUND" FALSE)
-
 find_package_with_hints(Cmocka "/usr" "cmocka.h" "cmocka"
                         "Default location where to search cmocka library.")
 option_conditional(
@@ -200,7 +197,6 @@ message(STATUS "")
 message(STATUS "CUDA_ENABLED:         ${CUDA_ENABLED}")
 message(STATUS "PSSHMALLOC_ENABLED:   ${PSSHMALLOC_ENABLED}")
 message(STATUS "")
-message(STATUS "PSMGMT_ENABLED:       ${PSMGMT_ENABLED}")
 message(STATUS "POPT_ENABLED:         ${POPT_ENABLED}")
 message(STATUS "")
 message(STATUS "UTEST_ENABLED:        ${UTEST_ENABLED}")
