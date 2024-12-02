@@ -12,6 +12,7 @@
   { symbol: ["va_start", "private", "<stdarg.h>", "public"] },
   { symbol: ["va_end", "private", "<stdarg.h>", "public"] },
   { symbol: ["ssize_t", "private", "<sys/types.h>", "public"] },
+  { symbol: ["SIGIO", "private", "<signal.h>", "public"] },
   { include: ["@<ucs/.*", "private", "<ucp/api/ucp.h>", "public"] },
   { include: ["@\"ucs/.*", "private", "<ucp/api/ucp.h>", "public"] },
   { include: ["@<rma2_.*", "private", "<rma2.h>", "public"] },
