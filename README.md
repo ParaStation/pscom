@@ -43,7 +43,6 @@ For installations of ParaStation MPI, the default install directory is typically
 
 #### Other
 - `popt` library, a command line option parsing library used by some of the tools in the `bin` folder
-- Parastation Management (`psmgmt`) library
 - cmocka Library for unit tests
 - Python packages `cmake-format`, `cmakelint` and `PyYaml` for CMake style checking. Install them via Python's package management system, e.g `pip3 install cmake-format cmakelint PyYaml`.
 - `clang-format` for applying the coding style (cf. [Contributing](#contributing))

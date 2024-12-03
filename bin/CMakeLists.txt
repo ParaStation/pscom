@@ -64,15 +64,6 @@ if(POPT_ENABLED)
   target_include_directories(pscom_test_fault PRIVATE ${POPT_INCLUDE_DIRS})
   target_link_libraries(pscom_test_fault PRIVATE pscom ${POPT_LIBRARIES})
   #install(TARGETS	pscom_test_fault DESTINATION "${CMAKE_INSTALL_BINDIR}")
-
-  add_executable(test_nodes test_nodes.c)
-  target_include_directories(test_nodes PRIVATE ${POPT_INCLUDE_DIRS})
-  target_link_libraries(test_nodes PRIVATE pscom ${POPT_LIBRARIES})
-  install(TARGETS test_nodes DESTINATION "${CMAKE_INSTALL_BINDIR}")
-
-  if(PSMGMT_ENABLED)
-    target_add_psmgmt(test_nodes)
-  endif(PSMGMT_ENABLED)
 endif(POPT_ENABLED)
 
 # Build flavours of pscom_memusage depending on selected plugins
