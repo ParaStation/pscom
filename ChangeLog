@@ -1,3 +1,5 @@
+2024-12-05  Simon Pickartz  <pickartz@par-tec.com>	-	5.8.1-0rc1
+
 2024-12-03  Sonja Happ  <sonja.happ@par-tec.com>
 
 	* Fix: Remove bin/test_nodes program due to incompatibility to
