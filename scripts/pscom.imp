@@ -1,0 +1,19 @@
+#
+# ParaStation
+#
+# Copyright (C) 2024      ParTec AG, Munich
+#
+# This file may be distributed under the terms of the Q Public License
+# as defined in the file LICENSE.QPL included in the packaging of this
+# file.
+#
+
+[
+  { symbol: ["va_start", "private", "<stdarg.h>", "public"] },
+  { symbol: ["va_end", "private", "<stdarg.h>", "public"] },
+  { symbol: ["ssize_t", "private", "<sys/types.h>", "public"] },
+  { symbol: ["SIGIO", "private", "<signal.h>", "public"] },
+  { include: ["@<ucs/.*", "private", "<ucp/api/ucp.h>", "public"] },
+  { include: ["@\"ucs/.*", "private", "<ucp/api/ucp.h>", "public"] },
+  { include: ["@<rma2_.*", "private", "<rma2.h>", "public"] },
+]

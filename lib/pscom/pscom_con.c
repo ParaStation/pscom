@@ -10,21 +10,25 @@
  */
 
 #include "pscom_con.h"
-#include "pscom_str_util.h"
+
+#include <errno.h>
+#include <netinet/in.h>
+#include <poll.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/types.h> /* IWYU pragma: keep */
+#include <sys/uio.h>
+#include <unistd.h>
+
+#include "pscom_async.h"
+#include "pscom_debug.h"
 #include "pscom_io.h"
+#include "pscom_poll.h"
+#include "pscom_precon.h"
 #include "pscom_queues.h"
 #include "pscom_req.h"
-#include "pscom_precon.h"
-#include "pscom_plugin.h"
-#include "pscom_async.h"
-#include "pscom_cuda.h"
 #include "pslib.h"
-#include <unistd.h>
-#include <fcntl.h>
-#include <stdlib.h>
-#include <netinet/tcp.h>
-#include <errno.h>
-
 
 static void _pscom_con_destroy(pscom_con_t *con);
 

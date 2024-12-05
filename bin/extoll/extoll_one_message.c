@@ -14,28 +14,27 @@
  *
  */
 #define _GNU_SOURCE
+#include <arpa/inet.h>
+#include <assert.h>
+#include <errno.h>
+#include <error.h>
+#include <fcntl.h>
+#include <netdb.h>
+#include <netinet/in.h>
+#include <popt.h>
+#include <signal.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <signal.h>
-#include <math.h>
-#include <fcntl.h>
-#include <assert.h>
-#include <popt.h>
-#include <ctype.h>
-#include <sys/types.h>
 #include <sys/socket.h>
-#include <netdb.h>
-#include <netinet/in.h>
-#include <error.h>
-#include <errno.h>
+#include <unistd.h>
 
 // Compat stuff for missing Extoll includes:
 // typedef struct RMA2_Connection_s RMA2_Connection;
 // typedef struct RMA2_Endpoint_s RMA2_Endpoint;
 // typedef struct RMA2_Region_s RMA2_Region;
 
-#include "rma2.h" /* Extoll librma2 interface */
+#include <rma2.h> /* Extoll librma2 interface */
 
 #define VERSION "EXTOLL_ONE1.0"
 
@@ -115,7 +114,7 @@ static void parse_opt(int argc, char **argv)
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#include <sys/time.h>
+#include <sys/time.h> /* IWYU pragma: keep */
 
 static inline unsigned long getusec(void)
 {

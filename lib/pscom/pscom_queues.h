@@ -12,7 +12,10 @@
 #ifndef _PSCOM_QUEUES_H_
 #define _PSCOM_QUEUES_H_
 
+#include "list.h"
+#include "pscom.h"
 #include "pscom_priv.h"
+
 
 /*************
  * Sendq

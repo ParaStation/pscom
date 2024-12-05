@@ -55,18 +55,29 @@
  * Therefore, there can be an ufd_info object without and assigned ufd_pollfd
  * entry at a given moment, which is then indicated by an index of -1 in
  * ufd_info.
+ *
+ * In the threaded case, each thread makes a local copy of the global ufd
+ * object and its arrays, and then calls the poll() function with this copy.
+ * The local results are then processed concurrently in a lock-protected loop
+ * in which the lock can, however, be temporarily released again.
+ * To prevent threads from working on outdated ufd elements, unique tags in the
+ * form of serial numbers are assigned to them. Only if the tag of the global
+ * ufd array entry and that of the previously copied local entry are still the
+ * same, the array element and its associated poll events are processed.
  */
 
-
 #include "pscom_ufd.h"
+
+#include <assert.h>
+#include <sched.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+
+#include "list.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
 
 void pscom_dump_info(FILE *out);
 
@@ -76,8 +87,28 @@ void ufd_init(ufd_t *ufd)
     memset(ufd, 0, sizeof(*ufd));
     INIT_LIST_HEAD(&ufd->ufd_info);
     ufd->n_ufd_pollfd = 0;
+
+    if (pscom.threaded) {
+        /* In the threaded case, we also need the array for ufd tags to
+         * coordinate the threaded work */
+        ufd->ufd_tag = malloc(sizeof(*ufd->ufd_tag) * sizeof(ufd->ufd_pollfd) /
+                              sizeof(ufd->ufd_pollfd[0]));
+    }
 }
 
+void ufd_cleanup(ufd_t *ufd)
+{
+    if (ufd->ufd_tag) {
+        free(ufd->ufd_tag);
+        ufd->ufd_tag = NULL;
+    }
+
+    while (!list_empty(&ufd->ufd_info)) {
+        ufd_info_t *ufd_info = list_entry(ufd->ufd_info.next, ufd_info_t, next);
+        ufd_del(ufd, ufd_info);
+    }
+    assert(ufd->n_ufd_pollfd == 0);
+}
 
 /**
  * @brief Local copy for multi-threaded
@@ -94,6 +125,8 @@ static void ufd_copy(ufd_t *dest, ufd_t *src)
            src->n_ufd_pollfd * sizeof(dest->ufd_pollfd[0]));
     memcpy(dest->ufd_pollfd_info, src->ufd_pollfd_info,
            src->n_ufd_pollfd * sizeof(dest->ufd_pollfd_info[0]));
+    memcpy(dest->ufd_tag, src->ufd_tag,
+           src->n_ufd_pollfd * sizeof(dest->ufd_tag[0]));
     dest->n_ufd_pollfd = src->n_ufd_pollfd;
 };
 
@@ -128,6 +161,33 @@ void ufd_del(ufd_t *ufd, ufd_info_t *ufd_info)
 
 
 /**
+ * @brief Generate a new unique tag for an ufd array entry
+ *
+ * This function tags the ufd array entry at the given
+ * index with a unique sequence number.
+ *
+ * @param [in] ufd       ufd pointer
+ * @param [in] idx       array index
+ *
+ * @@return newly assigned sequence number
+ */
+static inline uint64_t pscom_ufd_update_tag(ufd_t *ufd, int idx)
+{
+    static uint64_t seq_nbr = 0;
+
+    /* If no ufd_tag array has been allocated (non-threaded case),
+       then also no tags will be assigned here. Therefore, in the
+       non-threaded case, this function is basically a no-op.
+    */
+    if (ufd->ufd_tag) {
+        seq_nbr++;
+        ufd->ufd_tag[idx] = seq_nbr;
+    }
+
+    return seq_nbr;
+}
+
+/**
  * @brief Allocate a free entry in the ufd_pollfd array
  *
  * This function increases the number of currently monitored pollfds.
@@ -151,6 +211,9 @@ static struct pollfd *_ufd_get_pollfd_idx(ufd_t *ufd, ufd_info_t *ufd_info)
 
     ufd->ufd_pollfd_info[idx] = ufd_info; // reverse pointer
     ufd_info->pollfd_idx      = idx;      // forward pointer
+
+    /* Generate a unique tag for this ufd entry */
+    pscom_ufd_update_tag(ufd, idx);
 
     return &ufd->ufd_pollfd[idx];
 error:
@@ -189,6 +252,10 @@ static void _ufd_put_pollfd_idx(ufd_t *ufd, ufd_info_t *ufd_info)
 
     ufd->ufd_pollfd_info[idx_last] = NULL; // invalidate old pointer
     ufd_info->pollfd_idx           = -1;   // invalidate old pointer
+
+    /* Update tags to notify other threads */
+    pscom_ufd_update_tag(ufd, idx);
+    pscom_ufd_update_tag(ufd, idx_last);
 }
 
 
@@ -199,6 +266,10 @@ void ufd_event_set(ufd_t *ufd, ufd_info_t *ufd_info, short event)
     if (pollfd) {
         /* In case of existing pollfd, add the corresponding event */
         pollfd->events |= event;
+
+        /* Update tag to notify other threads */
+        pscom_ufd_update_tag(ufd, ufd_info->pollfd_idx);
+
     } else {
         /* No event set */
         if (!event) { return; }
@@ -227,6 +298,9 @@ void ufd_event_clr(ufd_t *ufd, ufd_info_t *ufd_info, short event)
 
     /* Remove the given event */
     pollfd->events &= (short)~event;
+
+    /* Update tag to notify other threads */
+    pscom_ufd_update_tag(ufd, ufd_info->pollfd_idx);
 
     if (!pollfd->events) {
         // empty events
@@ -279,9 +353,9 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
       ufd_info_t.poll() can block and is not thread save!
     */
 
-
     /* create a thread local copy of ufd. */
-    ufd_local = malloc(sizeof(*ufd_local));
+    ufd_local          = malloc(sizeof(*ufd_local));
+    ufd_local->ufd_tag = malloc(sizeof(*ufd->ufd_tag) * ufd->n_ufd_pollfd);
     ufd_copy(ufd_local, ufd);
 
     /*
@@ -303,38 +377,43 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
 
     /* Loop around all pollfds available */
     for (i = 0; i < ufd_local->n_ufd_pollfd; i++) {
-        ufd_info_t *ufd_info  = ufd_local->ufd_pollfd_info[i];
-        struct pollfd *pollfd = &ufd_local->ufd_pollfd[i];
+        ufd_info_t *ufd_info         = ufd_local->ufd_pollfd_info[i];
+        struct pollfd *local_pollfd  = &ufd_local->ufd_pollfd[i];
+        struct pollfd *global_pollfd = &ufd->ufd_pollfd[i];
 
-        /* ToDo: ufd_info still valid? Another thread might destruct *ufd_info
-         */
-
-        /* here we obtain the global pollfd */
-        struct pollfd *pollfd_global = ufd_get_pollfd(ufd, ufd_info);
-
-        /* check that pollfd_global is still valid (fd !=1), ensure that the
-           precon has not been stopped, and that we received a POLLIN event */
-        if (pollfd_global && (pollfd_global->events & POLLIN) &&
-            (pollfd->revents & POLLIN)) {
-            pollfd->revents &= ~POLLIN;
+        /* Check that the global ufd array entry is still valid and
+           that we are dealing with a still pending POLLIN event */
+        if ((ufd_local->ufd_tag[i] == ufd->ufd_tag[i]) &&
+            (local_pollfd->revents & POLLIN)) {
+            assert(global_pollfd->events & POLLIN);
+            local_pollfd->revents &= ~POLLIN;
+            /* Before handling the event, assign a new tag to mark it as
+               invalid for other threads but remember it for this thread */
+            ufd_local->ufd_tag[i] = pscom_ufd_update_tag(ufd, i);
             ufd_info->can_read(ufd, ufd_info);
 
-            /* if can_read() calls ufd_del(), *pollfd is
-               replaced by the last pollfd and therefore
-               associated with a different ufd_info.
-               This can be checked with
-               (ufd->ufd_pollfd_info[i] == ufd_info) */
-            if ((ufd->ufd_pollfd_info[i] == ufd_info) &&
-                (pollfd->revents & POLLOUT)) {
-                pollfd->revents &= ~POLLOUT;
+            /* Check that the global ufd array entry is still valid and
+               that we are dealing with a still pending POLLOUT event */
+            if ((ufd_local->ufd_tag[i] == ufd->ufd_tag[i]) &&
+                (local_pollfd->revents & POLLOUT)) {
+                assert(global_pollfd->events & POLLOUT);
+                local_pollfd->revents &= ~POLLOUT;
+                /* Before handling the event, assign a new tag
+                   to mark it as invalid for other threads */
+                pscom_ufd_update_tag(ufd, i);
                 ufd_info->can_write(ufd, ufd_info);
             }
             if (!(--nfds)) { goto return_1; }
 
-            /* check that the global pollfd is valid and there is
-               and ongoin POLLOUT*/
-        } else if (pollfd_global && (pollfd->revents & POLLOUT)) {
-            pollfd->revents &= ~POLLOUT;
+            /* Check that the global ufd array entry is still valid and
+               that we are dealing with a still pending POLLOUT event */
+        } else if ((ufd_local->ufd_tag[i] == ufd->ufd_tag[i]) &&
+                   (local_pollfd->revents & POLLOUT)) {
+            assert(global_pollfd->events & POLLOUT);
+            local_pollfd->revents &= ~POLLOUT;
+            /* Before handling the event, assign a new tag
+               to mark it as invalid for other threads */
+            pscom_ufd_update_tag(ufd, i);
             ufd_info->can_write(ufd, ufd_info);
             if (!(--nfds)) { goto return_1; }
         }
@@ -342,10 +421,12 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
     /* Never be here. nfds == 0. */
 
 return_1:
+    free(ufd_local->ufd_tag);
     free(ufd_local);
     return 1;
     /* --- */
 return_0:
+    free(ufd_local->ufd_tag);
     free(ufd_local);
     return 0;
 }

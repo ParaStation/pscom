@@ -10,41 +10,38 @@
  * file.
  */
 
+
 #include "pscom.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <unistd.h>
+#include <arpa/inet.h>
 #include <errno.h>
-#include <signal.h>
-#include <ctype.h>
-#include <assert.h>
-
-#include <fcntl.h>
-#include <sched.h>
-#include <netdb.h>
 #include <netinet/in.h>
-
-#include <sys/socket.h>
-#include <sys/time.h>
+#include <pthread.h>
+#include <sched.h>
+#include <signal.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <sys/types.h>
-#include <sys/stat.h>
-#include <sys/ioctl.h>
-#include <sys/poll.h>
+#include <unistd.h>
 
-#include "list.h"
 #include "getid.c"
-#include "pscom_ufd.h"
-#include "pscom_str_util.h"
-#include "pscom_con.h"
-#include "pscom_queues.h"
-#include "pscom_cuda.h"
-#include "pscom_env.h"
-#include "pslib.h"
+#include "list.h"
+#include "perf.h"
 #include "pscom_async.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_precon.h"
+#include "pscom_queues.h"
+#include "pscom_ufd.h"
+#include "pslib.h"
+
+#ifdef PSCOM_CUDA_AWARENESS
+#include "pscom_cuda.h"
+#endif /* PSCOM_CUDA_AWARENESS */
 
 PSCOM_PLUGIN_API_EXPORT
 pscom_t pscom = {
@@ -258,6 +255,7 @@ static void pscom_cleanup(void)
     }
     perf_print();
 
+    ufd_cleanup(&pscom.ufd);
     pscom_env_cleanup();
 
     DPRINT(D_BYE_MSG, "Byee.");

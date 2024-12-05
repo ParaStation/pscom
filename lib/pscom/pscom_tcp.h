@@ -13,8 +13,8 @@
 #ifndef _PSCOM_TCP_H_
 #define _PSCOM_TCP_H_
 
-#include "pscom_types.h"
 #include "pscom_plugin.h"
+#include "pscom_ufd.h"
 
 typedef struct tcp_conn_s {
     ufd_info_t ufd_info;

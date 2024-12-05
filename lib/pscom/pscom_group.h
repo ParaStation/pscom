@@ -12,10 +12,11 @@
 #ifndef _PSCOM_GROUP_H_
 #define _PSCOM_GROUP_H_
 
+#include <stdint.h>
+
+#include "list.h"
+#include "pscom.h"
 #include "pscom_priv.h"
-#include "pscom_io.h"
-#include "pscom_req.h"
-#include "pscom_queues.h"
 
 
 typedef struct PSCOM_group_mem {

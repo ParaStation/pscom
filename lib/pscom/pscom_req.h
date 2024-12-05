@@ -12,6 +12,7 @@
 #ifndef _PSCOM_REQ_H_
 #define _PSCOM_REQ_H_
 
+#include <stdlib.h>
 #include "pscom_priv.h"
 
 pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size);

@@ -11,13 +11,9 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
-#include <errno.h>
-#include <string.h>
-#include <signal.h>
-#include <math.h>
 #include <sys/time.h>
 #include <stdarg.h>
+
 #include "pscom.h"
 
 

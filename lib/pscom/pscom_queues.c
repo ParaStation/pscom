@@ -9,10 +9,18 @@
  * file.
  */
 
-#include "pscom_con.h"
-#include "pscom_io.h"
 #include "pscom_queues.h"
 
+#include <assert.h>
+#include <stddef.h>
+#include <sys/uio.h>
+
+#include "list.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_io.h"
+#include "pscom_priv.h"
 
 static inline int req_recv_user_accept(pscom_req_t *req,
                                        pscom_connection_t *connection,

@@ -9,19 +9,20 @@
  * file.
  */
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <setjmp.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
-#include <errno.h>
+#include <sys/uio.h>
 
+#include "list.h"
+#include "pscom.h"
 #include "pscom_con.h"
-#include "pscom_io.h"
+#include "pscom_env.h"
 #include "pscom_priv.h"
 #include "pscom_queues.h"
-#include "pscom_util.h"
 #include "pscom_req.h"
 
 #include "util/test_utils_con.h"
@@ -1002,6 +1003,7 @@ void test_write_pending_first_io_con_closed(void **state)
     pscom_req_t *send_req    = pscom_req_create(0, 100);
     send_req->pub.connection = &send_con->pub;
     send_req->pub.data_len   = 42;
+    pscom_req_prepare_send(send_req, 0);
     _pscom_sendq_enq(send_con, send_req);
 
     /* set the read_start()/read_stop() functions */
@@ -1044,6 +1046,7 @@ void test_write_pending_first_io_con_open(void **state)
     pscom_req_t *send_req    = pscom_req_create(0, 100);
     send_req->pub.connection = &send_con->pub;
     send_req->pub.data_len   = 42;
+    pscom_req_prepare_send(send_req, 0);
     _pscom_sendq_enq(send_con, send_req);
 
     /* set the rw_start()/rw_stop() functions */
@@ -1088,7 +1091,8 @@ void test_write_pending_done_last_io(void **state)
     /* create send requests and enqueue to send queue */
     pscom_req_t *send_req    = pscom_req_create(0, 100);
     send_req->pub.connection = &send_con->pub;
-    send_req->pending_io     = 1;
+    pscom_req_prepare_send(send_req, 0);
+    send_req->pending_io = 1;
 
     /* add to pending_io queue mimic _pscom_pendingio_enq() */
     if (!pscom.env.debug_req) {
@@ -1134,7 +1138,8 @@ void test_write_pending_done_second_last_io(void **state)
     /* create send requests and enqueue to send queue */
     pscom_req_t *send_req    = pscom_req_create(0, 100);
     send_req->pub.connection = &send_con->pub;
-    send_req->pending_io     = 1;
+    pscom_req_prepare_send(send_req, 0);
+    send_req->pending_io = 1;
 
     /* add to pending_io queue mimic _pscom_pendingio_enq() */
     if (!pscom.env.debug_req) {
@@ -1188,7 +1193,9 @@ void test_read_pending_done_unrelated_genreq(void **state)
     /* create another receive request and start pending read */
     pscom_req_t *recv_req    = pscom_req_create(0, 100);
     recv_req->pub.connection = &recv_con->pub;
-    recv_con->in.req         = recv_req;
+    pscom_header_net_t nh    = {0};
+    pscom_req_prepare_recv(recv_req, &nh, &recv_con->pub);
+    recv_con->in.req = recv_req;
 
     /* read_start() should be called at least once */
     expect_function_calls(check_rw_start_called, 1);

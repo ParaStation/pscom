@@ -15,7 +15,7 @@
 #include <sys/uio.h>
 #include <sys/time.h>
 
-#include "pscom_types.h"
+#include "pscom_priv.h"
 
 #ifndef pscom_min
 #define pscom_min(a, b) (((a) < (b)) ? (a) : (b))

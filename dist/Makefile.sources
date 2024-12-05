@@ -13,6 +13,8 @@ PKG_NAME=pscom
 
 SOURCE_FILES= \
 .clang-format \
+.cmakeformatrc \
+.cmakelintrc \
 .gitignore \
 CMakeLists.txt \
 ChangeLog \
@@ -59,14 +61,13 @@ bin/psm/CMakeLists.txt \
 bin/psm/pscom4psm_pp.c \
 bin/psm/psm2_pp.c \
 bin/psm/psm_pp.c \
-bin/test_nodes.c \
 bin/ucp/CMakeLists.txt \
 bin/ucp/ucp_pp.c \
 cmake/Modules/AddCudaTarget.cmake \
 cmake/Modules/CheckVisibilityProtected.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindPackageWithHints.cmake \
-cmake/Modules/FindPsmgmt.cmake \
+cmake/Modules/FindProgramWithHints.cmake \
 cmake/Modules/Legacy.cmake \
 cmake/Modules/OptionConditional.cmake \
 dist/.gitignore \
@@ -230,6 +231,7 @@ scripts/install-sh \
 scripts/ltmain.sh \
 scripts/missing \
 scripts/ps_ethernet.sh \
+scripts/pscom.imp \
 scripts/rpm_noreq \
 scripts/test-driver \
 scripts/testlocal.sh \
@@ -270,4 +272,6 @@ test/util/test_utils_debug.h \
 test/util/test_utils_env.c \
 test/util/test_utils_env.h \
 test/util/test_utils_sock.c \
-test/util/test_utils_sock.h
+test/util/test_utils_sock.h \
+test/util/test_utils_ufd.c \
+test/util/test_utils_ufd.h

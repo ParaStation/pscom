@@ -9,7 +9,14 @@
  * file.
  */
 
+#include <assert.h>
+#include <string.h>
+
+#include "list.h"
+#include "pscom.h"
 #include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_priv.h"
 #include "pscom_str_util.h"
 
 static void pscom_ondemand_read_start(pscom_con_t *con);

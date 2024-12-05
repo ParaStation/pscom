@@ -7,13 +7,12 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
+#include "test_utils_debug.h"
 
 #include <assert.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "test_utils_debug.h"
 
 static const char *env_vars_from_pscom[] = {
     "PSP_DEBUG",

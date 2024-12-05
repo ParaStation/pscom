@@ -12,6 +12,9 @@
 #ifndef _PSCOM_PLUGIN_H_
 #define _PSCOM_PLUGIN_H_
 
+#include "list.h"
+#include "pscom_types.h"
+
 #define PSCOM_PLUGIN_VERSION 0x0203
 
 typedef struct pscom_plugin {

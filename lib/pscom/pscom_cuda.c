@@ -8,12 +8,20 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-
-#include <errno.h>
-
 #include "pscom_cuda.h"
-#include "pscom_priv.h"
+
+#ifdef PSCOM_CUDA_AWARENESS
+#include <assert.h>
+#include <cuda.h>
+#include <errno.h>
+#include <string.h>
+
+#include "pscom_debug.h"
 #include "pscom_util.h"
+#endif /* PSCOM_CUDA_AWARENESS */
+
+#include "pscom.h"
+#include "pscom_priv.h"
 
 PSCOM_API_EXPORT
 int pscom_is_cuda_enabled(void)

@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/uio.h>
+#include <sys/types.h>
 
 
 typedef struct psucp_con_info psucp_con_info_t;

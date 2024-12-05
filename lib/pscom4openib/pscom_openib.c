@@ -13,26 +13,29 @@
  * pscom_openib.c: OPENIB/Infiniband communication
  */
 
+#include "pscom_openib.h"
+
+#include <assert.h>
+#include <errno.h>
+#include <infiniband/verbs.h>
+#include <stdint.h>
+#include <stdio.h>
+#include <sys/types.h>
+#include <sys/uio.h>
+
+#include "list.h"
+#include "perf.h"
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
+#include "pscom_plugin.h"
+#include "pscom_poll.h"
+#include "pscom_precon.h"
+#include "pscom_priv.h"
+#include "pscom_req.h"
 #include "psoib.h"
 
-#include <stdio.h>
-#include <string.h>
-#include <stdlib.h>
-#include <errno.h>
-#include <sys/types.h>
-#include <unistd.h>
-#include <assert.h>
-
-#include <malloc.h>
-#include <infiniband/verbs.h>
-
-#include "pscom_priv.h"
-#include "pscom_con.h"
-#include "pscom_precon.h"
-#include "pscom_io.h"
-#include "pscom_openib.h"
-#include "pscom_req.h"
-#include "pscom_util.h"
 
 static pscom_err_t
 pscom_openib_env_parser_set_pending_tokens(void *buf, const char *config_val)

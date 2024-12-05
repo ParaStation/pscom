@@ -11,9 +11,10 @@
 #include <getopt.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 
-#include "pscom_priv.h"
+#include "pscom.h"
+#include "pscom_env.h"
+
 
 typedef struct optargs {
     int config;

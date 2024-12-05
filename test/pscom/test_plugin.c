@@ -10,18 +10,14 @@
  */
 
 #define _GNU_SOURCE
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdint.h>
-#include <setjmp.h>
+#include <stdarg.h> /* IWYU pragma: keep */
+#include <stddef.h> /* IWYU pragma: keep */
+#include <stdint.h> /* IWYU pragma: keep */
+#include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
-#include <errno.h>
+#include <stdio.h>
 
-#include "pscom_utest.h"
-#include "mocks/misc_mocks.h"
-
-#include "pscom_priv.h"
 #include "pscom_plugin.h"
 
 /*
@@ -29,7 +25,6 @@
  * TODO: Refactor pscom_plugin to avoid this
  */
 #define LIBDIR
-#include <dlfcn.h>
 #include "pscom_plugin.c"
 
 ////////////////////////////////////////////////////////////////////////////////

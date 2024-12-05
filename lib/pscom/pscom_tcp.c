@@ -10,18 +10,24 @@
  * file.
  */
 
-#include <unistd.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
-#include <errno.h>
-#include <assert.h>
-#include "pscom_priv.h"
 #include "pscom_tcp.h"
-#include "pscom_ufd.h"
-#include "pscom_precon.h"
-#include "pscom_con.h"
+
+#include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <poll.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <sys/types.h> /* IWYU pragma: keep */
+#include <sys/uio.h>
+#include <unistd.h>
+
+#include "pscom.h"
+#include "pscom_con.h"
+#include "pscom_debug.h"
+#include "pscom_precon.h"
+#include "pscom_priv.h"
+#include "pscom_ufd.h"
 
 
 static void tcp_do_read(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
