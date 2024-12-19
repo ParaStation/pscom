@@ -148,6 +148,7 @@ static void psoib_mregion_gc(unsigned max_size)
 }
 
 
+#if HAVE_GLIBC_MORECORE_HOOK
 static void *psoib_morecore_hook(ptrdiff_t incr)
 {
     /* Do not return memory back to the OS: (do not trim) */
@@ -158,6 +159,7 @@ static void *psoib_morecore_hook(ptrdiff_t incr)
         return __default_morecore(incr);
     }
 }
+#endif
 
 
 static void psoib_mregion_malloc_init(void)
@@ -184,6 +186,7 @@ static void psoib_mregion_malloc_init(void)
             mallopt(M_TRIM_THRESHOLD, -1);
         }
 
+#if HAVE_GLIBC_MORECORE_HOOK
         if (__morecore == __default_morecore) {
             psoib_safe_mreg_end = psoib_safe_mreg_start = __morecore(0);
 
@@ -204,6 +207,20 @@ static void psoib_mregion_malloc_init(void)
                 }
             }
         }
+#else
+        /* Fixme! For now, the workaround is disabling mregion cache and
+         * rendezvous. */
+        psoib_mregion_cache_max_size = 0;
+        {
+            static int warned = 0;
+            if (!warned) {
+                warned = 1;
+                psoib_dprint(D_WARNONCE, "psoib: mregion cache disabled: "
+                                         "__morecore hook not available with"
+                                         " glibc >= 2.34");
+            }
+        }
+#endif
     }
 }
 
