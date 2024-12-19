@@ -14,6 +14,9 @@
 
 #include <stddef.h>
 
+/* Compile-time check for morecore hook in glibc, removed in version 2.34 */
+#define HAVE_GLIBC_MORECORE_HOOK                                               \
+    ((__GLIBC__ < 2) || (__GLIBC__ == 2) && (__GLIBC_MINOR__ < 34))
 
 struct Psshm {
     void *base; /* base pointer of shared mem segment */
