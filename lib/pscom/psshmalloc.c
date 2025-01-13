@@ -25,6 +25,10 @@ struct Psshm psshm_info = {
 
 
 #ifdef PSCOM_PSSHMALLOC_ENABLED
+
+#if !HAVE_GLIBC_MORECORE_HOOK
+#error "psshmalloc needs glibc version < 2.34."
+#else
 struct Psshm_config {
     size_t min_size;
     size_t max_size;
@@ -172,4 +176,5 @@ err_init_base : {
     // fprintf(stderr, "psshm_init failed : %s\n", strerror(errno));
     return;
 }
+#endif /* HAVE_GLIBC_MORECORE_HOOK */
 #endif /* PSCOM_PSSHMALLOC_ENABLED */
