@@ -332,6 +332,7 @@ int main(void)
 #ifdef UCP_ENABLED
     /* pscom4ucp tests */
     const struct CMUnitTest pscom4ucp_tests[] = {
+        cmocka_unit_test(test_ucp_is_properly_cleaned_up_on_destroy),
         cmocka_unit_test(test_ucp_disable_fast_initialization),
         cmocka_unit_test(test_ucp_disable_fast_initialization_via_environment),
         /* this has has to go last due to the static varaiable in psucp_init()
