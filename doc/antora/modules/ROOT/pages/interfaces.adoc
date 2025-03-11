@@ -1,3 +1,6 @@
+:imageprefix:
+ifdef::env-gitlab,env-vscode,env-github[:imageprefix: ../images/]
+
 = API and Internals
 
 A bi-directional point-to-point connection of `pscom` consists of the following components:
@@ -16,7 +19,7 @@ For the type definition of `PSCOM_connection` see `include/pscom.h`.
 * Before any other call to the `pscom` library can be made, `+pscom_init(...)+` (or `+pscom_init_thread(...)+` for a thread-safe version of the library) has to be called.
 * In ParaStation MPI, this call is done in the `+MPID_Init(...)+` method.
 
-image::pscom-init-cleanup.svg[pscom init and cleanup]
+image::{imageprefix}pscom-init-cleanup.svg[pscom init and cleanup]
 
 == Clean-up
 
@@ -33,7 +36,7 @@ image::pscom-init-cleanup.svg[pscom init and cleanup]
 
 === Instant connectivity
 
-image::pscom-connectivity-instant.svg[pscom instant connectivity]
+image::{imageprefix}pscom-connectivity-instant.svg[pscom instant connectivity]
 
 * `+pscom_connect(...)+` calls `+pscom_con_connect(...)+` to establish the connection
  ** either via loopback for local connection using `+pscom_con_connect_loopback(...)+`
@@ -45,7 +48,7 @@ image::pscom-connectivity-instant.svg[pscom instant connectivity]
 
 === On-demand connectivity &ndash; `PSP_ONDEMAND=1`
 
-image::pscom-connectivity-ondemand.svg[pscom on-demand connectivity]
+image::{imageprefix}pscom-connectivity-ondemand.svg[pscom on-demand connectivity]
 
 * Since version >= 5.0.24, on-demand connections are supported by `pscom`.
 * On-demand connections are enabled by setting the environment variable `PSP_ONDEMAND=1`
@@ -73,7 +76,7 @@ image::pscom-connectivity-ondemand.svg[pscom on-demand connectivity]
 
 == Message reception
 
-image::pscom-msg-recv.svg[pscom message reception network side]
+image::{imageprefix}pscom-msg-recv.svg[pscom message reception network side]
 
 === Network side &ndash; message reception from underlying transport
 
@@ -102,7 +105,7 @@ image::pscom-msg-recv.svg[pscom message reception network side]
 
 === Application side &ndash; post a send request
 
-image::pscom-msg-send.svg[pscom send request]
+image::{imageprefix}pscom-msg-send.svg[pscom send request]
 
 * There are three types of non-blocking send functions on application level (see also `include/pscom.h`)
  ** `+pscom_post_send(...)+`: requests-based

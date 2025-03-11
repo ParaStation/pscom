@@ -1,10 +1,13 @@
+:imageprefix:
+ifdef::env-gitlab,env-vscode,env-github[:imageprefix: ../images/]
+
 = Introduction and Concepts
 
 The ParaStation Communication Library (`pscom` for short) is an open-source low-level communication library, especially designed for the employment in HPC systems.
 Although it mainly serves as the lower-level communication substrate of ParaStation MPI (`psmpi`), it can also be used independently as a light-weight communication layer.
 In ParaStation MPI, `pscom` provides the communication substrate for the so-called PSP device, which uses the `pscom` interface at the bottom and implements MPICH's ADI3 interface at the top (see also the following figure).
 
-image::pscom-overview.svg[Overview diagram of pscom]
+image::{imageprefix}pscom-overview.svg[Overview diagram of pscom]
 
 == Asynchronous peer-to-peer connections
 
