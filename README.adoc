@@ -1,0 +1,16 @@
+ParaStation Communication Library
+=================================
+:toc: auto
+
+The ParaStation Communication Library (`pscom` for short) is an open-source low-level communication library, especially designed for the employment in HPC systems.
+
+
+include::doc/antora/modules/ROOT/pages/installation.adoc[leveloffset=+1]
+
+include::doc/antora/modules/ROOT/pages/contributing.adoc[leveloffset=+1]
+
+== More documentation
+* link:./doc/antora/modules/ROOT/pages/index{outfilesuffix}[Introduction and Concepts]
+* link:./doc/antora/modules/ROOT/pages/repo-structure{outfilesuffix}[Repository Structure]
+* link:./doc/antora/modules/ROOT/pages/runtime-config{outfilesuffix}[Runtime Configuration Options]
+* link:./doc/antora/modules/ROOT/pages/interfaces{outfilesuffix}[API and Internals]
