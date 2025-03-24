@@ -25,6 +25,7 @@
 #include "pscom/test_listen.h"
 #include "pscom/test_plugin.h"
 #include "pscom/test_ufd.h"
+#include "pscom/test_version.h"
 
 #include "pscom4ucp/test_pscom4ucp.h"
 #include "pscom4portals/test_pscom4portals.h"
@@ -266,6 +267,19 @@ int main(void)
     };
     total_tests += TEST_GROUP_SIZE(pscom_debug_tests);
     failed_tests += cmocka_run_group_tests(pscom_debug_tests, NULL, NULL);
+
+    /* pscom_version tests */
+    const struct CMUnitTest pscom_version_tests[] = {
+        cmocka_unit_test(test_pscom_version_cuda_support_success),
+        cmocka_unit_test(test_pscom_version_cuda_support_failure),
+        cmocka_unit_test(test_pscom_version_no_cuda_support),
+        cmocka_unit_test(test_pscom_version_major_failure),
+        cmocka_unit_test(test_pscom_version_major_success),
+        cmocka_unit_test(test_pscom_version_minor_failure),
+        cmocka_unit_test(test_pscom_version_minor_success),
+    };
+    total_tests += TEST_GROUP_SIZE(pscom_version_tests);
+    failed_tests += cmocka_run_group_tests(pscom_version_tests, NULL, NULL);
 
     /* pscom_ufd tests */
     const struct CMUnitTest pscom_ufd_tests[] = {
