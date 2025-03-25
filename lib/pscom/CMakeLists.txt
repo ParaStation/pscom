@@ -36,6 +36,7 @@ add_library(
   pscom_suspend.c
   pscom_tcp.c
   pscom_ufd.c
+  pscom_version.c
   pslib.c
   psshmalloc.c)
 
