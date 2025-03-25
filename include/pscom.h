@@ -33,13 +33,47 @@ struct sockaddr_in;
 
 
 #ifndef PSCOM_CUDA_AWARENESS
-#define PSCOM_VERSION 0x0300
+#define PSCOM_ABI_CUDA_SUPPORT 0
 #else
-#define PSCOM_VERSION 0x8300
+#define PSCOM_ABI_CUDA_SUPPORT 1
 /* allow user applications to determine whether CUDA-awareness is supported */
 #define PSCOM_CUDA_AWARENESS_SUPPORT
 #endif
 
+#define PSCOM_ABI_VERSION_MAJOR 3
+#define PSCOM_ABI_VERSION_MINOR 0
+
+
+/* helper to mask all bits 0..i-1 */
+#define PSCOM_BIT_MASK(i) ((i) >= 64 ? ~0 : ((1 << (i)) - 1))
+
+/*
+ * 16-bit pscom version:
+ * cuda_support (1) | major_version (7) | minor_version (8)
+ */
+#define PSCOM_ABI_VERSION_CUDA_BITS  1
+#define PSCOM_ABI_VERSION_MAJOR_BITS 7
+#define PSCOM_ABI_VERSION_MINOR_BITS 8
+
+#define PSCOM_ABI_VERSION_CUDA_SHIFT                                           \
+    (PSCOM_ABI_VERSION_MAJOR_BITS + PSCOM_ABI_VERSION_MINOR_BITS)
+#define PSCOM_ABI_VERSION_MAJOR_SHIFT (PSCOM_ABI_VERSION_MINOR_BITS)
+
+#define PSCOM_VERSION_BUILD(cuda, major, minor)                                \
+    ((cuda << PSCOM_ABI_VERSION_CUDA_SHIFT) |                                  \
+     (major << PSCOM_ABI_VERSION_MAJOR_SHIFT) | (minor))
+#define PSCOM_VERSION_SPLIT(pscom_version, cuda, major, minor)                 \
+    do {                                                                       \
+        cuda = (pscom_version >> PSCOM_ABI_VERSION_CUDA_SHIFT) &               \
+               PSCOM_BIT_MASK(PSCOM_ABI_VERSION_CUDA_BITS);                    \
+        major = (pscom_version >> PSCOM_ABI_VERSION_MAJOR_SHIFT) &             \
+                PSCOM_BIT_MASK(PSCOM_ABI_VERSION_MAJOR_BITS);                  \
+        minor = pscom_version & PSCOM_BIT_MASK(PSCOM_ABI_VERSION_MINOR_BITS);  \
+    } while (0);
+
+#define PSCOM_VERSION                                                          \
+    PSCOM_VERSION_BUILD(PSCOM_ABI_CUDA_SUPPORT, PSCOM_ABI_VERSION_MAJOR,       \
+                        PSCOM_ABI_VERSION_MINOR)
 
 /**
  * @brief Status codes.

@@ -160,6 +160,8 @@ lib/pscom/pscom_types.h \
 lib/pscom/pscom_ufd.c \
 lib/pscom/pscom_ufd.h \
 lib/pscom/pscom_util.h \
+lib/pscom/pscom_version.c \
+lib/pscom/pscom_version.h \
 lib/pscom/pslib.c \
 lib/pscom/pslib.h \
 lib/pscom/psshmalloc.c \
@@ -265,6 +267,8 @@ test/pscom/test_plugin.c \
 test/pscom/test_plugin.h \
 test/pscom/test_ufd.c \
 test/pscom/test_ufd.h \
+test/pscom/test_version.c \
+test/pscom/test_version.h \
 test/pscom4portals/test_pscom4portals.c \
 test/pscom4portals/test_pscom4portals.h \
 test/pscom4ucp/test_pscom4ucp.c \
