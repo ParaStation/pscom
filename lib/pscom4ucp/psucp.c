@@ -81,6 +81,8 @@ struct psucp_req {
 
 static psucp_hca_info_t psucp_default_hca;
 
+static int init_state = 1; /* only initialized once */
+
 char *psucp_err_str = NULL; /* last error string */
 
 int psucp_debug               = 2;
@@ -177,7 +179,7 @@ static void psucp_cleanup_hca(psucp_hca_info_t *hca_info)
         hca_info->ucp_context = NULL;
     }
 
-    psucp_small_msg_sendbuf_free();
+    if (psucp_small_msg_sendbuf) { psucp_small_msg_sendbuf_free(); }
 }
 
 
@@ -321,7 +323,6 @@ static inline void psucp_recv_req_dec(void)
 
 int psucp_init(void)
 {
-    static int init_state = 1;
     if (init_state == 1) {
         if (psucp_init_hca(&psucp_default_hca)) { goto err_hca; }
 
@@ -334,6 +335,12 @@ err_hca:
     init_state = -1;
     psucp_dprint(D_INFO, "UCP disabled : %s", psucp_err_str);
     return -1;
+}
+
+
+void psucp_finalize(void)
+{
+    if (init_state == 0) { psucp_cleanup_hca(&psucp_default_hca); }
 }
 
 
