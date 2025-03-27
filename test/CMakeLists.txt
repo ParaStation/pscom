@@ -143,6 +143,9 @@ if(UCP_ENABLED)
     -Wl,--wrap=ucp_init_version
     -Wl,--wrap=ucp_worker_create
     -Wl,--wrap=ucp_worker_get_address
+    -Wl,--wrap=ucp_worker_release_address
+    -Wl,--wrap=ucp_worker_destroy
+    -Wl,--wrap=ucp_cleanup
     -Wl,--wrap=ucs_status_string)
 
   target_include_directories(

@@ -12,6 +12,7 @@
 #ifndef _TEST_PSCOM4UCP_H_
 #define _TEST_PSCOM4UCP_H_
 
+void test_ucp_is_properly_cleaned_up_on_destroy(void **state);
 void test_ucp_is_initialized_within_plugin(void **state);
 void test_ucp_disable_fast_initialization(void **state);
 void test_ucp_disable_fast_initialization_via_environment(void **state);

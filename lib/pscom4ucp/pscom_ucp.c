@@ -265,6 +265,7 @@ static void pscom_ucp_init(void)
 
 static void pscom_ucp_destroy(void)
 {
+    psucp_finalize();
 }
 
 

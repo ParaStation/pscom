@@ -60,6 +60,7 @@ ucs_status_t __wrap_ucp_worker_create(ucp_context_h context,
                                       const ucp_worker_params_t *params,
                                       ucp_worker_h *worker_p)
 {
+    *worker_p = mock_type(ucp_worker_h);
     return UCS_OK;
 }
 
@@ -72,6 +73,33 @@ ucs_status_t __wrap_ucp_worker_get_address(ucp_worker_h worker,
                                            size_t *address_length_p)
 {
     return UCS_OK;
+}
+
+
+/**
+ * \brief Mocking function for ucp_worker_release_address()
+ */
+void __wrap_ucp_worker_release_address(ucp_worker_h worker,
+                                       ucp_address_t *address_p)
+{
+}
+
+
+/**
+ * \brief Mocking function for ucp_worker_destroy()
+ */
+void __wrap_ucp_worker_destroy(ucp_worker_h worker)
+{
+    function_called();
+    check_expected(worker);
+}
+
+
+/**
+ * \brief Mocking function for ucp_cleanup()
+ */
+void __wrap_ucp_cleanup(ucp_context_h context_p)
+{
 }
 
 

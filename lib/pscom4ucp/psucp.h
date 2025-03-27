@@ -34,6 +34,8 @@ typedef struct psucp_info_msg_s {
 /* Initialise ucp. This must be called first. */
 int psucp_init(void);
 
+/* cleanup ucp. This should be called when ucp plugin is destroyed. */
+void psucp_finalize(void);
 
 /*
  * Connection handling:

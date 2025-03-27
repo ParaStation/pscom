@@ -16,6 +16,8 @@
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
+#include <ucp/api/ucp_def.h>
+
 #include "pscom_env.h"
 #include "pscom_plugin.h"
 #include "pscom_priv.h"
@@ -26,6 +28,36 @@
 ////////////////////////////////////////////////////////////////////////////////
 extern pscom_plugin_t pscom_plugin_ucp;
 void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit);
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// plugin destroy
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test if UCP is properly destroyed
+ *
+ * Given: UCP has been initialized
+ * When: the pscom4ucp plugin is destroyed
+ * Then: UCP is cleaned up as well
+ */
+void test_ucp_is_properly_cleaned_up_on_destroy(void **state)
+{
+    (void)state;
+
+    ucp_worker_h worker_handle = (void *)0x42;
+
+    expect_function_calls(__wrap_ucp_init_version, 1);
+
+    /* initialize the pscom4ucp plugin */
+    will_return(__wrap_ucp_worker_create, worker_handle);
+    pscom_plugin_ucp.init();
+
+    /* destroy the pscom4ucp plugin */
+    expect_function_calls(__wrap_ucp_worker_destroy, 1);
+    expect_value(__wrap_ucp_worker_destroy, worker, worker_handle);
+    pscom_plugin_ucp.destroy();
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 /// fast initialization
@@ -44,10 +76,12 @@ void test_ucp_is_initialized_within_plugin(void **state)
     /* enable UCP fast initialization */
     pscom.env.ucp_fastinit = 1;
 
-    expect_function_calls(__wrap_ucp_init_version, 1);
 
     /* initialize the pscom4ucp plugin */
     pscom_plugin_ucp.init();
+
+    /* destroy the pscom4ucp plugin */
+    pscom_plugin_ucp.destroy();
 }
 
 
@@ -76,6 +110,9 @@ void test_ucp_disable_fast_initialization(void **state)
     } else {
         unsetenv("PSP_UCP_FASTINIT");
     }
+
+    /* destroy the pscom4ucp plugin */
+    pscom_plugin_ucp.destroy();
 }
 
 
@@ -104,4 +141,7 @@ void test_ucp_disable_fast_initialization_via_environment(void **state)
     } else {
         unsetenv("PSP_UCP_FASTINIT");
     }
+
+    /* destroy the pscom4ucp plugin */
+    pscom_plugin_ucp.destroy();
 }
