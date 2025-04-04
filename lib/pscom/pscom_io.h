@@ -148,4 +148,5 @@ void _pscom_recvq_rma_terminate(pscom_con_t *con);
 extern pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con,
                                                        pscom_header_net_t *nh);
 
+void pscom_rma_request_free_send_buffer(pscom_request_t *request);
 #endif /* _PSCOM_IO_H_ */

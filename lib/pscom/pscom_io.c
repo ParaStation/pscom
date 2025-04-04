@@ -77,6 +77,30 @@ int pscom_read_is_at_message_start(pscom_con_t *con);
 void pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
 void pscom_read_done(pscom_con_t *con, char *buf, size_t len);
 
+static void pscom_rma_put_recv_io_done(pscom_request_t *request);
+static void pscom_rma_accumulate_recv_io_done(pscom_request_t *request);
+static void pscom_rma_get_accumulate_recv_io_done(pscom_request_t *request);
+static void pscom_rma_fetch_op_recv_io_done(pscom_request_t *request);
+static void pscom_rma_compare_swap_recv_io_done(pscom_request_t *request);
+
+static pscom_req_t *pscom_get_rma_put_receiver(pscom_con_t *con,
+                                               pscom_header_net_t *nh);
+static pscom_req_t *pscom_get_rma_accumulate_receiver(pscom_con_t *con,
+                                                      pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_get_receiver(pscom_con_t *con,
+                                                pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_get_answer_receiver(pscom_con_t *con,
+                                                       pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_get_acc_receiver(pscom_con_t *con,
+                                                    pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_get_acc_answer_receiver(
+    pscom_con_t *con, pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_fetch_op_receiver(pscom_con_t *con,
+                                                     pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_compare_swap_receiver(pscom_con_t *con,
+                                                         pscom_header_net_t *nh);
+static pscom_req_t *_pscom_get_rma_compare_swap_answer_receiver(
+    pscom_con_t *con, pscom_header_net_t *nh);
 
 PSCOM_PLUGIN_API_EXPORT
 pscom_req_t *(*_pscom_get_gw_envelope_receiver)(pscom_con_t *con,
@@ -871,20 +895,65 @@ static pscom_req_t *_pscom_get_recv_req(pscom_con_t *con, pscom_header_net_t *nh
         pscom_req_prepare_recv(req, nh, &con->pub);
     } else {
         switch (nh->msg_type) {
+        /* receive header from RNDV write operation */
         case PSCOM_MSGTYPE_RMA_WRITE:
             req = pscom_get_rma_write_receiver(con, nh);
             break;
+        /* receive read request from RNDV read operation */
         case PSCOM_MSGTYPE_RMA_READ:
             req = _pscom_get_rma_read_receiver(con, nh);
             break;
+        /* receive read reply requested RNDV read operation */
         case PSCOM_MSGTYPE_RMA_READ_ANSWER:
             req = _pscom_get_rma_read_answer_receiver(con, nh);
             break;
+        /* receive read request from RNDV operation */
         case PSCOM_MSGTYPE_RENDEZVOUS_REQ:
             req = pscom_get_rendezvous_receiver(con, nh);
             break;
+        /* receive signal of finishing data transfer for RNDV */
         case PSCOM_MSGTYPE_RENDEZVOUS_FIN:
             req = _pscom_get_rendezvous_fin_receiver(con, nh);
+            break;
+        /* target receives RMA put operation */
+        case PSCOM_MSGTYPE_RMA_PUT:
+            req = pscom_get_rma_put_receiver(con, nh);
+            break;
+        /* target receives RMA get request */
+        case PSCOM_MSGTYPE_RMA_GET_REQ:
+            req = _pscom_get_rma_get_receiver(con, nh);
+            break;
+        /* origin receives reply from target reqested by RMA get operation */
+        case PSCOM_MSGTYPE_RMA_GET_REP:
+            req = _pscom_get_rma_get_answer_receiver(con, nh);
+            break;
+        /* target receives RMA acc operation */
+        case PSCOM_MSGTYPE_RMA_ACCUMULATE:
+            req = pscom_get_rma_accumulate_receiver(con, nh);
+            break;
+        /* target receives RMA get_accumulate request */
+        case PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REQ:
+            req = _pscom_get_rma_get_acc_receiver(con, nh);
+            break;
+        case PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP:
+        /*
+         * origin receives reply from target requested by RMA get_accumulate or
+         * FOP operation
+         */
+        case PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP:
+            req = _pscom_get_rma_get_acc_answer_receiver(con, nh);
+            break;
+        /* target side receives RMA fetch&op request */
+        case PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REQ:
+            req = _pscom_get_rma_fetch_op_receiver(con, nh);
+            break;
+        /* target side receives RMA C&S request */
+        case PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REQ:
+            req = _pscom_get_rma_compare_swap_receiver(con, nh);
+            break;
+        /* origin receives reply from target requested by RMA CAS operation */
+        case PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP:
+            req = _pscom_get_rma_compare_swap_answer_receiver(con, nh);
             break;
         case PSCOM_MSGTYPE_BCAST:
             req = _pscom_get_bcast_receiver(con, nh);
@@ -2082,4 +2151,434 @@ int pscom_cancel(pscom_request_t *request)
         return pscom_cancel_recv(request);
     }
     return 0;
+}
+
+
+/* RMA communication functions */
+
+static pscom_req_t *pscom_get_rma_put_receiver(pscom_con_t *con,
+                                               pscom_header_net_t *nh)
+{
+    pscom_req_t *req;
+    pscom_xheader_rma_put_t *rma_header = &nh->xheader->rma_put;
+
+    /* create request to receive RMA info in xheader */
+    req            = pscom_req_create(nh->xheader_len, 0);
+    req->pub.state = PSCOM_REQ_STATE_RMA_WRITE_REQUEST |
+                     PSCOM_REQ_STATE_PASSIVE_SIDE;
+
+    /* necessary information */
+    req->pub.data        = rma_header->common.dest;
+    req->pub.data_len    = nh->data_len;
+    req->pub.xheader_len = nh->xheader_len;
+    req->pub.ops.io_done = pscom_rma_put_recv_io_done;
+    req->pub.connection  = &con->pub;
+
+    D_TR(printf("%s:%u:%s() %s dest=%p, len=%zu\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
+
+    return req;
+}
+
+
+static pscom_req_t *pscom_get_rma_accumulate_receiver(pscom_con_t *con,
+                                                      pscom_header_net_t *nh)
+{
+    /* create request to receive RMA information in xheader and the data
+     * temporarily */
+    pscom_req_t *req = pscom_req_create(nh->xheader_len, nh->data_len);
+    req->pub.state   = PSCOM_REQ_STATE_RMA_WRITE_REQUEST |
+                     PSCOM_REQ_STATE_PASSIVE_SIDE;
+
+    /* receive the data tempoararily into req->pub.user */
+    req->pub.data        = (void *)req->pub.user;
+    req->pub.data_len    = nh->data_len;
+    req->pub.xheader_len = nh->xheader_len;
+    req->pub.ops.io_done = pscom_rma_accumulate_recv_io_done;
+    req->pub.connection  = &con->pub;
+
+    D_TR(printf("%s:%u:%s() %s dest=%p, len=%zu\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
+    return req;
+}
+
+
+static pscom_req_t *_pscom_get_rma_get_receiver(pscom_con_t *con,
+                                                pscom_header_net_t *nh)
+{
+    pscom_req_t *req_answer =
+        pscom_req_create(sizeof(pscom_xheader_rma_get_answer_t), 0);
+    pscom_xheader_rma_get_t *rma_header = &nh->xheader->rma_get;
+
+    req_answer->pub.xheader.rma_get_answer.id = rma_header->common.id;
+    req_answer->pub.connection                = &con->pub;
+
+    req_answer->pub.data_len = rma_header->common.src_len;
+    req_answer->pub.data     = rma_header->common.src;
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req_answer)));
+
+    assert(req_answer->magic == MAGIC_REQUEST);
+    pscom_mverify(req_answer);
+
+    req_answer->pub.ops.io_done = pscom_request_free;
+
+    _pscom_post_send_direct_inline(get_con(req_answer->pub.connection),
+                                   req_answer, PSCOM_MSGTYPE_RMA_GET_REP);
+
+    return NULL;
+}
+
+
+static pscom_req_t *_pscom_get_rma_get_answer_receiver(pscom_con_t *con,
+                                                       pscom_header_net_t *nh)
+{
+    pscom_req_t *rma_read_req;
+
+    assert(!list_empty(con->recvq_rma.next));
+
+    rma_read_req    = nh->xheader->rma_get_answer.id;
+    /* do not overwrite xheader in rma_read_req */
+    nh->xheader_len = 0;
+
+    if (!_pscom_recvq_rma_contains(con, rma_read_req)) {
+        /* Received unknown rma_read_answer.id. Maybe this
+         * rma request was already aborted.
+         * Reject this message */
+        return NULL; // reject
+    }
+
+    _pscom_recvq_rma_deq(con, rma_read_req);
+    //_pscom_rma_req_deregister(con, rma_read_req);
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(rma_read_req)));
+    return rma_read_req;
+}
+
+
+static void _send_rma_get_acc_answer(pscom_req_t *req_answer, uint8_t msg_type)
+{
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req_answer)));
+    assert(req_answer->magic == MAGIC_REQUEST);
+    pscom_mverify(req_answer);
+
+    _pscom_post_send_direct_inline(get_con(req_answer->pub.connection),
+                                   req_answer, msg_type);
+}
+
+static pscom_req_t *_pscom_get_rma_get_acc_receiver(pscom_con_t *con,
+                                                    pscom_header_net_t *nh)
+{
+    /* create request to receive RMA information in xheader and the data
+     * temporarily */
+    pscom_req_t *req = pscom_req_create(nh->xheader_len, nh->data_len);
+    req->pub.state   = PSCOM_REQ_STATE_RMA_WRITE_REQUEST |
+                     PSCOM_REQ_STATE_PASSIVE_SIDE;
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req_answer)));
+
+    /* recv data temporarily in req->pub.user */
+    req->pub.data        = (void *)req->pub.user;
+    req->pub.data_len    = nh->data_len;
+    req->pub.xheader_len = nh->xheader_len;
+    req->pub.ops.io_done = pscom_rma_get_accumulate_recv_io_done;
+    req->pub.connection  = &con->pub;
+
+    D_TR(printf("%s:%u:%s() %s dest=%p, len=%zu\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
+
+    return req;
+}
+
+
+static pscom_req_t *
+_pscom_get_rma_get_acc_answer_receiver(pscom_con_t *con, pscom_header_net_t *nh)
+{
+    pscom_req_t *rma_read_req;
+
+    assert(!list_empty(con->recvq_rma.next));
+
+    rma_read_req = nh->xheader->rma_get_answer.id;
+
+    /* pointer to data buffer */
+    rma_read_req->pub.data = rma_read_req->rma_result;
+    /* do not overwrite xheader in rma_read_req */
+    nh->xheader_len        = 0;
+
+    if (!_pscom_recvq_rma_contains(con, rma_read_req)) {
+        /* Received unknown rma_read_answer.id. Maybe this
+         * rma request was already aborted.
+         * Reject this message */
+        return NULL; // reject
+    }
+
+    _pscom_recvq_rma_deq(con, rma_read_req);
+    //_pscom_rma_req_deregister(con, rma_read_req);
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(rma_read_req)));
+    return rma_read_req;
+}
+
+static pscom_req_t *_pscom_get_rma_fetch_op_receiver(pscom_con_t *con,
+                                                     pscom_header_net_t *nh)
+{
+    /* create request to receive RMA information in xheader and the data
+     * temporarily */
+    pscom_req_t *req = pscom_req_create(nh->xheader_len, nh->data_len);
+    req->pub.state   = PSCOM_REQ_STATE_RMA_WRITE_REQUEST |
+                     PSCOM_REQ_STATE_PASSIVE_SIDE;
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req_answer)));
+
+    /* recv data temporarily in req->pub.user */
+    req->pub.data        = (void *)req->pub.user;
+    req->pub.data_len    = nh->data_len;
+    req->pub.xheader_len = nh->xheader_len;
+    req->pub.ops.io_done = pscom_rma_fetch_op_recv_io_done;
+    req->pub.connection  = &con->pub;
+
+    D_TR(printf("%s:%u:%s() %s dest=%p, len=%zu\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
+
+    return req;
+}
+
+
+static pscom_req_t *_pscom_get_rma_compare_swap_receiver(pscom_con_t *con,
+                                                         pscom_header_net_t *nh)
+{
+    pscom_req_t *req = pscom_req_create(nh->xheader_len, nh->data_len);
+    req->pub.state   = PSCOM_REQ_STATE_RMA_WRITE_REQUEST |
+                     PSCOM_REQ_STATE_PASSIVE_SIDE;
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req_answer)));
+
+    /* recv data temporarily in req->pub.user */
+    req->pub.data        = (void *)req->pub.user;
+    req->pub.data_len    = nh->data_len;
+    req->pub.xheader_len = nh->xheader_len;
+    req->pub.ops.io_done = pscom_rma_compare_swap_recv_io_done;
+    req->pub.connection  = &con->pub;
+
+    D_TR(printf("%s:%u:%s() %s dest=%p, len=%zu\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(req), req->pub.data, req->pub.data_len));
+
+    return req;
+}
+
+static pscom_req_t *_pscom_get_rma_compare_swap_answer_receiver(
+    pscom_con_t *con, pscom_header_net_t *nh)
+{
+    pscom_req_t *rma_read_req;
+
+    assert(!list_empty(con->recvq_rma.next));
+
+    rma_read_req = nh->xheader->rma_get_answer.id;
+
+    /* rma_read_answer.req is stored at the target side. if compare_addr ==
+     * result, do rma_put operation with this req. */
+
+    /* do not overwrite xheader in rma_read_req */
+    nh->xheader_len = 0;
+
+    if (!_pscom_recvq_rma_contains(con, rma_read_req)) {
+        /* Received unknown rma_read_answer.id. Maybe this
+         * rma request was already aborted.
+         * Reject this message */
+        return NULL; // reject
+    }
+
+    _pscom_recvq_rma_deq(con, rma_read_req);
+
+    D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
+                pscom_debug_req_str(rma_read_req)));
+    return rma_read_req;
+}
+
+
+/* callback function at the target side when RMA request is finished */
+static void pscom_rma_put_recv_io_done(pscom_request_t *request)
+{
+    /* invoke global callback of RMA put at target side  */
+    pscom_xheader_rma_put_t *xheader_rma = &request->xheader.rma_put;
+    pscom_memh_t memh = (pscom_memh_t)xheader_rma->common.memh;
+    assert(memh->magic == MAGIC_MEMH);
+    pscom_rma_op_t rma_cb_id = PSCOM_RMA_PUT;
+    if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
+
+    /* free request */
+    pscom_req_free(get_req(request));
+}
+
+
+static void pscom_rma_get_accumulate_recv_io_done(pscom_request_t *request)
+{
+    pscom_xheader_rma_get_accumulate_t *xheader_rma =
+        (pscom_xheader_rma_get_accumulate_t *)&request->xheader;
+    /* create request to send data back to origin side */
+    pscom_req_t *req_answer = pscom_req_create(
+        sizeof(pscom_xheader_rma_get_answer_t), 0 /* sizeof(unsigned int *) */);
+
+    req_answer->pub.xheader.rma_get_answer.id = xheader_rma->common.id;
+    req_answer->pub.connection                = request->connection;
+
+    req_answer->pub.data_len    = xheader_rma->common.src_len;
+    req_answer->pub.xheader_len = sizeof(pscom_xheader_rma_get_answer_t);
+
+
+    /* size should be optimized, now it is set as 64 */
+    if (xheader_rma->common.src_len < pscom.env.rma_get_acc_direct_mem_copy) {
+        /* data size < 64b direct mem copy */
+        req_answer->pub.data = malloc(xheader_rma->common.src_len);
+        memcpy(req_answer->pub.data, xheader_rma->common.src,
+               xheader_rma->common.src_len);
+        req_answer->pub.ops.io_done = pscom_rma_request_free_send_buffer;
+        _send_rma_get_acc_answer(req_answer,
+                                 PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP);
+    } else {
+        /* data size >= 64b wait for send request */
+        req_answer->pub.data        = xheader_rma->common.src;
+        req_answer->pub.ops.io_done = pscom_request_free;
+        _send_rma_get_acc_answer(req_answer,
+                                 PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP);
+        while (!(req_answer->pub.state & PSCOM_REQ_STATE_IO_DONE)) {
+            _pscom_wait_any();
+        }
+    }
+
+    /* target callback function to do MPI_OP */
+    /* todo: not thread safe, perhaps lock is needed */
+    pscom_memh_t memh = (pscom_memh_t)xheader_rma->common.memh;
+    assert(memh->magic == MAGIC_MEMH);
+    pscom_rma_op_t rma_cb_id = PSCOM_RMA_GET_ACCUMULATE;
+    if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
+
+    pscom_req_free(get_req(request));
+}
+
+static void pscom_rma_fetch_op_recv_io_done(pscom_request_t *request)
+{
+    pscom_xheader_rma_fetch_op_t *xheader_rma =
+        (pscom_xheader_rma_fetch_op_t *)&request->xheader;
+    // send data back to origin side
+    pscom_req_t *req_answer = pscom_req_create(
+        sizeof(pscom_xheader_rma_get_answer_t), 0 /* sizeof(unsigned int *) */);
+
+    req_answer->pub.xheader.rma_get_answer.id = xheader_rma->common.id;
+    req_answer->pub.connection                = request->connection;
+
+    req_answer->pub.data_len = xheader_rma->common.src_len;
+
+    req_answer->pub.xheader_len = sizeof(pscom_xheader_rma_get_answer_t);
+    req_answer->pub.ops.io_done = pscom_rma_request_free_send_buffer;
+
+    /* direct memory copy and send data back*/
+    req_answer->pub.data = malloc(xheader_rma->common.src_len);
+    memcpy(req_answer->pub.data, xheader_rma->common.src,
+           xheader_rma->common.src_len);
+    _send_rma_get_acc_answer(req_answer, PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP);
+
+    /* target callback function to do MPI_OP */
+    /* todo: not thread safe, perhaps lock is needed */
+    request->header.msg_type = PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP;
+    pscom_memh_t memh        = (pscom_memh_t)xheader_rma->common.memh;
+    assert(memh->magic == MAGIC_MEMH);
+    pscom_rma_op_t rma_cb_id = PSCOM_RMA_FETCH_AND_OP;
+    if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
+
+    pscom_req_free(get_req(request));
+}
+
+/* compare two buffer, used in RMA compare and swap */
+/* todo replace it with lib function */
+static int pscom_rma_compare_buffer(char *buffer1, char *buffer2,
+                                    uint64_t length)
+{
+    if (!memcmp(buffer1, buffer2, length)) {
+        return 1;
+    } else {
+        return 0;
+    }
+}
+
+static void pscom_rma_compare_swap_recv_io_done(pscom_request_t *request)
+{
+    pscom_xheader_rma_compare_swap_t *xheader_rma =
+        (pscom_xheader_rma_compare_swap_t *)&request->xheader;
+
+    /* create request and send data back to origin side */
+    pscom_req_t *req_answer =
+        pscom_req_create(sizeof(pscom_xheader_rma_get_answer_t), 0);
+
+    req_answer->pub.xheader.rma_get_answer.id  = xheader_rma->common.id;
+    req_answer->pub.xheader.rma_get_answer.req = NULL;
+    req_answer->pub.connection                 = request->connection;
+    req_answer->pub.data_len                   = xheader_rma->common.src_len;
+    req_answer->pub.xheader_len = sizeof(pscom_xheader_rma_get_answer_t);
+
+    /* do we copy and send or wait for send
+    // direct memory copy to send buffer
+    req_answer->pub.data = malloc(xheader_rma->common.src_len);
+    memcpy(req_answer->pub.data, xheader_rma->common.src,
+    xheader_rma->common.src_len); req_answer->pub.ops.io_done =
+    pscom_rma_request_free_send_buffer; _send_rma_get_acc_answer(req_answer,
+    PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP);
+    */
+    /* send the target buffer back to origin */
+    req_answer->pub.data        = xheader_rma->common.src;
+    req_answer->pub.ops.io_done = pscom_request_free;
+    _send_rma_get_acc_answer(req_answer, PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP);
+    /* wait till the send (to orgin side) is finished */
+    while (!(req_answer->pub.state & PSCOM_REQ_STATE_IO_DONE)) {
+        _pscom_wait_any();
+    }
+
+    /* compare the target buffer and compare buffer */
+    size_t data_len = xheader_rma->common.src_len; /* 2 buffers are received */
+    if (pscom_rma_compare_buffer((char *)xheader_rma->common.src,
+                                 (char *)request->data, data_len)) {
+        /* the first part of request->data is compare buffer, the second part of
+         * request->data is origin buffer */
+        /* if equal, copy the data from origin buffer to target buffer, if not,
+         * do nothing, free buffer later*/
+        memcpy(xheader_rma->common.src, (char *)request->data + data_len,
+               data_len);
+    }
+
+    /* target callback function to do MPI_OP */
+    /* todo: not thread safe, perhaps lock is needed */
+    request->header.msg_type = PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP;
+    pscom_memh_t memh        = (pscom_memh_t)xheader_rma->common.memh;
+    assert(memh->magic == MAGIC_MEMH);
+    pscom_rma_op_t rma_cb_id = PSCOM_RMA_COMPARE_AND_SWAP;
+    if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
+
+    pscom_req_free(get_req(request));
+}
+
+static void pscom_rma_accumulate_recv_io_done(pscom_request_t *request)
+{
+    /* target callback function to do MPI_OP */
+    pscom_xheader_rma_accumulate_t *xheader_rma =
+        &request->xheader.rma_accumulate;
+    pscom_memh_t memh = (pscom_memh_t)xheader_rma->common.memh;
+    assert(memh->magic == MAGIC_MEMH);
+    pscom_rma_op_t rma_cb_id = PSCOM_RMA_ACCUMULATE;
+    if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
+
+    pscom_req_free(get_req(request));
+}
+
+void pscom_rma_request_free_send_buffer(pscom_request_t *request)
+{
+    /* free the space allocated for sending */
+    free(request->data);
+    pscom_req_free(get_req(request));
 }

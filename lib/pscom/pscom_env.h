@@ -303,6 +303,7 @@ struct PSCOM_env {
     unsigned int guard;
     unsigned int skipblocksize;
     unsigned int iprobe_count;
+    unsigned int rma_get_acc_direct_mem_copy;
 
     char *network;
     char *info;

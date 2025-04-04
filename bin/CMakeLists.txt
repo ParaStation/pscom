@@ -26,6 +26,18 @@ target_include_directories(pscom_rma_get
                            PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
 install(TARGETS pscom_rma_get DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
+add_executable(pscom_rma_sync_notify pscom_rma_sync_notify.c)
+target_link_libraries(pscom_rma_sync_notify PRIVATE pscom)
+target_include_directories(pscom_rma_sync_notify
+                           PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
+install(TARGETS pscom_rma_sync_notify DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
+add_executable(pscom_rma_sync_ctrl pscom_rma_sync_ctrl.c)
+target_link_libraries(pscom_rma_sync_ctrl PRIVATE pscom)
+target_include_directories(pscom_rma_sync_ctrl
+                           PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
+install(TARGETS pscom_rma_sync_ctrl DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
 if(POPT_ENABLED)
   add_executable(pscom_dispatch examples/pscom_dispatch.c)
   target_include_directories(pscom_dispatch PRIVATE ${POPT_INCLUDE_DIRS})

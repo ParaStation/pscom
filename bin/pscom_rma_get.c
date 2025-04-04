@@ -273,18 +273,18 @@ static void do_rma_client(pscom_connection_t *con)
 
         /* use pscom_rma_get() to fetch data from the exposed memory region */
         pscom_request_t *rma_req =
-            pscom_request_create(sizeof(pscom_xheader_rma_read_t), 0);
-        rma_req->data_len    = msgsize;
-        rma_req->data        = buf;
-        rma_req->connection  = con;
-        rma_req->ops.io_done = NULL;
+            pscom_request_create(sizeof(pscom_xheader_rma_get_t), 0);
+
+        rma_req->rma.origin_addr = buf;
+        rma_req->rma.target_addr = mem_info->addr;
+        rma_req->rma.rkey        = rkey;
+        rma_req->connection      = con;
+        rma_req->data_len        = msgsize;
 
         correct = arg_verify;
 
-        pscom_post_rma_get(rma_req, mem_info->addr, rkey);
+        pscom_post_rma_get(rma_req);
         pscom_wait(rma_req);
-        assert(pscom_req_successful(rma_req));
-        pscom_request_free(rma_req);
 
         if (arg_verify) {
             size_t idx;
