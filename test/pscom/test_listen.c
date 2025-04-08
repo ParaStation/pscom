@@ -12,6 +12,7 @@
 #include <stdint.h> /* IWYU pragma: keep */
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
+#include <string.h>
 
 #include "pscom.h"
 #include "pscom_priv.h"
@@ -84,7 +85,14 @@ void test_start_stop_listen_ondemand(void **state)
 
     /* Create a dummy ondemand connection */
     pscom_con_t *con = pscom_con_create(dummy_sock);
-    _pscom_con_connect_ondemand(con, 42, 42, "r1428571");
+
+    /* set connection parameters */
+    con->pub.remote_con_info.node_id    = 42;
+    con->pub.remote_con_info.tcp.portno = 42;
+    memcpy(con->pub.remote_con_info.name, "r1428571",
+           sizeof(con->pub.remote_con_info.name));
+
+    _pscom_con_connect_ondemand(con);
 
     /* The counter for listen users must be increased by one due to the ondemand
      * connection while the active listen counter must still be the same */
@@ -137,7 +145,14 @@ void test_start_stop_listen_ondemand_recv_req(void **state)
 
     /* Create a dummy ondemand connection */
     pscom_con_t *con = pscom_con_create(dummy_sock);
-    _pscom_con_connect_ondemand(con, 42, 42, "r1428571");
+
+    /* set connection parameters */
+    con->pub.remote_con_info.node_id    = 42;
+    con->pub.remote_con_info.tcp.portno = 42;
+    memcpy(con->pub.remote_con_info.name, "r1428571",
+           sizeof(con->pub.remote_con_info.name));
+
+    _pscom_con_connect_ondemand(con);
 
     /* Save previous values for later comparison */
     activecnt = dummy_sock->listen.activecnt;
@@ -287,7 +302,14 @@ void test_suspend_resume_listen_ondemand(void **state)
 
     /* Create a dummy ondemand connection */
     pscom_con_t *con = pscom_con_create(dummy_sock);
-    _pscom_con_connect_ondemand(con, 42, 42, "r1428571");
+
+    /* set connection parameters */
+    con->pub.remote_con_info.node_id    = 42;
+    con->pub.remote_con_info.tcp.portno = 42;
+    memcpy(con->pub.remote_con_info.name, "r1428571",
+           sizeof(con->pub.remote_con_info.name));
+
+    _pscom_con_connect_ondemand(con);
 
     /* Test suspend listening on socket */
     suspend_listen(dummy_sock);
@@ -341,7 +363,14 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
 
     /* Create a dummy ondemand connection */
     pscom_con_t *con = pscom_con_create(dummy_sock);
-    _pscom_con_connect_ondemand(con, 42, 42, "r1428571");
+
+    /* set connection parameters */
+    con->pub.remote_con_info.node_id    = 42;
+    con->pub.remote_con_info.tcp.portno = 42;
+    memcpy(con->pub.remote_con_info.name, "r1428571",
+           sizeof(con->pub.remote_con_info.name));
+
+    _pscom_con_connect_ondemand(con);
 
     /* Create a receive request and post it to the connection */
     pscom_request_t *req = pscom_request_create(0, 0);
