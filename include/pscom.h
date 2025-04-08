@@ -40,7 +40,7 @@ struct sockaddr_in;
 #define PSCOM_CUDA_AWARENESS_SUPPORT
 #endif
 
-#define PSCOM_ABI_VERSION_MAJOR 4
+#define PSCOM_ABI_VERSION_MAJOR 5
 #define PSCOM_ABI_VERSION_MINOR 0
 
 
@@ -154,6 +154,24 @@ typedef enum PSCOM_con_type {
     PSCOM_CON_TYPE_PORTALS = 0x14, /**< Portals4 communication (e.g., BXI) */
     PSCOM_CON_TYPE_COUNT,          /**< Number of connection types*/
 } pscom_con_type_t;
+
+typedef enum PSCOM_connect_flags {
+    PSCOM_CON_FLAG_DIRECT   = 0x00000000, /**< Direct connection establishment
+                                               during initialization */
+    PSCOM_CON_FLAG_ONDEMAND = 0x00000001, /**< No connection setup during init,
+                                               connections are prepared and
+                                               connected lazily */
+} pscom_connect_flags_t;
+
+typedef enum PSCOM_socket_flags {
+    PSCOM_SOCK_FLAG_INTRA_JOB = 0x00000000, /**< Socket for connecting processes
+                                                 in the same job/intra-comm */
+    PSCOM_SOCK_FLAG_INTER_JOB = 0x00000001, /**< Socket for connecting processes
+                                                 of different jobs/inter-comm */
+} pscom_socket_flags_t;
+
+/**< wildcard for rank in pscom_connect() and pscom_open_socket() */
+#define PSCOM_RANK_UNDEFINED -1
 
 /**
  * @brief Basic operations that can be performed on a connection.
@@ -560,8 +578,11 @@ struct PSCOM_request {
  */
 struct PSCOM_con_info {
     int node_id; /**< A unique node identifier */
-    int pid;     /**< Process ID of the connection owning process */
-    void *id;    /**< A unique 32bit identifier for the connection */
+    struct {
+        int32_t portno; /**< A port number of TCP socket*/
+    } tcp;
+    int rank; /**< local rank of the socket or dest rank of the connection */
+    void *id; /**< A unique 32bit identifier for the connection */
     /**
      * @brief Name of the corresponding socket.
      *
@@ -708,16 +729,17 @@ int pscom_get_portno(pscom_socket_t *socket);
  * @param [in] connection_userdata_size Size of the user-defined storage within
  *                                      connection structure of the associated
  *                                      connections.
+ * @param [in] local_rank               The own local rank (e.g., as given by
+ *                                      the process manager) or
+ *                                      PSCOM_RANK_UNDEFINED.
+ * @param [in] socket_flags             Flags used to create the socket.
+
  *
  * @return A pointer to the socket or NULL on error.
  */
-pscom_socket_t *pscom_open_socket(size_t socket_userdata_size,
-                                  size_t connection_userdata_size);
-
-
-#define PSCOM_OPEN_SOCKET()                                                    \
-    pscom_open_socket(sizeof(PSCOM_SOCKET_USERDATA_TYPE),                      \
-                      sizeof(PSCOM_CONNECTION_USERDATA_TYPE))
+pscom_socket_t *pscom_open_socket(size_t userdata_size,
+                                  size_t connection_userdata_size,
+                                  int local_rank, uint64_t socket_flags);
 
 
 /**
@@ -833,48 +855,6 @@ void pscom_close_socket(pscom_socket_t *socket);
  * @return A handle to the created connection or NULL on error.
  */
 pscom_connection_t *pscom_open_connection(pscom_socket_t *socket);
-
-
-/**
- * @brief Establish a connection to a remote process.
- *
- * This routine establishes a connection to a remote process and blocks until
- * the connection has been established successfully or an error occurred.
- *
- * @param [in] connection The local connection to be used.
- * @param [in] nodeid     The pscom ID of the remote node.
- * @param [in] portno     The listening port of the remote process.
- *
- * @return PSCOM_SUCCESS or PSCOM_ERR_STDERROR otherwise (`errno` indicates
- *         the error type).
- */
-pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid,
-                          int portno);
-
-
-/* connect to nodeid:port or accept a connection from a socket with the name
-   (see pscom_socket_set_name()) */
-#define PSCOM_HAS_ON_DEMAND_CONNECTIONS 1
-
-
-/**
- * @brief Create an on-demand connection to a remote process.
- *
- * This routine creates an on-demand connection to a remote process. In contrast
- * to @ref pscom_connect(), it does not block until this has been established
- * but rather sets up everything to connect upon the first write attempt on that
- * connection.
- *
- * @param [in] connection The local connection to be used.
- * @param [in] nodeid     The pscom ID of the remote node.
- * @param [in] portno     The listening port of the remote process.
- * @param [in] name       The socket name of the remote process
- *                        (cf. @ref pscom_con_info_t).
- *
- * @return Always returns PSCOM_SUCCESS.
- */
-pscom_err_t pscom_connect_ondemand(pscom_connection_t *connection, int nodeid,
-                                   int portno, const char name[8]);
 
 
 /**
@@ -1514,53 +1494,54 @@ pscom_connection_t *pscom_get_next_connection(pscom_socket_t *socket,
 
 
 /**
- * @brief Connect to a remote process using a string.
+ * @brief Connect to a remote process.
  *
- * This routine establishes a connection to a remote process using a socket
- * string that is returned by the @ref pscom_listen_socket_str call (or
- * @ref pscom_listen_socket_ondemand_str for on-demand connections) on the
+ * This routine establishes a connection to a remote process using an endpoint
+ * string that is returned by the @ref pscom_socket_get_ep_str call on the
  * remote side.
  *
- * @param connection The local connection to be used.
- * @param socket_str The connection string obtained at the remote process.
+ * @param connection       The local connection to be used.
+ * @param ep_str           The endpoint string obtained at the remote process.
+ * @param dest_rank        The rank of the remote process (e.g., as given by the
+ *                         process manager) or PSCOM_RANK_UNDEFINED.
+ * @param connection_flags The connection options, e.g. direct or ondemand.
  *
  * @return PSCOM_SUCCESS or PSCOM_ERR_STDERROR otherwise (`errno` indicates
  *         the error type).
  */
-pscom_err_t pscom_connect_socket_str(pscom_connection_t *connection,
-                                     const char *socket_str);
+pscom_err_t pscom_connect(pscom_connection_t *connection, const char *ep_str,
+                          int dest_rank, uint64_t connection_flags);
 
 
 /**
- * @brief Get the listening address of a socket.
+ * @brief Get the endpoint string of a socket.
  *
  * This routine returns a string that can be used to connect to this process
- * by calling @ref pscom_connect_socket_str. It does not set the socket to
+ * by calling @ref pscom_connect. It does not set the socket to
  * listening state; this has to be done by calling @ref pscom_listen.
  *
- * @param [in] socket The communication socket to connect to.
+ * @param [in]  socket The communication socket to connect to.
+ * @param [out] ep_str A pointer to the resulting endpoint string; the memory is
+ *                     allocated by pscom and has to be released by calling @ref
+ *                     pscom_socket_free_ep_str; can be NULL if the rank is
+ *                     sufficient to connect to this process.
  *
- * @return The string address of the listening socket; NULL if the socket is not
- *         in listening state.
+ * @return PSCOM_SUCCESS or PSCOM_ERR_STDERROR otherwise (`errno` indicates
+ *         the error type).
  */
-const char *pscom_listen_socket_str(pscom_socket_t *socket);
+pscom_err_t pscom_socket_get_ep_str(pscom_socket_t *socket, char **ep_str);
 
 
 /**
- * @brief Get the listening address of a socket for on-demand connections.
+ * @brief free the buffer of the endpoint string.
  *
- * This routine returns a string that can be used to connect to this process
- * by calling @ref pscom_connect_socket_str. It does not set the socket to
- * listening state; this has to be done by calling @ref pscom_listen. The
- * returned address will be used for creating an on-demand connection (cf.
- * @ref pscom_connect_ondemand for details).
+ * This routine frees the buffer storing the string returned by the function
+ * @ref pscom_socket_get_ep_str
  *
- * @param [in] socket The communication socket to connect to.
+ * @param [in] ep_str The pointer to store the string.
  *
- * @return The string address of the listening socket; NULL if the socket is not
- *         in listening state.
  */
-const char *pscom_listen_socket_ondemand_str(pscom_socket_t *socket);
+void pscom_socket_free_ep_str(char *ep_str);
 
 
 /**
@@ -1772,44 +1753,6 @@ pscom_err_t pscom_rkey_buffer_pack(void **rkeybuf, size_t *bufsize,
 void pscom_rkey_buffer_release(void *rkey_buffer);
 
 
-const char *pscom_socket_str(int nodeid, int portno);
-const char *pscom_socket_ondemand_str(int nodeid, int portno,
-                                      const char name[8]);
-int pscom_parse_socket_str(const char *socket_str, int *nodeid, int *portno);
-int pscom_parse_socket_ondemand_str(const char *socket_str, int *nodeid,
-                                    int *portno, char (*name)[8]);
-
-
-void pscom_set_debug(int level);
-
-ssize_t pscom_readall(int fd, void *buf, size_t count);
-ssize_t pscom_writeall(int fd, const void *buf, size_t count);
-int pscom_atoport(const char *service, const char *proto);
-int pscom_atoaddr(const char *address, struct in_addr *addr);
-int pscom_ascii_to_sockaddr_in(const char *host, const char *port,
-                               const char *protocol, struct sockaddr_in *addr);
-
-const char *pscom_dumpstr(const void *buf, size_t size);
-
-
-#define pscom_min(a, b) (((a) < (b)) ? (a) : (b))
-#define pscom_max(a, b) (((a) > (b)) ? (a) : (b))
-
-void pscom_dump_connection(FILE *out, pscom_connection_t *connection);
-void pscom_dump_reqstat(FILE *out);
-void pscom_dump_info(FILE *out);
-
-/* Get value name from environment */
-void pscom_env_get_int(int *val, const char *name);
-void pscom_env_get_uint(unsigned int *val, const char *name);
-void pscom_env_get_size_t(size_t *val, const char *name);
-void pscom_env_get_str(char **val, const char *name);
-void pscom_env_get_dir(char **val, const char *name);
-
-extern char *(*pscom_env_get)(const char *name);
-extern int (*pscom_env_set)(const char *name, const char *value, int overwrite);
-
-
 /**
  * @brief Non-blocking RMA put operation.
  *
@@ -1965,6 +1908,37 @@ void pscom_post_rma_compare_swap(pscom_request_t *request);
  */
 void pscom_register_rma_callbacks(void (*target_callback)(pscom_request_t *req),
                                   pscom_memh_t memh, pscom_rma_op_t rma_op);
+
+
+void pscom_set_debug(int level);
+
+ssize_t pscom_readall(int fd, void *buf, size_t count);
+ssize_t pscom_writeall(int fd, const void *buf, size_t count);
+int pscom_atoport(const char *service, const char *proto);
+int pscom_atoaddr(const char *address, struct in_addr *addr);
+int pscom_ascii_to_sockaddr_in(const char *host, const char *port,
+                               const char *protocol, struct sockaddr_in *addr);
+
+const char *pscom_dumpstr(const void *buf, size_t size);
+
+
+#define pscom_min(a, b) (((a) < (b)) ? (a) : (b))
+#define pscom_max(a, b) (((a) > (b)) ? (a) : (b))
+
+void pscom_dump_connection(FILE *out, pscom_connection_t *connection);
+void pscom_dump_reqstat(FILE *out);
+void pscom_dump_info(FILE *out);
+
+/* Get value name from environment */
+void pscom_env_get_int(int *val, const char *name);
+void pscom_env_get_uint(unsigned int *val, const char *name);
+void pscom_env_get_size_t(size_t *val, const char *name);
+void pscom_env_get_str(char **val, const char *name);
+void pscom_env_get_dir(char **val, const char *name);
+
+extern char *(*pscom_env_get)(const char *name);
+extern int (*pscom_env_set)(const char *name, const char *value, int overwrite);
+
 
 #ifdef __cplusplus
 } /* extern "C" */

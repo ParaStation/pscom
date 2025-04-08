@@ -1075,8 +1075,8 @@ void pscom_precon_destroy_tcp(pscom_precon_t *precon)
 
 void pscom_precon_ondemand_backconnect_tcp(pscom_con_t *con)
 {
-    int nodeid = con->arch.ondemand.node_id;
-    int portno = con->arch.ondemand.portno;
+    int nodeid = con->pub.remote_con_info.node_id;
+    int portno = con->pub.remote_con_info.tcp.portno;
     int rc;
 
     pscom_precon_t *precon = pscom_precon_create(con);
@@ -1113,25 +1113,27 @@ void pscom_precon_ondemand_backconnect_tcp(pscom_con_t *con)
 }
 
 
-pscom_err_t pscom_precon_connect_tcp(pscom_con_t *con, int nodeid, int portno)
+pscom_err_t pscom_precon_connect_tcp(pscom_con_t *con)
 {
     pscom_sock_t *sock = get_sock(con->pub.socket);
 
     /* ToDo: Set connection state to "connecting". Suspend send and recieve
      * queues! */
-    pscom_precon_t *precon           = pscom_precon_create(con);
-    con->precon                      = precon;
-    con->pub.remote_con_info.node_id = nodeid;
-    if (!con->pub.remote_con_info.name[0]) {
-        snprintf(con->pub.remote_con_info.name,
-                 sizeof(con->pub.remote_con_info.name), ":%u", portno);
+    pscom_precon_t *precon = pscom_precon_create(con);
+    con->precon            = precon;
+
+    pscom_con_info_t *remote_con_info = &con->pub.remote_con_info;
+    if (!remote_con_info->name[0]) {
+        snprintf(remote_con_info->name, sizeof(remote_con_info->name), ":%u",
+                 remote_con_info->tcp.portno);
     }
 
     if (list_empty(&con->next)) {
         list_add_tail(&con->next, &sock->connections);
     }
 
-    if (pscom_precon_direct_connect_tcp(precon, nodeid, portno) < 0) {
+    if (pscom_precon_direct_connect_tcp(precon, remote_con_info->node_id,
+                                        remote_con_info->tcp.portno) < 0) {
         goto err_connect;
     }
 
@@ -1170,14 +1172,114 @@ void pscom_precon_provider_init_tcp()
 }
 
 
+pscom_err_t pscom_get_ep_info_from_socket_tcp(pscom_socket_t *socket,
+                                              char **ep_str)
+{
+    /* error checking */
+    if (!socket || !ep_str) { goto err_invalid_param; };
+
+    /* [ip addr]:[port number]@[name], name is the socket name set by user. for
+     * now this name is the local rank from process manager */
+    size_t str_size  = sizeof("xxx.xxx.xxx.xxx:xxxxx@01234567____");
+    char *ep_str_tcp = (char *)malloc(str_size);
+    if (!ep_str_tcp) { goto err_malloc; }
+
+    int portno = socket->listen_portno;
+    int nodeid = socket->local_con_info.node_id;
+
+    if (portno < 0 || portno > 65535) { goto err_invalid_param; }
+    /* socket->local_con_info.name will be sent to the remote side */
+    snprintf(ep_str_tcp, str_size, INET_ADDR_FORMAT ":%u@%1.8s",
+             INET_ADDR_SPLIT(nodeid), portno, socket->local_con_info.name);
+    *ep_str = ep_str_tcp;
+
+    return PSCOM_SUCCESS;
+
+    /* error code */
+err_malloc:
+    errno = ENOMEM;
+    goto err_out;
+err_invalid_param:
+    errno = EINVAL;
+err_out:
+    return PSCOM_ERR_STDERROR;
+}
+
+
+pscom_err_t pscom_parse_ep_info_tcp(const char *ep_str,
+                                    pscom_con_info_t *con_info)
+{
+    /* [ip addr]:[port number]@[name], name is the socket name set by user. for
+     * now this name is rank */
+    char lname[sizeof("xxx.xxx.xxx.xxx:xxxxx@01234567____")];
+    char *host;
+    char *port      = NULL;
+    char *nametok   = NULL;
+    pscom_err_t ret = PSCOM_SUCCESS;
+    struct sockaddr_in sock;
+
+    if (!ep_str) {
+        /* NULL means loopback connection */
+        con_info->node_id    = -1;
+        con_info->tcp.portno = -1;
+        memset(con_info->name, 0, sizeof(con_info->name));
+        return ret;
+    }
+
+    strcpy(lname, ep_str);
+
+    host = strtok_r(lname, ":", &port);
+    if (!host) { goto err_no_host; }
+    if (!port) { goto err_no_port; }
+    strtok_r(port, "@", &nametok);
+
+    if (pscom_ascii_to_sockaddr_in(host, port, "tcp", &sock) < 0) {
+        goto err_to_sock;
+    }
+
+    con_info->node_id    = (int)ntohl(sock.sin_addr.s_addr);
+    con_info->tcp.portno = (int)ntohs(sock.sin_port);
+
+    memset(con_info->name, 0, sizeof(con_info->name));
+    /* the parsed name should be socket->local_con_info.name from the remote
+     * side, it will be used to find ondemand connection and determine who is
+     * connecting/ back-connecting by comparing with the name in
+     * socket->local_con_info.name */
+    if (nametok) { strncpy(con_info->name, nametok, sizeof(con_info->name)); }
+
+    return ret;
+
+err_no_host:
+err_no_port:
+    errno = EINVAL;
+err_to_sock:
+    ret = PSCOM_ERR_STDERROR;
+    return ret;
+}
+
+
+static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
+                                         pscom_connection_t *connection)
+{
+    int node_id = connection->remote_con_info.node_id;
+    int portno  = connection->remote_con_info.tcp.portno;
+    return ((node_id == -1) || (node_id == INADDR_LOOPBACK) ||
+            (node_id == socket->local_con_info.node_id)) &&
+           ((portno == -1) || (portno == socket->listen_portno));
+}
+
+
 pscom_precon_provider_t pscom_provider_tcp = {
-    .precon_type = PSCOM_PRECON_TYPE_TCP,
-    .init        = pscom_precon_provider_init_tcp,
-    .send        = pscom_precon_send_tcp,
-    .create      = pscom_precon_create_tcp,
-    .destroy     = pscom_precon_destroy_tcp,
-    .recv_start  = pscom_precon_recv_start_tcp,
-    .recv_stop   = pscom_precon_recv_stop_tcp,
-    .connect     = pscom_precon_connect_tcp,
-    .guard_setup = pscom_precon_guard_setup_tcp,
+    .precon_type             = PSCOM_PRECON_TYPE_TCP,
+    .init                    = pscom_precon_provider_init_tcp,
+    .send                    = pscom_precon_send_tcp,
+    .create                  = pscom_precon_create_tcp,
+    .destroy                 = pscom_precon_destroy_tcp,
+    .recv_start              = pscom_precon_recv_start_tcp,
+    .recv_stop               = pscom_precon_recv_stop_tcp,
+    .connect                 = pscom_precon_connect_tcp,
+    .guard_setup             = pscom_precon_guard_setup_tcp,
+    .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,
+    .parse_ep_info           = pscom_parse_ep_info_tcp,
+    .is_connect_loopback     = pscom_is_connect_loopback_tcp,
 };
