@@ -590,15 +590,19 @@ int main(int argc, char **argv)
     rc = pscom_init(PSCOM_VERSION);
     assert(rc == PSCOM_SUCCESS);
 
-    socket = pscom_open_socket(0, 0);
+    socket = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                               PSCOM_SOCK_FLAG_INTRA_JOB);
 
     if (!arg_client) { // server
         socket->ops.con_accept = do_accept;
         do {
             PSCALL(pscom_listen(socket, arg_lport));
-
+            char *ep_str = NULL;
+            rc           = pscom_socket_get_ep_str(socket, &ep_str);
+            assert(rc == PSCOM_SUCCESS);
             printf("Waiting for client.\nCall client with:\n");
-            printf("%s -c %s", argv[0], pscom_listen_socket_str(socket));
+            printf("%s -c %s", argv[0], ep_str);
+            pscom_socket_free_ep_str(ep_str);
             if (arg_msgsize != MSIZE_DEFAULT) {
                 printf(" -n %ld\n", arg_msgsize);
             } else {
@@ -626,7 +630,8 @@ int main(int argc, char **argv)
         con = pscom_open_connection(socket);
         assert(con);
 
-        PSCALL(pscom_connect_socket_str(con, arg_server));
+        PSCALL(pscom_connect(con, arg_server, PSCOM_RANK_UNDEFINED,
+                             PSCOM_CON_FLAG_DIRECT));
 
         do_rma_client(con);
         pscom_close_connection(con);

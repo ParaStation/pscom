@@ -280,19 +280,14 @@ int main(int argc, char **argv)
     rc = pscom_init(PSCOM_VERSION);
     exit_on_error(rc, "pscom_init()");
 
-    sock_srv = pscom_open_socket(0, 0);
+    sock_srv = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                                 PSCOM_SOCK_FLAG_INTRA_JOB);
     pscom_con_type_mask_only(sock_srv, PSCOM_CON_TYPE_TCP);
 
     // try to be the server:
     sock_srv->ops.con_accept = do_accept;
 
-    int lport; // listening port
-    rc = pscom_parse_socket_str(arg_server, NULL, &lport);
-    if (rc != PSCOM_SUCCESS) {
-        fprintf(stderr, "Server: '%s'\n", arg_server);
-        exit_on_error(rc, "parse server ");
-    }
-
+    int lport = 7100; // listening port set as 7100, not sure if it is used.
 
     rc = pscom_listen(sock_srv, lport);
     if (rc != PSCOM_SUCCESS) {
@@ -309,30 +304,38 @@ int main(int argc, char **argv)
     assert(con_server);
 
     if (arg_verbose) { printf("connect %s\n", arg_server); }
-
-    rc = pscom_connect_socket_str(con_server, arg_server);
+    // tcp direct connect with ip:port in arg_server
+    rc = pscom_connect(con_server, arg_server, PSCOM_RANK_UNDEFINED,
+                       PSCOM_CON_FLAG_DIRECT);
     if (rc != PSCOM_SUCCESS) {
         fprintf(stderr, "Server: '%s'\n", arg_server);
-        exit_on_error(rc, "pscom_connect_socket_str ");
+        exit_on_error(rc, "pscom_connect(con_server, arg_server, "
+                          "PSCOM_RANK_UNDEFINED, "
+                          "PSCOM_CON_FLAG_DIRECT)");
     }
 
     struct hello h;
 
     sprintf(h.buf, "n%d", getpid());
 
-    sock_client                 = pscom_open_socket(0, 0);
+    sock_client                 = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                                                    PSCOM_SOCK_FLAG_INTRA_JOB);
     sock_client->ops.con_accept = do_accept_client;
     connections_client          = malloc(arg_np * sizeof(*connections_client));
 
     rc = pscom_listen(sock_client, PSCOM_ANYPORT);
     exit_on_error(rc, "pscom_listen(sock_client, PSCOM_ANYPORT)");
 
-    const char *me = pscom_listen_socket_str(sock_client);
+    char *me = NULL;
+
+    rc = pscom_socket_get_ep_str(sock_client, &me);
+    assert(rc == PSCOM_SUCCESS);
 
     if (arg_verbose) { printf("listening on %s\n", me); }
     assert(strlen(me) < sizeof(h.vc));
 
     strcpy(h.vc, me);
+    pscom_socket_free_ep_str(me);
     h.np = arg_np;
 
     // if (arg_verbose) printf("send vc (np = %d)\n", h.np);
@@ -361,13 +364,22 @@ int main(int argc, char **argv)
             connections_client[i]   = con;
             connections_client_count++;
             if (i < my_rank) {
-                rc = pscom_connect_socket_str(con, h.vc);
-                exit_on_error(rc, "pscom_connect_socket_str(con, %s)", h.vc);
+                // tcp direct connect with ip:port in h.vc
+                rc = pscom_connect(con, h.vc, PSCOM_RANK_UNDEFINED,
+                                   PSCOM_CON_FLAG_DIRECT);
+                exit_on_error(rc,
+                              "pscom_connec(con, %s, PSCOM_RANK_UNDEFINED, "
+                              "PSCOM_CON_FLAG_DIRECT)",
+                              h.vc);
 
                 pscom_send(con, NULL, 0, &my_rank, sizeof(my_rank));
             } else {
-                rc = pscom_connect(con, -1, -1); // Loopback
-                exit_on_error(rc, "pscom_connect(-1, -1)");
+                rc = pscom_connect(con, NULL, PSCOM_RANK_UNDEFINED,
+                                   PSCOM_CON_FLAG_DIRECT); // Loopback
+                                                           // direct
+                exit_on_error(rc, "pscom_connect(con, NULL, "
+                                  "PSCOM_RANK_UNDEFINED, "
+                                  "PSCOM_CON_FLAG_DIRECT)");
             }
         }
     }

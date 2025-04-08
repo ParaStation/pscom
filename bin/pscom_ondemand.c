@@ -9,13 +9,12 @@
  * file.
  */
 
+#include <assert.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include <errno.h>
 #include <string.h>
 #include <popt.h>
-#include <error.h>
 
 #include "pscom.h"
 
@@ -146,7 +145,6 @@ struct PSCOM_socket_ops socket_ops_server = {
 int main(int argc, char **argv)
 {
     pscom_err_t rc;
-    int ret;
 
     progname = strdup(argc && argv[0] ? argv[0] : "< ??? >");
     parse_opt(argc, argv);
@@ -154,7 +152,8 @@ int main(int argc, char **argv)
     pscom_set_debug(arg_verbose);
 
     pscom_init(PSCOM_VERSION);
-    sock = pscom_open_socket(0, 0);
+    sock = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                             PSCOM_SOCK_FLAG_INTRA_JOB);
     if (!sock) {
         abort_on_error("pscom_open_socket() failed", PSCOM_ERR_STDERROR);
     }
@@ -167,28 +166,36 @@ int main(int argc, char **argv)
 
     pscom_connection_t *con = pscom_open_connection(sock);
 
-    rc = pscom_connect_socket_str(con, arg_peer_str);
-    if (rc) { abort_on_error("pscom_connect_socket_str()", rc); }
+    // tcp ondemand connect with ip:port in arg_peer_str
+    rc = pscom_connect(con, arg_peer_str, PSCOM_RANK_UNDEFINED,
+                       PSCOM_CON_FLAG_ONDEMAND);
+    if (rc) {
+        abort_on_error("pscom_connect(con, arg_peer_str, PSCOM_RANK_UNDEFINED, "
+                       "PSCOM_CON_FLAG_ONDEMAND)",
+                       rc);
+    }
 
     if (0) { // dummy connection
         pscom_connection_t *cond = pscom_open_connection(sock);
-        rc = pscom_connect_socket_str(cond, "localhost:8912@dummy");
-        if (rc) { abort_on_error("pscom_connect_socket_str()", rc); }
+        rc = pscom_connect(cond, "localhost:8912@dummy", PSCOM_RANK_UNDEFINED,
+                           PSCOM_CON_FLAG_ONDEMAND);
+        if (rc) {
+            abort_on_error("pscom_connect(cond,localhost:8912@dummy, "
+                           "PSCOM_RANK_UNDEFINED, "
+                           "PSCOM_CON_FLAG_ONDEMAND)",
+                           rc);
+        }
     }
 
     // printf("Lokal connection: %p\n", con);
 
     {
-        int peer_port;
-        char peer_name[8];
-
-        ret = pscom_parse_socket_ondemand_str(arg_peer_str, NULL, &peer_port,
-                                              &peer_name);
-        if (ret) { error(1, errno, "parse peer address failed"); }
-
+        char *ep_str = NULL;
+        rc           = pscom_socket_get_ep_str(sock, &ep_str);
+        assert(rc == PSCOM_SUCCESS);
         printf("Call:\n");
-        printf("%s -l %d -n %1.8s %s%s\n", progname, peer_port, peer_name,
-               pscom_listen_socket_ondemand_str(sock), arg_send ? "" : " -s");
+        printf("%s %s%s\n", progname, ep_str, arg_send ? "" : " -s");
+        pscom_socket_free_ep_str(ep_str);
     }
 
     pscom_stop_listen(sock);
