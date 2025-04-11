@@ -27,12 +27,12 @@ function(plugin_common plugin)
 
   target_link_libraries(${plugin} PRIVATE pscom)
 
-  target_compile_options(
-    ${plugin}
-    PRIVATE -fvisibility=hidden
-    PRIVATE -flto)
+  target_compile_options(${plugin} PRIVATE -fvisibility=hidden)
 
-  target_link_options(${plugin} PRIVATE -flto)
+  if(LTO_ENABLED)
+    set_target_properties(${plugin} PROPERTIES INTERPROCEDURAL_OPTIMIZATION
+                                               TRUE)
+  endif()
 
   set_target_properties(${plugin} PROPERTIES NO_SONAME TRUE)
 

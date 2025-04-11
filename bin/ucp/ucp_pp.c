@@ -25,7 +25,6 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <netinet/in.h>
-#include <error.h>
 #include <errno.h>
 #include <unistd.h>
 #include <inttypes.h>
@@ -39,6 +38,14 @@
 // #define TRACE(code) code
 #define TRACE(code)
 
+const char *progname = NULL;
+#define error(exit_code, errnum, fmt, ...)                                     \
+    do {                                                                       \
+        fflush(stdout);                                                        \
+        fprintf(stderr, "%s: " fmt, progname, ##__VA_ARGS__);                  \
+        if (errnum != 0) { fprintf(stderr, ": %s\n", strerror(errnum)); }      \
+        if (exit_code != 0) { exit(exit_code); }                               \
+    } while (0);
 
 int arg_loops   = 1024;
 int arg_maxtime = 3000;
@@ -589,6 +596,7 @@ static FILE *get_peer(void)
 int main(int argc, char **argv)
 {
     FILE *peer;
+    progname = argv[0];
 
     parse_opt(argc, argv);
 

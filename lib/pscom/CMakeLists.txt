@@ -62,12 +62,11 @@ target_compile_definitions(
   PRIVATE LIBPSCOM
   PRIVATE LIBDIR="${CMAKE_INSTALL_LIBDIR}")
 
-target_compile_options(
-  pscom
-  PRIVATE -fvisibility=hidden
-  PRIVATE -flto)
+target_compile_options(pscom PRIVATE -fvisibility=hidden)
 
-target_link_options(pscom PRIVATE -flto)
+if(LTO_ENABLED)
+  set_target_properties(pscom PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
+endif()
 
 set_target_properties(pscom PROPERTIES VERSION "2.0.0" SOVERSION "2")
 

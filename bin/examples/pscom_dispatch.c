@@ -32,10 +32,17 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <string.h>
-#include <error.h>
 
 #include "pscom.h"
 
+const char *progname = NULL;
+#define error(exit_code, errnum, fmt, ...)                                     \
+    do {                                                                       \
+        fflush(stdout);                                                        \
+        fprintf(stderr, "%s: " fmt, progname, ##__VA_ARGS__);                  \
+        if (errnum != 0) { fprintf(stderr, ": %s\n", strerror(errnum)); }      \
+        if (exit_code != 0) { exit(exit_code); }                               \
+    } while (0);
 
 unsigned arg_listenport = 5060;
 pscom_socket_t *pscom_socket;
@@ -157,6 +164,7 @@ int main(int argc, char **argv)
     char *arg_serveraddr = argc > 1 ? argv[1] : NULL;
     pscom_err_t rc;
 
+    progname = argv[0];
     pscom_init(PSCOM_VERSION);
 
     pscom_socket = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
