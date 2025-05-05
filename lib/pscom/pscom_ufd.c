@@ -156,7 +156,9 @@ void ufd_del(ufd_t *ufd, ufd_info_t *ufd_info)
         ufd_event_clr(ufd, ufd_info, pollfd->events);
         assert(ufd_get_pollfd(ufd, ufd_info) == NULL);
     }
-    list_del(&ufd_info->next);
+
+    /* Remove me from list (only once to prevent broken list) */
+    list_del_init(&ufd_info->next);
 }
 
 
