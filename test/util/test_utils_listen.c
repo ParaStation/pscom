@@ -16,6 +16,7 @@
 
 #include "test_utils_listen.h"
 
+#include "list.h"
 #include "pscom.h"
 #include "pscom_debug.h"
 #include "pscom_priv.h"
@@ -74,6 +75,9 @@ void suspend_listen(pscom_sock_t *sock)
 
     /* Listener MUST NOT be listening for incoming connections */
     assert_true(sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(sock->listen.ufd_info.next)));
 }
 
 void resume_listen(pscom_sock_t *sock)
