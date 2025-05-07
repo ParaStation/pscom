@@ -60,7 +60,7 @@ void pscom_precon_provider_init_tcp();
  * with errno set. */
 int pscom_precon_direct_connect_tcp(pscom_precon_t *precon, int nodeid,
                                     int portno);
-pscom_err_t pscom_precon_connect_tcp(pscom_con_t *con, int nodeid, int portno);
+pscom_err_t pscom_precon_connect_tcp(pscom_con_t *con);
 
 void pscom_con_accept_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info);
 

@@ -32,6 +32,7 @@
 #include "pscom_priv.h"
 #include "pscom_util.h"
 #include "pslib.h"
+#include "pscom_precon.h"
 #include "pscom_precon_tcp.h"
 
 
@@ -178,28 +179,34 @@ void pscom_sock_set_name(pscom_sock_t *sock, const char *name)
 }
 
 
-static void pscom_sock_init_con_info(pscom_sock_t *sock)
+static void pscom_sock_init_con_info(pscom_sock_t *sock, int local_rank)
 {
     pscom_con_info_t *con_info = &sock->pub.local_con_info;
     char name[sizeof(con_info->name) + 1];
 
     con_info->node_id = pscom_get_nodeid();
-    con_info->pid     = getpid();
+    /* use the rank from process manager, rank could be -1
+     * (PSCOM_RANK_UNDEFINED). The valid rank should be equal to the rank from
+     * rrcomm when rrcomm is used as the precon protocol */
+    con_info->rank    = local_rank;
     con_info->id      = NULL;
 
-    snprintf(name, sizeof(name), "p%d", con_info->pid);
+    /* set the name with pid, format "p+pid", name will be overwritten if user
+     * calls pscom_socket_set_name */
+    snprintf(name, sizeof(name), "p%d", getpid());
     pscom_sock_set_name(sock, name);
 }
 
-
-static pscom_sock_t *pscom_sock_create(size_t userdata_size)
+PSCOM_PLUGIN_API_EXPORT
+pscom_sock_t *pscom_sock_create(size_t userdata_size,
+                                size_t connection_userdata_size, int local_rank,
+                                uint64_t socket_flags)
 {
     pscom_sock_t *sock;
     sock = malloc(sizeof(*sock) + userdata_size);
     if (!sock) {
         return NULL; // error
     }
-
 
     sock->magic                = MAGIC_SOCKET;
     sock->pub.ops.con_accept   = NULL;
@@ -211,7 +218,7 @@ static pscom_sock_t *pscom_sock_create(size_t userdata_size)
 
     sock->con_type_mask                = ~0ULL;
     sock->pub.userdata_size            = userdata_size;
-    sock->pub.connection_userdata_size = 0;
+    sock->pub.connection_userdata_size = connection_userdata_size;
 
     INIT_LIST_HEAD(&sock->archs);
     INIT_LIST_HEAD(&sock->connections);
@@ -223,13 +230,21 @@ static pscom_sock_t *pscom_sock_create(size_t userdata_size)
 
     sock->recv_req_cnt_any = 0;
 
-    pscom_sock_init_con_info(sock);
+    pscom_sock_init_con_info(sock, local_rank);
 
     sock->state.close_called  = 0;
     sock->state.close_timeout = 0;
     sock->state.destroyed     = 0;
 
+    sock->sock_flags = socket_flags;
+
     pscom_plugins_sock_init(sock);
+
+    pscom_lock();
+    {
+        list_add_tail(&sock->next, &pscom.sockets);
+    }
+    pscom_unlock();
 
     return sock;
 }
@@ -273,26 +288,6 @@ int _pscom_con_type_mask_is_set(pscom_sock_t *sock, pscom_con_type_t con_type)
 
 
 PSCOM_PLUGIN_API_EXPORT
-pscom_sock_t *pscom_open_sock(size_t userdata_size,
-                              size_t connection_userdata_size)
-{
-    /* Must hold the pscom_lock */
-    pscom_sock_t *sock;
-
-    sock = pscom_sock_create(userdata_size);
-    if (!sock) {
-        return NULL; // error
-    }
-
-    sock->pub.connection_userdata_size = connection_userdata_size;
-
-    list_add_tail(&sock->next, &pscom.sockets);
-
-    return sock;
-}
-
-
-PSCOM_PLUGIN_API_EXPORT
 void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type)
 {
     assert(sock->magic == MAGIC_SOCKET);
@@ -308,22 +303,16 @@ void _pscom_con_type_mask_del(pscom_sock_t *sock, pscom_con_type_t con_type)
 
 PSCOM_API_EXPORT
 pscom_socket_t *pscom_open_socket(size_t userdata_size,
-                                  size_t connection_userdata_size)
+                                  size_t connection_userdata_size,
+                                  int local_rank, uint64_t socket_flags)
 {
     pscom_sock_t *sock;
 
-    sock = pscom_sock_create(userdata_size);
+    sock = pscom_sock_create(userdata_size, connection_userdata_size,
+                             local_rank, socket_flags);
     if (!sock) {
         return NULL; // error
     }
-
-    sock->pub.connection_userdata_size = connection_userdata_size;
-
-    pscom_lock();
-    {
-        list_add_tail(&sock->next, &pscom.sockets);
-    }
-    pscom_unlock();
 
     return &sock->pub;
 }
@@ -336,6 +325,12 @@ void pscom_socket_set_name(pscom_socket_t *socket, const char *name)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
+        /* todo: set a clear rule of the name, for now name format is "r+rank,
+         * rXXXXXX" and set with local_rank from psmpi. The name in
+         * `local_con_info` pack by `pscom_con_info` will be sent to the remote
+         * side. The sent name will be used to find the correct connection at
+         * the remote. In case of ondemand connection, the name will be compared
+         * with the remote name set by the destation rank. */
         pscom_sock_set_name(sock, name);
         DPRINT(D_INFO, "Socket name: %s", name);
         pscom_debug_set_prefix(name);
@@ -640,4 +635,18 @@ void pscom_resume_listen(pscom_socket_t *socket)
         pscom_listener_resume(&sock->listen);
     }
     pscom_unlock();
+}
+
+
+PSCOM_API_EXPORT
+pscom_err_t pscom_socket_get_ep_str(pscom_socket_t *socket, char **ep_str)
+{
+    return pscom_precon_get_ep_info_from_socket(socket, ep_str);
+}
+
+
+PSCOM_API_EXPORT
+void pscom_socket_free_ep_str(char *ep_str)
+{
+    free(ep_str);
 }

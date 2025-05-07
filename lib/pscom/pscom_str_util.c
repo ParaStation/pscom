@@ -22,9 +22,7 @@
 #include <sys/socket.h>
 
 #include "pscom.h"
-#include "pscom_debug.h"
 #include "pscom_priv.h"
-
 
 /* Take a service name, and a service type, and return a port number.  If the
    service name is not found, it tries it as a decimal number.  The number
@@ -128,141 +126,6 @@ err:
 }
 
 
-PSCOM_API_EXPORT
-const char *pscom_socket_ondemand_str(int nodeid, int portno, const char name[8])
-{
-    static char socket_str[sizeof("xxx.xxx.xxx.xxx:xxxxx@01234567____")];
-
-    if (portno < 0 || portno > 65535) { goto err_invalid_port; }
-
-    if (!name[0]) {
-        snprintf(socket_str, sizeof(socket_str), INET_ADDR_FORMAT ":%u",
-                 INET_ADDR_SPLIT(nodeid), portno);
-    } else {
-        snprintf(socket_str, sizeof(socket_str), INET_ADDR_FORMAT ":%u@%1.8s",
-                 INET_ADDR_SPLIT(nodeid), portno, name);
-    }
-    return socket_str;
-    /* error code */
-err_invalid_port:
-    errno = EINVAL;
-    return NULL;
-}
-
-
-PSCOM_API_EXPORT
-const char *pscom_socket_str(int nodeid, int portno)
-{
-    char name[8] = "";
-    return pscom_socket_ondemand_str(nodeid, portno, name);
-}
-
-
-PSCOM_API_EXPORT
-int pscom_parse_socket_ondemand_str(const char *socket_str, int *nodeid,
-                                    int *portno, char (*name)[8])
-{
-    char *lname = NULL;
-    char *host;
-    char *port    = NULL;
-    char *nametok = NULL;
-    int ret       = 0;
-    struct sockaddr_in sock;
-
-    if (!socket_str) { goto err_arg; }
-
-    lname = strdup(socket_str);
-    if (!lname) { goto err_no_mem; }
-
-    host = strtok_r(lname, ":", &port);
-    if (!host) { goto err_no_host; }
-    if (!port) { goto err_no_port; }
-    strtok_r(port, "@", &nametok);
-
-    if (pscom_ascii_to_sockaddr_in(host, port, "tcp", &sock) < 0) {
-        goto err_to_sock;
-    }
-
-    if (nodeid) { *nodeid = (int)ntohl(sock.sin_addr.s_addr); }
-    if (portno) { *portno = (int)ntohs(sock.sin_port); }
-    if (name) {
-        memset(name, 0, sizeof(*name));
-        if (nametok) { strncpy(*name, nametok, sizeof(*name)); }
-    }
-
-    if (0) { /* error code */
-    err_arg:
-    err_no_host:
-    err_no_port:
-        errno = EINVAL;
-    err_no_mem:
-    err_to_sock:
-        ret = -1;
-    }
-
-    if (lname) { free(lname); }
-    return ret;
-}
-
-
-PSCOM_API_EXPORT
-int pscom_parse_socket_str(const char *socket_str, int *nodeid, int *portno)
-{
-    char name[8];
-    int rc = pscom_parse_socket_ondemand_str(socket_str, nodeid, portno, &name);
-    if (!rc && name[0]) {
-        // No error. But the name is not empty.
-        errno = EINVAL;
-        rc    = -1;
-    }
-    return rc;
-}
-
-
-PSCOM_API_EXPORT
-pscom_err_t pscom_connect_socket_str(pscom_connection_t *connection,
-                                     const char *socket_str)
-{
-    int nodeid;
-    int portno;
-    char name[8];
-    int res;
-
-    res = pscom_parse_socket_ondemand_str(socket_str, &nodeid, &portno, &name);
-    if (res) { goto err_parse; }
-
-    if (!name[0]) {
-        return pscom_connect(connection, nodeid, portno);
-    } else {
-        return pscom_connect_ondemand(connection, nodeid, portno, name);
-    }
-    /* error code */
-err_parse:
-    if (socket_str) {
-        DPRINT(D_ERR, "CONNECT (%s) failed : %s", socket_str,
-               pscom_err_str(res));
-    } else {
-        DPRINT(D_ERR, "CONNECT (<null>) failed : %s", pscom_err_str(res));
-    }
-    return res;
-}
-
-
-PSCOM_API_EXPORT
-const char *pscom_listen_socket_str(pscom_socket_t *socket)
-{
-    return pscom_socket_str(pscom_get_nodeid(), socket->listen_portno);
-}
-
-
-PSCOM_API_EXPORT
-const char *pscom_listen_socket_ondemand_str(pscom_socket_t *socket)
-{
-    return pscom_socket_ondemand_str(pscom_get_nodeid(), socket->listen_portno,
-                                     socket->local_con_info.name);
-}
-
-
 PSCOM_PLUGIN_API_EXPORT
 const char *pscom_inetstr(int addr)
 {
@@ -348,7 +211,7 @@ const char *pscom_con_info_str(pscom_con_info_t *con_info)
     static char buf[sizeof("(xxx.xxx.xxx.xxx,pidxxx,0x_xblast_xblast__,"
                            "XXXXXXXXXXXXXXXX)_____")];
     snprintf(buf, sizeof(buf), "(" INET_ADDR_FORMAT ",%d,%p,%.8s)",
-             INET_ADDR_SPLIT(con_info->node_id), con_info->pid, con_info->id,
+             INET_ADDR_SPLIT(con_info->node_id), con_info->rank, con_info->id,
              con_info->name);
     return buf;
 }
@@ -365,9 +228,10 @@ const char *pscom_con_info_str2(pscom_con_info_t *con_info1,
     snprintf(buf, sizeof(buf),
              "(" INET_ADDR_FORMAT ",%d,%p,%.8s) to (" INET_ADDR_FORMAT ",%d,%p,"
              "%.8s)",
-             INET_ADDR_SPLIT(con_info1->node_id), con_info1->pid, con_info1->id,
-             con_info1->name, INET_ADDR_SPLIT(con_info2->node_id),
-             con_info2->pid, con_info2->id, con_info2->name);
+             INET_ADDR_SPLIT(con_info1->node_id), con_info1->rank,
+             con_info1->id, con_info1->name,
+             INET_ADDR_SPLIT(con_info2->node_id), con_info2->rank,
+             con_info2->id, con_info2->name);
     return buf;
 }
 

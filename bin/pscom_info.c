@@ -113,7 +113,8 @@ int main(int argc, char **argv)
 
     /* we have to open a socket to trigger the loading of plugins */
     pscom_socket_t *dummy_socket __attribute__((unused));
-    dummy_socket = pscom_open_socket(0, 0);
+    dummy_socket = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                                     PSCOM_SOCK_FLAG_INTRA_JOB);
 
     pscom_env_table_list_print(print_flags);
     return 0;

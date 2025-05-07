@@ -12,11 +12,17 @@
 #ifndef _PSCOM_SOCK_H_
 #define _PSCOM_SOCK_H_
 
+#include <stddef.h>
+#include <stdint.h>
+
 #include "pscom.h"
 #include "pscom_priv.h"
 
 pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno);
 void pscom_sock_stop_listen(pscom_sock_t *sock);
 void pscom_sock_close(pscom_sock_t *sock);
+pscom_sock_t *pscom_sock_create(size_t userdata_size,
+                                size_t connection_userdata_size, int local_rank,
+                                uint64_t socket_flags);
 
 #endif /* _PSCOM_SOCK_H_ */

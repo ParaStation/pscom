@@ -283,10 +283,7 @@ typedef struct psgw_conn {
 
 
 typedef struct ondemand_conn {
-    int node_id;         /* on demand node_id to connect to */
-    int portno;          /*           portno to connect to */
-    char name[8];        /* name to listen on */
-    unsigned active : 1; /* bool: active listening on new connections? */
+    unsigned active; /* active listening on new connections? */
 } ondemand_conn_t;
 
 
@@ -564,7 +561,7 @@ struct PSCOM_con {
         unsigned internal_connection : 1;
         unsigned use_count : 3;
     } state;
-
+    uint64_t con_flags;
     pscom_connection_t pub;
 };
 
@@ -610,6 +607,8 @@ struct PSCOM_sock {
         unsigned close_timeout : 1;
         unsigned destroyed : 1;
     } state;
+
+    uint64_t sock_flags;
 
     pscom_socket_t pub;
 };
@@ -788,12 +787,38 @@ static inline void pscom_call_io_done(void)
 }
 
 
-/* Open a socket while holding the pscom_lock */
-pscom_sock_t *pscom_open_sock(size_t userdata_size,
-                              size_t connection_userdata_size);
+/**
+ * @brief Establish a connection to a remote process.
+ *
+ * This routine establishes a connection to a remote process and blocks until
+ * the connection has been established successfully or an error occurred.
+ *
+ * @param [in] con        The local connection to be used.
+ *
+ * @return PSCOM_SUCCESS or PSCOM_ERR_STDERROR otherwise (`errno` indicates
+ *         the error type).
+ */
+pscom_err_t pscom_connect_direct(pscom_con_t *con);
 
-/* Connecting while holding the pscom_lock */
-pscom_err_t pscom_con_connect(pscom_con_t *con, int nodeid, int portno);
+
+/* connect to nodeid:port or accept a connection from a socket with the name
+   (see pscom_socket_set_name()) */
+#define PSCOM_HAS_ON_DEMAND_CONNECTIONS 1
+
+
+/**
+ * @brief Create an on-demand connection to a remote process.
+ *
+ * This routine creates an on-demand connection to a remote process. In contrast
+ * to @ref pscom_connect_direct(), it does not block until this has been
+ * established but rather sets up everything to connect upon the first write
+ * attempt on that connection.
+ *
+ * @param [in] con        The local connection to be used.
+ *
+ * @return Always returns PSCOM_SUCCESS.
+ */
+pscom_err_t pscom_connect_ondemand(pscom_con_t *con);
 
 static inline pscom_con_t *get_con(pscom_connection_t *con)
 {
@@ -890,8 +915,7 @@ void _pscom_con_suspend(pscom_con_t *con);
 void _pscom_con_resume(pscom_con_t *con);
 void _pscom_con_suspend_received(pscom_con_t *con, void *xheader,
                                  size_t xheaderlen);
-pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con, int nodeid,
-                                        int portno, const char name[8]);
+pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con);
 
 /*
 void _pscom_send(pscom_con_t *con, unsigned msg_type,

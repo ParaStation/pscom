@@ -26,6 +26,7 @@
 #include "list.h"
 #include "pscom.h"
 #include "pscom_con.h"
+#include "pscom_sock.h"
 #include "pscom_plugin.h"
 #include "pscom_poll.h"
 #include "pscom_priv.h"
@@ -517,7 +518,8 @@ void test_portals_one_reader_per_socket(void **state)
     dummy_con->read_start(dummy_con);
 
     /* create a new socket and a new connection */
-    pscom_sock_t *new_sock = pscom_open_sock(0, 0);
+    pscom_sock_t *new_sock = pscom_sock_create(0, 0, PSCOM_RANK_UNDEFINED,
+                                               PSCOM_SOCK_FLAG_INTRA_JOB);
     pscom_con_t *new_con   = pscom_con_create(new_sock);
 
     /* initialize the new connection as portals connection */

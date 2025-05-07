@@ -14,7 +14,9 @@
 #include <stdlib.h>
 
 #include "list.h"
+#include "pscom.h"
 #include "pscom_priv.h"
+#include "pscom_sock.h"
 #include "pscom_precon.h"
 
 
@@ -30,7 +32,8 @@ int setup_dummy_sock(void **state)
     pscom_precon_provider.precon_type  = PSCOM_PRECON_TYPE_TCP;
     pscom_precon_provider_init();
 
-    new_sock = pscom_open_sock(0, 0);
+    new_sock = pscom_sock_create(0, 0, PSCOM_RANK_UNDEFINED,
+                                 PSCOM_SOCK_FLAG_INTRA_JOB);
     *state   = (void *)new_sock;
 
     return 0;

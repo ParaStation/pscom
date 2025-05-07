@@ -14,9 +14,9 @@
 #include <stdint.h>
 
 #include "list.h"
-#include "pscom.h"
 #include "pscom_plugin.h"
 #include "pscom_types.h"
+#include "pscom.h"
 
 #define PSCOM_INFO_FD_ERROR                                                    \
     0x0ffffe /* int errno; Pseudo message. Error in read(). */
@@ -81,8 +81,13 @@ typedef struct PSCOM_precon_provider {
     void (*destroy)(pscom_precon_t *precon);
     void (*recv_start)(pscom_precon_t *precon);
     void (*recv_stop)(pscom_precon_t *precon);
-    int (*connect)(pscom_con_t *con, int nodeid, int portno);
+    int (*connect)(pscom_con_t *con);
     int (*guard_setup)(pscom_precon_t *precon);
+    pscom_err_t (*get_ep_info_from_socket)(pscom_socket_t *socket,
+                                           char **ep_str);
+    pscom_err_t (*parse_ep_info)(const char *ep_str, pscom_con_info_t *con_info);
+    int (*is_connect_loopback)(pscom_socket_t *socket,
+                               pscom_connection_t *connection);
     char precon_provider_data[0];
 } pscom_precon_provider_t;
 
@@ -145,14 +150,33 @@ static inline void pscom_precon_recv_stop(pscom_precon_t *precon)
     pscom_precon_provider.recv_stop(precon);
 }
 
-static inline int pscom_precon_connect(pscom_con_t *con, int nodeid, int portno)
+static inline int pscom_precon_connect(pscom_con_t *con)
 {
-    return pscom_precon_provider.connect(con, nodeid, portno);
+    return pscom_precon_provider.connect(con);
 }
 
 static inline int pscom_precon_guard_setup(pscom_precon_t *precon)
 {
     return pscom_precon_provider.guard_setup(precon);
+}
+
+static inline int pscom_precon_is_connect_loopback(
+    pscom_socket_t *socket, pscom_connection_t *connection)
+{
+    return pscom_precon_provider.is_connect_loopback(socket, connection);
+}
+
+static inline pscom_err_t pscom_precon_parse_ep_info(const char *ep_str,
+                                                     pscom_con_info_t *con_info)
+{
+    return pscom_precon_provider.parse_ep_info(ep_str, con_info);
+}
+
+
+static inline pscom_err_t
+pscom_precon_get_ep_info_from_socket(pscom_socket_t *socket, char **ep_str)
+{
+    return pscom_precon_provider.get_ep_info_from_socket(socket, ep_str);
 }
 
 #endif /* _PSCOM_PRECON_H_ */

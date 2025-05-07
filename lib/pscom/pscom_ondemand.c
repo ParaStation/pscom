@@ -15,8 +15,8 @@
 #include "list.h"
 #include "pscom.h"
 #include "pscom_con.h"
+#include "pscom_precon.h"
 #include "pscom_precon_tcp.h"
-#include "pscom_str_util.h"
 #include "pscom_debug.h"
 #include "pscom_priv.h"
 
@@ -55,37 +55,30 @@ static void pscom_ondemand_cleanup(pscom_con_t *con)
 }
 
 
-static void pscom_ondemand_direct_connect(pscom_con_t *con)
-{
-    /* connect to peer and change connection type */
-    int nodeid = con->arch.ondemand.node_id;
-    int portno = con->arch.ondemand.portno;
-
-    pscom_ondemand_cleanup(con);
-
-    /* reopen via tcp connection */
-    int rc = pscom_precon_connect_tcp(con, nodeid, portno);
-
-    if (rc) {
-        /* connect failed. set error falgs */
-        pscom_con_error(con, PSCOM_OP_WRITE, rc);
-    }
-}
-
-
 static void pscom_ondemand_write_start(pscom_con_t *con)
 {
-    if (pscom_name_is_lower(con->arch.ondemand.name,
+    /* compare the parsed name with socket->local_con_info.name. The
+     * remote_con_info.name is set in the `parse_ep_info` in precon provider. */
+    if (pscom_name_is_lower(con->pub.remote_con_info.name,
                             con->pub.socket->local_con_info.name)) {
         pscom_ondemand_read_start(con); // be prepared for the back connect
         pscom_precon_ondemand_backconnect_tcp(con);
     } else {
         pscom_sock_t *sock = get_sock(con->pub.socket);
 
-        pscom_listener_user_inc(&sock->listen); // listen until we have the
-                                                // connection
+        /* listen until we have the connection */
+        pscom_listener_user_inc(&sock->listen);
 
-        pscom_ondemand_direct_connect(con);
+        /* prepare connecting to peer and change connection type */
+        pscom_ondemand_cleanup(con);
+
+        /* reopen via precon */
+        int rc = pscom_precon_connect(con);
+
+        if (rc) {
+            /* connect failed. set error falgs */
+            pscom_con_error(con, PSCOM_OP_WRITE, rc);
+        }
 
         pscom_listener_user_dec(&sock->listen);
     }
@@ -128,9 +121,10 @@ pscom_con_t *pscom_ondemand_find_con(pscom_sock_t *sock, const char name[8])
 
     list_for_each (pos_con, &sock->connections) {
         pscom_con_t *con = list_entry(pos_con, pscom_con_t, next);
-
+        /* compare the name from socket->local_con_info.name of remote
+         * side with the name parsed from `ep_str`. */
         if ((con->pub.type == PSCOM_CON_TYPE_ONDEMAND) &&
-            (pscom_name_is_equal(name, con->arch.ondemand.name))) {
+            (pscom_name_is_equal(name, con->pub.remote_con_info.name))) {
             /* matching connection. Equal names with correct type. */
             return con;
         }
@@ -148,27 +142,13 @@ pscom_con_t *pscom_ondemand_get_con(pscom_sock_t *sock, const char name[8])
 }
 
 
-pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con, int nodeid,
-                                        int portno, const char name[8])
+pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con)
 {
     pscom_sock_t *sock = get_sock(con->pub.socket);
     pscom_con_info_t con_info;
 
     if (sock->pub.listen_portno == -1) { goto err_not_listening; }
 
-    if (pscom_is_local(&sock->pub, nodeid, portno)) {
-        return pscom_con_connect_loopback(con);
-    }
-
-    memset(&con->pub.remote_con_info, 0, sizeof(con->pub.remote_con_info));
-
-    con->pub.remote_con_info.node_id = nodeid;
-    memcpy(con->pub.remote_con_info.name, name,
-           sizeof(con->pub.remote_con_info.name));
-
-    con->arch.ondemand.node_id = nodeid;
-    con->arch.ondemand.portno  = portno;
-    memcpy(con->arch.ondemand.name, name, sizeof(con->arch.ondemand.name));
     con->arch.ondemand.active = 0;
 
     con->pub.state = PSCOM_CON_STATE_RW;
@@ -190,9 +170,9 @@ pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con, int nodeid,
 err_not_listening:
     pscom_con_info(con, &con_info);
     DPRINT(D_BUG_EXT,
-           "CONNECT on demand %s to tcp:%s:%u FAILED : "
+           "CONNECT on demand %s to remote FAILED : "
            "pscom_connect_ondemand() called without a prior pscom_listen()",
-           pscom_con_info_str(&con_info), pscom_inetstr(nodeid), portno);
+           pscom_con_info_str(&con_info));
     return PSCOM_ERR_INVALID;
 }
 
@@ -202,16 +182,13 @@ err_not_listening:
 */
 
 
-PSCOM_API_EXPORT
-pscom_err_t pscom_connect_ondemand(pscom_connection_t *connection, int nodeid,
-                                   int portno, const char name[8])
+pscom_err_t pscom_connect_ondemand(pscom_con_t *con)
 {
-    pscom_con_t *con = get_con(connection);
     pscom_err_t rc;
 
     pscom_lock();
     {
-        rc = _pscom_con_connect_ondemand(con, nodeid, portno, name);
+        rc = _pscom_con_connect_ondemand(con);
     }
     pscom_unlock();
 

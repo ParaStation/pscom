@@ -147,7 +147,8 @@ void abort_on_error(const char *msg, pscom_err_t error)
 static void init_common(void)
 {
     pscom_init(PSCOM_VERSION);
-    sock = pscom_open_socket(0, 0);
+    sock = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                             PSCOM_SOCK_FLAG_INTRA_JOB);
     if (!sock) {
         abort_on_error("pscom_open_socket() failed", PSCOM_ERR_STDERROR);
     }
@@ -385,14 +386,23 @@ static void run_server(void)
             abort_on_error("pscom_open_connection()", PSCOM_ERR_STDERROR);
         }
 
-        pscom_err_t rc = pscom_connect(con, -1, -1);
-        if (rc) { abort_on_error("pscom_connect_socket_str()", rc); }
+        pscom_err_t rc = pscom_connect(con, NULL, PSCOM_RANK_UNDEFINED,
+                                       PSCOM_CON_FLAG_DIRECT);
+        if (rc) {
+            abort_on_error("pscom_connect(con, NULL, PSCOM_RANK_UNDEFINED, "
+                           "PSCOM_CON_FLAG_DIRECT);",
+                           rc);
+        }
 
         pscom_close_connection(con);
     }
 
+    char *ep_str = NULL;
+    rc           = pscom_socket_get_ep_str(sock, &ep_str);
+    assert(rc == PSCOM_SUCCESS);
     printf("Start client with:\n");
-    printf("%s -c %s\n", progname, pscom_listen_socket_str(sock));
+    printf("%s -c %s\n", progname, ep_str);
+    pscom_socket_free_ep_str(ep_str);
 
     running = 1;
     while (running) {
@@ -431,8 +441,15 @@ static void run_client(void)
     pscom_connection_t *con = pscom_open_connection(sock);
     if (!con) { abort_on_error("pscom_open_connection()", PSCOM_ERR_STDERROR); }
 
-    pscom_err_t rc = pscom_connect_socket_str(con, arg_server_str);
-    if (rc) { abort_on_error("pscom_connect_socket_str()", rc); }
+    // tcp direct connect
+    pscom_err_t rc = pscom_connect(con, arg_server_str, PSCOM_RANK_UNDEFINED,
+                                   PSCOM_CON_FLAG_DIRECT);
+    if (rc) {
+        abort_on_error("pscom_connect(con, arg_server_str, "
+                       "PSCOM_RANK_UNDEFINED, "
+                       "PSCOM_CON_FLAG_DIRECT)",
+                       rc);
+    }
 
     printf("Connected!\n");
 

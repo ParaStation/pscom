@@ -31,21 +31,20 @@ void _pscom_con_resume(pscom_con_t *con)
     pscom_err_t err;
     struct list_head *pos, *next;
     pscom_sock_t *sock = get_sock(con->pub.socket);
-    int nodeid         = con->pub.remote_con_info.node_id;
-    int portno         = con->suspend_on_demand_portno;
-    char name[8];
+
+    // use the node_id and name in con->pub.remote_con_info
+    con->pub.remote_con_info.tcp.portno = con->suspend_on_demand_portno;
+
     int suspend_active = con->state.suspend_active;
     int sendq_empty    = 1;
 
     if (con->pub.type != PSCOM_CON_TYPE_SUSPENDED) { return; }
 
-    memcpy(name, con->pub.remote_con_info.name, sizeof(name));
-
     // remove con from sock->connections...
     list_del_init(&con->next);
 
     // and attach it again as an on demand connection.
-    err = _pscom_con_connect_ondemand(con, nodeid, portno, name);
+    err = _pscom_con_connect_ondemand(con);
     assert(err == PSCOM_SUCCESS);
 
     pscom_listener_active_dec(&sock->listen);

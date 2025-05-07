@@ -159,7 +159,8 @@ int main(int argc, char **argv)
 
     pscom_init(PSCOM_VERSION);
 
-    pscom_socket = pscom_open_socket(0, 0);
+    pscom_socket = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                                     PSCOM_SOCK_FLAG_INTRA_JOB);
     assert(pscom_socket);
 
     /* Use only TCP connections */
@@ -176,8 +177,11 @@ int main(int argc, char **argv)
         rc = pscom_listen(pscom_socket, arg_listenport);
         if (rc) { error(-1, errno, "pscom_listen : %s\n", pscom_err_str(rc)); }
 
-        printf("Connect server with :\n%s %s\n", argv[0],
-               pscom_listen_socket_str(pscom_socket));
+        char *ep_str = NULL;
+        rc           = pscom_socket_get_ep_str(pscom_socket, &ep_str);
+        assert(rc == PSCOM_SUCCESS);
+        printf("Connect server with :\n%s %s\n", argv[0], ep_str);
+        pscom_socket_free_ep_str(ep_str);
 
     } else {
         /* I am a client. Connect the serve. */
@@ -185,7 +189,9 @@ int main(int argc, char **argv)
         pscom_con = pscom_open_connection(pscom_socket);
         assert(pscom_con);
 
-        rc = pscom_connect_socket_str(pscom_con, arg_serveraddr);
+        // tcp direct connect
+        rc = pscom_connect(pscom_con, arg_serveraddr, PSCOM_RANK_UNDEFINED,
+                           PSCOM_CON_FLAG_DIRECT);
         if (rc) {
             error(-1, errno, "pscom_connect(%s) : %s\n", arg_serveraddr,
                   pscom_err_str(rc));

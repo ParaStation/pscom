@@ -87,7 +87,7 @@ Files located in the folders `lib/pscom` and `include`:
 | Progress engine of `pscom` based on polling mechanism
 
 | `pscom_precon.{h,c}`
-| Pre-connection features for initial TCP handshake
+| Pre-connection features for initial handshake
 
 | `pscom_priv.h`
 | Declarations and functions for internal use inside of `pscom`

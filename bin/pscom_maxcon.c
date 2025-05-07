@@ -82,7 +82,8 @@ int main(int argc, char **argv)
     server = argv[1];
 
     pscom_init(PSCOM_VERSION);
-    sock = pscom_open_socket(0, 0);
+    sock = pscom_open_socket(0, 0, PSCOM_RANK_UNDEFINED,
+                             PSCOM_SOCK_FLAG_INTRA_JOB);
     if (!sock) {
         abort_on_error("pscom_open_socket() failed", PSCOM_ERR_STDERROR);
     }
@@ -104,8 +105,15 @@ int main(int argc, char **argv)
             printf("Connection %d\n", cnt);
             pscom_connection_t *con = pscom_open_connection(sock);
 
-            rc = pscom_connect_socket_str(con, server);
-            if (rc) { abort_on_error("pscom_connect_socket_str()", rc); }
+            // tcp direct connect with ip:port in server
+            rc = pscom_connect(con, server, PSCOM_RANK_UNDEFINED,
+                               PSCOM_CON_FLAG_DIRECT);
+            if (rc) {
+                abort_on_error("pscom_connect(con, server, "
+                               "PSCOM_RANK_UNDEFINED , "
+                               "PSCOM_CON_FLAG_DIRECT)",
+                               rc);
+            }
             // sleep(1);
         }
     }

@@ -9,8 +9,8 @@
  * file.
  */
 
-#include <netinet/in.h>
 #include <poll.h>
+#include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -965,7 +965,7 @@ static void loopback_write_start(pscom_con_t *con)
 }
 
 
-pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
+static inline pscom_err_t _pscom_con_connect_loopback(pscom_con_t *con)
 {
     pscom_sock_t *sock = get_sock(con->pub.socket);
 
@@ -980,7 +980,8 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
 #endif
 
     con->write_start = loopback_write_start;
-    //	con->rendezvous_size = (unsigned)~0; // disable rendezvous for loopback
+    // con->rendezvous_size = (unsigned)~0; // disable rendezvous for
+    // loopback
 
     DPRINT(D_CONTYPE, "CONNECT %s via %s%s", pscom_con_str(&con->pub),
            pscom_con_type_str(con->pub.type),
@@ -1003,21 +1004,6 @@ pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
     if (pscom_is_valid_con(con)) { pscom_con_setup(con); }
 
     return PSCOM_SUCCESS;
-}
-
-
-PSCOM_PLUGIN_API_EXPORT
-pscom_err_t pscom_con_connect(pscom_con_t *con, int nodeid, int portno)
-{
-    pscom_err_t rc;
-
-    if (pscom_is_local(con->pub.socket, nodeid, portno)) {
-        rc = pscom_con_connect_loopback(con);
-    } else {
-        /* Initial connection via TCP */
-        rc = pscom_precon_connect(con, nodeid, portno);
-    }
-    return rc;
 }
 
 
@@ -1100,6 +1086,21 @@ void pscom_con_guard_stop(pscom_con_t *con)
 ******************************************************************************
 */
 
+
+pscom_err_t pscom_con_connect_loopback(pscom_con_t *con)
+{
+    pscom_err_t res;
+
+    pscom_lock();
+    {
+        res = _pscom_con_connect_loopback(con);
+    }
+    pscom_unlock();
+
+    return res;
+}
+
+
 PSCOM_API_EXPORT
 pscom_connection_t *pscom_open_connection(pscom_socket_t *socket)
 {
@@ -1116,27 +1117,53 @@ pscom_connection_t *pscom_open_connection(pscom_socket_t *socket)
 }
 
 
-int pscom_is_local(pscom_socket_t *socket, int nodeid, int portno)
+PSCOM_API_EXPORT
+pscom_err_t pscom_connect(pscom_connection_t *connection, const char *ep_str,
+                          int dest_rank, uint64_t connection_flags)
 {
-    return ((nodeid == -1) || (nodeid == INADDR_LOOPBACK) ||
-            (nodeid == pscom_get_nodeid())) &&
-           ((portno == -1) || (portno == socket->listen_portno));
+    int res;
+    pscom_con_t *con = get_con(connection);
+    con->con_flags   = connection_flags;
+
+    /*
+     * The destination rank is set by the application layer (e.g., psmpi) and
+     * should be equal to what is provided by the process manager.
+     */
+    connection->remote_con_info.rank = dest_rank;
+
+    res = pscom_precon_parse_ep_info(ep_str, &connection->remote_con_info);
+    if (res) { goto err_parse; }
+
+    if (pscom_precon_is_connect_loopback(con->pub.socket, connection)) {
+        res = pscom_con_connect_loopback(con);
+    } else {
+        if (connection_flags & PSCOM_CON_FLAG_ONDEMAND) {
+            res = pscom_connect_ondemand(con);
+        } else {
+            res = pscom_connect_direct(con);
+        }
+    }
+    return res;
+
+    /* error code */
+err_parse:
+    DPRINT(D_ERR,
+           "CONNECT (%s) FAILED : "
+           "Could not parse the endpoint string %s",
+           ep_str, pscom_err_str(res));
+    return res;
 }
 
 
-PSCOM_API_EXPORT
-pscom_err_t pscom_connect(pscom_connection_t *connection, int nodeid, int portno)
+pscom_err_t pscom_connect_direct(pscom_con_t *con)
 {
-    pscom_con_t *con = get_con(connection);
     pscom_err_t rc;
-
 
     pscom_lock();
     {
-        rc = pscom_con_connect(con, nodeid, portno);
+        rc = pscom_precon_connect(con);
     }
     pscom_unlock();
-
 
     /* Block until we are connected.*/
     if (!rc) {
