@@ -96,13 +96,14 @@ void pscom_listener_active_dec(struct pscom_listener *listener)
      * function; make sure that we do not decrement 0. */
     if (listener->activecnt > 0) {
         listener->activecnt--;
+        if (!listener->activecnt) {
+            /* Prevent double-deletion; Only delete ufd_info from
+             * list if active counter is decremented in this call */
+            ufd_del(&pscom.ufd, &listener->ufd_info);
+            pscom_listener_user_dec(listener);
+        }
     } else {
         assert(listener->suspend == 1);
-    }
-
-    if (!listener->activecnt) {
-        ufd_del(&pscom.ufd, &listener->ufd_info);
-
         pscom_listener_user_dec(listener);
     }
 }
