@@ -772,6 +772,8 @@ err_out:
 static void pscom_portals_handshake(pscom_con_t *con, int type, void *data,
                                     unsigned size)
 {
+    pscom_err_t ret = PSCOM_SUCCESS;
+
     switch (type) {
     case PSCOM_INFO_ARCH_REQ: {
         psptl_info_msg_t msg       = {0};
@@ -786,7 +788,10 @@ static void pscom_portals_handshake(pscom_con_t *con, int type, void *data,
         /* send my connection id's */
         psptl_con_get_info_msg(ci, &msg);
 
-        pscom_precon_send(con->precon, PSCOM_INFO_PORTALS_ID, &msg, sizeof(msg));
+        ret = pscom_precon_send(con->precon, PSCOM_INFO_PORTALS_ID, &msg,
+                                sizeof(msg));
+        assert(ret == PSCOM_SUCCESS);
+
         break; /* Next: PSCOM_INFO_PORTALS_ID or PSCOM_INFO_ARCH_NEXT */
     }
     case PSCOM_INFO_PORTALS_ID: {
@@ -797,7 +802,9 @@ static void pscom_portals_handshake(pscom_con_t *con, int type, void *data,
             goto error_con_connect;
         }
 
-        pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        ret = pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        assert(ret == PSCOM_SUCCESS);
+
         break; /* Next: EOF or ARCH_NEXT */
     }
     case PSCOM_INFO_ARCH_NEXT: {

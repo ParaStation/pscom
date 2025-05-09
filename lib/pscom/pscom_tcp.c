@@ -193,11 +193,14 @@ static void pscom_tcp_handshake(pscom_con_t *con, int type, void *data,
 {
     pscom_precon_t *precon = con->precon; // should be changed if rrcom is used
     pscom_precon_tcp_t *pre_tcp = NULL;
+    pscom_err_t ret             = PSCOM_SUCCESS;
+
     switch (type) {
     case PSCOM_INFO_ARCH_REQ:
         pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
         pre_tcp->closefd_on_cleanup = 0; // Keep fd after usage
-        pscom_precon_send(precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        ret = pscom_precon_send(precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        assert(ret == PSCOM_SUCCESS);
         break;
     case PSCOM_INFO_ARCH_OK:
         if (precon) {

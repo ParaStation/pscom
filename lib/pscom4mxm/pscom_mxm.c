@@ -213,6 +213,8 @@ static int pscom_mxm_con_init(pscom_con_t *con)
 static void pscom_mxm_handshake(pscom_con_t *con, int type, void *data,
                                 unsigned size)
 {
+    pscom_err_t ret = PSCOM_SUCCESS;
+
     switch (type) {
     case PSCOM_INFO_ARCH_REQ: {
         psmxm_info_msg_t msg;
@@ -227,7 +229,9 @@ static void pscom_mxm_handshake(pscom_con_t *con, int type, void *data,
         /* send my connection id's */
         psmxm_con_get_info_msg(ci, &msg);
 
-        pscom_precon_send(con->precon, PSCOM_INFO_MXM_ID, &msg, sizeof(msg));
+        ret = pscom_precon_send(con->precon, PSCOM_INFO_MXM_ID, &msg,
+                                sizeof(msg));
+        assert(ret == PSCOM_SUCCESS);
         break; /* Next is PSCOM_INFO_MXM_ID or PSCOM_INFO_ARCH_NEXT */
     }
     case PSCOM_INFO_MXM_ID: {
@@ -238,7 +242,8 @@ static void pscom_mxm_handshake(pscom_con_t *con, int type, void *data,
             goto error_con_connect;
         }
 
-        pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        ret = pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        assert(ret == PSCOM_SUCCESS);
         break; /* Next is EOF or ARCH_NEXT */
     }
     case PSCOM_INFO_ARCH_NEXT:

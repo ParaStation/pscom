@@ -318,13 +318,16 @@ static void pscom_dapl_handshake(pscom_con_t *con, int type, void *data,
             /* send my connection id's */
             psdapl_con_get_info_msg(ci, &msg);
 
-            pscom_precon_send(con->precon, PSCOM_INFO_DAPL_ID, &msg,
-                              sizeof(msg));
+            pscom_err_t ret = pscom_precon_send(con->precon, PSCOM_INFO_DAPL_ID,
+                                                &msg, sizeof(msg));
+            assert(ret == PSCOM_SUCCESS);
             /* Next is PSCOM_INFO_DAPL_ACCEPT or PSCOM_INFO_ARCH_NEXT */
         } else {
             // ToDo: FixMe: "ok" should be send after a non blocking
             // psdapl_connect().
-            pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+            pscom_err_t ret = pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK,
+                                                NULL, 0);
+            assert(ret == PSCOM_SUCCESS);
         }
         break;
     }
@@ -345,7 +348,9 @@ static void pscom_dapl_handshake(pscom_con_t *con, int type, void *data,
             // ToDo: FixMe: psdapl_accept_wait() is blocking!
             if (psdapl_accept_wait(con->arch.dapl.ci)) { goto error_accept; }
 
-            pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+            pscom_err_t ret = pscom_precon_send(con->precon, PSCOM_INFO_ARCH_OK,
+                                                NULL, 0);
+            assert(ret == PSCOM_SUCCESS);
         }
         break; /* Next is PSCOM_INFO_EOF */
     }
