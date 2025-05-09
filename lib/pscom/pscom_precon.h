@@ -84,10 +84,13 @@ typedef void (*pscom_precon_provider_init_t)(void);
  * @param [in] type    The message type (i.e., PSCOM_INFO_*).
  * @param [in] data    The data to be sent.
  * @param [in] size    The number of bytes to be sent.
+ *
+ * @return PSCOM_SUCCESS or PSCOM_ERR_STDERROR otherwise (`errno` indicates
+ *         the error type).
  */
-typedef void (*pscom_precon_provider_send_t)(pscom_precon_t *precon,
-                                             unsigned type, void *data,
-                                             unsigned size);
+typedef pscom_err_t (*pscom_precon_provider_send_t)(pscom_precon_t *precon,
+                                                    unsigned type, void *data,
+                                                    unsigned size);
 
 
 /**
@@ -270,8 +273,8 @@ void pscom_precon_init(void);
 void pscom_precon_provider_init(void);
 
 /* Send a message of type type */
-void pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
-                       unsigned size);
+pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
+                              unsigned size);
 
 /* Send a PSCOM_INFO_ARCH_NEXT message and disable current plugin */
 void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon);

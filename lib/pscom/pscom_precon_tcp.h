@@ -79,8 +79,8 @@ void pscom_precon_send_PSCOM_INFO_CON_INFO_tcp(pscom_precon_tcp_t *pre_tcp,
                                                int type);
 
 /* send a message via tcp */
-void pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type, void *data,
-                           unsigned size);
+pscom_err_t pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type,
+                                  void *data, unsigned size);
 
 void pscom_precon_check_connect_tcp(pscom_precon_tcp_t *pre_tcp);
 
