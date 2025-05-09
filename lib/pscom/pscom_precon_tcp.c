@@ -1039,7 +1039,7 @@ pscom_precon_t *pscom_precon_create_tcp(pscom_con_t *con)
 }
 
 
-void pscom_precon_destroy_tcp(pscom_precon_t *precon)
+void pscom_precon_cleanup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)precon->precon_data;
     assert(pre_tcp->magic == MAGIC_PRECON);
@@ -1274,7 +1274,7 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .init                    = pscom_precon_provider_init_tcp,
     .send                    = pscom_precon_send_tcp,
     .create                  = pscom_precon_create_tcp,
-    .destroy                 = pscom_precon_destroy_tcp,
+    .cleanup                 = pscom_precon_cleanup_tcp,
     .recv_start              = pscom_precon_recv_start_tcp,
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,

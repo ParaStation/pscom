@@ -103,13 +103,14 @@ typedef pscom_precon_t *(*pscom_precon_provider_create_t)(pscom_con_t *con);
 
 
 /**
- * @brief Destroy a precon object
+ * @brief Cleanup a the provider-specific part of a precon object
  *
- * This provider routine destroys a precon object.
+ * This provider routine cleans up the provider-specific part of a precon object
+ * by freeing all resources that have been allocated for the precon object.
  *
- * @param [in] precon The precon object to be destroyed.
+ * @param [in] precon The precon object to be cleaned up.
  */
-typedef void (*pscom_precon_provider_destroy_t)(pscom_precon_t *precon);
+typedef void (*pscom_precon_provider_cleanup_t)(pscom_precon_t *precon);
 
 
 /**
@@ -230,7 +231,7 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_provider_init_t init;
     pscom_precon_provider_send_t send;
     pscom_precon_provider_create_t create;
-    pscom_precon_provider_destroy_t destroy;
+    pscom_precon_provider_cleanup_t cleanup;
     pscom_precon_provider_recv_start_t recv_start;
     pscom_precon_provider_recv_stop_t recv_stop;
     pscom_precon_provider_connect_t connect;

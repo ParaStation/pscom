@@ -220,7 +220,7 @@ pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 void pscom_precon_destroy(pscom_precon_t *precon)
 {
     assert(precon->magic == MAGIC_PRECON);
-    pscom_precon_provider.destroy(precon);
+    pscom_precon_provider.cleanup(precon);
 
     // remove precon from list
     list_del_init(&precon->next);
