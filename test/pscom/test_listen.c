@@ -14,6 +14,7 @@
 #include <cmocka.h>
 #include <string.h>
 
+#include "list.h"
 #include "pscom.h"
 #include "pscom_priv.h"
 #include "pscom_sock.h"
@@ -233,8 +234,14 @@ void test_suspend_listen(void **state)
     /* Listener should NOT be listening for incoming connections anymore */
     assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
 
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
+
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
 }
 
 /**
@@ -278,6 +285,9 @@ void test_suspend_resume_listen(void **state)
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
 }
 
 /**
@@ -337,6 +347,9 @@ void test_suspend_resume_listen_ondemand(void **state)
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
 }
 
 /**
@@ -396,4 +409,7 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
 }
