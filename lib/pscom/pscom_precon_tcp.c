@@ -415,8 +415,8 @@ void pscom_precon_recv_stop_tcp(pscom_precon_t *precon)
 }
 
 
-void pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type, void *data,
-                           unsigned size)
+pscom_err_t pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type,
+                                  void *data, unsigned size)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     uint32_t ntype              = htonl(type);
@@ -442,6 +442,8 @@ void pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type, void *data,
 
     /* Send */
     ufd_event_set(&pscom.ufd, &pre_tcp->ufd_info, POLLOUT);
+
+    return PSCOM_SUCCESS;
 }
 
 
@@ -620,7 +622,10 @@ static void pscom_precon_send_PSCOM_INFO_VERSION_tcp(pscom_precon_tcp_t *pre_tcp
     /* Send supported versions */
     ver.ver_from = VER_FROM;
     ver.ver_to   = VER_TO;
-    pscom_precon_send(pre_tcp->precon, PSCOM_INFO_VERSION, &ver, sizeof(ver));
+
+    pscom_err_t ret = pscom_precon_send(pre_tcp->precon, PSCOM_INFO_VERSION,
+                                        &ver, sizeof(ver));
+    assert(ret == PSCOM_SUCCESS);
 }
 
 
@@ -777,7 +782,11 @@ void pscom_precon_handle_receive_tcp(pscom_precon_tcp_t *pre_tcp, uint32_t type,
             DPRINT(D_DBG_V, "RACCEPT from %s skipped",
                    pscom_con_info_str(con_info));
         }
-        pscom_precon_send(pre_tcp->precon, PSCOM_INFO_BACK_ACK, NULL, 0);
+
+        pscom_err_t ret = pscom_precon_send(pre_tcp->precon,
+                                            PSCOM_INFO_BACK_ACK, NULL, 0);
+        assert(ret == PSCOM_SUCCESS);
+
         pscom_precon_recv_stop(pre_tcp->precon);
         break;
     }
@@ -928,8 +937,10 @@ void pscom_precon_send_PSCOM_INFO_CON_INFO_tcp(pscom_precon_tcp_t *pre_tcp,
 
     DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", pre_tcp,
            pscom_con_str(&pre_tcp->con->pub));
-    pscom_precon_send(pre_tcp->precon, type, &msg_con_info,
-                      sizeof(msg_con_info));
+
+    pscom_err_t ret = pscom_precon_send(pre_tcp->precon, type, &msg_con_info,
+                                        sizeof(msg_con_info));
+    assert(ret == PSCOM_SUCCESS);
 }
 
 void pscom_precon_terminate_tcp(pscom_precon_tcp_t *pre_tcp)
@@ -1039,7 +1050,7 @@ pscom_precon_t *pscom_precon_create_tcp(pscom_con_t *con)
 }
 
 
-void pscom_precon_destroy_tcp(pscom_precon_t *precon)
+void pscom_precon_cleanup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)precon->precon_data;
     assert(pre_tcp->magic == MAGIC_PRECON);
@@ -1274,7 +1285,7 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .init                    = pscom_precon_provider_init_tcp,
     .send                    = pscom_precon_send_tcp,
     .create                  = pscom_precon_create_tcp,
-    .destroy                 = pscom_precon_destroy_tcp,
+    .cleanup                 = pscom_precon_cleanup_tcp,
     .recv_start              = pscom_precon_recv_start_tcp,
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,

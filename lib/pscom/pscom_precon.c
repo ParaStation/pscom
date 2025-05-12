@@ -147,8 +147,11 @@ static void _plugin_connect_next(pscom_con_t *con, int first)
         pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
     } else {
         // Try this plugin:
-        pscom_precon_send(precon, PSCOM_INFO_ARCH_REQ, &precon->plugin->arch_id,
-                          sizeof(precon->plugin->arch_id));
+        pscom_err_t ret = pscom_precon_send(precon, PSCOM_INFO_ARCH_REQ,
+                                            &precon->plugin->arch_id,
+                                            sizeof(precon->plugin->arch_id));
+        assert(ret == PSCOM_SUCCESS);
+
         precon->plugin->con_handshake(con, PSCOM_INFO_ARCH_REQ,
                                       &precon->plugin->arch_id,
                                       sizeof(precon->plugin->arch_id));
@@ -177,7 +180,9 @@ void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon)
 {
     assert(precon->magic == MAGIC_PRECON);
     precon->plugin = NULL; // reject following STEPx and OK messages
-    pscom_precon_send(precon, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+
+    pscom_err_t ret = pscom_precon_send(precon, PSCOM_INFO_ARCH_NEXT, NULL, 0);
+    assert(ret == PSCOM_SUCCESS);
 }
 
 
@@ -195,11 +200,11 @@ void pscom_precon_provider_init(void)
 
 
 PSCOM_PLUGIN_API_EXPORT
-void pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
-                       unsigned size)
+pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
+                              unsigned size)
 {
     assert(precon->magic == MAGIC_PRECON);
-    pscom_precon_provider.send(precon, type, data, size);
+    return pscom_precon_provider.send(precon, type, data, size);
 }
 
 
@@ -220,7 +225,7 @@ pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 void pscom_precon_destroy(pscom_precon_t *precon)
 {
     assert(precon->magic == MAGIC_PRECON);
-    pscom_precon_provider.destroy(precon);
+    pscom_precon_provider.cleanup(precon);
 
     // remove precon from list
     list_del_init(&precon->next);

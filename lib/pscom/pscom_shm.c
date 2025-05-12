@@ -609,6 +609,7 @@ static void pscom_shm_handshake(pscom_con_t *con, int type, void *data,
 {
     pscom_precon_t *precon = con->precon;
     shm_conn_t *shm        = &con->arch.shm;
+    pscom_err_t ret        = PSCOM_SUCCESS;
 
     switch (type) {
     case PSCOM_INFO_ARCH_REQ: {
@@ -617,14 +618,16 @@ static void pscom_shm_handshake(pscom_con_t *con, int type, void *data,
 
         shm_info_msg_t msg;
         pscom_shm_info_msg(shm, &msg);
-        pscom_precon_send(precon, PSCOM_INFO_SHM_SHMID, &msg, sizeof(msg));
+        ret = pscom_precon_send(precon, PSCOM_INFO_SHM_SHMID, &msg, sizeof(msg));
+        assert(ret == PSCOM_SUCCESS);
         break;
     }
     case PSCOM_INFO_SHM_SHMID: {
         shm_info_msg_t *msg = data;
         assert(size == sizeof(*msg));
         if (shm_initsend(shm, msg)) { goto error_initrecv; }
-        pscom_precon_send(precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        ret = pscom_precon_send(precon, PSCOM_INFO_ARCH_OK, NULL, 0);
+        assert(ret == PSCOM_SUCCESS);
         break;
     }
     case PSCOM_INFO_ARCH_NEXT:
