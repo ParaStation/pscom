@@ -1,3 +1,10 @@
+2025-05-16  Sonja Happ  <sonja.happ@par-tec.com>	-	5.9.1-0rc1
+
+2025-05-12  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Fix: Prevent double deletion of ufd_info from list with suspend/
+	resume listening API added in version 5.9.0-1.
+
 2025-04-28  Simon Pickartz  <pickartz@par-tec.com>	-	5.9.0-1
 
 2025-03-27  Simon Pickartz  <pickartz@par-tec.com>	-	5.9.0-0rc1
