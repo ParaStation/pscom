@@ -31,13 +31,13 @@
 /* MPI2 Header: */
 
 /* from mpid/psp/include/mpidpre.h */
-typedef struct MPID_PSCOM_XHeader {
+typedef struct MPIDI_PSP_PSCOM_Xheader {
     int32_t tag;
     uint16_t context_id;
     uint8_t type; /* one of MPID_PSP_MSGTYPE */
     uint8_t _reserved_;
     int32_t src_rank;
-} MPID_PSCOM_XHeader_t;
+} MPIDI_PSP_PSCOM_Xheader_t;
 
 /* from mpid/psp/include/mpidpre.h */
 enum MPID_PSP_MSGTYPE {
@@ -140,9 +140,9 @@ static void pscom_dump_request(FILE *out, pscom_req_t *req)
     fputs("\n", out);
 
     if (5 <= pscom.env.debug &&
-        req->pub.xheader_len >= sizeof(MPID_PSCOM_XHeader_t)) {
-        MPID_PSCOM_XHeader_t *xhead =
-            (MPID_PSCOM_XHeader_t *)&req->pub.xheader.user;
+        req->pub.xheader_len >= sizeof(MPIDI_PSP_PSCOM_Xheader_t)) {
+        MPIDI_PSP_PSCOM_Xheader_t *xhead =
+            (MPIDI_PSP_PSCOM_Xheader_t *)&req->pub.xheader.user;
         fprintf(out, " mpi2: tag:%6d con_id:%4d src_rank:%4d type:%d(%s)\n",
                 xhead->tag, xhead->context_id, xhead->src_rank, xhead->type,
                 mpid_msgtype_str(xhead->type));
