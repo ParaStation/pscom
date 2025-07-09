@@ -1007,7 +1007,8 @@ void pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len)
         }
         _check_readahead(con, readlen);
 
-        *buf = con->in.readahead.iov_base + con->in.readahead.iov_len;
+        *buf = (void *)((char *)con->in.readahead.iov_base +
+                        con->in.readahead.iov_len);
         *len = readlen - con->in.readahead.iov_len;
     } else {
         size_t rlen = pscom_min(pscom.env.skipblocksize, con->in.skip);
@@ -1458,6 +1459,7 @@ static inline pscom_req_t *pscom_prepare_send_rendezvous_inline(
     pscom_req_t *user_req, pscom_msgtype_t msg_type)
 {
 
+    int len_arch = 0;
     pscom_req_t *rndv_req;
     pscom_rendezvous_xheader_t *rx;
     pscom_rendezvous_data_t *rd;
@@ -1498,7 +1500,6 @@ static inline pscom_req_t *pscom_prepare_send_rendezvous_inline(
         goto fallback_to_eager;
     }
 
-    int len_arch = 0;
     if (con->rndv.rma_read && con->rndv.mem_register) {
         len_arch = con->rndv.mem_register(con, rd);
         if (!len_arch) { goto fallback_to_eager; }

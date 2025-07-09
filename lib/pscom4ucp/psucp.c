@@ -470,6 +470,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2],
     ucs_status_ptr_t request;
     psucp_req_t *psucp_req;
     size_t len;
+    size_t len_first;
 #if 0 /* use UCP_DATATYPE_IOV ucp_tag_send_nb() */
 	ucp_dt_iov_t *ucp_iov = (ucp_dt_iov_t *)iov;
 	// assert ucp_dt_iov_t compatible to iovec:
@@ -522,9 +523,10 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2],
     }
 #endif
     int i;
-    size_t len_first     = MIN(iov[0].iov_len, con_info->small_msg_len);
+    len_first            = MIN(iov[0].iov_len, con_info->small_msg_len);
     struct iovec siov[3] = {{.iov_base = iov[0].iov_base, .iov_len = len_first},
-                            {.iov_base = iov[0].iov_base + len_first,
+                            {.iov_base = (void *)((char *)iov[0].iov_base +
+                                                  len_first),
                              .iov_len  = iov[0].iov_len - len_first},
                             iov[1]};
     request              = NULL;

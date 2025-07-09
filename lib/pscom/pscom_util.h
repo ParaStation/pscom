@@ -125,7 +125,7 @@ static inline void pscom_read_from_iov(char *data, struct iovec *iov, size_t len
             _pscom_memcpy_from_user(data, iov->iov_base, copy);
             len -= copy;
             data += copy;
-            iov->iov_base += copy;
+            iov->iov_base = (void *)((char *)iov->iov_base + copy);
             iov->iov_len -= copy;
         }
         iov++;
@@ -141,7 +141,7 @@ static inline void pscom_write_to_iov(struct iovec *iov, char *data, size_t len)
             _pscom_memcpy_to_user(iov->iov_base, data, copy);
             len -= copy;
             data += copy;
-            iov->iov_base += copy;
+            iov->iov_base = (void *)((char *)iov->iov_base + copy);
             iov->iov_len -= copy;
         }
         iov++;
@@ -155,7 +155,7 @@ static inline void pscom_forward_iov(struct iovec *iov, size_t len)
         if (iov->iov_len) {
             size_t copy = pscom_min(len, iov->iov_len);
             len -= copy;
-            iov->iov_base += copy;
+            iov->iov_base = (void *)((char *)iov->iov_base + copy);
             iov->iov_len -= copy;
         }
         iov++;

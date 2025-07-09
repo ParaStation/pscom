@@ -37,32 +37,39 @@ pscom_env_table_entry_t pscom_env_table_cuda[] = {
     {"SYNC_MEMOPS", "1",
      "Enforce synchronization of memory operations on device buffers "
      "(important for GPUDirect).",
-     &pscom.env.cuda_sync_memops, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_sync_memops, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"ENFORCE_STAGING", "0",
      "Enable/Disable the CUDA awareness on the plugin-level, i.e., enforce "
      "a pscom-internal staging.",
-     &pscom.env.cuda_enforce_staging, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_enforce_staging, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"AWARE_SHM", "1",
      "Enable/Disable the CUDA awareness of the pscom4shm plugin.",
-     &pscom.env.cuda_aware_shm, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_aware_shm, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"AWARE_OPENIB", "1",
      "Enable/Disable the CUDA awareness of the pscom4openib plugin.",
-     &pscom.env.cuda_aware_openib, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_aware_openib, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"AWARE_UCP", "1",
      "Enable/Disable the CUDA awareness of the pscom4ucp plugin.",
-     &pscom.env.cuda_aware_ucp, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_aware_ucp, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"AWARE_VELO", "1",
      "Enable/Disable the CUDA awareness of the pscom4velo plugin.",
-     &pscom.env.cuda_aware_velo, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_aware_velo, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"AWARE_EXTOLL", "1",
      "Enable/Disable the CUDA awareness of the pscom4extoll plugin.",
-     &pscom.env.cuda_aware_extoll, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.cuda_aware_extoll, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {0},
 };
@@ -102,7 +109,7 @@ static void pscom_print_cuda_err(const char *func, CUresult err)
 static pscom_err_t pscom_cuda_init_driver_api(void)
 {
     pscom_err_t ret = PSCOM_SUCCESS;
-    int cuda_ret;
+    CUresult cuda_ret;
 
     if (pscom.env.cuda) {
         cuda_ret = cuInit(0);
@@ -431,7 +438,7 @@ int _pscom_is_gpu_mem(const void *ptr, size_t length)
     if (!pscom.env.cuda || (ptr == NULL)) { return 0; }
 
     /* try to check via the CUDA driver API first */
-    CUmemorytype mem_type    = 0;
+    CUmemorytype mem_type    = CU_MEMORYTYPE_UNDEFINED;
     unsigned int is_managed  = 0;
     unsigned int is_gpu_mem  = 0;
     unsigned int sync_memops = 0;

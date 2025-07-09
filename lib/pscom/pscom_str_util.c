@@ -8,7 +8,6 @@
  * as defined in the file LICENSE.QPL included in the packaging of this
  * file.
  */
-
 #include "pscom_str_util.h"
 
 #include <arpa/inet.h>

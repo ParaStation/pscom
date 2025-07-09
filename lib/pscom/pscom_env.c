@@ -45,7 +45,6 @@ static pscom_err_t pscom_env_parser_set_debug_out(void *buf,
     return ret;
 }
 
-
 #define PSCOM_ENV_PARSER_DEBUG_OUT                                             \
     {                                                                          \
         pscom_env_parser_set_debug_out, pscom_env_parser_get_config_str        \
@@ -420,7 +419,7 @@ pscom_err_t pscom_env_parser_set_config_str(void *buf, const char *config_val)
 
     *config_var = (char *)config_val;
 
-    return 0;
+    return PSCOM_SUCCESS;
 }
 
 
@@ -548,22 +547,20 @@ static pscom_err_t pscom_env_entry_parse(pscom_env_table_entry_t *env_entry,
     if (env_entry->config_var == NULL) {
         DPRINT(D_ERR, "The configuration variable for '%s' is missing.",
                env_entry->name);
-        goto err_out;
+        return PSCOM_ERR_INVALID;
     } else if (env_entry->parser.set == NULL) {
         DPRINT(D_ERR, "A valid setter for '%s' is missing.", env_entry->name);
-        goto err_out;
+        return PSCOM_ERR_INVALID;
     }
 
     /* determine if an env_val was given or the default shall be used */
     const char *val_to_parse = env_val ? env_val : env_entry->default_val;
 
     /* parse the value */
-    ret = env_entry->parser.set(env_entry->config_var, val_to_parse);
+    ret = (pscom_err_t)env_entry->parser.set(env_entry->config_var,
+                                             val_to_parse);
 
     return ret;
-    /* --- */
-err_out:
-    return PSCOM_ERR_INVALID;
 }
 
 static char *pscom_env_get_with_prefix(const char *prefix,

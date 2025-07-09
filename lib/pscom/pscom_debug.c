@@ -146,7 +146,7 @@ static void pscom_dump_request(FILE *out, pscom_req_t *req)
             (MPIDI_PSP_PSCOM_Xheader_t *)&req->pub.xheader.user;
         fprintf(out, " mpi2: tag:%6d con_id:%4d src_rank:%4d type:%d(%s)\n",
                 xhead->tag, xhead->context_id, xhead->src_rank, xhead->type,
-                mpid_msgtype_str(xhead->type));
+                mpid_msgtype_str((enum MPID_PSP_MSGTYPE)(xhead->type)));
     }
 }
 

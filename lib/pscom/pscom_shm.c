@@ -257,7 +257,7 @@ static inline void shm_recvstart_direct(shm_conn_t *shm, struct iovec iov[2])
     struct shm_direct_header *dh = (struct shm_direct_header *)(data -
                                                                 sizeof(*dh));
 
-    iov[1].iov_base = dh->base + shm->direct_offset;
+    iov[1].iov_base = (void *)((char *)dh->base + shm->direct_offset);
     iov[1].iov_len  = dh->len;
 }
 

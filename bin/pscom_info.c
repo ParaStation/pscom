@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 {
     parse_opt(argc, argv);
 
-    pscom_env_print_flags_t print_flags = 0;
+    pscom_env_print_flags_t print_flags = (pscom_env_print_flags_t)0;
 
     if (opts.config) {
         print_flags |= (PSCOM_ENV_PRINT_CONFIG | PSCOM_ENV_PRINT_DEFAULT_VALUE);

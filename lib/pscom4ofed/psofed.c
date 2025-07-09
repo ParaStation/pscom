@@ -358,7 +358,8 @@ static void psofed_scan_hca_ports(struct ibv_device *ib_dev)
         const char *marker;
 
         rc         = ibv_query_port(ctx, port, &port_attr);
-        port_state = !rc ? port_attr.state : 999 /* unknown */;
+        port_state = (enum ibv_port_state)(!rc ? port_attr.state
+                                               : 999 /* unknown */);
 
         marker = "";
         if (port_state == IBV_PORT_ACTIVE &&
@@ -654,8 +655,7 @@ static void print_mlock_help(unsigned size)
     }
 }
 
-static int psofed_vapi_alloc(context_info_t *context, int size,
-                             enum ibv_access_flags access_perm,
+static int psofed_vapi_alloc(context_info_t *context, int size, int access_perm,
                              mem_info_t *mem_info)
 {
     mem_info->mr = NULL;
@@ -1168,6 +1168,7 @@ static int _psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov,
     psofed_send_buffer_t *sbuf;
     psofed_msg_t *msg;
     unsigned len;
+    int rc = 0;
 
     if (psofed_seqcmp(con_info->s_seq, (psofed_seqno_t)(con_info->s_acked +
                                                         psofed_winsize)) > 0) {
@@ -1190,7 +1191,7 @@ static int _psofed_sendv(psofed_con_info_t *con_info, struct iovec *iov,
 
     pscom_memcpy_from_iov(msg->data, iov, len);
 
-    int rc = send_send_buffer(con_info, sbuf);
+    rc = send_send_buffer(con_info, sbuf);
     if (rc) { goto err_send; }
 
     sched_resend_send_buffer(con_info, sbuf);

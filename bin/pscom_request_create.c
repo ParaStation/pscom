@@ -42,7 +42,7 @@ static void exit_on_error(pscom_err_t rc, char *fmt, ...)
 
 int main(int argc, char **argv)
 {
-    int rc;
+    pscom_err_t rc;
 
     rc = pscom_init(PSCOM_VERSION);
     exit_on_error(rc, "pscom_init()");

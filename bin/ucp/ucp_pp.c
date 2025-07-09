@@ -449,7 +449,6 @@ static inline unsigned myucp_recv(void)
     }
     return r_buf->len;
     */
-    return 1;
 }
 
 

@@ -72,7 +72,7 @@ static void pscom_ondemand_write_start(pscom_con_t *con)
         pscom_ondemand_cleanup(con);
 
         /* reopen via precon */
-        int rc = pscom_precon_connect(con);
+        pscom_err_t rc = pscom_precon_connect(con);
 
         if (rc) {
             /* connect failed. set error falgs */

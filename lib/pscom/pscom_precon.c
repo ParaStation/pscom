@@ -159,10 +159,10 @@ static void _plugin_connect_next(pscom_con_t *con, int first)
                                     : pscom_plugin_next(precon->_plugin_cur);
         precon->_plugin_cur = precon->plugin;
         first               = 0;
-    } while (precon->plugin &&
-             (!_pscom_con_type_mask_is_set(sock, PSCOM_ARCH2CON_TYPE(
-                                                     precon->plugin->arch_id)) ||
-              precon->plugin->con_init(con)));
+    } while (precon->plugin && (!_pscom_con_type_mask_is_set(
+                                    sock, (pscom_con_type_t)PSCOM_ARCH2CON_TYPE(
+                                              precon->plugin->arch_id)) ||
+                                precon->plugin->con_init(con)));
 
     if (!precon->plugin) {
         // error: No working plugin found

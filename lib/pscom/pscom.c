@@ -361,7 +361,7 @@ pscom_err_t pscom_init(int pscom_version)
     atexit(pscom_cleanup);
 
 out:
-    return init;
+    return (pscom_err_t)init;
 }
 
 

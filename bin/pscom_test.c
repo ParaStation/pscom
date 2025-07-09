@@ -201,7 +201,7 @@ int recv_accept_request_test(pscom_request_t *req, pscom_connection_t *con,
     return header->xheader->user.type == MSG_TYPE_REQUEST_TEST;
 }
 
-void request_test(pscom_connection_t *con, int test)
+void request_test(pscom_connection_t *con, enum test_type test)
 {
     pscom_request_t *req = PSCOM_REQUEST_CREATE();
 
@@ -223,10 +223,10 @@ void request_test(pscom_connection_t *con, int test)
 }
 
 
-int get_test(pscom_connection_t *con)
+enum test_type get_test(pscom_connection_t *con)
 {
     pscom_request_t *req = PSCOM_REQUEST_CREATE();
-    int res;
+    enum test_type res;
 
     req->xheader_len = sizeof(struct xheader);
     req->data_len    = sizeof(req->user->req.request_test);
@@ -372,7 +372,7 @@ int running = 1;
 
 static void run_server(void)
 {
-    int rc;
+    pscom_err_t rc;
     init_common();
 
     sock->ops = socket_ops_server;
@@ -386,8 +386,8 @@ static void run_server(void)
             abort_on_error("pscom_open_connection()", PSCOM_ERR_STDERROR);
         }
 
-        pscom_err_t rc = pscom_connect(con, NULL, PSCOM_RANK_UNDEFINED,
-                                       PSCOM_CON_FLAG_DIRECT);
+        rc = pscom_connect(con, NULL, PSCOM_RANK_UNDEFINED,
+                           PSCOM_CON_FLAG_DIRECT);
         if (rc) {
             abort_on_error("pscom_connect(con, NULL, PSCOM_RANK_UNDEFINED, "
                            "PSCOM_CON_FLAG_DIRECT);",
