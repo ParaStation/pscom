@@ -156,17 +156,17 @@ typedef enum PSCOM_con_type {
 } pscom_con_type_t;
 
 typedef enum PSCOM_connect_flags {
-    PSCOM_CON_FLAG_DIRECT   = 0x00000000, /**< Direct connection establishment
+    PSCOM_CON_FLAG_DIRECT   = 0x00000001, /**< Direct connection establishment
                                                during initialization */
-    PSCOM_CON_FLAG_ONDEMAND = 0x00000001, /**< No connection setup during init,
+    PSCOM_CON_FLAG_ONDEMAND = 0x00000002, /**< No connection setup during init,
                                                connections are prepared and
                                                connected lazily */
 } pscom_connect_flags_t;
 
 typedef enum PSCOM_socket_flags {
-    PSCOM_SOCK_FLAG_INTRA_JOB = 0x00000000, /**< Socket for connecting processes
+    PSCOM_SOCK_FLAG_INTRA_JOB = 0x00000001, /**< Socket for connecting processes
                                                  in the same job/intra-comm */
-    PSCOM_SOCK_FLAG_INTER_JOB = 0x00000001, /**< Socket for connecting processes
+    PSCOM_SOCK_FLAG_INTER_JOB = 0x00000002, /**< Socket for connecting processes
                                                  of different jobs/inter-comm */
 } pscom_socket_flags_t;
 
@@ -577,12 +577,18 @@ struct PSCOM_request {
  * @brief Connection information.
  */
 struct PSCOM_con_info {
+    union {
+        struct {
+            int32_t portno; /**< A port number of TCP socket*/
+        } tcp;
+        struct {
+            uint64_t jobid;         // check whether we could use PStask_ID_t
+            uint32_t remote_sockid; // sockid of remote connection
+        } rrcomm;
+    };
     int node_id; /**< A unique node identifier */
-    struct {
-        int32_t portno; /**< A port number of TCP socket*/
-    } tcp;
-    int rank; /**< local rank of the socket or dest rank of the connection */
-    void *id; /**< A unique 32bit identifier for the connection */
+    int rank;    /**< local rank of the socket or dest rank of the connection */
+    void *id;    /**< A unique 32bit identifier for the connection */
     /**
      * @brief Name of the corresponding socket.
      *

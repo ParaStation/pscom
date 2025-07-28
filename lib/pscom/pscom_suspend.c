@@ -20,7 +20,7 @@
 #include "pscom_poll.h"
 #include "pscom_priv.h"
 #include "pscom_queues.h"
-#include "pscom_sock.h"
+#include "pscom_precon.h"
 
 
 static void _pscom_con_send_resume(pscom_con_t *con);
@@ -47,7 +47,7 @@ void _pscom_con_resume(pscom_con_t *con)
     err = _pscom_con_connect_ondemand(con);
     assert(err == PSCOM_SUCCESS);
 
-    pscom_listener_active_dec(&sock->listen);
+    pscom_precon_provider.listener_active_dec(&sock->listen);
 
     DPRINT(D_SUSPEND, "RESUMED %s", pscom_con_str(&con->pub));
 
@@ -193,11 +193,13 @@ void _pscom_con_suspend(pscom_con_t *con)
         return; // Can't write
     }
 
-    err = _pscom_listen(sock, PSCOM_ANYPORT);
+    err = pscom_precon_provider.start_listen(sock, PSCOM_ANYPORT);
     assert(err == PSCOM_SUCCESS || err == PSCOM_ERR_ALREADY);
 
-    if (err == PSCOM_ERR_ALREADY) { pscom_listener_active_inc(&sock->listen); }
-    // pscom_listener_user_inc(&sock->listen);
+    if (err == PSCOM_ERR_ALREADY) {
+        pscom_precon_provider.listener_active_inc(&sock->listen);
+    }
+    // pscom_precon_provider.listener_user_inc(&sock->listen);
     portno = pscom_get_portno(&sock->pub);
     assert(portno > 0);
 

@@ -16,7 +16,6 @@
 #include "pscom.h"
 #include "pscom_con.h"
 #include "pscom_precon.h"
-#include "pscom_precon_tcp.h"
 #include "pscom_debug.h"
 #include "pscom_priv.h"
 
@@ -48,7 +47,7 @@ static void pscom_ondemand_cleanup(pscom_con_t *con)
     con->close       = NULL;
 
     pscom_ondemand_read_stop(con);
-    pscom_listener_user_dec(&sock->listen);
+    pscom_precon_provider.listener_user_dec(&sock->listen);
 
     // con->pub.state = PSCOM_CON_STATE_CLOSED;
     // con->pub.type = PSCOM_CON_TYPE_NONE;
@@ -62,12 +61,12 @@ static void pscom_ondemand_write_start(pscom_con_t *con)
     if (pscom_name_is_lower(con->pub.remote_con_info.name,
                             con->pub.socket->local_con_info.name)) {
         pscom_ondemand_read_start(con); // be prepared for the back connect
-        pscom_precon_ondemand_backconnect_tcp(con);
+        pscom_precon_provider.ondemand_backconnect(con);
     } else {
         pscom_sock_t *sock = get_sock(con->pub.socket);
 
         /* listen until we have the connection */
-        pscom_listener_user_inc(&sock->listen);
+        pscom_precon_provider.listener_user_inc(&sock->listen);
 
         /* prepare connecting to peer and change connection type */
         pscom_ondemand_cleanup(con);
@@ -80,7 +79,7 @@ static void pscom_ondemand_write_start(pscom_con_t *con)
             pscom_con_error(con, PSCOM_OP_WRITE, rc);
         }
 
-        pscom_listener_user_dec(&sock->listen);
+        pscom_precon_provider.listener_user_dec(&sock->listen);
     }
 }
 
@@ -92,7 +91,7 @@ static void pscom_ondemand_read_start(pscom_con_t *con)
         pscom_sock_t *sock = get_sock(con->pub.socket);
 
         con->arch.ondemand.active = 1;
-        pscom_listener_active_inc(&sock->listen);
+        pscom_precon_provider.listener_active_inc(&sock->listen);
     }
 }
 
@@ -103,7 +102,7 @@ static void pscom_ondemand_read_stop(pscom_con_t *con)
         /* disable listen */
         pscom_sock_t *sock = get_sock(con->pub.socket);
 
-        pscom_listener_active_dec(&sock->listen);
+        pscom_precon_provider.listener_active_dec(&sock->listen);
         con->arch.ondemand.active = 0;
     }
 }
@@ -153,7 +152,7 @@ pscom_err_t _pscom_con_connect_ondemand(pscom_con_t *con)
 
     con->pub.state = PSCOM_CON_STATE_RW;
     con->pub.type  = PSCOM_CON_TYPE_ONDEMAND;
-    pscom_listener_user_inc(&sock->listen);
+    pscom_precon_provider.listener_user_inc(&sock->listen);
 
     con->write_start = pscom_ondemand_write_start;
     con->read_start  = pscom_ondemand_read_start;

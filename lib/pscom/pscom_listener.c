@@ -15,6 +15,7 @@
 #include <unistd.h>
 
 #include "pscom_debug.h"
+#include "pscom_precon.h"
 #include "pscom_priv.h"
 #include "pscom_ufd.h"
 

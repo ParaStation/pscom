@@ -67,7 +67,7 @@ const char *pscom_info_type_str(int type)
 }
 
 
-void pscom_precon_info_dump(pscom_precon_t *precon, char *op, int type,
+void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
                             void *data, unsigned size)
 {
     const char *plugin_name = precon->plugin ? precon->plugin->name : "";
@@ -196,6 +196,12 @@ void pscom_precon_provider_init(void)
     INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
     pscom_precon_provider.precon_count = 0;
     pscom_precon_provider.init();
+}
+
+
+void pscom_precon_provider_destroy(void)
+{
+    pscom_precon_provider.destroy();
 }
 
 

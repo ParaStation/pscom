@@ -11,19 +11,15 @@
 
 #include "pscom_sock.h"
 
-#include <arpa/inet.h>
 #include <assert.h>
-#include <errno.h>
-#include <fcntl.h>
-#include <netinet/in.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/socket.h>
 #include <unistd.h>
 
 #include "list.h"
+#include "pscom.h"
 #include "pscom_con.h"
 #include "pscom_debug.h"
 #include "pscom_env.h"
@@ -34,6 +30,9 @@
 #include "pslib.h"
 #include "pscom_precon.h"
 #include "pscom_precon_tcp.h"
+
+static int32_t inter_sockid = 1;
+static int32_t intra_sockid = 0;
 
 
 static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
@@ -62,26 +61,6 @@ static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 }
 
 
-void pscom_sock_stop_listen(pscom_sock_t *sock)
-{
-    assert(sock->magic == MAGIC_SOCKET);
-
-    if (sock->pub.listen_portno == -1) { // Already stopped?
-        return;
-    }
-
-    if (sock->listen.suspend) {
-        /* We are in listen suspend, need to dec the user counter to make it
-         * match the increment in pscom_listener_suspend. Only by doing so,
-         * the fd will be closed if there are no more active users. */
-        pscom_listener_user_dec(&sock->listen);
-    }
-
-    pscom_listener_active_dec(&sock->listen);
-    sock->pub.listen_portno = -1;
-}
-
-
 void pscom_sock_close(pscom_sock_t *sock)
 {
     struct list_head *pos, *next;
@@ -100,7 +79,10 @@ retry:
         pscom_con_close(con);
     }
 
-    pscom_sock_stop_listen(sock);
+    pscom_precon_provider.stop_listen(sock);
+    // todo: listen_portno is forced to set to 1, if not, for rrcomm there will
+    // be a retry dead loop.
+    sock->pub.listen_portno = -1;
 
     // Wait until all connections are closed. If there is no progress made
     // on any conncetion within the given timeout of PSP_SHUTDOWN_TIMEOUT
@@ -197,16 +179,71 @@ static void pscom_sock_init_con_info(pscom_sock_t *sock, int local_rank)
     pscom_sock_set_name(sock, name);
 }
 
+
+/**
+ * @brief Thread safe sock ID increase
+ *
+ * Safely increase sock->id with unique ID.
+ *
+ * For now, we allow one intra socket only
+ * because in the RRcomm implementation multiple
+ * intra-job sockets might cause issues due to the
+ * local connection not knowing which socket the
+ * remote connection belongs to at the peer side.
+ *
+ * @param [in]  sock   sock pointer
+ */
+static int pscom_sock_set_id(pscom_sock_t *sock)
+{
+    pscom_lock();
+
+    /* sock type is exclusive, either INTER_JOB or INTRA_JOB */
+    int intra_job = sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB;
+    int inter_job = sock->sock_flags & PSCOM_SOCK_FLAG_INTER_JOB;
+    int ret       = PSCOM_SUCCESS;
+
+    if (inter_job && !intra_job) {
+        // Allow multiple inter-sockets
+        sock->id = inter_sockid++;
+    } else if (intra_job && !inter_job) {
+        sock->id = intra_sockid++;
+        // Allow only one intra-socket, and its id will be 0
+        if (sock->id) {
+            ret = PSCOM_ERR_STDERROR;
+            DPRINT(D_BUG, "More than one intra job has been created. %s",
+                   pscom_err_str(ret));
+        }
+    } else {
+        ret = PSCOM_ERR_INVALID;
+        DPRINT(D_BUG, "the flag for socket type is not set correctly. %s",
+               pscom_err_str(ret));
+    }
+
+    pscom_unlock();
+
+    return ret;
+}
+
+
+void pscom_sock_unset_id(pscom_sock_t *sock)
+{
+    /* release the only intra job socket, reset intra_sockid to 0 */
+    if (sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB) {
+        intra_sockid--;
+        assert(intra_sockid == 0);
+    }
+}
+
+
 PSCOM_PLUGIN_API_EXPORT
 pscom_sock_t *pscom_sock_create(size_t userdata_size,
                                 size_t connection_userdata_size, int local_rank,
                                 uint64_t socket_flags)
 {
+    int ret = PSCOM_SUCCESS;
     pscom_sock_t *sock;
     sock = malloc(sizeof(*sock) + userdata_size);
-    if (!sock) {
-        return NULL; // error
-    }
+    if (!sock) { goto err_out; }
 
     sock->magic                = MAGIC_SOCKET;
     sock->pub.ops.con_accept   = NULL;
@@ -237,6 +274,16 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size,
     sock->state.destroyed     = 0;
 
     sock->sock_flags = socket_flags;
+    sock->id         = -1;
+
+    /* set sock ID for this socket */
+    ret = pscom_sock_set_id(sock);
+    if (ret) { goto err_out; }
+
+    /* Temporarily disable TCP as payload plugin when RRComm is used */
+    if (pscom.env.precon_type == PSCOM_PRECON_TYPE_RRCOMM) {
+        pscom_con_type_mask_del(&sock->pub, PSCOM_CON_TYPE_TCP);
+    }
 
     pscom_plugins_sock_init(sock);
 
@@ -247,6 +294,9 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size,
     pscom_unlock();
 
     return sock;
+
+err_out:
+    return NULL; // error
 }
 
 
@@ -275,6 +325,9 @@ static void pscom_sock_destroy(pscom_sock_t *sock)
     assert(list_empty(&sock->archs));
 
     sock->magic = 0;
+
+    /* only intra-job socket releases its id */
+    pscom_sock_unset_id(sock);
 
     free(sock);
 }
@@ -339,108 +392,6 @@ void pscom_socket_set_name(pscom_socket_t *socket, const char *name)
 }
 
 
-pscom_err_t _pscom_listen(pscom_sock_t *sock, int portno)
-{
-    pscom_err_t ret = PSCOM_SUCCESS;
-    struct sockaddr_in sa;
-    unsigned int size;
-    int listen_fd = -1;
-    int retry_cnt = 0;
-
-    if (pscom_listener_get_fd(&sock->listen) < 0) {
-        sock->pub.listen_portno = -1;
-    }
-
-    if (sock->pub.listen_portno != -1) { goto err_already_listening; }
-
-    if (portno == PSCOM_LISTEN_FD0) {
-        // Use socket on FD 0
-        listen_fd = 0;
-    } else {
-    retry_listen:
-        listen_fd = socket(PF_INET, SOCK_STREAM, 0);
-        if (listen_fd < 0) { goto err_socket; }
-
-        {
-            int val = 1;
-            setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (void *)&val,
-                       sizeof(val));
-        }
-
-        sa.sin_family      = AF_INET;
-        sa.sin_port        = (in_port_t)((portno == PSCOM_ANYPORT)
-                                             ? 0
-                                             : htons((uint16_t)portno));
-        sa.sin_addr.s_addr = INADDR_ANY;
-
-        if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
-            goto err_bind;
-        }
-
-        if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
-            if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
-                // Yes, this happens on 64 core machines. bind() rarely assign
-                // the same portno twice.
-                retry_cnt++; // Print warning every 10th retry, or with
-                             // PSP_DEBUG >= 1
-                DPRINT((retry_cnt % 10 == 0) ? D_ERR : D_WARN,
-                       "listen(port %d): Address already in use",
-                       (int)ntohs(sa.sin_port));
-                close(listen_fd);
-                sleep(1);
-                goto retry_listen;
-            }
-            goto err_listen;
-        }
-    }
-
-    size = sizeof(sa);
-    if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0) {
-        goto err_getsockname;
-    }
-
-    DPRINT(D_PRECON_TRACE, "precon: listen(%d, %d) on port %u", listen_fd,
-           pscom.env.tcp_backlog, ntohs(sa.sin_port));
-
-    if (fcntl(listen_fd, F_SETFL, O_NONBLOCK) < 0) { goto err_nonblock; }
-
-    sock->pub.listen_portno = ntohs(sa.sin_port);
-    pscom_listener_set_fd(&sock->listen, listen_fd);
-
-    pscom_listener_active_inc(&sock->listen);
-
-    return ret;
-
-    /* error codes */
-err_nonblock:
-    DPRINT(D_ERR, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
-    goto err_stderror;
-err_listen:
-    DPRINT(D_ERR, "listen(port %d): %s", (int)ntohs(sa.sin_port),
-           strerror(errno));
-    goto err_stderror;
-err_getsockname:
-    DPRINT(D_ERR, "getsockname(port %d): %s", (int)ntohs(sa.sin_port),
-           strerror(errno));
-    goto err_stderror;
-err_bind:
-    DPRINT(D_ERR, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
-    goto err_stderror;
-err_socket:
-    DPRINT(D_ERR, "socket(PF_INET, SOCK_STREAM, 0): %s", strerror(errno));
-    goto err_stderror;
-err_stderror:
-    ret = PSCOM_ERR_STDERROR;
-    goto err_out;
-err_already_listening:
-    ret = PSCOM_ERR_ALREADY;
-    goto err_out;
-err_out:
-    if (listen_fd >= 0) { close(listen_fd); }
-    return ret;
-}
-
-
 PSCOM_API_EXPORT
 pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 {
@@ -451,7 +402,7 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 
     pscom_lock();
     {
-        ret = _pscom_listen(sock, portno);
+        ret = pscom_precon_provider.start_listen(sock, portno);
     }
     pscom_unlock();
 
@@ -493,7 +444,7 @@ void pscom_stop_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_sock_stop_listen(sock);
+        pscom_precon_provider.stop_listen(sock);
     }
     pscom_unlock();
 }
@@ -619,7 +570,7 @@ void pscom_suspend_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_listener_suspend(&sock->listen);
+        pscom_precon_provider.listener_suspend(&sock->listen);
     }
     pscom_unlock();
 }
@@ -632,7 +583,7 @@ void pscom_resume_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_listener_resume(&sock->listen);
+        pscom_precon_provider.listener_resume(&sock->listen);
     }
     pscom_unlock();
 }
