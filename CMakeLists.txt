@@ -23,6 +23,7 @@ endif(CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/cmake/Modules/")
 include(AddCudaTarget)
+include(AddRrcommTarget)
 include(FindPackageWithHints)
 include(FindProgramWithHints)
 include(CMakeDependentOption)
@@ -112,6 +113,11 @@ option_conditional(CUDA_ENABLED "Enable cuda awareness" FALSE "CUDA_FOUND"
 if(CUDA_ENABLED)
   add_compile_definitions(PSCOM_CUDA_AWARENESS=1)
 endif(CUDA_ENABLED)
+
+find_package_with_hints(Rrcomm "/opt/parastation" "rrcomm.h pstaskid.h"
+                        "rrcomm" "Default location where to search for RRComm.")
+option_conditional(RRCOMM_PRECON_ENABLED "Enable RRComm precon" TRUE
+                   "RRCOMM_FOUND" FALSE)
 
 find_package_with_hints(Cmocka "/usr" "cmocka.h" "cmocka"
                         "Default location where to search cmocka library.")
@@ -205,6 +211,7 @@ message(STATUS "")
 message(STATUS "CUDA_ENABLED:         ${CUDA_ENABLED}")
 message(STATUS "PSSHMALLOC_ENABLED:   ${PSSHMALLOC_ENABLED}")
 message(STATUS "")
+message(STATUS "RRCOMM_PRECON_ENABLED:${RRCOMM_PRECON_ENABLED}")
 message(STATUS "POPT_ENABLED:         ${POPT_ENABLED}")
 message(STATUS "")
 message(STATUS "UTEST_ENABLED:        ${UTEST_ENABLED}")
