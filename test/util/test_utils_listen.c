@@ -21,6 +21,7 @@
 #include "pscom_debug.h"
 #include "pscom_priv.h"
 #include "pscom_sock.h"
+#include "pscom_ufd.h"
 
 void start_listen(pscom_sock_t *sock)
 {

@@ -18,7 +18,6 @@
 #include <stdint.h>
 #include "list.h"
 
-struct ufd_s;
 typedef struct ufd_info_s ufd_info_t;
 typedef struct ufd_s ufd_t;
 typedef ufd_info_t ufd_funcinfo_t;

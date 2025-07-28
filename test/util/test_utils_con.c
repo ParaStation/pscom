@@ -18,6 +18,7 @@
 #include <cmocka.h>
 
 #include "list.h"
+#include "pscom.h"
 #include "pscom_priv.h"
 #include "pscom_con.h"
 #include "pscom_precon.h"
