@@ -75,6 +75,20 @@ if(CMAKE_C_COMPILER_ID MATCHES "NVHPC")
 else()
   add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion
                       -Wno-unused-parameter)
+  # Additional compiler flags inspired by MPICH's `--enable-strict` mode
+  add_compile_options(
+    -Wstrict-prototypes
+    -Wmissing-prototypes
+    -Wshadow
+    -Wmissing-declarations
+    -Wundef
+    -Wpointer-arith
+    -Wbad-function-cast
+    -Wold-style-definition
+    -Wnested-externs
+    -Wvariadic-macros
+    -Wtype-limits
+    -Werror-implicit-function-declaration)
 endif()
 
 include(CheckLTO)
