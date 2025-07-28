@@ -67,6 +67,7 @@ bin/psm/psm_pp.c \
 bin/ucp/CMakeLists.txt \
 bin/ucp/ucp_pp.c \
 cmake/Modules/AddCudaTarget.cmake \
+cmake/Modules/AddRrcommTarget.cmake \
 cmake/Modules/CheckVisibilityProtected.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindPackageWithHints.cmake \
@@ -142,6 +143,8 @@ lib/pscom/pscom_poll.c \
 lib/pscom/pscom_poll.h \
 lib/pscom/pscom_precon.c \
 lib/pscom/pscom_precon.h \
+lib/pscom/pscom_precon_rrc.c \
+lib/pscom/pscom_precon_rrc.h \
 lib/pscom/pscom_precon_tcp.c \
 lib/pscom/pscom_precon_tcp.h \
 lib/pscom/pscom_priv.h \
