@@ -43,7 +43,7 @@ int setup_dummy_sock(void **state)
 int teardown_dummy_sock(void **state)
 {
     pscom_sock_t *sock = (pscom_sock_t *)(*state);
-
+    pscom_sock_unset_id(sock);
     free(sock);
 
     return 0;
