@@ -34,6 +34,12 @@
 #define PSCOM_INFO_BACK_CONNECT                                                \
     0x100005 /* pscom_info_con_info_t; Request a back connect */
 #define PSCOM_INFO_BACK_ACK 0x100006 /* null; Ack a back_connect */
+#define PSCOM_INFO_CON_INFO_VERSION_DEMAND                                     \
+    0x100007 /* pscom_info_con_info_t and pscom_info_version_t at the same     \
+                time; On demand connect request */
+#define PSCOM_INFO_CON_INFO_VERSION                                            \
+    0x100008 /* pscom_info_con_info_t and pscom_info_version_t at the same     \
+                time; Direct connect request */
 #define PSCOM_INFO_ARCH_REQ                                                    \
     0x100010 /* pscom_info_arch_req_t;	Request to connect with .arch_id */
 #define PSCOM_INFO_ARCH_OK    0x100011 /* Use last requested arch */
@@ -366,6 +372,43 @@ typedef struct {
 typedef struct {
     pscom_con_info_t con_info;
 } pscom_info_con_info_t;
+
+
+/**
+ * @struct pscom_info_con_info_version_t
+ * @brief Allows to send con_info and version at the same time in RRcomm
+ * together with local and remote sockid.
+ */
+typedef struct {
+    pscom_con_info_t con_info;    /**< Connection information. */
+    pscom_info_version_t version; /**< Version number. */
+    uint32_t local_sockid;        /**< connecting socket identifier. */
+} pscom_info_con_info_version_t;
+
+
+/**
+ * @struct pscom_info_rrc_t
+ * @brief Allows sending different fields during the handshake in the payload.
+ */
+typedef struct {
+    uint32_t type;           /**< Type of the data sent.     */
+    uint32_t size;           /**< Size of the data sent.     */
+    pscom_con_t *source_con; /**< Connection pointer.        */
+    pscom_con_t *remote_con; /**< Remote connection pointer. */
+} pscom_info_rrc_t;
+
+
+/**
+ * @struct pscom_global_rrc_t
+ * @brief Global variables for RRcomm. They are used by all precons.
+ */
+typedef struct {
+    int rrcomm_fd;       /**< Unique file descriptor for every process. */
+    int user_cnt;        /**< Counter for the listener. */
+    int active;          /**< Used for starting and stopping the listener. */
+    ufd_info_t ufd_info; /**< ufd_info. There is only one in RRcomm. */
+} pscom_global_rrc_t;
+
 
 /* initialize the precon module */
 void pscom_precon_init(void);
