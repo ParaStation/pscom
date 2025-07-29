@@ -419,6 +419,7 @@ typedef struct pscom_backlog {
 
 
 typedef uint32_t pscom_con_id_t;
+typedef uint32_t pscom_sock_id_t;
 
 
 /* RNDV protocol funcitons */
@@ -582,16 +583,12 @@ struct PSCOM_sock {
     struct list_head group_req_unknown; // List of pscom_req_t.next (requests
                                         // with unknown group id)
 
-    struct pscom_listener {
-        ufd_info_t ufd_info; // TCP listen for new connections
-        unsigned usercnt; // Count the users of the listening fd. (keep fd open,
-                          // if > 0) (pscom_listen and "on demand" connections)
-        unsigned activecnt; // Count active listeners. (poll on fd, if > 0)
-        unsigned suspend;   // Suspend listening and remove ufd info
-    } listen;
+    struct pscom_listener listen;
 
     unsigned int recv_req_cnt_any; // count all ANY_SOURCE receive requests on
                                    // this socket
+
+    pscom_sock_id_t id; // Process local unique socket id
 
     struct list_head sendq_suspending; // List of pscom_req_t.next, requests
                                        // from suspending connections
@@ -609,7 +606,6 @@ struct PSCOM_sock {
     } state;
 
     uint64_t sock_flags;
-
     pscom_socket_t pub;
 };
 

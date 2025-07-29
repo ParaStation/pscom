@@ -17,6 +17,7 @@
 #include "pscom_plugin.h"
 #include "pscom_types.h"
 #include "pscom.h"
+#include "pscom_ufd.h"
 
 #define PSCOM_INFO_FD_ERROR                                                    \
     0x0ffffe /* int errno; Pseudo message. Error in read(). */
@@ -33,6 +34,12 @@
 #define PSCOM_INFO_BACK_CONNECT                                                \
     0x100005 /* pscom_info_con_info_t; Request a back connect */
 #define PSCOM_INFO_BACK_ACK 0x100006 /* null; Ack a back_connect */
+#define PSCOM_INFO_CON_INFO_VERSION_DEMAND                                     \
+    0x100007 /* pscom_info_con_info_t and pscom_info_version_t at the same     \
+                time; On demand connect request */
+#define PSCOM_INFO_CON_INFO_VERSION                                            \
+    0x100008 /* pscom_info_con_info_t and pscom_info_version_t at the same     \
+                time; Direct connect request */
 #define PSCOM_INFO_ARCH_REQ                                                    \
     0x100010 /* pscom_info_arch_req_t;	Request to connect with .arch_id */
 #define PSCOM_INFO_ARCH_OK    0x100011 /* Use last requested arch */
@@ -43,6 +50,16 @@
 #define PSCOM_INFO_ARCH_STEP4 0x100016
 
 #define MAGIC_PRECON 0x4a656e73
+
+
+struct pscom_listener {
+    ufd_info_t ufd_info; // TCP listen for new connections
+    unsigned usercnt;    // Count the users of the listening fd. (keep fd open,
+                         // if > 0) (pscom_listen and "on demand" connections)
+    unsigned activecnt;  // Count active listeners. (poll on fd, if > 0)
+    unsigned suspend;    // Suspend listening and remove ufd info
+};
+
 
 typedef enum {
     PSCOM_PRECON_TYPE_TCP    = 0,
@@ -72,6 +89,14 @@ typedef struct PSCOM_precon {
  *
  */
 typedef void (*pscom_precon_provider_init_t)(void);
+
+
+/**
+ * @brief Finalize a precon provider
+ *
+ * This finalizes RRcomm in `pscom_precon_rrc.c` and is empty if TCP is used.
+ */
+typedef void (*pscom_precon_provider_destroy_t)(void);
 
 
 /**
@@ -223,6 +248,76 @@ typedef int (*pscom_precon_is_connect_loopback_t)(
     pscom_socket_t *socket, pscom_connection_t *connection);
 
 
+/**
+ * @brief Wrapper type for the `start_listen` functions of the precon
+ * providers
+ */
+typedef pscom_err_t (*pscom_precon_provider_start_listen_t)(pscom_sock_t *sock,
+                                                            int portno);
+
+
+/**
+ * @brief Wrapper type for the `stop_listen` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_stop_listen_t)(pscom_sock_t *sock);
+
+
+/**
+ * @brief Wrapper type for the `ondemand_backconnect` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_ondemand_backconnect_t)(pscom_con_t *con);
+
+
+/**
+ * @brief Wrapper type for the `listener_suspend` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_listener_suspend_t)(
+    struct pscom_listener *listener);
+
+
+/**
+ * @brief Wrapper type for the `listener_resume` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_listener_resume_t)(
+    struct pscom_listener *listener);
+
+
+/**
+ * @brief Wrapper type for the `listener_active_inc` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_listener_active_inc_t)(
+    struct pscom_listener *listener);
+
+
+/**
+ * @brief Wrapper type for the `listener_active_dec` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_listener_active_dec_t)(
+    struct pscom_listener *listener);
+
+
+/**
+ * @brief Wrapper type for the `listener_user_inc` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_listener_user_inc_t)(
+    struct pscom_listener *listener);
+
+
+/**
+ * @brief Wrapper type for the `listener_user_dec` functions of the precon
+ * providers
+ */
+typedef void (*pscom_precon_provider_listener_user_dec_t)(
+    struct pscom_listener *listener);
+
+
 /* Global pre-connection struct containing shared functions and variables. Used
  * for the initial TCP or RRcomm handshaking. Global RRcomm variables will be
  * added here.
@@ -232,6 +327,7 @@ typedef struct PSCOM_precon_provider {
     int precon_count;
     pscom_precon_type_t precon_type;
     pscom_precon_provider_init_t init;
+    pscom_precon_provider_destroy_t destroy;
     pscom_precon_provider_send_t send;
     pscom_precon_provider_create_t create;
     pscom_precon_provider_cleanup_t cleanup;
@@ -242,7 +338,16 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_get_ep_info_from_socket_t get_ep_info_from_socket;
     pscom_precon_parse_ep_info_t parse_ep_info;
     pscom_precon_is_connect_loopback_t is_connect_loopback;
-    char precon_provider_data[0];
+    pscom_precon_provider_start_listen_t start_listen;
+    pscom_precon_provider_stop_listen_t stop_listen;
+    pscom_precon_provider_ondemand_backconnect_t ondemand_backconnect;
+    pscom_precon_provider_listener_suspend_t listener_suspend;
+    pscom_precon_provider_listener_resume_t listener_resume;
+    pscom_precon_provider_listener_active_inc_t listener_active_inc;
+    pscom_precon_provider_listener_active_dec_t listener_active_dec;
+    pscom_precon_provider_listener_user_inc_t listener_user_inc;
+    pscom_precon_provider_listener_user_dec_t listener_user_dec;
+    void *precon_provider_data;
 } pscom_precon_provider_t;
 
 extern pscom_precon_provider_t pscom_precon_provider;
@@ -268,9 +373,49 @@ typedef struct {
     pscom_con_info_t con_info;
 } pscom_info_con_info_t;
 
+
+/**
+ * @struct pscom_info_con_info_version_t
+ * @brief Allows to send con_info and version at the same time in RRcomm
+ * together with local and remote sockid.
+ */
+typedef struct {
+    pscom_con_info_t con_info;    /**< Connection information. */
+    pscom_info_version_t version; /**< Version number. */
+    uint32_t local_sockid;        /**< connecting socket identifier. */
+} pscom_info_con_info_version_t;
+
+
+/**
+ * @struct pscom_info_rrc_t
+ * @brief Allows sending different fields during the handshake in the payload.
+ */
+typedef struct {
+    uint32_t type;           /**< Type of the data sent.     */
+    uint32_t size;           /**< Size of the data sent.     */
+    pscom_con_t *source_con; /**< Connection pointer.        */
+    pscom_con_t *remote_con; /**< Remote connection pointer. */
+} pscom_info_rrc_t;
+
+
+/**
+ * @struct pscom_global_rrc_t
+ * @brief Global variables for RRcomm. They are used by all precons.
+ */
+typedef struct {
+    int rrcomm_fd;       /**< Unique file descriptor for every process. */
+    int user_cnt;        /**< Counter for the listener. */
+    int active;          /**< Used for starting and stopping the listener. */
+    ufd_info_t ufd_info; /**< ufd_info. There is only one in RRcomm. */
+} pscom_global_rrc_t;
+
+
 /* initialize the precon module */
 void pscom_precon_init(void);
 void pscom_precon_provider_init(void);
+
+/* destroy the precon module */
+void pscom_precon_provider_destroy(void);
 
 /* Send a message of type type */
 pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
@@ -282,7 +427,7 @@ void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon);
 /* Print handshake information */
 const char *pscom_info_type_str(int type);
 
-void pscom_precon_info_dump(pscom_precon_t *precon, char *op, int type,
+void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
                             void *data, unsigned size);
 
 /* select and try plugin for connection */

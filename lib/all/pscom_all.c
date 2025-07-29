@@ -48,6 +48,10 @@
 #include "../pscom4openib/psoib.c"
 #endif
 
+#ifdef PSCOM_ALLIN_RRCOMM
+#include "../pscom/pscom_precon_rrc.c"
+#endif
+
 #include "../pscom/pscom_plugin.c"
 
 #include "../pscom/pscom_precon.c"

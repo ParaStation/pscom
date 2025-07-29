@@ -54,7 +54,7 @@ typedef struct PSCOM_precon_tcp {
 
 
 /* init a precon object with tcp */
-void pscom_precon_provider_init_tcp();
+void pscom_precon_provider_init_tcp(void);
 
 /* Connect a precon via tcp to nodeid:portno. Return 0 on sucess, -1 on error
  * with errno set. */

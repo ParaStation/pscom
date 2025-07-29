@@ -18,9 +18,9 @@
 
 #include "list.h"
 #include "pscom.h"
+#include "pscom_precon.h"
 #include "pscom_debug.h"
 #include "pscom_priv.h"
-#include "pscom_sock.h"
 #include "pscom_ufd.h"
 
 void start_listen(pscom_sock_t *sock)
@@ -33,7 +33,7 @@ void start_listen(pscom_sock_t *sock)
     pscom_debug_set_prefix("pscom_utest");
 
     /* Start listening on any available port (PSCOM_ANYPORT) */
-    rc = _pscom_listen(sock, PSCOM_ANYPORT);
+    rc = pscom_precon_provider.start_listen(sock, PSCOM_ANYPORT);
     assert_true(rc == PSCOM_SUCCESS);
 
     assert_true(sock->pub.listen_portno != -1);
@@ -112,7 +112,7 @@ void resume_listen(pscom_sock_t *sock)
 
 void stop_listen(pscom_sock_t *sock)
 {
-    pscom_sock_stop_listen(sock);
+    pscom_precon_provider.stop_listen(sock);
 
     /* Port must be reset to -1 */
     assert_true(sock->pub.listen_portno == -1);

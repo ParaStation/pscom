@@ -20,6 +20,7 @@
 #include "pscom_sock.h"
 #include "pscom_con.h"
 #include "pscom_ufd.h"
+#include "pscom_precon.h"
 #include "util/test_utils_listen.h"
 
 /**

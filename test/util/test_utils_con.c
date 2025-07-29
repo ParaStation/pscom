@@ -56,7 +56,11 @@ int setup_dummy_con_pair(void **state)
         sizeof(dummy_con_pair_t));
 
     setup_dummy_con(&con_pair->send_con);
-    setup_dummy_con(&con_pair->recv_con);
+    /* manually add a connection to the same intra-job socket */
+    pscom_con_t *con   = (pscom_con_t *)con_pair->send_con;
+    pscom_sock_t *sock = get_sock(con->pub.socket);
+    /* create a new connection on that sock */
+    con_pair->recv_con = (void *)pscom_con_create(sock);
 
     *state = (void *)con_pair;
 
@@ -100,8 +104,12 @@ int teardown_dummy_con_pair(void **state)
 {
     dummy_con_pair_t *con_pair = (dummy_con_pair_t *)(*state);
 
+    /* manually delete a connection to the same intra-job socket */
+    pscom_con_t *con = (pscom_con_t *)(con_pair->recv_con);
+    /* free connection-related resources */
+    if (!con->state.destroyed) { pscom_con_ref_release(con); }
+
     teardown_dummy_con(&con_pair->send_con);
-    teardown_dummy_con(&con_pair->recv_con);
 
     free(con_pair);
 

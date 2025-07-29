@@ -575,12 +575,12 @@ static void pscom_precon_do_read_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
         /* Message complete? */
         if (pre_tcp->recv_len == msg_len) {
             /* Message complete. Handle the message. */
-            void *msg = pre_tcp->recv;
+            char *msg = pre_tcp->recv;
 
             pre_tcp->recv     = NULL;
             pre_tcp->recv_len = 0;
-            pscom_precon_handle_receive_tcp(pre_tcp, ntype, msg + header_size,
-                                            nsize);
+            pscom_precon_handle_receive_tcp(pre_tcp, ntype,
+                                            (void *)(msg + header_size), nsize);
             /* Dont use pre hereafter, as handle_receive may free it! */
 
             pre_tcp = NULL;
@@ -1021,7 +1021,7 @@ pscom_precon_t *pscom_precon_create_tcp(pscom_con_t *con)
     memset(precon, 0, precon_size);
     precon->magic = MAGIC_PRECON;
 
-    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)precon->precon_data;
+    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     pre_tcp->magic              = MAGIC_PRECON;
     pre_tcp->con                = con;
     pre_tcp->precon             = precon;
@@ -1050,9 +1050,9 @@ pscom_precon_t *pscom_precon_create_tcp(pscom_con_t *con)
 }
 
 
-void pscom_precon_cleanup_tcp(pscom_precon_t *precon)
+static void pscom_precon_cleanup_tcp(pscom_precon_t *precon)
 {
-    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)precon->precon_data;
+    pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     assert(pre_tcp->magic == MAGIC_PRECON);
     // clean up tcp
     int fd = pre_tcp->ufd_info.fd;
@@ -1166,6 +1166,130 @@ err_connect:
 }
 
 
+static pscom_err_t pscom_sock_start_listen_tcp(pscom_sock_t *sock, int portno)
+{
+    pscom_err_t ret = PSCOM_SUCCESS;
+    struct sockaddr_in sa;
+    unsigned int size;
+    int listen_fd = -1;
+    int retry_cnt = 0;
+
+    if (pscom_listener_get_fd(&sock->listen) < 0) {
+        sock->pub.listen_portno = -1;
+    }
+
+    if (sock->pub.listen_portno != -1) { goto err_already_listening; }
+
+    if (portno == PSCOM_LISTEN_FD0) {
+        // Use socket on FD 0
+        listen_fd = 0;
+    } else {
+    retry_listen:
+        listen_fd = socket(PF_INET, SOCK_STREAM, 0);
+        if (listen_fd < 0) { goto err_socket; }
+
+        {
+            int val = 1;
+            setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, (void *)&val,
+                       sizeof(val));
+        }
+
+        sa.sin_family      = AF_INET;
+        sa.sin_port        = (in_port_t)((portno == PSCOM_ANYPORT)
+                                             ? 0
+                                             : htons((uint16_t)portno));
+        sa.sin_addr.s_addr = INADDR_ANY;
+
+        if (bind(listen_fd, (struct sockaddr *)&sa, sizeof(sa)) < 0) {
+            goto err_bind;
+        }
+
+        if (listen(listen_fd, pscom.env.tcp_backlog) < 0) {
+            if ((portno == PSCOM_ANYPORT) && errno == EADDRINUSE) {
+                // Yes, this happens on 64 core machines. bind() rarely assign
+                // the same portno twice.
+                retry_cnt++; // Print warning every 10th retry, or with
+                             // PSP_DEBUG >= 1
+                DPRINT((retry_cnt % 10 == 0) ? D_ERR : D_WARN,
+                       "listen(port %d): Address already in use",
+                       (int)ntohs(sa.sin_port));
+                close(listen_fd);
+                sleep(1);
+                goto retry_listen;
+            }
+            goto err_listen;
+        }
+    }
+
+    size = sizeof(sa);
+    if (getsockname(listen_fd, (struct sockaddr *)&sa, &size) < 0) {
+        goto err_getsockname;
+    }
+
+    DPRINT(D_PRECON_TRACE, "precon: listen(%d, %d) on port %u", listen_fd,
+           pscom.env.tcp_backlog, ntohs(sa.sin_port));
+
+    if (fcntl(listen_fd, F_SETFL, O_NONBLOCK) < 0) { goto err_nonblock; }
+
+    sock->pub.listen_portno             = ntohs(sa.sin_port);
+    sock->pub.local_con_info.tcp.portno = sock->pub.listen_portno;
+
+    pscom_listener_set_fd(&sock->listen, listen_fd);
+
+    pscom_precon_provider.listener_active_inc(&sock->listen);
+
+    return ret;
+
+    /* error codes */
+err_nonblock:
+    DPRINT(D_ERR, "fcntl(listen_fd, F_SETFL, O_NONBLOCK) : %s", strerror(errno));
+    goto err_stderror;
+err_listen:
+    DPRINT(D_ERR, "listen(port %d): %s", (int)ntohs(sa.sin_port),
+           strerror(errno));
+    goto err_stderror;
+err_getsockname:
+    DPRINT(D_ERR, "getsockname(port %d): %s", (int)ntohs(sa.sin_port),
+           strerror(errno));
+    goto err_stderror;
+err_bind:
+    DPRINT(D_ERR, "bind(port %d): %s", (int)ntohs(sa.sin_port), strerror(errno));
+    goto err_stderror;
+err_socket:
+    DPRINT(D_ERR, "socket(PF_INET, SOCK_STREAM, 0): %s", strerror(errno));
+    goto err_stderror;
+err_stderror:
+    ret = PSCOM_ERR_STDERROR;
+    goto err_out;
+err_already_listening:
+    ret = PSCOM_ERR_ALREADY;
+    goto err_out;
+err_out:
+    if (listen_fd >= 0) { close(listen_fd); }
+    return ret;
+}
+
+
+static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
+{
+    assert(sock->magic == MAGIC_SOCKET);
+
+    if (sock->pub.listen_portno == -1) { // Already stopped?
+        return;
+    }
+
+    if (sock->listen.suspend) {
+        /* We are in listen suspend, need to dec the user counter to make it
+         * match the increment in pscom_listener_suspend. Only by doing so,
+         * the fd will be closed if there are no more active users. */
+        pscom_precon_provider.listener_user_dec(&sock->listen);
+    }
+
+    pscom_precon_provider.listener_active_dec(&sock->listen);
+    sock->pub.listen_portno = -1;
+}
+
+
 int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
@@ -1176,15 +1300,15 @@ int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 }
 
 
-void pscom_precon_provider_init_tcp()
+void pscom_precon_provider_init_tcp(void)
 {
     pscom_env_table_register_and_parse("pscom PRECON", "PRECON_TCP_",
                                        pscom_env_table_precon_tcp);
 }
 
 
-pscom_err_t pscom_get_ep_info_from_socket_tcp(pscom_socket_t *socket,
-                                              char **ep_str)
+static pscom_err_t pscom_get_ep_info_from_socket_tcp(pscom_socket_t *socket,
+                                                     char **ep_str)
 {
     /* error checking */
     if (!socket || !ep_str) { goto err_invalid_param; };
@@ -1217,8 +1341,8 @@ err_out:
 }
 
 
-pscom_err_t pscom_parse_ep_info_tcp(const char *ep_str,
-                                    pscom_con_info_t *con_info)
+static pscom_err_t pscom_parse_ep_info_tcp(const char *ep_str,
+                                           pscom_con_info_t *con_info)
 {
     /* [ip addr]:[port number]@[name], name is the socket name set by user. for
      * now this name is rank */
@@ -1280,9 +1404,15 @@ static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
 }
 
 
+static void pscom_precon_provider_destroy_tcp(void)
+{
+}
+
+
 pscom_precon_provider_t pscom_provider_tcp = {
     .precon_type             = PSCOM_PRECON_TYPE_TCP,
     .init                    = pscom_precon_provider_init_tcp,
+    .destroy                 = pscom_precon_provider_destroy_tcp,
     .send                    = pscom_precon_send_tcp,
     .create                  = pscom_precon_create_tcp,
     .cleanup                 = pscom_precon_cleanup_tcp,
@@ -1293,4 +1423,13 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,
     .parse_ep_info           = pscom_parse_ep_info_tcp,
     .is_connect_loopback     = pscom_is_connect_loopback_tcp,
+    .start_listen            = pscom_sock_start_listen_tcp,
+    .stop_listen             = pscom_sock_stop_listen_tcp,
+    .ondemand_backconnect    = pscom_precon_ondemand_backconnect_tcp,
+    .listener_suspend        = pscom_listener_suspend,
+    .listener_resume         = pscom_listener_resume,
+    .listener_active_inc     = pscom_listener_active_inc,
+    .listener_active_dec     = pscom_listener_active_dec,
+    .listener_user_inc       = pscom_listener_user_inc,
+    .listener_user_dec       = pscom_listener_user_dec,
 };

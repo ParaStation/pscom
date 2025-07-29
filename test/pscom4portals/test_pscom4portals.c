@@ -519,7 +519,7 @@ void test_portals_one_reader_per_socket(void **state)
 
     /* create a new socket and a new connection */
     pscom_sock_t *new_sock = pscom_sock_create(0, 0, PSCOM_RANK_UNDEFINED,
-                                               PSCOM_SOCK_FLAG_INTRA_JOB);
+                                               PSCOM_SOCK_FLAG_INTER_JOB);
     pscom_con_t *new_con   = pscom_con_create(new_sock);
 
     /* initialize the new connection as portals connection */

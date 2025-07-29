@@ -25,9 +25,15 @@
 
 /* array serving as the "registry" for the precon providers */
 extern pscom_precon_provider_t pscom_provider_tcp;
+#ifdef RRCOMM_PRECON_ENABLED
+extern pscom_precon_provider_t pscom_provider_rrc;
+#endif
 static pscom_precon_provider_t
     *pscom_precon_provider_registry[PSCOM_PRECON_TYPE_COUNT] = {
         [PSCOM_PRECON_TYPE_TCP] = &pscom_provider_tcp,
+#ifdef RRCOMM_PRECON_ENABLED
+        [PSCOM_PRECON_TYPE_RRCOMM] = &pscom_provider_rrc,
+#endif
         /* Add new provider XYZ here and use macro PSCOM_PRECON_PROVIDER_XYZ in
            pscom_precon_xyz.h to initialize the respective array entry with
            index PSCOM_PRECON_TYPE_XYZ accordingly.
@@ -48,6 +54,8 @@ const char *pscom_info_type_str(int type)
         // case PSCOM_INFO_ANSWER:		return "ANSWER";
     case PSCOM_INFO_CON_INFO: return "CON_INFO";
     case PSCOM_INFO_CON_INFO_DEMAND: return "CON_INFO_DEMAND";
+    case PSCOM_INFO_CON_INFO_VERSION: return "CON_INFO_VERSION";
+    case PSCOM_INFO_CON_INFO_VERSION_DEMAND: return "CON_INFO_VERSION_DEMAND";
     case PSCOM_INFO_VERSION: return "VERSION";
     case PSCOM_INFO_BACK_CONNECT: return "BACK_CONNECT";
     case PSCOM_INFO_BACK_ACK: return "BACK_ACK";
@@ -67,7 +75,7 @@ const char *pscom_info_type_str(int type)
 }
 
 
-void pscom_precon_info_dump(pscom_precon_t *precon, char *op, int type,
+void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
                             void *data, unsigned size)
 {
     const char *plugin_name = precon->plugin ? precon->plugin->name : "";
@@ -88,8 +96,10 @@ void pscom_precon_info_dump(pscom_precon_t *precon, char *op, int type,
         break;
     }
     case PSCOM_INFO_BACK_CONNECT:
+    case PSCOM_INFO_CON_INFO:
     case PSCOM_INFO_CON_INFO_DEMAND:
-    case PSCOM_INFO_CON_INFO: {
+    case PSCOM_INFO_CON_INFO_VERSION_DEMAND:
+    case PSCOM_INFO_CON_INFO_VERSION: {
         pscom_info_con_info_t *msg = data;
         DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tcon_info:%s", precon, op,
                plugin_name, pscom_info_type_str(type),
@@ -127,7 +137,20 @@ static void _plugin_connect_next(pscom_con_t *con, int first)
     assert(first ? !precon->plugin : 1); // if first, precon->plugin has to be
                                          // NULL!
 
-    if (!con_is_connecting_peer(con)) {
+    /* In TCP, the plugin handshake is started by the connecting side while
+       in RRcomm the plugin handshake is started by the accepting side.
+       The difference between TCP and RRcomm is that the connecting side using
+       TCP knows the `nodeid` of the accepting side, while for RRcomm the
+       connecting side does not know this information. So the connecting side
+       using TCP can determine whether `shm` plugin will be used. For RRcomm,
+       the accepting side has to wait for the connection information from the
+       connecting side, then decides whether `shm` will be used and starts the
+       handshaking of plugin information.
+    */
+    if ((!con_is_connecting_peer(con) &&
+         pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_TCP) ||
+        (con_is_connecting_peer(con) &&
+         pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM)) {
         return; // Nothing to do.
     }
 
@@ -196,6 +219,12 @@ void pscom_precon_provider_init(void)
     INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
     pscom_precon_provider.precon_count = 0;
     pscom_precon_provider.init();
+}
+
+
+void pscom_precon_provider_destroy(void)
+{
+    pscom_precon_provider.destroy();
 }
 
 

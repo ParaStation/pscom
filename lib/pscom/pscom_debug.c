@@ -26,6 +26,7 @@
 #include "pscom_env.h"
 #include "pscom_priv.h"
 #include "pscom_ufd.h"
+#include "pscom_precon.h"
 
 #ifndef PSCOM_ALLIN
 /* MPI2 Header: */

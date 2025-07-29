@@ -1124,6 +1124,8 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, const char *ep_str,
     int res;
     pscom_con_t *con = get_con(connection);
     con->con_flags   = connection_flags;
+    int direct       = connection_flags & PSCOM_CON_FLAG_DIRECT;
+    int ondemand     = connection_flags & PSCOM_CON_FLAG_ONDEMAND;
 
     /*
      * The destination rank is set by the application layer (e.g., psmpi) and
@@ -1137,10 +1139,13 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, const char *ep_str,
     if (pscom_precon_is_connect_loopback(con->pub.socket, connection)) {
         res = pscom_con_connect_loopback(con);
     } else {
-        if (connection_flags & PSCOM_CON_FLAG_ONDEMAND) {
+        if (direct && !ondemand) {
+            res = pscom_connect_direct(con);
+        } else if (ondemand && !direct) {
             res = pscom_connect_ondemand(con);
         } else {
-            res = pscom_connect_direct(con);
+            res = PSCOM_ERR_INVALID;
+            goto err_connect_type;
         }
     }
     return res;
@@ -1151,6 +1156,13 @@ err_parse:
            "CONNECT (%s) FAILED : "
            "Could not parse the endpoint string %s",
            ep_str, pscom_err_str(res));
+    goto err_out;
+err_connect_type:
+    DPRINT(D_ERR,
+           "CONNECT (%s) FAILED : "
+           "Connect type is not set correctly in connection_flag %s",
+           ep_str, pscom_err_str(res));
+err_out:
     return res;
 }
 

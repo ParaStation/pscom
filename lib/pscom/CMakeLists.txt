@@ -71,6 +71,11 @@ target_link_options(pscom PRIVATE -flto)
 
 set_target_properties(pscom PROPERTIES VERSION "2.0.0" SOVERSION "2")
 
+if(RRCOMM_PRECON_ENABLED)
+  target_add_rrcomm(pscom)
+  target_sources(pscom PRIVATE pscom_precon_rrc.c)
+endif(RRCOMM_PRECON_ENABLED)
+
 if(CUDA_ENABLED)
   target_add_cuda(pscom)
 endif(CUDA_ENABLED)
