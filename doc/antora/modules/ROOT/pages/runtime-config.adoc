@@ -43,7 +43,7 @@ $ pscom_info -c -d
 A timeout value of 0 means an infinite timeout.
 
 | `PSP_GUARD`
-| Enable/disable the connection guards for the detection of failing peer processes.
+| Enable/disable the connection guards for the detection of failing peer processes. The connection guards have to be disabled when RRComm is used as pre-connection protocol.
 
 | `PSP_IPROBE_COUNT`
 | Number of iterations that `pscom_iprobe()` will iterate without progess.
@@ -259,27 +259,30 @@ If none of the rendezvous environment variables are set (neither on plugin nor o
 | The rendezvous threshold for pscom4velo
 |===
 
-=== Precon options (TCP plugin)
+=== Pre-connection(precon) options
 
 [cols="1,3"]
 |===
 
 | Option | Description
 
+| `PSP_PRECON_TYPE`
+| Choose TCP/IP or RRComm as precon protocol. The default is TCP/IP (`PSP_PRECON_TYPE=0`). When RRComm is enabled (`PSP_PRECON_TYPE=1`), the pscom4tcp plugin is automatically disabled (`PSP_TCP=0`) and `PSP_GUARD` has to be set to 0.
+
 | `PSP_PRECON_TCP_SO_SNDBUF`
-| The `SO_SNDBUF` size of the precon/TCP connections.
+| The `SO_SNDBUF` size set in the TCP/IP socket in precon.
 
 | `PSP_PRECON_TCP_SO_RCVBUF`
-| The `SO_RCVBUF` size of the precon/TCP connections.
+| The `SO_RCVBUF` size set in the TCP/IP socket in precon.
 
 | `PSP_PRECON_TCP_NODELAY`
-| Enable/disable `TCP_NODELAY` for the precon/TCP connections.
+| Enable/disable `TCP_NODELAY` in the TCP/IP socket in precon.
 
 | `PSP_PRECON_TCP_RECONNECT_TIMEOUT`
-| The reconnect timeout for the precon in milliseconds.
+| The reconnect timeout (milliseconds) for the TCP/IP connections in precon.
 
 | `PSP_PRECON_TCP_CONNECT_STALLED_MAX`
-| Declare after ``(``PSP_CONNECT_STALLED`` * ``PSP_RECONNECT_TIMEOUT``)[ms]`` without any received bytes the `connect()` as failed. Retry.
+| Declare the TCP/IP connection in precon as stalled after (`PSP_PRECON_TCP_CONNECT_STALLED_MAX` * `PSP_PRECON_TCP_RECONNECT_TIMEOUT`)[ms] without any sent and received bytes. Retry to reconnect.
 |===
 
 === OpenIB plugin options

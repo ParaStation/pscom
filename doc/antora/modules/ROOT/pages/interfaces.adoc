@@ -34,7 +34,7 @@ image::{imageprefix}pscom-init-cleanup.svg[pscom init and cleanup]
  ** `+pscom_connect(...)+` to establish the connection, calls `+pscom_connect_loopback+` in case of local connection, otherwise calls `+pscom_connect_direct(...)+` or `+pscom_connect_ondemand(...)+` depending on the chosen connectivity schema
 * `+pscom_send(...)+` can be used to send the init message via the established connection
 
-=== Instant connectivity
+=== Instant connectivity &ndash; `PSP_DIRECT_CONNECT=1`
 
 image::{imageprefix}pscom-connectivity-instant.svg[pscom instant connectivity]
 
@@ -45,7 +45,7 @@ image::{imageprefix}pscom-connectivity-instant.svg[pscom instant connectivity]
  ** `pscom_wait_any()` to wait for progress/ activity on any communication channel (polling, see `+pscom_progress(...)+` and `+pscom_con_accept_tcp(...)+`)
  ** Also when accepting incoming connections, the best connection plug-in is determined
 
-=== On-demand connectivity &ndash; `PSP_ONDEMAND=1`
+=== On-demand connectivity
 
 image::{imageprefix}pscom-connectivity-ondemand.svg[pscom on-demand connectivity]
 
@@ -67,7 +67,7 @@ image::{imageprefix}pscom-connectivity-ondemand.svg[pscom on-demand connectivity
 == Initial information exchange via pre-connection
 
 * After a pre-connection has been established, some initial information such as the version number or whether it is a "call-me-back" (aka "back-connect") on-demand connection is exchanged
-* The sending of the info messages is done asynchronously via the handling of `ufd_events`
+* The sending of the info messages is done asynchronously via the handling of `ufd_events`. The info messages are sent via TCP/IP or RRComm pre-connection protocol.
 * In `+pscom_precon_connect(...)+` the function to start handshaking is called to
  .. enable receiving
  .. send initial connection information for any connection that is in the state `PSCOM_CON_STATE_CONNECTING`
