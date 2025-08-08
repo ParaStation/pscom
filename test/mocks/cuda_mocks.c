@@ -23,8 +23,7 @@
 
 #define CUDA_MAX_STR "999"
 #define STRLEN(s)    (sizeof(s) / sizeof(s[0]))
-static const char max_err_string[]                    = CUDA_MAX_STR;
-static char cuda_error_string[STRLEN(max_err_string)] = "";
+static char cuda_error_string[STRLEN(CUDA_MAX_STR)] = "";
 
 /**
  * \brief Mocking function for cuInit()

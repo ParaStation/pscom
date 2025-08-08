@@ -13,6 +13,7 @@
 #define _PSCOM_ENV_H_
 
 #include <stddef.h>
+#include <stdint.h>
 
 #include "pscom.h"
 #include "list.h"
@@ -219,7 +220,8 @@ typedef int (*pscom_env_parser_set_t)(void *buf, const char *config_val);
  *
  * @return 0 If @a config_val could be parsed successfully.
  */
-typedef int (*pscom_env_parser_get_t)(void *buf, char *val, size_t max_len);
+typedef pscom_err_t (*pscom_env_parser_get_t)(void *buf, char *val,
+                                              size_t max_len);
 
 /**
  * @brief Object for parsing configuration value strings.
@@ -239,18 +241,18 @@ typedef struct pscom_env_parser {
  * @brief An entry of a configuration definition table.
  */
 struct pscom_env_table_entry {
-    const char *name;                    /**< Name of the environment
-                                              variable excluding the
-                                              prefix */
-    const char *default_val;             /**< Default value */
-    const char *help_str;                /**< Documentation of the
-                                              environment variable */
-    void *config_var;                    /**< A pointer to the configuration
-                                              variable */
-    pscom_env_table_entry_flags_t flags; /**< Flags affecting the parsing */
-    pscom_env_parser_t parser;           /**< The parse to be used for
-                                              parsing this configuration
-                                              parameter */
+    const char *name;          /**< Name of the environment
+                                    variable excluding the
+                                    prefix */
+    const char *default_val;   /**< Default value */
+    const char *help_str;      /**< Documentation of the
+                                    environment variable */
+    void *config_var;          /**< A pointer to the configuration
+                                    variable */
+    uint32_t flags;            /**< Flags affecting the parsing */
+    pscom_env_parser_t parser; /**< The parse to be used for
+                                    parsing this configuration
+                                    parameter */
 };
 
 /**

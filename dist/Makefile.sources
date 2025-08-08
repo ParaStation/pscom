@@ -69,6 +69,7 @@ bin/ucp/ucp_pp.c \
 cmake/Modules/AddCudaTarget.cmake \
 cmake/Modules/AddRrcommTarget.cmake \
 cmake/Modules/CheckVisibilityProtected.cmake \
+cmake/Modules/CheckLTO.cmake \
 cmake/Modules/FindExtoll.cmake \
 cmake/Modules/FindPackageWithHints.cmake \
 cmake/Modules/FindProgramWithHints.cmake \

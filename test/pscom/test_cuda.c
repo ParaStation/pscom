@@ -448,12 +448,12 @@ void test_buffer_needs_staging_if_cuda_disabled(void **state)
     pscom.env.cuda = 0;
 
     pscom_con_t *null_con = NULL;
-    pscom_con_t *any_con  = (void *)0x42;
+    pscom_con_t any_con   = {.is_gpu_aware = 0};
     void *any_ptr         = (void *)0x42;
     assert_int_equal(_pscom_buffer_needs_staging(NULL, null_con), 0);
-    assert_int_equal(_pscom_buffer_needs_staging(NULL, any_con), 0);
+    assert_int_equal(_pscom_buffer_needs_staging(NULL, &any_con), 0);
     assert_int_equal(_pscom_buffer_needs_staging(any_ptr, null_con), 0);
-    assert_int_equal(_pscom_buffer_needs_staging(any_ptr, any_con), 0);
+    assert_int_equal(_pscom_buffer_needs_staging(any_ptr, &any_con), 0);
 }
 
 /**

@@ -176,7 +176,7 @@ typedef void (*pscom_precon_provider_recv_stop_t)(pscom_precon_t *precon);
  * @return PSCOM_SUCCESS or PSCOM_ERR_STDERROR otherwise (`errno` indicates
  *         the error type).
  */
-typedef int (*pscom_precon_provider_connect_t)(pscom_con_t *con);
+typedef pscom_err_t (*pscom_precon_provider_connect_t)(pscom_con_t *con);
 
 
 /**
@@ -449,7 +449,7 @@ static inline void pscom_precon_recv_stop(pscom_precon_t *precon)
     pscom_precon_provider.recv_stop(precon);
 }
 
-static inline int pscom_precon_connect(pscom_con_t *con)
+static inline pscom_err_t pscom_precon_connect(pscom_con_t *con)
 {
     return pscom_precon_provider.connect(con);
 }

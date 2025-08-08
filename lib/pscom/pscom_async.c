@@ -344,8 +344,7 @@ static void pscom_async_thread_service_read(ufd_t *ufd, ufd_info_t *ufd_service)
     if (msg.msg_common.ack) { *msg.msg_common.ack = 1; }
 }
 
-
-static void *pscom_async_thread(void *_ipc)
+__attribute__((noreturn)) static void *pscom_async_thread(void *_ipc)
 {
     pscom_async_ipc_t *ipc  = (pscom_async_ipc_t *)_ipc;
     ufd_info_t *ufd_service = &ipc->ufd_service;
@@ -362,7 +361,6 @@ static void *pscom_async_thread(void *_ipc)
         int timeout = pscom_timer_exec();
         ufd_poll(&ipc->ufd, timeout);
     }
-    return NULL;
 }
 
 static void pscom_async_start_thread_once(pscom_async_ipc_t *ipc)

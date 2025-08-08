@@ -1121,7 +1121,7 @@ PSCOM_API_EXPORT
 pscom_err_t pscom_connect(pscom_connection_t *connection, const char *ep_str,
                           int dest_rank, uint64_t connection_flags)
 {
-    int res;
+    pscom_err_t res;
     pscom_con_t *con = get_con(connection);
     con->con_flags   = connection_flags;
     int direct       = connection_flags & PSCOM_CON_FLAG_DIRECT;

@@ -7,11 +7,13 @@
 
 #include <stdlib.h>
 
+#include "cuda.h"
 #include "pscom.h"
 #include "pscom_env.h"
 
 
-#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define CU_MEMORYTYPE_UNDEFINED ((CUmemorytype)-1)
+#define MIN(a, b)               (((a) < (b)) ? (a) : (b))
 
 typedef enum PSCOM_copy_dir {
     PSCOM_COPY_ANY_DIR = 0,

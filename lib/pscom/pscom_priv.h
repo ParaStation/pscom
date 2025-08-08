@@ -673,7 +673,7 @@ struct PSCOM {
 extern pscom_t pscom;
 
 
-#define PSCOM_ARCH2CON_TYPE(arch)     ((arch)-101)
+#define PSCOM_ARCH2CON_TYPE(arch)     ((pscom_con_type_t)((arch)-101))
 #define PSCOM_CON_TYPE2ARCH(con_type) ((con_type) + 101)
 
 /* Keep PSCOM_ARCH_{} in sync with PSCOM_CON_TYPE_{} ! */

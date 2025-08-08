@@ -35,23 +35,27 @@
 
 pscom_env_table_entry_t pscom_env_table_precon_tcp[] = {
     {"SO_SNDBUF", "32768", "The SO_SNDBUF size of the precon/TCP connections.",
-     &pscom.env.tcp_so_sndbuf, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.tcp_so_sndbuf, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"SO_RCVBUF", "32768", "The SO_RCVBUF size of the precon/TCP connections.",
-     &pscom.env.tcp_so_rcvbuf, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.tcp_so_rcvbuf, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"NODELAY", "1",
      "Enable/disable TCP_NODELAY for the precon/TCP connections.",
-     &pscom.env.tcp_nodelay, 0, PSCOM_ENV_PARSER_INT},
+     &pscom.env.tcp_nodelay, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_INT},
 
     {"RECONNECT_TIMEOUT", "2000",
      "The reconnect timeout for the precon/TCP in milliseconds.",
-     &pscom.env.precon_tcp_reconnect_timeout, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.precon_tcp_reconnect_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {"CONNECT_STALLED_MAX", "6",
      "Declare after (PSP_CONNECT_STALLED * PSP_RECONNECT_TIMEOUT)[ms] "
      "without any received bytes the connect() as failed. Retry.",
-     &pscom.env.precon_tcp_connect_stalled_max, 0, PSCOM_ENV_PARSER_UINT},
+     &pscom.env.precon_tcp_connect_stalled_max, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
 
     {0},
 };
@@ -256,8 +260,6 @@ void pscom_con_accept_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
         /* Handshake with peer */
         pscom_precon_handshake_tcp(precon);
     }
-
-    return;
 }
 
 
@@ -580,7 +582,8 @@ static void pscom_precon_do_read_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
             pre_tcp->recv     = NULL;
             pre_tcp->recv_len = 0;
             pscom_precon_handle_receive_tcp(pre_tcp, ntype,
-                                            (void *)(msg + header_size), nsize);
+                                            (void *)((char *)msg + header_size),
+                                            nsize);
             /* Dont use pre hereafter, as handle_receive may free it! */
 
             pre_tcp = NULL;

@@ -26,8 +26,9 @@
 /***********************
  * rank iterator
  */
-static const unsigned bcast_devide = 3; // ToDo: make it configurable/
-                                        // messagelen dependant
+#define bcast_devide                                                           \
+    3 // ToDo: make it configurable /
+      // messagelen dependant
 
 
 typedef struct bcast_rank_iter {

@@ -57,7 +57,7 @@ endif(NOT CMAKE_BUILD_TYPE)
 set(CMAKE_C_FLAGS_RELEASE "-O3 -DNDEBUG")
 set(CMAKE_C_FLAGS_RELWITHDEBINFO "-O3 -g")
 set(CMAKE_C_FLAGS_MINSIZEREL "-Os -g")
-set(CMAKE_C_FLAGS_DEBUG "-Og -g")
+set(CMAKE_C_FLAGS_DEBUG "-O0 -g")
 
 set(_buildtypeEnum RelWithDebInfo Release MinSizeRel Debug)
 set(trafficLight
@@ -65,9 +65,15 @@ set(trafficLight
     CACHE STRING "Status of something")
 set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS ${_buildtypeEnum})
 
-add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion
-                    -Wno-unused-parameter)
+# Check for the NVIDIA HPC compiler
+if(CMAKE_C_COMPILER_ID MATCHES "NVHPC")
+  add_compile_options(-Wall -Wextra -Wno-unused-parameter)
+else()
+  add_compile_options(-Wall -Wextra -Wconversion -Wno-sign-conversion
+                      -Wno-unused-parameter)
+endif()
 
+include(CheckLTO)
 include(CheckVisibilityProtected)
 if(NOT VISIBILITY_PROTECTED)
   add_compile_definitions(NO_PROTECTED_FUNC=1)

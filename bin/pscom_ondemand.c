@@ -29,6 +29,13 @@
 #define WHITE   "\033[37m"
 #define NORM    "\033[39m"
 
+#define error(exit_code, errnum, fmt, ...)                                     \
+    do {                                                                       \
+        fflush(stdout);                                                        \
+        fprintf(stderr, "%s: " fmt, progname, ##__VA_ARGS__);                  \
+        if (errnum != 0) { fprintf(stderr, ": %s\n", strerror(errnum)); }      \
+        if (exit_code != 0) { exit(exit_code); }                               \
+    } while (0);
 
 const char *arg_peer_str = "localhost:5046@bar";
 
