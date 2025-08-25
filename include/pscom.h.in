@@ -40,8 +40,8 @@ struct sockaddr_in;
 #define PSCOM_CUDA_AWARENESS_SUPPORT
 #endif
 
-#define PSCOM_ABI_VERSION_MAJOR 5
-#define PSCOM_ABI_VERSION_MINOR 0
+#define PSCOM_ABI_VERSION_MAJOR @PSCOM_ABI_VERSION_MAJOR@
+#define PSCOM_ABI_VERSION_MINOR @PSCOM_ABI_VERSION_MINOR@
 
 
 /* helper to mask all bits 0..i-1 */
