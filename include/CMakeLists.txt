@@ -14,4 +14,7 @@ add_custom_target(
   COMMAND ${PROJECT_SOURCE_DIR}/scripts/vc_version.h.sh ${VERSION_FILE}
   VERBATIM)
 
-install(FILES pscom.h DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
+configure_file("pscom.h.in" "pscom.h" @ONLY)
+
+install(FILES ${PROJECT_BINARY_DIR}/include/pscom.h
+        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})

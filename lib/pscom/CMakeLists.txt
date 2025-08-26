@@ -49,8 +49,7 @@ add_dependencies(pscom vc_version)
 target_include_directories(
   pscom
   PRIVATE .
-  PRIVATE ${PROJECT_BINARY_DIR}/include
-  PUBLIC ${PROJECT_SOURCE_DIR}/include)
+  PUBLIC ${PROJECT_BINARY_DIR}/include)
 
 target_link_libraries(
   pscom
@@ -68,7 +67,10 @@ if(LTO_ENABLED)
   set_target_properties(pscom PROPERTIES INTERPROCEDURAL_OPTIMIZATION TRUE)
 endif()
 
-set_target_properties(pscom PROPERTIES VERSION "2.0.0" SOVERSION "2")
+set_target_properties(
+  pscom
+  PROPERTIES VERSION "${PSCOM_ABI_VERSION_MAJOR}.${PSCOM_ABI_VERSION_MINOR}"
+             SOVERSION "${PSCOM_ABI_VERSION_MAJOR}")
 
 if(RRCOMM_PRECON_ENABLED)
   target_add_rrcomm(pscom)

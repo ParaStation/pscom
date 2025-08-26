@@ -32,6 +32,10 @@ include(CTest)
 include(OptionConditional)
 include(Legacy)
 
+# Set the pscom ABI version following semantic versioning w/o PATCH versions
+set(PSCOM_ABI_VERSION_MAJOR 5)
+set(PSCOM_ABI_VERSION_MINOR 0)
+
 # VERSION.pscom:
 # 	@echo "$(PACKAGE_NAME) $(VC_VERSION) ($(shell LC_ALL=C date))" > $@
 # VC_VERSION="$(cd $(dirname $0) && ./vcversion -r .. -n)"

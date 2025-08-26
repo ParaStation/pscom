@@ -132,7 +132,7 @@ target_link_libraries(pscom_utest PRIVATE pscom-static ${CMOCKA_LIBRARIES})
 
 target_include_directories(
   pscom_utest PRIVATE . ${PROJECT_SOURCE_DIR}/lib/pscom
-                      ${PROJECT_SOURCE_DIR}/include ${CMOCKA_INCLUDE_DIR})
+                      ${PROJECT_BINARY_DIR}/include ${CMOCKA_INCLUDE_DIR})
 
 if(UCP_ENABLED)
   target_link_options(
