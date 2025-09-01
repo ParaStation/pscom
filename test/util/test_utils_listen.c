@@ -40,7 +40,6 @@ void start_listen(pscom_sock_t *sock)
 
     /* Both counters must be reset to 1 */
     assert_true(sock->listen.activecnt == 1);
-    assert_true(sock->listen.usercnt == 1);
 
     /* Have active fd */
     assert_true(sock->listen.ufd_info.fd > 0);
@@ -49,27 +48,26 @@ void start_listen(pscom_sock_t *sock)
     assert_true(sock->listen.ufd_info.pollfd_idx != -1);
 }
 
-void suspend_listen(pscom_sock_t *sock)
+void stop_listen(pscom_sock_t *sock)
 {
     unsigned int activecnt = 0;
-    unsigned int usercnt   = 0;
     int port               = 0;
 
     /* Save previous values for later comparison */
     activecnt = sock->listen.activecnt;
-    usercnt   = sock->listen.usercnt;
     port      = sock->pub.listen_portno;
 
-    pscom_listener_suspend(&sock->listen);
+    pscom_precon_provider->stop_listen(sock);
 
     /* Must still have a listen port number assigned */
     assert_true(sock->pub.listen_portno == port);
 
-    assert_true(sock->listen.suspend == 1);
-
-    /* user counter must be incremented, active counter decremented */
-    assert_true(sock->listen.activecnt == activecnt - 1);
-    assert_true(sock->listen.usercnt == usercnt + 1);
+    /* check activecnt */
+    if (activecnt == 0) {
+        assert_true(sock->listen.activecnt == 0);
+    } else {
+        assert_true(sock->listen.activecnt == activecnt - 1);
+    }
 
     /* Still have active fd */
     assert_true(sock->listen.ufd_info.fd > 0);
@@ -81,27 +79,28 @@ void suspend_listen(pscom_sock_t *sock)
     assert_true(list_empty(&(sock->listen.ufd_info.next)));
 }
 
-void resume_listen(pscom_sock_t *sock)
+
+void restart_listen(pscom_sock_t *sock, int portno)
 {
     unsigned int activecnt = 0;
-    unsigned int usercnt   = 0;
-    int port               = 0;
 
     /* Save previous values for later comparison */
     activecnt = sock->listen.activecnt;
-    usercnt   = sock->listen.usercnt;
-    port      = sock->pub.listen_portno;
 
-    pscom_listener_resume(&sock->listen);
+    int rc = pscom_precon_provider->start_listen(sock, portno);
+    assert_true(rc == PSCOM_SUCCESS);
 
     /* Must still have a listen port number assigned */
-    assert_true(sock->pub.listen_portno == port);
+    if (portno != PSCOM_ANYPORT) {
+        assert_true(sock->pub.listen_portno == portno);
+    }
 
-    assert_true(sock->listen.suspend == 0);
-
-    /* user counter must be decremented, active counter incremented */
-    assert_true(sock->listen.activecnt == activecnt + 1);
-    assert_true(sock->listen.usercnt == usercnt - 1);
+    /* check activecnt */
+    if (activecnt != 0) {
+        assert_true(sock->listen.activecnt == activecnt);
+    } else {
+        assert_true(sock->listen.activecnt == activecnt + 1);
+    }
 
     /* Still have active fd */
     assert_true(sock->listen.ufd_info.fd > 0);
@@ -110,10 +109,56 @@ void resume_listen(pscom_sock_t *sock)
     assert_true(sock->listen.ufd_info.pollfd_idx != -1);
 }
 
-void stop_listen(pscom_sock_t *sock)
-{
-    pscom_precon_provider->stop_listen(sock);
 
-    /* Port must be reset to -1 */
-    assert_true(sock->pub.listen_portno == -1);
+void suspend_listen(pscom_sock_t *sock)
+{
+    unsigned int activecnt = 0;
+    int port               = 0;
+
+    /* Save previous values for later comparison */
+    activecnt = sock->listen.activecnt;
+    port      = sock->pub.listen_portno;
+
+    pscom_precon_provider->suspend_listen(sock);
+
+    /* Must still have a listen port number assigned */
+    assert_true(sock->pub.listen_portno == port);
+
+    /* user counter must be incremented, active counter decremented */
+    assert_true(sock->listen.activecnt == activecnt - 1);
+
+    /* Still have active fd */
+    assert_true(sock->listen.ufd_info.fd > 0);
+
+    /* Listener MUST NOT be listening for incoming connections */
+    assert_true(sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Check if ufd_info is detached from the list */
+    assert_true(list_empty(&(sock->listen.ufd_info.next)));
+}
+
+
+void resume_listen(pscom_sock_t *sock)
+{
+    unsigned int activecnt = 0;
+    int port               = 0;
+
+    /* Save previous values for later comparison */
+    activecnt = sock->listen.activecnt;
+    port      = sock->pub.listen_portno;
+
+    int rc = pscom_precon_provider->resume_listen(sock, PSCOM_ANYPORT);
+    assert_true(rc == PSCOM_SUCCESS);
+
+    /* Must still have a listen port number assigned */
+    assert_true(sock->pub.listen_portno == port);
+
+    /* user counter must be decremented, active counter incremented */
+    assert_true(sock->listen.activecnt == activecnt + 1);
+
+    /* Still have active fd */
+    assert_true(sock->listen.ufd_info.fd > 0);
+
+    /* Listener MUST be listening for incoming connections again */
+    assert_true(sock->listen.ufd_info.pollfd_idx != -1);
 }

@@ -147,6 +147,12 @@ int main(void)
     const struct CMUnitTest pscom_listener_tests[] = {
         cmocka_unit_test_setup_teardown(test_start_stop_listen_anyport,
                                         setup_dummy_sock, teardown_dummy_sock),
+        cmocka_unit_test_setup_teardown(test_restart_listen_anyport,
+                                        setup_dummy_sock, teardown_dummy_sock),
+        cmocka_unit_test_setup_teardown(test_start_listen_multiple,
+                                        setup_dummy_sock, teardown_dummy_sock),
+        cmocka_unit_test_setup_teardown(test_restart_listen_specific_port,
+                                        setup_dummy_sock, teardown_dummy_sock),
         cmocka_unit_test_setup_teardown(test_start_stop_listen_ondemand,
                                         setup_dummy_sock, teardown_dummy_sock),
         cmocka_unit_test_setup_teardown(test_start_stop_listen_ondemand_recv_req,
@@ -160,6 +166,7 @@ int main(void)
         cmocka_unit_test_setup_teardown(
             test_suspend_resume_listen_ondemand_recv_req, setup_dummy_sock,
             teardown_dummy_sock),
+
     };
     total_tests += TEST_GROUP_SIZE(pscom_listener_tests);
     failed_tests += cmocka_run_group_tests(pscom_listener_tests, NULL, NULL);
