@@ -54,10 +54,7 @@
 
 struct pscom_listener {
     ufd_info_t ufd_info; // TCP listen for new connections
-    unsigned usercnt;    // Count the users of the listening fd. (keep fd open,
-                         // if > 0) (pscom_listen and "on demand" connections)
     unsigned activecnt;  // Count active listeners. (poll on fd, if > 0)
-    unsigned suspend;    // Suspend listening and remove ufd info
 };
 
 
@@ -320,19 +317,18 @@ typedef void (*pscom_precon_provider_ondemand_backconnect_t)(pscom_con_t *con);
 
 
 /**
- * @brief Wrapper type for the `listener_suspend` functions of the precon
+ * @brief Wrapper type for the `suspend_listen` functions of the precon
  * providers
  */
-typedef void (*pscom_precon_provider_listener_suspend_t)(
-    struct pscom_listener *listener);
+typedef void (*pscom_precon_provider_listener_suspend_t)(pscom_sock_t *sock);
 
 
 /**
- * @brief Wrapper type for the `listener_resume` functions of the precon
+ * @brief Wrapper type for the `resume_listen` functions of the precon
  * providers
  */
-typedef void (*pscom_precon_provider_listener_resume_t)(
-    struct pscom_listener *listener);
+typedef pscom_err_t (*pscom_precon_provider_listener_resume_t)(
+    pscom_sock_t *sock, int portno);
 
 
 /**
@@ -348,22 +344,6 @@ typedef void (*pscom_precon_provider_listener_active_inc_t)(
  * providers
  */
 typedef void (*pscom_precon_provider_listener_active_dec_t)(
-    struct pscom_listener *listener);
-
-
-/**
- * @brief Wrapper type for the `listener_user_inc` functions of the precon
- * providers
- */
-typedef void (*pscom_precon_provider_listener_user_inc_t)(
-    struct pscom_listener *listener);
-
-
-/**
- * @brief Wrapper type for the `listener_user_dec` functions of the precon
- * providers
- */
-typedef void (*pscom_precon_provider_listener_user_dec_t)(
     struct pscom_listener *listener);
 
 
@@ -393,12 +373,11 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_provider_start_listen_t start_listen;
     pscom_precon_provider_stop_listen_t stop_listen;
     pscom_precon_provider_ondemand_backconnect_t ondemand_backconnect;
-    pscom_precon_provider_listener_suspend_t listener_suspend;
-    pscom_precon_provider_listener_resume_t listener_resume;
+    pscom_precon_provider_listener_suspend_t suspend_listen;
+    pscom_precon_provider_listener_resume_t resume_listen;
     pscom_precon_provider_listener_active_inc_t listener_active_inc;
     pscom_precon_provider_listener_active_dec_t listener_active_dec;
-    pscom_precon_provider_listener_user_inc_t listener_user_inc;
-    pscom_precon_provider_listener_user_dec_t listener_user_dec;
+
     void *precon_provider_data;
 } pscom_precon_provider_t;
 

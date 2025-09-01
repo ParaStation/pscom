@@ -761,12 +761,21 @@ void pscom_socket_set_name(pscom_socket_t *socket, const char *name);
 /**
  * @brief Start to listen on a socket for incoming connection requests.
  *
+ * This function will enable the listener of a socket prior to connection setup.
+ * After connection establishment, @ref pscom_stop_listen should be called to
+ * disable the listener. Note that any change of portno will lead to a change
+ * of the endpoint information on this socket, and that the user has to
+ * re-generate the endpoint information by calling @ref pscom_socket_get_ep_str
+ * and re-distribute this information.
+ *
  * @param [in] socket The socket to listen.
  * @param [in] portno The port number to listen on (may be PSCOM_ANYPORT).
  *
  * @return ::PSCOM_SUCCESS      The socket successfully listens on portno.
  *
- * @return ::PSCOM_ERR_ALREADY  The socket is already in listening state.
+ * @return ::PSCOM_ERR_ALREADY  The socket is already in listening state with
+ *                              an active portno and a new portno is assigned
+ *                              to this socket, which is not allowed.
  *
  * @return ::PSCOM_ERR_STDERROR Another error occurred and an according error
  *                              message is provided in the log if this is
@@ -785,6 +794,10 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno);
 /**
  * @brief Stop listening for new connections on port.
  *
+ * This function disables the listener of a socket and should be used after
+ * connection establishment. This function should be used together with @ref
+ * pscom_listen().
+ *
  * @param [in] socket The listening socket.
  */
 void pscom_stop_listen(pscom_socket_t *socket);
@@ -794,7 +807,8 @@ void pscom_stop_listen(pscom_socket_t *socket);
 
 /**
  * @brief Suspend listening for new connections on the port by deactivating
- * the ufd entry in the progress engine.
+ * the ufd entry in the progress engine. The functionality is similar to @ref
+ * pscom_stop_listen()
  *
  * @param [in] socket The listening socket.
  */
@@ -803,7 +817,8 @@ void pscom_suspend_listen(pscom_socket_t *socket);
 
 /**
  * @brief Resume listening on the port by adding the udf entry back to the
- * progress engine.
+ * progress engine. If @ref pscom_listen(socket, ...) was called before on the
+ * socket this funciton behaves similarly to @ref pscom_listen
  *
  * @param [in] socket The listening socket.
  */
@@ -1523,8 +1538,11 @@ pscom_err_t pscom_connect(pscom_connection_t *connection, const char *ep_str,
  * @brief Get the endpoint string of a socket.
  *
  * This routine returns a string that can be used to connect to this process
- * by calling @ref pscom_connect. It does not set the socket to
- * listening state; this has to be done by calling @ref pscom_listen.
+ * by calling @ref pscom_connect. It does not set the socket to listening state;
+ * this has to be done by calling @ref pscom_listen. If anything on this socket
+ * has been changed, e.g., the portno is changed by calling @ref pscom_listen
+ * after this function call, the endpoint information has to be re-generated and
+ * exchanged again.
  *
  * @param [in]  socket The communication socket to connect to.
  * @param [out] ep_str A pointer to the resulting endpoint string; the memory is

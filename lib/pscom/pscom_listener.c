@@ -28,10 +28,7 @@ void pscom_listener_init(struct pscom_listener *listener,
     listener->ufd_info.fd       = -1;
     listener->ufd_info.can_read = can_read;
     listener->ufd_info.priv     = priv;
-
-    listener->usercnt   = 0;
-    listener->activecnt = 0;
-    listener->suspend   = 0;
+    listener->activecnt         = 0;
 }
 
 
@@ -50,29 +47,17 @@ int pscom_listener_get_fd(struct pscom_listener *listener)
 }
 
 
-void pscom_listener_user_inc(struct pscom_listener *listener)
+void pscom_listener_close_fd(struct pscom_listener *listener)
 {
-    listener->usercnt++;
-}
+    assert(listener->activecnt == 0);
 
-
-void pscom_listener_user_dec(struct pscom_listener *listener)
-{
-    assert(listener->usercnt > 0);
-
-    listener->usercnt--;
-
-    if (!listener->usercnt) {
-        assert(!listener->activecnt);
-
-        int fd = pscom_listener_get_fd(listener);
-        if (fd >= 0) {
-            close(fd);
-        } else {
-            DPRINT(D_WARN, "warning: %s() fd already closed", __func__);
-        }
-        listener->ufd_info.fd = -1;
+    int fd = pscom_listener_get_fd(listener);
+    if (fd >= 0) {
+        close(fd);
+    } else {
+        DPRINT(D_WARN, "warning: %s() fd already closed", __func__);
     }
+    listener->ufd_info.fd = -1;
 }
 
 
@@ -83,8 +68,6 @@ void pscom_listener_active_inc(struct pscom_listener *listener)
     listener->activecnt++;
 
     if (start) {
-        pscom_listener_user_inc(listener);
-
         ufd_add(&pscom.ufd, &listener->ufd_info);
         ufd_event_set(&pscom.ufd, &listener->ufd_info, POLLIN);
     }
@@ -93,60 +76,15 @@ void pscom_listener_active_inc(struct pscom_listener *listener)
 
 void pscom_listener_active_dec(struct pscom_listener *listener)
 {
-    /* In suspended state we can have active counter == 0 when entering this
-     * function; make sure that we do not decrement 0. */
-    if (listener->activecnt > 0) {
-        listener->activecnt--;
-        if (!listener->activecnt) {
-            /* Prevent double-deletion; Only delete ufd_info from
-             * list if active counter is decremented in this call */
-            ufd_del(&pscom.ufd, &listener->ufd_info);
-            pscom_listener_user_dec(listener);
-        }
-    } else {
-        assert(listener->suspend == 1);
-        pscom_listener_user_dec(listener);
-    }
-}
-
-
-/* Add ufd_info back to the pscom ufd list and start listening again,
- * must be used in pair with pscom_listener_suspend */
-void pscom_listener_resume(struct pscom_listener *listener)
-{
-    assert(listener->suspend == 1);
-    assert(listener->usercnt > 1);
-
-    listener->suspend = 0;
-    listener->activecnt++;
-
-    /* Start polling again on fd */
-    ufd_add(&pscom.ufd, &listener->ufd_info);
-    ufd_event_set(&pscom.ufd, &listener->ufd_info, POLLIN);
-
-    /* Decrement user counter again (undo increment from previous suspend) */
-    pscom_listener_user_dec(listener);
-}
-
-
-/* Remove ufd_info from the pscom ufd list and stop listening
- * The fd is not closed! Use pscom_listener_resume to start listening again. */
-void pscom_listener_suspend(struct pscom_listener *listener)
-{
-    assert(listener->suspend == 0);
-    assert(listener->activecnt > 0);
-
-    listener->suspend = 1;
-
-    /* Need to decrement active counter here so that ondemand connections
-     * can re-add the fd to the udf list to complete their connections and
-     * remove it again once they are done. */
+    if (listener->activecnt == 0) { return; }
     listener->activecnt--;
 
-    /* Remove fd from polling */
-    ufd_del(&pscom.ufd, &listener->ufd_info);
-
-    /* Increment user counter to prevent fd from being closed in suspended
-     * state, this is needed for ondemand connections */
-    pscom_listener_user_inc(listener);
+    /* the listener will be deactivated from listening but the fd will not be
+     * returned, instead it will be kept and re-activated by calling the
+     * pscom_listener_active_inc function */
+    if (listener->activecnt == 0) {
+        /* Prevent double-deletion; Only delete ufd_info from
+         * list if active counter is decremented to 0 in this call */
+        ufd_del(&pscom.ufd, &listener->ufd_info);
+    }
 }
