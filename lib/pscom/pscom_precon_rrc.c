@@ -757,7 +757,12 @@ static void pscom_precon_provider_init_rrc(void)
         _exit(112);
     }
 
-    pscom.env.guard = 0;
+    if (pscom.env.guard == 1) {
+        DPRINT(D_ERR, "The connection guards have to be disabled when RRComm "
+                      "is used as the precon protocol! PSP_GUARD must be set "
+                      "to 0 when PSP_PRECON_TYPE=1!\n");
+        _exit(1);
+    }
 
     // Assign memory for RRcomm sock variables
     pscom_precon_provider.precon_provider_data = (void *)malloc(

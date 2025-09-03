@@ -116,7 +116,7 @@ static pscom_env_table_entry_t pscom_env_table[] = {
      &pscom.env.shutdown_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 
-    {"GUARD", "1",
+    {"GUARD", "0",
      "Enable/disable the connection guards for the detection of failing "
      "peer processes",
      &pscom.env.guard, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_UINT},
