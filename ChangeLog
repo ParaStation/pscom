@@ -1,3 +1,50 @@
+2025-09-03  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-0rc1
+
+2025-09-03  Xu Huang  <huang@par-tec.com>
+
+	* New: Disable pscom guards by default (i.e., `PSP_GUARD=0`).
+
+2025-08-26  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Improvement: Align `PSCOM_VERSION` with SOVERSION and set this via
+	CMake; with this SOVERSION changed from 2 to 5.
+
+2025-08-08  Anna Karbownik  <anna.karbownik@par-tec.com>
+
+	* Fix: Compilation with nvc toolchain and several compilation warnings
+	with GCC and nvc toolchains.
+
+2025-07-29  Xu Huang  <huang@par-tec.com>
+
+	* New: Add pscom RRComm precon provider leveraging the ParaStation
+	daemones for an accelerated session startup; this feature requires
+        `librrcomm` provided by psmgmt >= 5.1.53.1.
+
+2025-06-03  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Fix: Support iwyu version 0.23.
+
+	* Fix: Prevent double deletion of ufd_info from list with suspend/
+	resume listening API added in version 5.9.0-1.
+
+2025-05-12  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Improvement: Refactor precon provider interface by introducing
+	better error handling.
+
+2025-04-04  Xu Huang  <huang@par-tec.com>
+
+	* Improvement: Refactor and simplify pscom's connect interface by
+	providing a single function for determining endpoint information
+	(`pscom_socket_get_ep_str`) and a single function for connecting to a
+	process using this information (`pscom_connect()`). This is an
+	API-breaking change.
+
+	* New: Add new RMA interface implemented via two-sided semantics
+	providing the following APIs: put, get, accumulate, get accumulate,
+	fetch and op, compare and swap; this also includes global callbacks to
+	perform synchronization.
+
 2025-04-28  Simon Pickartz  <pickartz@par-tec.com>	-	5.9.0-1
 
 2025-03-27  Simon Pickartz  <pickartz@par-tec.com>	-	5.9.0-0rc1
