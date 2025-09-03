@@ -34,26 +34,30 @@
 #include "pscom_plugin.h"
 
 pscom_env_table_entry_t pscom_env_table_precon_tcp[] = {
-    {"SO_SNDBUF", "32768", "The SO_SNDBUF size of the precon/TCP connections.",
+    {"SO_SNDBUF", "32768",
+     "The SO_SNDBUF size set in the TCP/IP socket in precon.",
      &pscom.env.tcp_so_sndbuf, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 
-    {"SO_RCVBUF", "32768", "The SO_RCVBUF size of the precon/TCP connections.",
+    {"SO_RCVBUF", "32768",
+     "The SO_RCVBUF size set in the TCP/IP socket in precon.",
      &pscom.env.tcp_so_rcvbuf, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 
     {"NODELAY", "1",
-     "Enable/disable TCP_NODELAY for the precon/TCP connections.",
+     "Enable/disable TCP_NODELAY in the TCP/IP socket in precon.",
      &pscom.env.tcp_nodelay, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_INT},
 
     {"RECONNECT_TIMEOUT", "2000",
-     "The reconnect timeout for the precon/TCP in milliseconds.",
+     "The reconnect timeout (milliseconds) for the TCP/IP connections in "
+     "precon.",
      &pscom.env.precon_tcp_reconnect_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 
     {"CONNECT_STALLED_MAX", "6",
-     "Declare after (PSP_CONNECT_STALLED * PSP_RECONNECT_TIMEOUT)[ms] "
-     "without any received bytes the connect() as failed. Retry.",
+     "Declare the TCP/IP connection in precon as stalled after "
+     "(PSP_PRECON_CONNECT_STALLED_MAX * PSP_PRECON_RECONNECT_TIMEOUT)[ms]"
+     "without any sent and received bytes. Retry to reconnect.",
      &pscom.env.precon_tcp_connect_stalled_max, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 

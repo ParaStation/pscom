@@ -89,6 +89,12 @@ Files located in the folders `lib/pscom` and `include`:
 | `pscom_precon.{h,c}`
 | Pre-connection features for initial handshake
 
+| `pscom_precon_tcp.{h,c}`
+| Initial handshake using TCP/IP as pre-connection protocol
+
+| `pscom_precon_rrc.{h,c}`
+| Initial handshake using RRComm as pre-connection protocol
+
 | `pscom_priv.h`
 | Declarations and functions for internal use inside of `pscom`
 

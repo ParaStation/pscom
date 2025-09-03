@@ -25,7 +25,8 @@ For installations of ParaStation MPI, the default install directory is typically
 ==== Other
 
 * `popt` library, a command line option parsing library used by some of the tools in the `bin` folder
-* cmocka Library for unit tests
+* RRComm library for pre-connection protocol used for connection establishment.
+* cmocka library for unit tests
 * Python packages `cmake-format`, `cmakelint` and `PyYaml` for CMake style checking. Install them via Python's package management system, e.g `pip3 install cmake-format cmakelint PyYaml`.
 * `clang-format` for applying the coding style (cf. [Contributing](#contributing))
 
@@ -106,6 +107,12 @@ For runtime configuration options of plugins including customization of their pr
 
 If the CUDA library is found on your system, `pscom` is automatically compiled with CUDA awareness features enabled.
 If you want to disable CUDA awareness, you can pass `-DCUDA_ENABLED=0` to CMake.
+
+=== Pre-connection protocol
+
+The default pre-connection protocol is TCP/IP. If the RRComm library is found on your system, `pscom` is automatically compiled with RRComm features. `-DRRCOMM_PRECON_ENABLED=1` can be set to compile pscom with RRComm. If the RRComm library is not found, cmake will return an error if `-DRRCOMM_PRECON_ENABLED=1`. `-DRRCOMM_PRECON_ENABLED=0` can be passed to CMake to to compile pscom without RRComm pre-connection protocol.
+
+RRComm as pre-connection protocol can be enabled via setting the environment variable `PSP_PRECON_TYPE=1` during runtime. `PSP_PRECON_TYPE` is set to 0 by default to use the TCP/IP pre-connection protocol.
 
 === Unit tests
 
