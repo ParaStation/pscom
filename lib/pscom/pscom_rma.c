@@ -53,11 +53,26 @@ PSCOM_API_EXPORT
 pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,
                                size_t length, pscom_memh_t *memh)
 {
-    /* invalid socket, return error */
+    pscom_sock_t *sock = NULL;
+    /* If socket is not provided, try to use the intra-job socket (id = 0). */
     if (!socket) {
-        *memh = NULL;
-        return PSCOM_ERR_INVALID;
+        struct list_head *pos_sock;
+        list_for_each (pos_sock, &pscom.sockets) {
+            pscom_sock_t *temp_sock = list_entry(pos_sock, pscom_sock_t, next);
+            if (temp_sock->id == 0) {
+                sock = temp_sock;
+                break;
+            }
+        }
+        /* If the intra-job socket is not found, return error. */
+        if (sock == NULL) {
+            *memh = NULL;
+            return PSCOM_ERR_INVALID;
+        }
+    } else {
+        sock = get_sock(socket);
     }
+    assert(sock->magic == MAGIC_SOCKET);
 
     /* NULL with length, return error */
     if (addr == NULL && length != 0) {
@@ -67,7 +82,6 @@ pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,
 
     /* init memory region handle */
     int pscom_err           = PSCOM_SUCCESS;
-    pscom_sock_t *sock      = get_sock(socket);
     pscom_memh_t pscom_memh = NULL;
     pscom_memh              = (pscom_memh_t)malloc(sizeof(struct PSCOM_memh));
     pscom_memh->addr        = addr;
