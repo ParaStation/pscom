@@ -2438,8 +2438,8 @@ static void pscom_rma_get_accumulate_recv_io_done(pscom_request_t *request)
     if (xheader_rma->common.src_len < pscom.env.rma_get_acc_direct_mem_copy) {
         /* data size < 64b direct mem copy */
         req_answer->pub.data = malloc(xheader_rma->common.src_len);
-        memcpy(req_answer->pub.data, xheader_rma->common.src,
-               xheader_rma->common.src_len);
+        pscom_memcpy(req_answer->pub.data, xheader_rma->common.src,
+                     xheader_rma->common.src_len);
         req_answer->pub.ops.io_done = pscom_rma_request_free_send_buffer;
         _send_rma_get_acc_answer(req_answer,
                                  PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP);
@@ -2482,8 +2482,8 @@ static void pscom_rma_fetch_op_recv_io_done(pscom_request_t *request)
 
     /* direct memory copy and send data back*/
     req_answer->pub.data = malloc(xheader_rma->common.src_len);
-    memcpy(req_answer->pub.data, xheader_rma->common.src,
-           xheader_rma->common.src_len);
+    pscom_memcpy(req_answer->pub.data, xheader_rma->common.src,
+                 xheader_rma->common.src_len);
     _send_rma_get_acc_answer(req_answer, PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP);
 
     /* target callback function to do MPI_OP */
@@ -2497,17 +2497,6 @@ static void pscom_rma_fetch_op_recv_io_done(pscom_request_t *request)
     pscom_req_free(get_req(request));
 }
 
-/* compare two buffer, used in RMA compare and swap */
-/* todo replace it with lib function */
-static int pscom_rma_compare_buffer(char *buffer1, char *buffer2,
-                                    uint64_t length)
-{
-    if (!memcmp(buffer1, buffer2, length)) {
-        return 1;
-    } else {
-        return 0;
-    }
-}
 
 static void pscom_rma_compare_swap_recv_io_done(pscom_request_t *request)
 {
@@ -2543,14 +2532,13 @@ static void pscom_rma_compare_swap_recv_io_done(pscom_request_t *request)
 
     /* compare the target buffer and compare buffer */
     size_t data_len = xheader_rma->common.src_len; /* 2 buffers are received */
-    if (pscom_rma_compare_buffer((char *)xheader_rma->common.src,
-                                 (char *)request->data, data_len)) {
+    if (!pscom_memcmp(xheader_rma->common.src, request->data, data_len)) {
         /* the first part of request->data is compare buffer, the second part of
          * request->data is origin buffer */
         /* if equal, copy the data from origin buffer to target buffer, if not,
          * do nothing, free buffer later*/
-        memcpy(xheader_rma->common.src, (char *)request->data + data_len,
-               data_len);
+        pscom_memcpy(xheader_rma->common.src, (char *)request->data + data_len,
+                     data_len);
     }
 
     /* target callback function to do MPI_OP */
