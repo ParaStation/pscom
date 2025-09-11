@@ -49,6 +49,10 @@ void test_pscom_memcpy_gpu_safe_default_host_mem(void **state);
 void test_pscom_memcpy_gpu_safe_default_device_mem(void **state);
 void test_pscom_memcpy_host_mem(void **state);
 
+void test_pscom_memcmp_gpu_safe_equal(void **state);
+void test_pscom_memcmp_gpu_safe_larger(void **state);
+void test_pscom_memcmp_gpu_safe_smaller(void **state);
+
 void test_pscom_stage_buffer_dev_mem_no_con(void **state);
 void test_pscom_stage_buffer_host_mem(void **state);
 void test_pscom_unstage_buffer_dev_mem(void **state);
