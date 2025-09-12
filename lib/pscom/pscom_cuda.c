@@ -474,4 +474,28 @@ int _pscom_is_gpu_mem(const void *ptr, size_t length)
 
     return is_gpu_mem;
 }
+
+/**
+ * \brief GPU-safe memory comparison of two buffers
+ *
+ * This function performs a GPU-safe memory comparison of two buffers. It
+ * provides the same semantics as `memcmp()`.
+ */
+PSCOM_PLUGIN_API_EXPORT
+int pscom_memcmp_gpu_safe(const void *buf_a, const void *buf_b, size_t length)
+{
+    int res         = 0;
+    char *tmp_buf_a = malloc(length);
+    char *tmp_buf_b = malloc(length);
+
+    pscom_memcpy(tmp_buf_a, buf_a, length);
+    pscom_memcpy(tmp_buf_b, buf_b, length);
+
+    res = memcmp(tmp_buf_a, tmp_buf_b, length);
+
+    free(tmp_buf_a);
+    free(tmp_buf_b);
+
+    return res;
+}
 #endif /* PSCOM_CUDA_AWARENESS */

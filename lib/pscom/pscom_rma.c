@@ -498,8 +498,8 @@ static inline void pscom_post_rma_compare_swap_req(pscom_req_t *rma_read_req,
      * buffer, the buffer will be sent by req_rma req to the target */
     size_t data_len   = rma_read_req->pub.data_len;
     req_rma->pub.data = malloc(2 * data_len);
-    memcpy(req_rma->pub.data, compare_addr, data_len);
-    memcpy((char *)req_rma->pub.data + data_len, origin_addr, data_len);
+    pscom_memcpy(req_rma->pub.data, compare_addr, data_len);
+    pscom_memcpy((char *)req_rma->pub.data + data_len, origin_addr, data_len);
     req_rma->pub.xheader_len = rma_read_req->pub.xheader_len;
     req_rma->pub.ops.io_done = pscom_rma_request_free_send_buffer;
     req_rma->pub.data_len    = 2 * data_len;

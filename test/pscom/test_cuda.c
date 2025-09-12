@@ -1321,3 +1321,63 @@ void test_cuda_post_send_without_staging(void **state)
     /* disable CUDA support */
     pscom.env.cuda = 1;
 }
+
+
+////////////////////////////////////////////////////////////////////////////////
+/// pscom_memcmp_gpu_safe()
+////////////////////////////////////////////////////////////////////////////////
+/**
+ * \brief Test pscom_memcmp_gpu_safe_equal()
+ *
+ * Given: buf1 and buf2 contain the same data for the first nbytes
+ * When: pscom_memcmp_gpu_safe_equal() is called
+ * Then: it returns 0
+ */
+void test_pscom_memcmp_gpu_safe_equal(void **state)
+{
+    (void)state;
+
+    uint64_t buf1 = 0;
+    uint64_t buf2 = 0;
+
+    assert_int_equal(pscom_memcmp_gpu_safe(&buf1, &buf2, sizeof(uint64_t)), 0);
+}
+
+
+/**
+ * \brief Test pscom_memcmp_gpu_safe_smaller()
+ *
+ * Given: The first n length bytes of buf1 are found to be smaller and than the
+ *        first length bytes of buf2
+ * When: pscom_memcmp_gpu_safe_equal() is called
+ * Then: it returns a value < 0
+ */
+void test_pscom_memcmp_gpu_safe_smaller(void **state)
+{
+    (void)state;
+
+    uint64_t buf1 = 0;
+    uint64_t buf2 = 42;
+
+    assert_true(pscom_memcmp_gpu_safe(&buf1, &buf2, sizeof(int)) < 0);
+}
+
+
+/**
+ * \brief Test pscom_memcmp_gpu_safe_larger()
+ *
+ * Given: The first n length bytes of buf1 are found to be larger and than the
+ *        first length bytes of buf2
+ * When: pscom_memcmp_gpu_safe_equal() is called
+ * Then: it returns a value > 0
+
+ */
+void test_pscom_memcmp_gpu_safe_larger(void **state)
+{
+    (void)state;
+
+    uint64_t buf1 = 42;
+    uint64_t buf2 = 0;
+
+    assert_true(pscom_memcmp_gpu_safe(&buf1, &buf2, sizeof(int)) > 0);
+}
