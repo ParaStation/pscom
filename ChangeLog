@@ -1,3 +1,14 @@
+2025-09-15  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-0rc2
+
+	* Fix: Atomic RMA operations (FOP and CAS) now work regardless of the
+	memory location (host or GPU device memory) by introducing a GPU-safe
+	memcmp routine.
+
+2025-09-09  Xu Huang  <huang@par-tec.com>
+
+	* Fix: Memory registration for missing socket (e.g., in case of
+	spawning).
+
 2025-09-03  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-0rc1
 
 2025-09-03  Xu Huang  <huang@par-tec.com>
