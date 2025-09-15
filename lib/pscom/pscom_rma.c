@@ -53,11 +53,26 @@ PSCOM_API_EXPORT
 pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,
                                size_t length, pscom_memh_t *memh)
 {
-    /* invalid socket, return error */
+    pscom_sock_t *sock = NULL;
+    /* If socket is not provided, try to use the intra-job socket (id = 0). */
     if (!socket) {
-        *memh = NULL;
-        return PSCOM_ERR_INVALID;
+        struct list_head *pos_sock;
+        list_for_each (pos_sock, &pscom.sockets) {
+            pscom_sock_t *temp_sock = list_entry(pos_sock, pscom_sock_t, next);
+            if (temp_sock->id == 0) {
+                sock = temp_sock;
+                break;
+            }
+        }
+        /* If the intra-job socket is not found, return error. */
+        if (sock == NULL) {
+            *memh = NULL;
+            return PSCOM_ERR_INVALID;
+        }
+    } else {
+        sock = get_sock(socket);
     }
+    assert(sock->magic == MAGIC_SOCKET);
 
     /* NULL with length, return error */
     if (addr == NULL && length != 0) {
@@ -67,7 +82,6 @@ pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,
 
     /* init memory region handle */
     int pscom_err           = PSCOM_SUCCESS;
-    pscom_sock_t *sock      = get_sock(socket);
     pscom_memh_t pscom_memh = NULL;
     pscom_memh              = (pscom_memh_t)malloc(sizeof(struct PSCOM_memh));
     pscom_memh->addr        = addr;
@@ -484,8 +498,8 @@ static inline void pscom_post_rma_compare_swap_req(pscom_req_t *rma_read_req,
      * buffer, the buffer will be sent by req_rma req to the target */
     size_t data_len   = rma_read_req->pub.data_len;
     req_rma->pub.data = malloc(2 * data_len);
-    memcpy(req_rma->pub.data, compare_addr, data_len);
-    memcpy((char *)req_rma->pub.data + data_len, origin_addr, data_len);
+    pscom_memcpy(req_rma->pub.data, compare_addr, data_len);
+    pscom_memcpy((char *)req_rma->pub.data + data_len, origin_addr, data_len);
     req_rma->pub.xheader_len = rma_read_req->pub.xheader_len;
     req_rma->pub.ops.io_done = pscom_rma_request_free_send_buffer;
     req_rma->pub.data_len    = 2 * data_len;

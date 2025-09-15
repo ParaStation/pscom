@@ -44,7 +44,29 @@
 void pscom_memcpy_gpu_safe_default(void *dst, const void *src, size_t len);
 void pscom_memcpy_gpu_safe_from_user(void *dst, const void *src, size_t len);
 void pscom_memcpy_gpu_safe_to_user(void *dst, const void *src, size_t len);
+int pscom_memcmp_gpu_safe(const void *buf_a, const void *buf_b, size_t length);
 
+
+/**
+ * \brief Compare two memory buffers
+ *
+ * \param [in] buf_a  First buffer to be compared.
+ * \param [in] buf_b  Second buffer to be compared.
+ * \param [in] length Length of both buffers `buf_a` and `buf_b`.
+ *
+ * \return An integer less than, equal to, or greater than zero if the first
+ *         `length` bytes of `buf_a` is found, respectively, to be less than,
+ *         to match, or be greater than the first `length` bytes of `buf_b`.
+ */
+static inline int pscom_memcmp(const void *buf_a, const void *buf_b,
+                               size_t length)
+{
+#ifdef PSCOM_CUDA_AWARENESS
+    return pscom_memcmp_gpu_safe(buf_a, buf_b, length);
+#else
+    return memcmp(buf_a, buf_b, length);
+#endif /* PSCOM_CUDA_AWARENESS */
+}
 
 /* Define different memcpy() variants making assumptions about the the user
  * buffer (which may be device memory). At this point, we map to their

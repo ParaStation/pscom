@@ -1662,7 +1662,8 @@ const char *pscom_op_str(pscom_op_t operation);
  * @brief Memory region registration
  *
  * This routine registers a user-specified memory segment with pscom socket
- * and the plugins associated with it.
+ * and the plugins associated with it. If socket is not specified, the intra-job
+ * socket is used to load all possible plugins for memory segment registration.
  *
  * @param [in]  socket   The pscom socket handle.
  * @param [in]  addr     The memory segment start address.
