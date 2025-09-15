@@ -23,6 +23,15 @@
 #include "pscom_env.h"
 #include "pscom_priv.h"
 
+
+pscom_env_table_entry_t pscom_env_table_precon[] = {
+    {"TYPE", "0",
+     "Type of the pre-connection provider to be used (TCP=0, RRCOMM=1).",
+     &pscom.env.precon_type, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_UINT},
+
+    {0},
+};
+
 /* array serving as the "registry" for the precon providers */
 extern pscom_precon_provider_t pscom_provider_tcp;
 #ifdef RRCOMM_PRECON_ENABLED
@@ -211,6 +220,11 @@ void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon)
 
 void pscom_precon_provider_init(void)
 {
+    /* register the environment configuration table */
+    pscom_env_table_register_and_parse("pscom PRECON", "PRECON_",
+                                       pscom_env_table_precon);
+
+
     memset(&pscom_precon_provider, 0, sizeof(pscom_precon_provider_t));
     pscom_precon_provider =
         *pscom_precon_provider_registry[pscom.env.precon_type];

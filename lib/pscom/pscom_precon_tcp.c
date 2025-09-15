@@ -1309,7 +1309,7 @@ int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 
 void pscom_precon_provider_init_tcp(void)
 {
-    pscom_env_table_register_and_parse("pscom PRECON", "PRECON_TCP_",
+    pscom_env_table_register_and_parse("pscom PRECON_TCP", "PRECON_TCP_",
                                        pscom_env_table_precon_tcp);
 }
 
