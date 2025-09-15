@@ -155,7 +155,7 @@ void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
 
 
 // Connecting or accepting peer?
-static int con_is_connecting_peer(pscom_con_t *con)
+int precon_con_is_connecting_peer(pscom_con_t *con)
 {
     return con && ((con->pub.state == PSCOM_CON_STATE_CONNECTING) ||
                    (con->pub.state == PSCOM_CON_STATE_CONNECTING_ONDEMAND));
@@ -171,22 +171,7 @@ static void _plugin_connect_next(pscom_con_t *con, int first)
     assert(first ? !precon->plugin : 1); // if first, precon->plugin has to be
                                          // NULL!
 
-    /* In TCP, the plugin handshake is started by the connecting side while
-       in RRcomm the plugin handshake is started by the accepting side.
-       The difference between TCP and RRcomm is that the connecting side using
-       TCP knows the `nodeid` of the accepting side, while for RRcomm the
-       connecting side does not know this information. So the connecting side
-       using TCP can determine whether `shm` plugin will be used. For RRcomm,
-       the accepting side has to wait for the connection information from the
-       connecting side, then decides whether `shm` will be used and starts the
-       handshaking of plugin information.
-    */
-    if ((!con_is_connecting_peer(con) &&
-         pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_TCP) ||
-        (con_is_connecting_peer(con) &&
-         pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM)) {
-        return; // Nothing to do.
-    }
+    if (!pscom_precon_provider->is_starting_peer(con)) { return; }
 
     do {
         precon->plugin      = first ? pscom_plugin_first()

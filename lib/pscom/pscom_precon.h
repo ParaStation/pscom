@@ -195,6 +195,19 @@ typedef int (*pscom_precon_guard_setup_t)(pscom_precon_t *precon);
 
 
 /**
+ * @brief Return whether this process is the connecting peer
+ *
+ * This provider routine can be used to determine whether the calling process or
+ * its peer is the one starting the plugin handshake.
+ *
+ * @param [in] con The corresponding point-to-point connection.
+ *
+ * @return boolean
+ */
+typedef int (*pscom_precon_is_starting_peer_t)(pscom_con_t *con);
+
+
+/**
  * @brief Get the endpoint string of a socket.
  *
  * This is the provider routine implementing the semantics of @ref
@@ -335,6 +348,7 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_provider_recv_stop_t recv_stop;
     pscom_precon_provider_connect_t connect;
     pscom_precon_guard_setup_t guard_setup;
+    pscom_precon_is_starting_peer_t is_starting_peer;
     pscom_precon_get_ep_info_from_socket_t get_ep_info_from_socket;
     pscom_precon_parse_ep_info_t parse_ep_info;
     pscom_precon_is_connect_loopback_t is_connect_loopback;
@@ -437,6 +451,9 @@ pscom_precon_provider_t *pscom_precon_provider_lookup(const char *name);
 
 /* destroy the precon module */
 void pscom_precon_provider_destroy(void);
+
+
+int precon_con_is_connecting_peer(pscom_con_t *con);
 
 /* Send a message of type type */
 pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,

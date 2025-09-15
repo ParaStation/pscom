@@ -1307,6 +1307,17 @@ int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 }
 
 
+/*
+ * In TCP, the plugin handshake is started by the connecting side which knows
+ * the `nodeid` of the accepting side. Therefore, the connecting side can
+ * determine whether `shm` plugin will be used.
+ */
+int pscom_precon_is_starting_peer_tcp(pscom_con_t *con)
+{
+    return precon_con_is_connecting_peer(con);
+}
+
+
 void pscom_precon_provider_init_tcp(void)
 {
     pscom_env_table_register_and_parse("pscom PRECON_TCP", "PRECON_TCP_",
@@ -1427,6 +1438,7 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,
     .guard_setup             = pscom_precon_guard_setup_tcp,
+    .is_starting_peer        = pscom_precon_is_starting_peer_tcp,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,
     .parse_ep_info           = pscom_parse_ep_info_tcp,
     .is_connect_loopback     = pscom_is_connect_loopback_tcp,

@@ -1220,6 +1220,18 @@ static int pscom_precon_guard_setup_rrc(pscom_precon_t *precon)
 }
 
 
+/*
+ * In RRComm, the plugin handshake is started by the accepting side.
+ * It has to wait for the connection information from the connecting side and
+ * then decides whether `shm` will be used and starts the handshaking of plugin
+ * information.
+ */
+int pscom_precon_is_starting_peer_rrc(pscom_con_t *con)
+{
+    return !precon_con_is_connecting_peer(con);
+}
+
+
 static void pscom_listener_user_inc_rrc(struct pscom_listener *listener)
 {
 }
@@ -1241,6 +1253,7 @@ pscom_precon_provider_t pscom_provider_rrc = {
     .recv_stop               = pscom_precon_recv_stop_rrc,
     .connect                 = pscom_precon_connect_rrc,
     .guard_setup             = pscom_precon_guard_setup_rrc,
+    .is_starting_peer        = pscom_precon_is_starting_peer_rrc,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_rrc,
     .parse_ep_info           = pscom_parse_ep_info_rrc,
     .is_connect_loopback     = pscom_is_connect_loopback_rrc,
