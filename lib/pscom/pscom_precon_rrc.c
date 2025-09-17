@@ -29,6 +29,7 @@
 #include <stdlib.h>       // for malloc, free, atoi, atoll
 #include "pscom_debug.h"  // for DPRINT, D_PRECON_TRACE, D_ERR, D_DBG_V
 #include "rrcomm.h"       // for RRC_getJobID, RRC_finalize, RRC_init, RRC_...
+#include <limits.h>
 
 /**< Maximum packet size */
 #define MAX_SIZE 1000
@@ -1049,7 +1050,7 @@ static pscom_err_t pscom_get_ep_info_from_socket_rrc(pscom_socket_t *socket,
     if (sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB) {
         *ep_str = NULL;
     } else {
-        snprintf(ep_str_rrc, MAX_EP_STR_SIZE, "%d:%ld:%d@%s",
+        snprintf(ep_str_rrc, MAX_EP_STR_SIZE, "%d:%ld:%d:%s",
                  sock->pub.local_con_info.rank, RRC_getJobID(), sock->id,
                  socket->local_con_info.name);
         *ep_str = ep_str_rrc;
@@ -1077,11 +1078,9 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
                                            pscom_con_info_t *con_info)
 {
     char dest_name[9];
-    char *name = NULL;
-    char *jobid;
-    char *rank;
-    char *sockid;
-    char *token;
+    char dup_ep_str[MAX_EP_STR_SIZE + 1];
+    char *endptr;
+    long val;
 
     if (!ep_str) {
         con_info->rrcomm.jobid = RRC_getJobID();
@@ -1090,19 +1089,103 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
         memcpy(con_info->name, dest_name, sizeof(dest_name));
         con_info->rrcomm.remote_sockid = 0;
     } else {
-        token                          = strdup(ep_str);
-        rank                           = strtok(token, ":");
-        jobid                          = strtok(NULL, ":");
-        con_info->rank                 = atoi(rank);
-        con_info->rrcomm.jobid         = atoll(jobid);
-        sockid                         = strtok(NULL, ":@");
-        con_info->rrcomm.remote_sockid = atoi(sockid);
-        name                           = strtok(NULL, "@");
+        strncpy(dup_ep_str, ep_str, sizeof(dup_ep_str));
+        dup_ep_str[sizeof(dup_ep_str) - 1] = '\0';
+
+        char *p     = dup_ep_str;
+        /* rank */
+        char *colon = strchr(p, ':');
+        if (!colon) {
+            DPRINT(D_ERR, "ep_str format error, missing rank.");
+            goto err_invalid_ep_str;
+        }
+        if (colon == p) {
+            DPRINT(D_ERR, "ep_str format error, rank information empty.");
+            goto err_invalid_ep_str;
+        }
+
+        *colon = '\0'; // temp cut
+
+        errno = 0;
+        val   = strtol(p, &endptr, 10);
+        if (errno != 0 || *endptr != '\0') {
+            DPRINT(D_ERR, "rank information error:%d, %s", (int)val, p);
+            goto err_invalid_ep_str;
+        }
+        if (val < 0 || val > INT_MAX) {
+            DPRINT(D_ERR, "rank invalid value:%d, %s", (int)val, p);
+            goto err_invalid_ep_str;
+        }
+        con_info->rank = (int)val;
+
+        p = colon + 1; // move to next segment
+
+        /* jobid */
+        colon = strchr(p, ':');
+        if (!colon) {
+            DPRINT(D_ERR, "ep_str format error, missing jobid.");
+            goto err_invalid_ep_str;
+        }
+        if (colon == p) {
+            DPRINT(D_ERR, "ep_str format error, jobid information empty.");
+            goto err_invalid_ep_str;
+        }
+
+        *colon = '\0'; // temp cut
+
+        errno = 0;
+        val   = strtol(p, &endptr, 10);
+        if (errno != 0 || *endptr != '\0') {
+            DPRINT(D_ERR, "jobid information error:%d, %s", (int)val, p);
+            goto err_invalid_ep_str;
+        }
+        con_info->rrcomm.jobid = (uint64_t)val;
+
+        p = colon + 1; // move to next segment
+
+        /* sockid */
+        colon = strchr(p, ':');
+        if (!colon) {
+            DPRINT(D_ERR, "ep_str format error, missing sockid.");
+            goto err_invalid_ep_str;
+        }
+        if (colon == p) {
+            DPRINT(D_ERR, "ep_str format error, sockid information empty.");
+            goto err_invalid_ep_str;
+        }
+
+        *colon = '\0'; // temp cut
+
+        errno = 0;
+        val   = strtol(p, &endptr, 10);
+        if (errno != 0 || *endptr != '\0') {
+            DPRINT(D_ERR, "sockid error:%d, %s", (int)val, p);
+            goto err_invalid_ep_str;
+        }
+        if (val < 0 || val > INT_MAX) {
+            DPRINT(D_ERR, "sockid invalid value:%d, %s", (int)val, p);
+            goto err_invalid_ep_str;
+        }
+        con_info->rrcomm.remote_sockid = (uint32_t)val;
+
+        p = colon + 1; // move to next segment
+
+        /* name */
+        char *name = p;
+        if (*name == '\0') {
+            DPRINT(D_ERR, "ep_str format error, missing name.");
+            goto err_invalid_ep_str;
+        }
+
         memset(con_info->name, 0, sizeof(con_info->name));
         strncpy(con_info->name, name, sizeof(con_info->name));
     }
 
     return PSCOM_SUCCESS;
+
+err_invalid_ep_str:
+    errno = EINVAL;
+    return PSCOM_ERR_STDERROR;
 }
 
 
