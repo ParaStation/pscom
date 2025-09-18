@@ -10,25 +10,26 @@
  */
 
 #include "pscom_precon_rrc.h"
-#include <assert.h>       // for assert
-#include <errno.h>        // for errno, ENOPROTOOPT, EPROTO
-#include <poll.h>         // for POLLIN, pollfd, POLLOUT
-#include <stdint.h>       // for uint32_t
-#include <stdio.h>        // for snprintf, sprintf
-#include <string.h>       // for memset, strtok, memcpy, strcpy, strdup
-#include <sys/types.h>    // for u_int32_t
-#include <unistd.h>       // for _exit
-#include "list.h"         // for list_empty, list_add_tail, list_entry, lis...
-#include "pscom.h"        // for PSCOM_con_info::(anonymous union)::(anonym...
-#include "pscom_con.h"    // for pscom_con_setup_failed, pscom_con_create
-#include "pscom_env.h"    // for PSCOM_env
-#include "pscom_plugin.h" // for pscom_plugin_by_archid, pscom_plugin_t
-#include "pscom_precon.h" // for pscom_global_rrc_t, pscom_precon_provider
-#include "pscom_priv.h"   // for pscom, get_sock, pscom_sock_t, pscom_con_t
-#include "pscom_ufd.h"    // for ufd_event_clr, ufd_event_set, ufd_add, ufd...
-#include <stdlib.h>       // for malloc, free, atoi, atoll
-#include "pscom_debug.h"  // for DPRINT, D_PRECON_TRACE, D_ERR, D_DBG_V
-#include "rrcomm.h"       // for RRC_getJobID, RRC_finalize, RRC_init, RRC_...
+#include <assert.h>         // for assert
+#include <errno.h>          // for errno, ENOPROTOOPT, EPROTO
+#include <poll.h>           // for POLLIN, pollfd, POLLOUT
+#include <stdint.h>         // for uint32_t
+#include <stdio.h>          // for snprintf, sprintf
+#include <string.h>         // for memset, strtok, memcpy, strcpy, strdup
+#include <sys/types.h>      // for u_int32_t
+#include <unistd.h>         // for _exit
+#include "list.h"           // for list_empty, list_add_tail, list_entry, lis...
+#include "pscom.h"          // for PSCOM_con_info::(anonymous union)::(anonym...
+#include "pscom_con.h"      // for pscom_con_setup_failed, pscom_con_create
+#include "pscom_env.h"      // for PSCOM_env
+#include "pscom_plugin.h"   // for pscom_plugin_by_archid, pscom_plugin_t
+#include "pscom_precon.h"   // for pscom_global_rrc_t, pscom_precon_provider
+#include "pscom_priv.h"     // for pscom, get_sock, pscom_sock_t, pscom_con_t
+#include "pscom_str_util.h" // for INET_ADDR_FORMAT
+#include "pscom_ufd.h"      // for ufd_event_clr, ufd_event_set, ufd_add, ufd...
+#include <stdlib.h>         // for malloc, free, atoi, atoll
+#include "pscom_debug.h"    // for DPRINT, D_PRECON_TRACE, D_ERR, D_DBG_V
+#include "rrcomm.h"         // for RRC_getJobID, RRC_finalize, RRC_init, RRC_...
 #include <limits.h>
 
 /**< Maximum packet size */
@@ -1189,6 +1190,48 @@ err_invalid_ep_str:
 }
 
 
+static char *pscom_get_con_info_str_rrc(pscom_con_info_t *con_info)
+{
+    static char buf[sizeof("(xxx.xxx.xxx.xxx, jobid xxxxxxxxxxxxxxxxxxxx, "
+                           "rxxxxxxxxxx, sockid xxxxxxxxxx,0xxxxxxxxxxxxxxxxx,"
+                           "xxxxxxxx____)")];
+
+    snprintf(buf, sizeof(buf),
+             "(" INET_ADDR_FORMAT ",jobid %lu, r%d, "
+             "sockid %u,%p,%.8s)",
+             INET_ADDR_SPLIT(con_info->node_id), con_info->rrcomm.jobid,
+             con_info->rank, con_info->rrcomm.remote_sockid, con_info->id,
+             con_info->name);
+
+    return buf;
+}
+
+
+static char *pscom_get_con_info_str2_rrc(pscom_con_info_t *con_info1,
+                                         pscom_con_info_t *con_info2)
+{
+    static char buf[sizeof("(xxx.xxx.xxx.xxx, jobid xxxxxxxxxxxxxxxxxxxx, "
+                           "rxxxxxxxxxx, sockid xxxxxxxxxx,0xxxxxxxxxxxxxxxxx,"
+                           "xxxxxxxx_____) to "
+                           "(xxx.xxx.xxx.xxx, jobid xxxxxxxxxxxxxxxxxxxx, "
+                           "rxxxxxxxxxx, sockid xxxxxxxxxx,0xxxxxxxxxxxxxxxxx,"
+                           "xxxxxxxx_____)")];
+
+    snprintf(buf, sizeof(buf),
+             "(" INET_ADDR_FORMAT ",jobid %lu, r%d, sockid %u,%p,%.8s) to "
+             "(" INET_ADDR_FORMAT ",jobid %lu, r%d, "
+             "sockid %u,%p,"
+             "%.8s)",
+             INET_ADDR_SPLIT(con_info1->node_id), con_info1->rrcomm.jobid,
+             con_info1->rank, con_info1->rrcomm.remote_sockid, con_info1->id,
+             con_info1->name, INET_ADDR_SPLIT(con_info2->node_id),
+             con_info2->rrcomm.jobid, con_info2->rank,
+             con_info2->rrcomm.remote_sockid, con_info2->id, con_info2->name);
+
+    return buf;
+}
+
+
 /**
  * @brief Check whether this is a loopback connection
  *
@@ -1256,6 +1299,8 @@ pscom_precon_provider_t pscom_provider_rrc = {
     .is_starting_peer        = pscom_precon_is_starting_peer_rrc,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_rrc,
     .parse_ep_info           = pscom_parse_ep_info_rrc,
+    .get_con_info_str        = pscom_get_con_info_str_rrc,
+    .get_con_info_str2       = pscom_get_con_info_str2_rrc,
     .is_connect_loopback     = pscom_is_connect_loopback_rrc,
     .start_listen            = pscom_sock_start_listen_rrc,
     .stop_listen             = pscom_sock_stop_listen_rrc,

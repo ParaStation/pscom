@@ -1411,6 +1411,40 @@ err_to_sock:
 }
 
 
+static char *pscom_get_con_info_str_tcp(pscom_con_info_t *con_info)
+{
+    static char buf[sizeof("(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "0xxxxxxxxxxxxxxxxx,xxxxxxxx____")];
+
+    snprintf(buf, sizeof(buf), "(" INET_ADDR_FORMAT ":portno %d,%d,%p,%.8s)",
+             INET_ADDR_SPLIT(con_info->node_id), con_info->tcp.portno,
+             con_info->rank, con_info->id, con_info->name);
+
+    return buf;
+}
+
+
+static char *pscom_get_con_info_str2_tcp(pscom_con_info_t *con_info1,
+                                         pscom_con_info_t *con_info2)
+{
+    static char buf[sizeof("(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "0xxxxxxxxxxxxxxxxx,xxxxxxxx____ to "
+                           "(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "0xxxxxxxxxxxxxxxxx,xxxxxxxx____ to ")];
+
+    snprintf(buf, sizeof(buf),
+             "(" INET_ADDR_FORMAT ":portno%d,%d,%p,%.8s) to "
+             "(" INET_ADDR_FORMAT ":portno%d,%d,%p,"
+             "%.8s)",
+             INET_ADDR_SPLIT(con_info1->node_id), con_info1->tcp.portno,
+             con_info1->rank, con_info1->id, con_info1->name,
+             INET_ADDR_SPLIT(con_info2->node_id), con_info2->tcp.portno,
+             con_info2->rank, con_info2->id, con_info2->name);
+
+    return buf;
+}
+
+
 static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
                                          pscom_connection_t *connection)
 {
@@ -1441,6 +1475,8 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .is_starting_peer        = pscom_precon_is_starting_peer_tcp,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,
     .parse_ep_info           = pscom_parse_ep_info_tcp,
+    .get_con_info_str        = pscom_get_con_info_str_tcp,
+    .get_con_info_str2       = pscom_get_con_info_str2_tcp,
     .is_connect_loopback     = pscom_is_connect_loopback_tcp,
     .start_listen            = pscom_sock_start_listen_tcp,
     .stop_listen             = pscom_sock_stop_listen_tcp,

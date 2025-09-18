@@ -245,6 +245,38 @@ typedef pscom_err_t (*pscom_precon_parse_ep_info_t)(const char *ep_str,
 
 
 /**
+ * @brief Get the connection info string for a given connection
+ *
+ * This is the provider routine implementing the semantics of @ref
+ * pscom_con_info_str.
+ *
+ * @param [in] con_info A handle to the @ref pscom_con_info_t object for which
+ *                      the connection info string shall be generated.
+ *
+ * @return The connection info string; NULL in case of an error.
+ */
+typedef char *(*pscom_precon_get_con_info_str_t)(pscom_con_info_t *con_info);
+
+
+/**
+ * @brief Get the connection info string for a given connection
+ *
+ * This is the provider routine implementing the semantics of @ref
+ * pscom_con_info_str.
+ *
+ * @param [in] con_info1 A handle to the @ref pscom_con_info_t object for which
+ *                       the connection info string shall be generated.
+ * @param [in] con_info2 A handle to the @ref pscom_con_info_t object for which
+ *                       the connection info string shall be generated.
+ *
+ *
+ * @return The connection info string; NULL in case of an error.
+ */
+typedef char *(*pscom_precon_get_con_info_str2_t)(pscom_con_info_t *con_info1,
+                                                  pscom_con_info_t *con_info2);
+
+
+/**
  * @brief Detect whether the remote can be reached via a loopback connection
  *
  * This provider routine detects whether the provided connection can be
@@ -351,6 +383,8 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_is_starting_peer_t is_starting_peer;
     pscom_precon_get_ep_info_from_socket_t get_ep_info_from_socket;
     pscom_precon_parse_ep_info_t parse_ep_info;
+    pscom_precon_get_con_info_str_t get_con_info_str;
+    pscom_precon_get_con_info_str2_t get_con_info_str2;
     pscom_precon_is_connect_loopback_t is_connect_loopback;
     pscom_precon_provider_start_listen_t start_listen;
     pscom_precon_provider_stop_listen_t stop_listen;
