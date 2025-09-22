@@ -23,22 +23,56 @@
 #include "pscom_env.h"
 #include "pscom_priv.h"
 
-/* array serving as the "registry" for the precon providers */
+pscom_env_table_entry_t pscom_env_table_precon[] = {
+    {"TYPE", "tcp",
+     "Type of the pre-connection provider to be used (tcp, rrcomm).",
+     &pscom.env.precon_type, PSCOM_ENV_ENTRY_FLAGS_EMPTY, PSCOM_ENV_PARSER_STR},
+
+    {0},
+};
+
+/* pscom provider implementations */
 extern pscom_precon_provider_t pscom_provider_tcp;
 #ifdef RRCOMM_PRECON_ENABLED
 extern pscom_precon_provider_t pscom_provider_rrc;
 #endif
-static pscom_precon_provider_t
-    *pscom_precon_provider_registry[PSCOM_PRECON_TYPE_COUNT] = {
-        [PSCOM_PRECON_TYPE_TCP] = &pscom_provider_tcp,
+
+/* precon provider registry to enable lookup-by-name */
+static pscom_precon_provider_reg_entry_t pscom_precon_provider_registry[] = {
+    {"tcp", &pscom_provider_tcp},
 #ifdef RRCOMM_PRECON_ENABLED
-        [PSCOM_PRECON_TYPE_RRCOMM] = &pscom_provider_rrc,
+    {"rrcomm", &pscom_provider_rrc},
 #endif
-        /* Add new provider XYZ here and use macro PSCOM_PRECON_PROVIDER_XYZ in
-           pscom_precon_xyz.h to initialize the respective array entry with
-           index PSCOM_PRECON_TYPE_XYZ accordingly.
-        */
 };
+
+#define PRECON_PROVIDER_REGISTRY_SIZE                                          \
+    (sizeof(pscom_precon_provider_registry) /                                  \
+     sizeof(pscom_precon_provider_reg_entry_t))
+
+
+pscom_precon_provider_t *pscom_precon_provider_lookup(const char *name)
+{
+    uint8_t i;
+
+    /* just return the default provider if not strategy was given */
+    if (name == NULL) { goto err_out; }
+
+    /* search the given strategy within the registry */
+    for (i = 0; i < PRECON_PROVIDER_REGISTRY_SIZE; ++i) {
+        pscom_precon_provider_reg_entry_t *reg_entry =
+            &pscom_precon_provider_registry[i];
+        if (strcmp(reg_entry->name, name) == 0) { return reg_entry->provider; }
+    }
+
+    assert(strcmp(name, pscom_env_table_precon[0].default_val) != 0);
+    /* --- */
+err_out:
+    DPRINT(D_ERR,
+           "Could not find provider with name '%s'. Using '%s' as the default.",
+           name, pscom_env_table_precon[0].default_val);
+    /* return the default if there was no match */
+    return pscom_precon_provider_lookup(pscom_env_table_precon[0].default_val);
+}
 
 /* the actual precon provider as a global/singleton object */
 PSCOM_PLUGIN_API_EXPORT
@@ -211,11 +245,15 @@ void pscom_precon_send_PSCOM_INFO_ARCH_NEXT(pscom_precon_t *precon)
 
 void pscom_precon_provider_init(void)
 {
+    /* register the environment configuration table */
+    pscom_env_table_register_and_parse("pscom PRECON", "PRECON_",
+                                       pscom_env_table_precon);
+
+
+    /* set the precon provider singleton */
     memset(&pscom_precon_provider, 0, sizeof(pscom_precon_provider_t));
-    pscom_precon_provider =
-        *pscom_precon_provider_registry[pscom.env.precon_type];
-    assert(pscom_precon_provider.precon_type ==
-           (pscom_precon_type_t)pscom.env.precon_type);
+    pscom_precon_provider = *pscom_precon_provider_lookup(pscom.env.precon_type);
+
     INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
     pscom_precon_provider.precon_count = 0;
     pscom_precon_provider.init();

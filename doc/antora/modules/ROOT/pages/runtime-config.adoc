@@ -267,7 +267,7 @@ If none of the rendezvous environment variables are set (neither on plugin nor o
 | Option | Description
 
 | `PSP_PRECON_TYPE`
-| Choose TCP/IP or RRComm as precon protocol. The default is TCP/IP (`PSP_PRECON_TYPE=0`). When RRComm is enabled (`PSP_PRECON_TYPE=1`), the pscom4tcp plugin is automatically disabled (`PSP_TCP=0`) and `PSP_GUARD` has to be set to 0.
+| Choose TCP/IP or RRComm as precon protocol. The default is TCP/IP (`PSP_PRECON_TYPE=tcp`). When RRComm is enabled (`PSP_PRECON_TYPE=rrcomm`), the pscom4tcp plugin is automatically disabled (`PSP_TCP=0`) and `PSP_GUARD` has to be set to 0.
 
 | `PSP_PRECON_TCP_SO_SNDBUF`
 | The `SO_SNDBUF` size set in the TCP/IP socket in precon.

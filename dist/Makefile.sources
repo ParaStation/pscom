@@ -273,6 +273,8 @@ test/pscom/test_listen.c \
 test/pscom/test_listen.h \
 test/pscom/test_plugin.c \
 test/pscom/test_plugin.h \
+test/pscom/test_precon.c \
+test/pscom/test_precon.h \
 test/pscom/test_ufd.c \
 test/pscom/test_ufd.h \
 test/pscom/test_version.c \
