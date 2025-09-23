@@ -24,6 +24,7 @@
 #include "pscom/test_io.h"
 #include "pscom/test_listen.h"
 #include "pscom/test_plugin.h"
+#include "pscom/test_precon.h"
 #include "pscom/test_ufd.h"
 #include "pscom/test_version.h"
 
@@ -255,6 +256,17 @@ int main(void)
     };
     total_tests += TEST_GROUP_SIZE(pscom_plugin_tests);
     failed_tests += cmocka_run_group_tests(pscom_plugin_tests, NULL, NULL);
+
+
+    /* pscom_precon tests */
+    const struct CMUnitTest pscom_precon_tests[] = {
+        cmocka_unit_test(test_provider_init_existing_name),
+        cmocka_unit_test(test_provider_init_missing_name),
+        cmocka_unit_test(test_provider_init_empty_name),
+    };
+    total_tests += TEST_GROUP_SIZE(pscom_precon_tests);
+    failed_tests += cmocka_run_group_tests(pscom_precon_tests, NULL, NULL);
+
 
     /* pscom_env tests */
     const struct CMUnitTest pscom_debug_tests[] = {

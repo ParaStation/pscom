@@ -352,6 +352,13 @@ typedef struct PSCOM_precon_provider {
 
 extern pscom_precon_provider_t pscom_precon_provider;
 
+typedef struct pscom_precon_provider_reg_entry {
+    char *name; /**< name of the precon provider (to be used with
+                     PSP_PRECON_TYPE environment variable) */
+    pscom_precon_provider_t *provider; /**< pointer to a precon provider
+                                         implementation */
+} pscom_precon_provider_reg_entry_t;
+
 
 #define VER_FROM 0x0200
 #define VER_TO   0x0200
@@ -413,6 +420,20 @@ typedef struct {
 /* initialize the precon module */
 void pscom_precon_init(void);
 void pscom_precon_provider_init(void);
+
+
+/**
+ * @brief Returns a pointer to the precon provider corresponding to a given name
+ *
+ * This function searches the local registry of precon providers for a given
+ * name. If the NULL is passed or the provided name could not be found in one of
+ * the entries, the PSCOM_PROVIDER_DEFAULT provider is returned.
+ *
+ * @param [in] name A string containing the name of the precon provider.
+ *
+ * @return a pointer to the precon provider
+ */
+pscom_precon_provider_t *pscom_precon_provider_lookup(const char *name);
 
 /* destroy the precon module */
 void pscom_precon_provider_destroy(void);

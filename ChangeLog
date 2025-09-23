@@ -1,3 +1,14 @@
+2025-09-23  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-0rc3
+
+2025-09-22  Xu Huang  <huang@par-tec.com>
+
+	* Fix: Add `ep_str` format checking to the RRComm precon provider.
+
+2025-09-22  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Enhancement: Make precon provider selectable by name, i.e.,
+	`PSP_PRECON_TYPE=<rrcomm,tcp>`.
+
 2025-09-15  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-0rc2
 
 	* Fix: Atomic RMA operations (FOP and CAS) now work regardless of the
