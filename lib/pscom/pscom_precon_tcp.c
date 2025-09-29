@@ -865,9 +865,8 @@ void pscom_precon_handle_receive_tcp(pscom_precon_tcp_t *pre_tcp, uint32_t type,
 
 static void pscom_precon_print_stat_tcp(pscom_precon_tcp_t *pre_tcp)
 {
-    int fd                                = pre_tcp->ufd_info.fd;
-    pscom_precon_provider_t *pre_provider = &pscom_precon_provider;
-    char state[10]                        = "no fd";
+    int fd         = pre_tcp->ufd_info.fd;
+    char state[10] = "no fd";
     assert(pre_tcp->magic == MAGIC_PRECON);
 
     if (fd != -1) {
@@ -885,8 +884,8 @@ static void pscom_precon_print_stat_tcp(pscom_precon_tcp_t *pre_tcp)
            "state:%s\n",
            pre_tcp, pre_tcp->stat_poll_cnt, pre_tcp->stat_send,
            pre_tcp->stat_recv, pre_tcp->send_len,
-           pre_tcp->recv_done ? "no" : "yes", pre_provider->precon_count,
-           state);
+           pre_tcp->recv_done ? "no" : "yes",
+           pscom_precon_provider->precon_count, state);
 }
 
 /* Print statistic about this precon */
@@ -1243,7 +1242,7 @@ static pscom_err_t pscom_sock_start_listen_tcp(pscom_sock_t *sock, int portno)
 
     pscom_listener_set_fd(&sock->listen, listen_fd);
 
-    pscom_precon_provider.listener_active_inc(&sock->listen);
+    pscom_precon_provider->listener_active_inc(&sock->listen);
 
     return ret;
 
@@ -1289,10 +1288,10 @@ static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
         /* We are in listen suspend, need to dec the user counter to make it
          * match the increment in pscom_listener_suspend. Only by doing so,
          * the fd will be closed if there are no more active users. */
-        pscom_precon_provider.listener_user_dec(&sock->listen);
+        pscom_precon_provider->listener_user_dec(&sock->listen);
     }
 
-    pscom_precon_provider.listener_active_dec(&sock->listen);
+    pscom_precon_provider->listener_active_dec(&sock->listen);
     sock->pub.listen_portno = -1;
 }
 

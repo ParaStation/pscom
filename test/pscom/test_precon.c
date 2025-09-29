@@ -39,7 +39,7 @@ void test_provider_init_existing_name(void **state)
     setenv("PSP_PRECON_TYPE", "tcp", 1);
     pscom_precon_provider_init();
 
-    assert_int_equal(pscom_precon_provider.precon_type,
+    assert_int_equal(pscom_precon_provider->precon_type,
                      pscom_precon_provider_lookup("tcp")->precon_type);
 }
 
@@ -56,7 +56,7 @@ void test_provider_init_missing_name(void **state)
     setenv("PSP_PRECON_TYPE", "foobar", 1);
     pscom_precon_provider_init();
 
-    assert_int_equal(pscom_precon_provider.precon_type,
+    assert_int_equal(pscom_precon_provider->precon_type,
                      pscom_precon_provider_lookup("tcp")->precon_type);
 }
 
@@ -73,6 +73,6 @@ void test_provider_init_empty_name(void **state)
     setenv("PSP_PRECON_TYPE", "", 1);
     pscom_precon_provider_init();
 
-    assert_int_equal(pscom_precon_provider.precon_type,
+    assert_int_equal(pscom_precon_provider->precon_type,
                      pscom_precon_provider_lookup("tcp")->precon_type);
 }

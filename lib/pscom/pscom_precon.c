@@ -76,7 +76,7 @@ err_out:
 
 /* the actual precon provider as a global/singleton object */
 PSCOM_PLUGIN_API_EXPORT
-pscom_precon_provider_t pscom_precon_provider;
+pscom_precon_provider_t *pscom_precon_provider = NULL;
 
 const char *pscom_info_type_str(int type)
 {
@@ -236,18 +236,17 @@ void pscom_precon_provider_init(void)
 
 
     /* set the precon provider singleton */
-    memset(&pscom_precon_provider, 0, sizeof(pscom_precon_provider_t));
-    pscom_precon_provider = *pscom_precon_provider_lookup(pscom.env.precon_type);
+    pscom_precon_provider = pscom_precon_provider_lookup(pscom.env.precon_type);
 
-    INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
-    pscom_precon_provider.precon_count = 0;
-    pscom_precon_provider.init();
+    INIT_LIST_HEAD(&pscom_precon_provider->precon_list);
+    pscom_precon_provider->precon_count = 0;
+    pscom_precon_provider->init();
 }
 
 
 void pscom_precon_provider_destroy(void)
 {
-    pscom_precon_provider.destroy();
+    pscom_precon_provider->destroy();
 }
 
 
@@ -256,19 +255,19 @@ pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
                               unsigned size)
 {
     assert(precon->magic == MAGIC_PRECON);
-    return pscom_precon_provider.send(precon, type, data, size);
+    return pscom_precon_provider->send(precon, type, data, size);
 }
 
 
 pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 {
-    pscom_precon_t *precon = pscom_precon_provider.create(con);
+    pscom_precon_t *precon = pscom_precon_provider->create(con);
 
     // add to list
     INIT_LIST_HEAD(&precon->next);
     assert(list_empty(&precon->next));
-    list_add_tail(&precon->next, &pscom_precon_provider.precon_list);
-    pscom_precon_provider.precon_count++;
+    list_add_tail(&precon->next, &pscom_precon_provider->precon_list);
+    pscom_precon_provider->precon_count++;
 
     return precon;
 }
@@ -277,11 +276,11 @@ pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 void pscom_precon_destroy(pscom_precon_t *precon)
 {
     assert(precon->magic == MAGIC_PRECON);
-    pscom_precon_provider.cleanup(precon);
+    pscom_precon_provider->cleanup(precon);
 
     // remove precon from list
     list_del_init(&precon->next);
-    pscom_precon_provider.precon_count--;
+    pscom_precon_provider->precon_count--;
     // free space
     free(precon);
 }

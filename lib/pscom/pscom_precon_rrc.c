@@ -82,7 +82,7 @@ static pscom_precon_t *pscom_precon_create_rrc(pscom_con_t *con)
 static void pscom_precon_print_stat_rrc(pscom_precon_rrc_t *pre_rrc)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     int fd         = global_rrc->ufd_info.fd;
     char state[10] = "no fd";
@@ -105,7 +105,7 @@ static void pscom_precon_print_stat_rrc(pscom_precon_rrc_t *pre_rrc)
            "state:%s\n",
            pre_rrc, global_rrc->user_cnt, global_rrc->active,
            pre_rrc->recv_done ? "yes" : "no",
-           pscom_precon_provider.precon_count, state);
+           pscom_precon_provider->precon_count, state);
 }
 
 
@@ -578,7 +578,7 @@ static void pscom_precon_do_read_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 static void pscom_precon_assign_fd_rrc(void)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     global_rrc->ufd_info.fd       = global_rrc->rrcomm_fd;
     global_rrc->ufd_info.can_read = pscom_precon_do_read_rrc;
@@ -767,11 +767,11 @@ static void pscom_precon_provider_init_rrc(void)
     }
 
     // Assign memory for RRcomm sock variables
-    pscom_precon_provider.precon_provider_data = (void *)malloc(
+    pscom_precon_provider->precon_provider_data = (void *)malloc(
         sizeof(pscom_global_rrc_t));
-    assert(pscom_precon_provider.precon_provider_data);
+    assert(pscom_precon_provider->precon_provider_data);
     global_rrc = (pscom_global_rrc_t *)
-                     pscom_precon_provider.precon_provider_data;
+                     pscom_precon_provider->precon_provider_data;
     memset(global_rrc, 0, sizeof(pscom_global_rrc_t));
 
     // Assign RRcomm file descriptor
@@ -795,11 +795,11 @@ static void pscom_precon_provider_init_rrc(void)
 static void pscom_precon_provider_destroy_rrc(void)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     // Ensure that precon_list is empty
-    assert(list_empty(&pscom_precon_provider.precon_list));
-    assert(!pscom_precon_provider.precon_count);
+    assert(list_empty(&pscom_precon_provider->precon_list));
+    assert(!pscom_precon_provider->precon_count);
 
     // Ensure that connection and listener counters are 0
     assert(!global_rrc->user_cnt);
@@ -847,7 +847,7 @@ static void pscom_precon_cleanup_rrc(pscom_precon_t *precon)
 static void pscom_precon_recv_start_rrc(pscom_precon_t *precon)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     if (!global_rrc->user_cnt && !global_rrc->active) {
         ufd_event_set(&pscom.ufd, &global_rrc->ufd_info, POLLIN);
@@ -871,7 +871,7 @@ static void pscom_precon_recv_start_rrc(pscom_precon_t *precon)
 static void pscom_precon_recv_stop_rrc(pscom_precon_t *precon)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
     pscom_precon_rrc_t *pre_rrc = (pscom_precon_rrc_t *)&precon->precon_data;
 
     /* Check to clear POLLIN event only if there are pending connections */
@@ -898,7 +898,7 @@ static void pscom_precon_recv_stop_rrc(pscom_precon_t *precon)
 static void pscom_listener_active_inc_rrc(struct pscom_listener *listener)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     if (!global_rrc->user_cnt && !global_rrc->active) {
         ufd_event_set(&pscom.ufd, &global_rrc->ufd_info, POLLIN);
@@ -919,7 +919,7 @@ static void pscom_listener_active_inc_rrc(struct pscom_listener *listener)
 static void pscom_listener_active_dec_rrc(struct pscom_listener *listener)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     assert(global_rrc->user_cnt > 0);
     global_rrc->user_cnt--;
@@ -943,7 +943,7 @@ static void pscom_listener_active_dec_rrc(struct pscom_listener *listener)
 static pscom_err_t pscom_sock_start_listen_rrc(pscom_sock_t *sock, int portno)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     // Avoid error in `_pscom_con_connect_ondemand`
     sock->pub.listen_portno                       = 0;
@@ -970,7 +970,7 @@ static pscom_err_t pscom_sock_start_listen_rrc(pscom_sock_t *sock, int portno)
 static void pscom_sock_stop_listen_rrc(pscom_sock_t *sock)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     // this will be called when sock is closed, active may already be 0
     if (global_rrc->active == 0) { return; }
@@ -994,7 +994,7 @@ static void pscom_sock_stop_listen_rrc(pscom_sock_t *sock)
 static void pscom_listener_resume_rrc(struct pscom_listener *listener)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     // todo: for now suspend/resume only controls `active` counter, more tests
     // are needed
@@ -1017,7 +1017,7 @@ static void pscom_listener_resume_rrc(struct pscom_listener *listener)
 static void pscom_listener_suspend_rrc(struct pscom_listener *listener)
 {
     pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider.precon_provider_data;
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
     // todo: for now suspend/resume only controls `active` counter, more tests
     // are needed

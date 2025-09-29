@@ -208,7 +208,7 @@ err_exit:
 PSCOM_API_EXPORT
 const char *pscom_con_info_str(pscom_con_info_t *con_info)
 {
-    return pscom_precon_provider.get_con_info_str(con_info);
+    return pscom_precon_provider->get_con_info_str(con_info);
 }
 
 
@@ -216,7 +216,7 @@ PSCOM_API_EXPORT
 const char *pscom_con_info_str2(pscom_con_info_t *con_info1,
                                 pscom_con_info_t *con_info2)
 {
-    return pscom_precon_provider.get_con_info_str2(con_info1, con_info2);
+    return pscom_precon_provider->get_con_info_str2(con_info1, con_info2);
 }
 
 
