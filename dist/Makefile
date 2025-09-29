@@ -26,6 +26,7 @@ RELEASE:=$(shell cd $(TOP_SRCDIR) && scripts/vcversion --fmt release)
 DISTNAME=$(PKG_NAME)-$(VERSION)-$(RELEASE)
 RPMBUILDDIR=/var/tmp/$(DISTNAME)-$(USER)
 RPMBUILDLOG=$(PKG_NAME)$(shell echo -n $(CONFIGARGS)|tr -c "[0-9A-Za-z]" "_")-$(VERSION)-$(RELEASE).rpmbuild.log
+RPMOUTDIR?=$(PWD)
 CHANGELOG=$(TOP_SRCDIR)/ChangeLog
 
 
@@ -56,7 +57,7 @@ $(DISTNAME).src.rpm: $(DISTNAME)/$(DISTNAME).spec $(DISTNAME).tar.gz
 $(RPMBUILDLOG): $(DISTNAME)/$(DISTNAME).spec $(DISTNAME).tar.gz
 	mkdir -p $(RPMBUILDDIR)
 	rpmbuild --clean $(TARGETARGS) \
-		-bb --define="_sourcedir $$PWD" --define "_rpmdir $$PWD" \
+		-bb --define="_sourcedir $$PWD" --define "_rpmdir $(RPMOUTDIR)" \
 		--define="_rpmfilename %%{NAME}-%%{VERSION}-%%{RELEASE}.%%{ARCH}.rpm" \
 		--define="_builddir $(RPMBUILDDIR)" $(CONFIGARGS) \
 		$< 2>&1 | tee $(RPMBUILDLOG)_ ; test $${PIPESTATUS[0]} -eq 0
