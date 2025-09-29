@@ -1293,7 +1293,6 @@ static void pscom_listener_user_dec_rrc(struct pscom_listener *listener)
 
 
 pscom_precon_provider_t pscom_provider_rrc = {
-    .precon_type             = PSCOM_PRECON_TYPE_RRCOMM,
     .init                    = pscom_precon_provider_init_rrc,
     .destroy                 = pscom_precon_provider_destroy_rrc,
     .send                    = pscom_precon_send_rrc,

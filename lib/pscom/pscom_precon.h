@@ -61,13 +61,6 @@ struct pscom_listener {
 };
 
 
-typedef enum {
-    PSCOM_PRECON_TYPE_TCP    = 0,
-    PSCOM_PRECON_TYPE_RRCOMM = 1,
-    PSCOM_PRECON_TYPE_COUNT
-} pscom_precon_type_t;
-
-
 /* common part of tcp and rrcomm plugin, used for general precon functions */
 typedef struct PSCOM_precon {
     unsigned long magic;
@@ -381,7 +374,6 @@ typedef void (*pscom_precon_provider_listener_user_dec_t)(
 typedef struct PSCOM_precon_provider {
     struct list_head precon_list; // List of precon objests, either tcp or rrcom
     int precon_count;
-    pscom_precon_type_t precon_type;
     pscom_precon_provider_init_t init;
     pscom_precon_provider_destroy_t destroy;
     pscom_precon_provider_send_t send;

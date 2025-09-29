@@ -1468,7 +1468,6 @@ static void pscom_precon_provider_destroy_tcp(void)
 
 
 pscom_precon_provider_t pscom_provider_tcp = {
-    .precon_type             = PSCOM_PRECON_TYPE_TCP,
     .init                    = pscom_precon_provider_init_tcp,
     .destroy                 = pscom_precon_provider_destroy_tcp,
     .send                    = pscom_precon_send_tcp,
