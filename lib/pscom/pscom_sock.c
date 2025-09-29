@@ -280,10 +280,8 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size,
     ret = pscom_sock_set_id(sock);
     if (ret) { goto err_out; }
 
-    /* Temporarily disable TCP as payload plugin when RRComm is used */
-    if (pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM) {
-        pscom_con_type_mask_del(&sock->pub, PSCOM_CON_TYPE_TCP);
-    }
+    /* call the precon provider init hook */
+    pscom_precon_provider.sock_init(sock);
 
     pscom_plugins_sock_init(sock);
 

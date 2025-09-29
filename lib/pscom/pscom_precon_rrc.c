@@ -1263,6 +1263,13 @@ static int pscom_precon_guard_setup_rrc(pscom_precon_t *precon)
 }
 
 
+static void pscom_precon_sock_init_rrc(pscom_sock_t *sock)
+{
+    /* TODO: Currently, TCP is not supported as payload when RRComm is used. */
+    pscom_con_type_mask_del(&sock->pub, PSCOM_CON_TYPE_TCP);
+}
+
+
 /*
  * In RRComm, the plugin handshake is started by the accepting side.
  * It has to wait for the connection information from the connecting side and
@@ -1295,6 +1302,7 @@ pscom_precon_provider_t pscom_provider_rrc = {
     .recv_start              = pscom_precon_recv_start_rrc,
     .recv_stop               = pscom_precon_recv_stop_rrc,
     .connect                 = pscom_precon_connect_rrc,
+    .sock_init               = pscom_precon_sock_init_rrc,
     .guard_setup             = pscom_precon_guard_setup_rrc,
     .is_starting_peer        = pscom_precon_is_starting_peer_rrc,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_rrc,

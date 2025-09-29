@@ -1297,6 +1297,12 @@ static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
 }
 
 
+void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
+{
+    return;
+}
+
+
 int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
@@ -1471,6 +1477,7 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .recv_start              = pscom_precon_recv_start_tcp,
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,
+    .sock_init               = pscom_precon_sock_init_tcp,
     .guard_setup             = pscom_precon_guard_setup_tcp,
     .is_starting_peer        = pscom_precon_is_starting_peer_tcp,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,

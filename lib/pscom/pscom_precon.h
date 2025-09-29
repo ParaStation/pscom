@@ -180,6 +180,17 @@ typedef pscom_err_t (*pscom_precon_provider_connect_t)(pscom_con_t *con);
 
 
 /**
+ * @brief Hook for precon provider-specific socket initialization
+ *
+ * This provider routine allows to hook into the socket initialization for
+ * performing provider-specific configurations of the created pscom socket.
+ *
+ * @param [in] sock The pscom socket handle.
+ */
+typedef void (*pscom_precon_sock_init_t)(pscom_sock_t *sock);
+
+
+/**
  * @brief Setup connection guards for a given connection
  *
  * This provider routine can be used to enable connection guards for a pscom
@@ -379,6 +390,7 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_provider_recv_start_t recv_start;
     pscom_precon_provider_recv_stop_t recv_stop;
     pscom_precon_provider_connect_t connect;
+    pscom_precon_sock_init_t sock_init;
     pscom_precon_guard_setup_t guard_setup;
     pscom_precon_is_starting_peer_t is_starting_peer;
     pscom_precon_get_ep_info_from_socket_t get_ep_info_from_socket;
