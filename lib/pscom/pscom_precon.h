@@ -61,13 +61,6 @@ struct pscom_listener {
 };
 
 
-typedef enum {
-    PSCOM_PRECON_TYPE_TCP    = 0,
-    PSCOM_PRECON_TYPE_RRCOMM = 1,
-    PSCOM_PRECON_TYPE_COUNT
-} pscom_precon_type_t;
-
-
 /* common part of tcp and rrcomm plugin, used for general precon functions */
 typedef struct PSCOM_precon {
     unsigned long magic;
@@ -180,6 +173,17 @@ typedef pscom_err_t (*pscom_precon_provider_connect_t)(pscom_con_t *con);
 
 
 /**
+ * @brief Hook for precon provider-specific socket initialization
+ *
+ * This provider routine allows to hook into the socket initialization for
+ * performing provider-specific configurations of the created pscom socket.
+ *
+ * @param [in] sock The pscom socket handle.
+ */
+typedef void (*pscom_precon_sock_init_t)(pscom_sock_t *sock);
+
+
+/**
  * @brief Setup connection guards for a given connection
  *
  * This provider routine can be used to enable connection guards for a pscom
@@ -192,6 +196,19 @@ typedef pscom_err_t (*pscom_precon_provider_connect_t)(pscom_con_t *con);
  * @return A file descriptor that can be observed.
  */
 typedef int (*pscom_precon_guard_setup_t)(pscom_precon_t *precon);
+
+
+/**
+ * @brief Return whether this process is the connecting peer
+ *
+ * This provider routine can be used to determine whether the calling process or
+ * its peer is the one starting the plugin handshake.
+ *
+ * @param [in] con The corresponding point-to-point connection.
+ *
+ * @return boolean
+ */
+typedef int (*pscom_precon_is_starting_peer_t)(pscom_con_t *con);
 
 
 /**
@@ -229,6 +246,38 @@ typedef pscom_err_t (*pscom_precon_get_ep_info_from_socket_t)(
  */
 typedef pscom_err_t (*pscom_precon_parse_ep_info_t)(const char *ep_str,
                                                     pscom_con_info_t *con_info);
+
+
+/**
+ * @brief Get the connection info string for a given connection
+ *
+ * This is the provider routine implementing the semantics of @ref
+ * pscom_con_info_str.
+ *
+ * @param [in] con_info A handle to the @ref pscom_con_info_t object for which
+ *                      the connection info string shall be generated.
+ *
+ * @return The connection info string; NULL in case of an error.
+ */
+typedef char *(*pscom_precon_get_con_info_str_t)(pscom_con_info_t *con_info);
+
+
+/**
+ * @brief Get the connection info string for a given connection
+ *
+ * This is the provider routine implementing the semantics of @ref
+ * pscom_con_info_str.
+ *
+ * @param [in] con_info1 A handle to the @ref pscom_con_info_t object for which
+ *                       the connection info string shall be generated.
+ * @param [in] con_info2 A handle to the @ref pscom_con_info_t object for which
+ *                       the connection info string shall be generated.
+ *
+ *
+ * @return The connection info string; NULL in case of an error.
+ */
+typedef char *(*pscom_precon_get_con_info_str2_t)(pscom_con_info_t *con_info1,
+                                                  pscom_con_info_t *con_info2);
 
 
 /**
@@ -325,7 +374,6 @@ typedef void (*pscom_precon_provider_listener_user_dec_t)(
 typedef struct PSCOM_precon_provider {
     struct list_head precon_list; // List of precon objests, either tcp or rrcom
     int precon_count;
-    pscom_precon_type_t precon_type;
     pscom_precon_provider_init_t init;
     pscom_precon_provider_destroy_t destroy;
     pscom_precon_provider_send_t send;
@@ -334,9 +382,13 @@ typedef struct PSCOM_precon_provider {
     pscom_precon_provider_recv_start_t recv_start;
     pscom_precon_provider_recv_stop_t recv_stop;
     pscom_precon_provider_connect_t connect;
+    pscom_precon_sock_init_t sock_init;
     pscom_precon_guard_setup_t guard_setup;
+    pscom_precon_is_starting_peer_t is_starting_peer;
     pscom_precon_get_ep_info_from_socket_t get_ep_info_from_socket;
     pscom_precon_parse_ep_info_t parse_ep_info;
+    pscom_precon_get_con_info_str_t get_con_info_str;
+    pscom_precon_get_con_info_str2_t get_con_info_str2;
     pscom_precon_is_connect_loopback_t is_connect_loopback;
     pscom_precon_provider_start_listen_t start_listen;
     pscom_precon_provider_stop_listen_t stop_listen;
@@ -350,7 +402,7 @@ typedef struct PSCOM_precon_provider {
     void *precon_provider_data;
 } pscom_precon_provider_t;
 
-extern pscom_precon_provider_t pscom_precon_provider;
+extern pscom_precon_provider_t *pscom_precon_provider;
 
 typedef struct pscom_precon_provider_reg_entry {
     char *name; /**< name of the precon provider (to be used with
@@ -438,6 +490,9 @@ pscom_precon_provider_t *pscom_precon_provider_lookup(const char *name);
 /* destroy the precon module */
 void pscom_precon_provider_destroy(void);
 
+
+int precon_con_is_connecting_peer(pscom_con_t *con);
+
 /* Send a message of type type */
 pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
                               unsigned size);
@@ -462,41 +517,41 @@ void pscom_precon_destroy(pscom_precon_t *precon);
 
 static inline void pscom_precon_recv_start(pscom_precon_t *precon)
 {
-    pscom_precon_provider.recv_start(precon);
+    pscom_precon_provider->recv_start(precon);
 }
 
 static inline void pscom_precon_recv_stop(pscom_precon_t *precon)
 {
-    pscom_precon_provider.recv_stop(precon);
+    pscom_precon_provider->recv_stop(precon);
 }
 
 static inline pscom_err_t pscom_precon_connect(pscom_con_t *con)
 {
-    return pscom_precon_provider.connect(con);
+    return pscom_precon_provider->connect(con);
 }
 
 static inline int pscom_precon_guard_setup(pscom_precon_t *precon)
 {
-    return pscom_precon_provider.guard_setup(precon);
+    return pscom_precon_provider->guard_setup(precon);
 }
 
 static inline int pscom_precon_is_connect_loopback(
     pscom_socket_t *socket, pscom_connection_t *connection)
 {
-    return pscom_precon_provider.is_connect_loopback(socket, connection);
+    return pscom_precon_provider->is_connect_loopback(socket, connection);
 }
 
 static inline pscom_err_t pscom_precon_parse_ep_info(const char *ep_str,
                                                      pscom_con_info_t *con_info)
 {
-    return pscom_precon_provider.parse_ep_info(ep_str, con_info);
+    return pscom_precon_provider->parse_ep_info(ep_str, con_info);
 }
 
 
 static inline pscom_err_t
 pscom_precon_get_ep_info_from_socket(pscom_socket_t *socket, char **ep_str)
 {
-    return pscom_precon_provider.get_ep_info_from_socket(socket, ep_str);
+    return pscom_precon_provider->get_ep_info_from_socket(socket, ep_str);
 }
 
 #endif /* _PSCOM_PRECON_H_ */

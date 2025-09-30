@@ -79,7 +79,7 @@ retry:
         pscom_con_close(con);
     }
 
-    pscom_precon_provider.stop_listen(sock);
+    pscom_precon_provider->stop_listen(sock);
     // todo: listen_portno is forced to set to 1, if not, for rrcomm there will
     // be a retry dead loop.
     sock->pub.listen_portno = -1;
@@ -280,10 +280,8 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size,
     ret = pscom_sock_set_id(sock);
     if (ret) { goto err_out; }
 
-    /* Temporarily disable TCP as payload plugin when RRComm is used */
-    if (pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM) {
-        pscom_con_type_mask_del(&sock->pub, PSCOM_CON_TYPE_TCP);
-    }
+    /* call the precon provider init hook */
+    pscom_precon_provider->sock_init(sock);
 
     pscom_plugins_sock_init(sock);
 
@@ -402,7 +400,7 @@ pscom_err_t pscom_listen(pscom_socket_t *socket, int portno)
 
     pscom_lock();
     {
-        ret = pscom_precon_provider.start_listen(sock, portno);
+        ret = pscom_precon_provider->start_listen(sock, portno);
     }
     pscom_unlock();
 
@@ -444,7 +442,7 @@ void pscom_stop_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_precon_provider.stop_listen(sock);
+        pscom_precon_provider->stop_listen(sock);
     }
     pscom_unlock();
 }
@@ -570,7 +568,7 @@ void pscom_suspend_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_precon_provider.listener_suspend(&sock->listen);
+        pscom_precon_provider->listener_suspend(&sock->listen);
     }
     pscom_unlock();
 }
@@ -583,7 +581,7 @@ void pscom_resume_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_precon_provider.listener_resume(&sock->listen);
+        pscom_precon_provider->listener_resume(&sock->listen);
     }
     pscom_unlock();
 }

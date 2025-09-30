@@ -24,8 +24,6 @@
 #include "pscom_priv.h"
 #include "pscom_precon.h"
 
-#define MAX_OUTPUT_STR_LEN 200
-
 /* Take a service name, and a service type, and return a port number.  If the
    service name is not found, it tries it as a decimal number.  The number
    returned is byte ordered for the network. */
@@ -210,23 +208,7 @@ err_exit:
 PSCOM_API_EXPORT
 const char *pscom_con_info_str(pscom_con_info_t *con_info)
 {
-    static char buf[MAX_OUTPUT_STR_LEN];
-
-    if (pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM) {
-        snprintf(buf, sizeof(buf),
-                 "(" INET_ADDR_FORMAT ",jobid %lu, r%d, sockid %u,%p,%.8s)",
-                 INET_ADDR_SPLIT(con_info->node_id), con_info->rrcomm.jobid,
-                 con_info->rank, con_info->rrcomm.remote_sockid, con_info->id,
-                 con_info->name);
-    } else {
-        snprintf(buf, sizeof(buf),
-                 "(" INET_ADDR_FORMAT ":portno %d,%d,%p,%.8s)",
-                 INET_ADDR_SPLIT(con_info->node_id), con_info->tcp.portno,
-                 con_info->rank, con_info->id, con_info->name);
-    }
-    return buf;
-
-    return buf;
+    return pscom_precon_provider->get_con_info_str(con_info);
 }
 
 
@@ -234,31 +216,7 @@ PSCOM_API_EXPORT
 const char *pscom_con_info_str2(pscom_con_info_t *con_info1,
                                 pscom_con_info_t *con_info2)
 {
-    static char buf[MAX_OUTPUT_STR_LEN];
-    if (pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM) {
-        snprintf(buf, sizeof(buf),
-                 "(" INET_ADDR_FORMAT ",jobid %lu, r%d, sockid %u,%p,%.8s) to "
-                 "(" INET_ADDR_FORMAT ",jobid %lu, r%d, "
-                 "sockid %u,%p,"
-                 "%.8s)",
-                 INET_ADDR_SPLIT(con_info1->node_id), con_info1->rrcomm.jobid,
-                 con_info1->rank, con_info1->rrcomm.remote_sockid,
-                 con_info1->id, con_info1->name,
-                 INET_ADDR_SPLIT(con_info2->node_id), con_info2->rrcomm.jobid,
-                 con_info2->rank, con_info2->rrcomm.remote_sockid,
-                 con_info2->id, con_info2->name);
-    } else {
-        snprintf(buf, sizeof(buf),
-                 "(" INET_ADDR_FORMAT ":portno%d,%d,%p,%.8s) to "
-                 "(" INET_ADDR_FORMAT ":portno%d,%d,%p,"
-                 "%.8s)",
-                 INET_ADDR_SPLIT(con_info1->node_id), con_info1->tcp.portno,
-                 con_info1->rank, con_info1->id, con_info1->name,
-                 INET_ADDR_SPLIT(con_info2->node_id), con_info2->tcp.portno,
-                 con_info2->rank, con_info2->id, con_info2->name);
-    }
-
-    return buf;
+    return pscom_precon_provider->get_con_info_str2(con_info1, con_info2);
 }
 
 

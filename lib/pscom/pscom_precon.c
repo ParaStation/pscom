@@ -76,7 +76,7 @@ err_out:
 
 /* the actual precon provider as a global/singleton object */
 PSCOM_PLUGIN_API_EXPORT
-pscom_precon_provider_t pscom_precon_provider;
+pscom_precon_provider_t *pscom_precon_provider = NULL;
 
 const char *pscom_info_type_str(int type)
 {
@@ -155,7 +155,7 @@ void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
 
 
 // Connecting or accepting peer?
-static int con_is_connecting_peer(pscom_con_t *con)
+int precon_con_is_connecting_peer(pscom_con_t *con)
 {
     return con && ((con->pub.state == PSCOM_CON_STATE_CONNECTING) ||
                    (con->pub.state == PSCOM_CON_STATE_CONNECTING_ONDEMAND));
@@ -171,22 +171,7 @@ static void _plugin_connect_next(pscom_con_t *con, int first)
     assert(first ? !precon->plugin : 1); // if first, precon->plugin has to be
                                          // NULL!
 
-    /* In TCP, the plugin handshake is started by the connecting side while
-       in RRcomm the plugin handshake is started by the accepting side.
-       The difference between TCP and RRcomm is that the connecting side using
-       TCP knows the `nodeid` of the accepting side, while for RRcomm the
-       connecting side does not know this information. So the connecting side
-       using TCP can determine whether `shm` plugin will be used. For RRcomm,
-       the accepting side has to wait for the connection information from the
-       connecting side, then decides whether `shm` will be used and starts the
-       handshaking of plugin information.
-    */
-    if ((!con_is_connecting_peer(con) &&
-         pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_TCP) ||
-        (con_is_connecting_peer(con) &&
-         pscom_precon_provider.precon_type == PSCOM_PRECON_TYPE_RRCOMM)) {
-        return; // Nothing to do.
-    }
+    if (!pscom_precon_provider->is_starting_peer(con)) { return; }
 
     do {
         precon->plugin      = first ? pscom_plugin_first()
@@ -251,18 +236,17 @@ void pscom_precon_provider_init(void)
 
 
     /* set the precon provider singleton */
-    memset(&pscom_precon_provider, 0, sizeof(pscom_precon_provider_t));
-    pscom_precon_provider = *pscom_precon_provider_lookup(pscom.env.precon_type);
+    pscom_precon_provider = pscom_precon_provider_lookup(pscom.env.precon_type);
 
-    INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
-    pscom_precon_provider.precon_count = 0;
-    pscom_precon_provider.init();
+    INIT_LIST_HEAD(&pscom_precon_provider->precon_list);
+    pscom_precon_provider->precon_count = 0;
+    pscom_precon_provider->init();
 }
 
 
 void pscom_precon_provider_destroy(void)
 {
-    pscom_precon_provider.destroy();
+    pscom_precon_provider->destroy();
 }
 
 
@@ -271,19 +255,19 @@ pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
                               unsigned size)
 {
     assert(precon->magic == MAGIC_PRECON);
-    return pscom_precon_provider.send(precon, type, data, size);
+    return pscom_precon_provider->send(precon, type, data, size);
 }
 
 
 pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 {
-    pscom_precon_t *precon = pscom_precon_provider.create(con);
+    pscom_precon_t *precon = pscom_precon_provider->create(con);
 
     // add to list
     INIT_LIST_HEAD(&precon->next);
     assert(list_empty(&precon->next));
-    list_add_tail(&precon->next, &pscom_precon_provider.precon_list);
-    pscom_precon_provider.precon_count++;
+    list_add_tail(&precon->next, &pscom_precon_provider->precon_list);
+    pscom_precon_provider->precon_count++;
 
     return precon;
 }
@@ -292,11 +276,11 @@ pscom_precon_t *pscom_precon_create(pscom_con_t *con)
 void pscom_precon_destroy(pscom_precon_t *precon)
 {
     assert(precon->magic == MAGIC_PRECON);
-    pscom_precon_provider.cleanup(precon);
+    pscom_precon_provider->cleanup(precon);
 
     // remove precon from list
     list_del_init(&precon->next);
-    pscom_precon_provider.precon_count--;
+    pscom_precon_provider->precon_count--;
     // free space
     free(precon);
 }

@@ -865,9 +865,8 @@ void pscom_precon_handle_receive_tcp(pscom_precon_tcp_t *pre_tcp, uint32_t type,
 
 static void pscom_precon_print_stat_tcp(pscom_precon_tcp_t *pre_tcp)
 {
-    int fd                                = pre_tcp->ufd_info.fd;
-    pscom_precon_provider_t *pre_provider = &pscom_precon_provider;
-    char state[10]                        = "no fd";
+    int fd         = pre_tcp->ufd_info.fd;
+    char state[10] = "no fd";
     assert(pre_tcp->magic == MAGIC_PRECON);
 
     if (fd != -1) {
@@ -885,8 +884,8 @@ static void pscom_precon_print_stat_tcp(pscom_precon_tcp_t *pre_tcp)
            "state:%s\n",
            pre_tcp, pre_tcp->stat_poll_cnt, pre_tcp->stat_send,
            pre_tcp->stat_recv, pre_tcp->send_len,
-           pre_tcp->recv_done ? "no" : "yes", pre_provider->precon_count,
-           state);
+           pre_tcp->recv_done ? "no" : "yes",
+           pscom_precon_provider->precon_count, state);
 }
 
 /* Print statistic about this precon */
@@ -1243,7 +1242,7 @@ static pscom_err_t pscom_sock_start_listen_tcp(pscom_sock_t *sock, int portno)
 
     pscom_listener_set_fd(&sock->listen, listen_fd);
 
-    pscom_precon_provider.listener_active_inc(&sock->listen);
+    pscom_precon_provider->listener_active_inc(&sock->listen);
 
     return ret;
 
@@ -1289,11 +1288,17 @@ static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
         /* We are in listen suspend, need to dec the user counter to make it
          * match the increment in pscom_listener_suspend. Only by doing so,
          * the fd will be closed if there are no more active users. */
-        pscom_precon_provider.listener_user_dec(&sock->listen);
+        pscom_precon_provider->listener_user_dec(&sock->listen);
     }
 
-    pscom_precon_provider.listener_active_dec(&sock->listen);
+    pscom_precon_provider->listener_active_dec(&sock->listen);
     sock->pub.listen_portno = -1;
+}
+
+
+void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
+{
+    return;
 }
 
 
@@ -1304,6 +1309,17 @@ int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
      * destroyed */
     pre_tcp->closefd_on_cleanup = 0;
     return pre_tcp->ufd_info.fd;
+}
+
+
+/*
+ * In TCP, the plugin handshake is started by the connecting side which knows
+ * the `nodeid` of the accepting side. Therefore, the connecting side can
+ * determine whether `shm` plugin will be used.
+ */
+int pscom_precon_is_starting_peer_tcp(pscom_con_t *con)
+{
+    return precon_con_is_connecting_peer(con);
 }
 
 
@@ -1400,6 +1416,40 @@ err_to_sock:
 }
 
 
+static char *pscom_get_con_info_str_tcp(pscom_con_info_t *con_info)
+{
+    static char buf[sizeof("(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "0xxxxxxxxxxxxxxxxx,xxxxxxxx____")];
+
+    snprintf(buf, sizeof(buf), "(" INET_ADDR_FORMAT ":portno %d,%d,%p,%.8s)",
+             INET_ADDR_SPLIT(con_info->node_id), con_info->tcp.portno,
+             con_info->rank, con_info->id, con_info->name);
+
+    return buf;
+}
+
+
+static char *pscom_get_con_info_str2_tcp(pscom_con_info_t *con_info1,
+                                         pscom_con_info_t *con_info2)
+{
+    static char buf[sizeof("(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "0xxxxxxxxxxxxxxxxx,xxxxxxxx____ to "
+                           "(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "0xxxxxxxxxxxxxxxxx,xxxxxxxx____ to ")];
+
+    snprintf(buf, sizeof(buf),
+             "(" INET_ADDR_FORMAT ":portno%d,%d,%p,%.8s) to "
+             "(" INET_ADDR_FORMAT ":portno%d,%d,%p,"
+             "%.8s)",
+             INET_ADDR_SPLIT(con_info1->node_id), con_info1->tcp.portno,
+             con_info1->rank, con_info1->id, con_info1->name,
+             INET_ADDR_SPLIT(con_info2->node_id), con_info2->tcp.portno,
+             con_info2->rank, con_info2->id, con_info2->name);
+
+    return buf;
+}
+
+
 static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
                                          pscom_connection_t *connection)
 {
@@ -1417,7 +1467,6 @@ static void pscom_precon_provider_destroy_tcp(void)
 
 
 pscom_precon_provider_t pscom_provider_tcp = {
-    .precon_type             = PSCOM_PRECON_TYPE_TCP,
     .init                    = pscom_precon_provider_init_tcp,
     .destroy                 = pscom_precon_provider_destroy_tcp,
     .send                    = pscom_precon_send_tcp,
@@ -1426,9 +1475,13 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .recv_start              = pscom_precon_recv_start_tcp,
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,
+    .sock_init               = pscom_precon_sock_init_tcp,
     .guard_setup             = pscom_precon_guard_setup_tcp,
+    .is_starting_peer        = pscom_precon_is_starting_peer_tcp,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,
     .parse_ep_info           = pscom_parse_ep_info_tcp,
+    .get_con_info_str        = pscom_get_con_info_str_tcp,
+    .get_con_info_str2       = pscom_get_con_info_str2_tcp,
     .is_connect_loopback     = pscom_is_connect_loopback_tcp,
     .start_listen            = pscom_sock_start_listen_tcp,
     .stop_listen             = pscom_sock_stop_listen_tcp,
