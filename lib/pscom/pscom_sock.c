@@ -153,8 +153,6 @@ fn_timeout:
 PSCOM_PLUGIN_API_EXPORT
 void pscom_sock_set_name(pscom_sock_t *sock, const char *name)
 {
-    memset(sock->pub.local_con_info.name, 0,
-           sizeof(sock->pub.local_con_info.name));
     strncpy(sock->pub.local_con_info.name, name,
             sizeof(sock->pub.local_con_info.name));
     pscom_info_set("socket", pscom_con_info_str(&sock->pub.local_con_info));
@@ -245,6 +243,7 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size,
     sock = malloc(sizeof(*sock) + userdata_size);
     if (!sock) { goto err_out; }
 
+    memset(sock, 0, sizeof(*sock));
     sock->magic                = MAGIC_SOCKET;
     sock->pub.ops.con_accept   = NULL;
     sock->pub.ops.con_error    = NULL;
