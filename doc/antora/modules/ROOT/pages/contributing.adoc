@@ -7,7 +7,22 @@ To ensure that all commits conform to the coding style, the pre-commit hook shou
 $ ln -s ../../scripts/hooks/pre-commit .git/hooks/pre-commit
 ----
 
-This automatically runs `clang-format`, `cmake-format` and `cmakelint` on all changed files. Currently, we rely on `clang-format` in version 16.0.6, `cmake-format` in version 0.16.13 and `cmakelint` in version 1.4.2 for checking the coding style.
-`cmake-format` configuration file is YAML file that needs `PyYaml` (our version 6.0.1) for parsing.
+This automatically runs `clang-format`, `cmake-format`, and `cmakelint` on all changed files.
 
-Additionally, we use "Include What You Use" to avoid upward dependencies. This can be enabled by passing `-DIWYU_ENABLED=ON` to CMake. Currently, we rely on `include-what-you-use` in version 0.22.
+== Requirements
+We rely on the following tool versions for checking the coding style and includes:
+
+* `clang-format` 21.1.2
+* `cmake-format` 0.6.13 (requires PyYaml 6.0.3 for config parsing)
+* `cmakelint` 1.4.3
+* `include-what-you-use` 0.23 (enable checks via `-DIWYU_ENABLED=ON` CMake option)
+
+== Usage of Containers
+Instead of installing the above-mentioned dependencies locally, a container image can be used instead. In that case, the pre-commit hook has to be prepared to run this container image:
+
+[,bash]
+----
+#!/bin/bash
+
+podman run --userns=keep-id -w /build --rm -v./:/build:Z <container> ./scripts/hooks/pre-commit
+----
