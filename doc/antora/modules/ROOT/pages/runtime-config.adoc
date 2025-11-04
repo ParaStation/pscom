@@ -42,6 +42,9 @@ $ pscom_info -c -d
 | Timeout value in seconds after which the attempt to close all connections of a socket is aborted if there is no more progress. +
 A timeout value of 0 means an infinite timeout.
 
+| `PSP_DEADLOCK_WARNINGS`
+| Maximal number of warnings after the first deadlock detection. Each warning sleeps for 1 second. When max number of warnings is reached, pscom will be terminated with exit status 112. A value of 0 means direct termination on first deadlock detection. A value of -1 means no termination on detected deadlock. The default value is 0.
+
 | `PSP_GUARD`
 | Enable/disable the connection guards for the detection of failing peer processes. The connection guards have to be disabled when RRComm is used as pre-connection protocol.
 
