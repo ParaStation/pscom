@@ -78,6 +78,8 @@
 #include "list.h"
 #include "pscom_priv.h"
 #include "pscom_util.h"
+#include "pscom_debug.h"
+#include "pscom_env.h"
 
 void pscom_dump_info(FILE *out);
 
@@ -438,21 +440,26 @@ int ufd_poll(ufd_t *ufd, int timeout)
         if (timeout == 0) { return 0; }
         if (timeout < 0) {
             static int warn = 0;
-            if (!warn) {
-                fprintf(stderr,
-                        "Deadlock detected! Process %u will wait forever.\n",
-                        getpid());
-                fprintf(stderr, "('wait' called without outstanding send or "
-                                "recv requests).\n");
-                pscom_dump_info(stderr);
+            if (warn == pscom.env.deadlock_warnings) {
+                DPRINT(D_FATAL,
+                       "Deadlock detected! Process %u will wait forever "
+                       "('wait' called without outstanding send or recv "
+                       "requests). Exit!\n",
+                       getpid());
+                DEXEC(D_DBG_V, pscom_dump_info(stderr));
                 fflush(stderr);
-                warn = 60; // warn again after warn timeouts
-                sleep(1);
+
                 _exit(112); // Deadlock means: wait for ever. Better to
                             // terminate.
             }
-            warn--;
-            // timeout = 10 * 1000; // overwrite infinity timeout
+            if (pscom.env.deadlock_warnings != -1) {
+                warn++;
+                DPRINT(D_BUG,
+                       "Warning of deadlock in Process %u for %d times!\n",
+                       getpid(), warn);
+            }
+            sleep(1);
+            return 0;
         }
     }
 

@@ -30,6 +30,11 @@ int pscom_dwrite(FILE *out, const char *_msg, size_t len, char *line_fmt);
     } while (0)
 #endif
 
+#define DEXEC(level, code)                                                     \
+    do {                                                                       \
+        if ((level) <= pscom.env.debug) { code; }                              \
+    } while (0)
+
 // Use this stream for debug output. (automic create pre/postfix on each line)
 FILE *pscom_debug_stream(void);
 
