@@ -348,12 +348,6 @@ int ufd_poll_threaded(ufd_t *ufd, int timeout)
             return 0;
         }
     }
-    /*
-      if (ufd->n_ufd_pollfd == 1) { ...
-
-      Don't use the n_ufd_pollfd == 1 optimization in threaded environment.
-      ufd_info_t.poll() can block and is not thread save!
-    */
 
     /* create a thread local copy of ufd. */
     ufd_local          = malloc(sizeof(*ufd_local));
@@ -459,17 +453,6 @@ int ufd_poll(ufd_t *ufd, int timeout)
             }
             warn--;
             // timeout = 10 * 1000; // overwrite infinity timeout
-        }
-    }
-
-    if (ufd->n_ufd_pollfd == 1) {
-        ufd_info_t *ui_first = list_entry(ufd->ufd_info.next, ufd_info_t, next);
-        if (ui_first->poll) {
-            int ret;
-            /* Just wait for one event (Maybe one blocking receive) */
-            ret = ui_first->poll(ufd, ui_first, timeout);
-            if (ret) { return 1; }
-            /* fallback to poll */
         }
     }
 
