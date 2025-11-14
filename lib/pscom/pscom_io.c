@@ -78,6 +78,7 @@ void pscom_read_get_buf(pscom_con_t *con, char **buf, size_t *len);
 void pscom_read_done(pscom_con_t *con, char *buf, size_t len);
 
 static void pscom_rma_put_recv_io_done(pscom_request_t *request);
+static void pscom_rma_get_recv_io_done(pscom_request_t *request);
 static void pscom_rma_accumulate_recv_io_done(pscom_request_t *request);
 static void pscom_rma_get_accumulate_recv_io_done(pscom_request_t *request);
 static void pscom_rma_fetch_op_recv_io_done(pscom_request_t *request);
@@ -2207,15 +2208,17 @@ static pscom_req_t *pscom_get_rma_accumulate_receiver(pscom_con_t *con,
 static pscom_req_t *_pscom_get_rma_get_receiver(pscom_con_t *con,
                                                 pscom_header_net_t *nh)
 {
-    pscom_req_t *req_answer =
-        pscom_req_create(sizeof(pscom_xheader_rma_get_answer_t), 0);
+    pscom_req_t *req_answer = pscom_req_create(nh->xheader_len, 0);
+
     pscom_xheader_rma_get_t *rma_header = &nh->xheader->rma_get;
+    memcpy(&req_answer->pub.xheader, rma_header, nh->xheader_len);
 
-    req_answer->pub.xheader.rma_get_answer.id = rma_header->common.id;
-    req_answer->pub.connection                = &con->pub;
+    req_answer->pub.connection = &con->pub;
+    req_answer->pub.data_len   = rma_header->common.src_len;
+    req_answer->pub.data       = rma_header->common.src;
 
-    req_answer->pub.data_len = rma_header->common.src_len;
-    req_answer->pub.data     = rma_header->common.src;
+    /* only send the `id` in common, not the whole extended header */
+    req_answer->pub.xheader_len = sizeof(pscom_xheader_rma_get_answer_t);
 
     D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
                 pscom_debug_req_str(req_answer)));
@@ -2223,7 +2226,7 @@ static pscom_req_t *_pscom_get_rma_get_receiver(pscom_con_t *con,
     assert(req_answer->magic == MAGIC_REQUEST);
     pscom_mverify(req_answer);
 
-    req_answer->pub.ops.io_done = pscom_request_free;
+    req_answer->pub.ops.io_done = pscom_rma_get_recv_io_done;
 
     _pscom_post_send_direct_inline(get_con(req_answer->pub.connection),
                                    req_answer, PSCOM_MSGTYPE_RMA_GET_REP);
@@ -2412,6 +2415,20 @@ static void pscom_rma_put_recv_io_done(pscom_request_t *request)
     pscom_memh_t memh = (pscom_memh_t)xheader_rma->common.memh;
     assert(memh->magic == MAGIC_MEMH);
     pscom_rma_op_t rma_cb_id = PSCOM_RMA_PUT;
+    if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
+
+    /* free request */
+    pscom_req_free(get_req(request));
+}
+
+
+static void pscom_rma_get_recv_io_done(pscom_request_t *request)
+{
+    /* invoke global callback of RMA get at target side  */
+    pscom_xheader_rma_get_t *xheader_rma = &request->xheader.rma_get;
+    pscom_memh_t memh = (pscom_memh_t)xheader_rma->common.memh;
+    assert(memh->magic == MAGIC_MEMH);
+    pscom_rma_op_t rma_cb_id = PSCOM_RMA_GET;
     if (memh->target_cbs[rma_cb_id]) { memh->target_cbs[rma_cb_id](request); }
 
     /* free request */
