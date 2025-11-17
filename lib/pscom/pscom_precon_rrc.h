@@ -14,6 +14,25 @@
 #include "pscom_precon.h"
 #include "pscom_types.h"
 #include "pstaskid.h"
+#include <sys/time.h>
+#include <stdint.h>
+#include "list.h"
+
+
+/**
+ * @struct pscom_resend_request
+ * @brief Information about an instant error.
+ */
+typedef struct pscom_resend_request {
+    struct list_head next;     /**< Pointer to the next resend request. */
+    pscom_precon_t *precon;    /**< Precon used to resend the message. */
+    int dest;                  /**< Destination rank of the resend message. */
+    uint64_t jobid;            /**< Destination jobid of the resend message. */
+    int msg_type;              /**< Type of the the resend message. */
+    struct timeval start_time; /**< Start time stamp when the resend is
+                                  triggered. */
+} pscom_resend_request_t;
+
 
 /**
  * @struct PSCOM_precon_rrc
@@ -25,10 +44,11 @@ typedef struct PSCOM_precon_rrc {
     pscom_con_t *con;        /**< Pointer to connection. */
     pscom_con_t *remote_con; /**< Pointer to remote connection. */
     int recv_done; /**< Handshaking for connection establishment done. */
-    int type;      /**< Type of the message before creating the precon. */
+    int msg_type;  /**< Type of the last message sent from this precon. */
     PStask_ID_t local_jobid;  /**< Jobid of this current precon. */
     PStask_ID_t remote_jobid; /**< Remote jobid of this current precon. */
     int info_sent;            /**< con_info already sent with backconnect */
+    int resend_times; /**< Maximum number of retry to resend a packet. */
 } pscom_precon_rrc_t;
 
 #endif /* _PSCOM_RRCOMM_H_ */

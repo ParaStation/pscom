@@ -105,7 +105,7 @@ typedef void (*pscom_precon_provider_destroy_t)(void);
  */
 typedef pscom_err_t (*pscom_precon_provider_send_t)(pscom_precon_t *precon,
                                                     unsigned type, void *data,
-                                                    unsigned size);
+                                                    uint32_t size);
 
 
 /**
@@ -420,7 +420,7 @@ typedef struct {
 typedef struct {
     pscom_con_info_t con_info;    /**< Connection information. */
     pscom_info_version_t version; /**< Version number. */
-    uint32_t local_sockid;        /**< connecting socket identifier. */
+    uint32_t source_sockid;       /**< connecting socket identifier. */
 } pscom_info_con_info_version_t;
 
 

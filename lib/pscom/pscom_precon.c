@@ -252,7 +252,7 @@ void pscom_precon_provider_destroy(void)
 
 PSCOM_PLUGIN_API_EXPORT
 pscom_err_t pscom_precon_send(pscom_precon_t *precon, unsigned type, void *data,
-                              unsigned size)
+                              uint32_t size)
 {
     assert(precon->magic == MAGIC_PRECON);
     return pscom_precon_provider->send(precon, type, data, size);

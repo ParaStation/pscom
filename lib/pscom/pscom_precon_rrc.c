@@ -32,11 +32,34 @@
 #include "rrcomm.h"         // for RRC_getJobID, RRC_finalize, RRC_init, RRC_...
 #include <limits.h>
 
-/**< Maximum packet size */
-#define MAX_SIZE 1000
-
 /**< Maximum endpoint information size */
 #define MAX_EP_STR_SIZE 50
+
+/**< Number of pending resend requests */
+int resend_count;
+/**< list  of pending resend requests */
+struct list_head resend_requests;
+
+/**< Maximum packet size (gets increased automatically if necessary) */
+static ssize_t max_buf_size = 1000;
+
+
+pscom_env_table_entry_t pscom_env_table_precon_rrc[] = {
+    {"RESEND_TIMES", "10000",
+     "Maximum number of resend retries after receiving a resend signal from "
+     "RRComm. 0 means infinite times of retries.",
+     &pscom.env.rrc_resend_times, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
+
+    {"RESEND_DELAY", "100000",
+     "Delay time before the first resend retry in microseconds after receiving "
+     "a resend signal from RRComm. Default is 100000 us (0.1 s).",
+     &pscom.env.rrc_resend_delay, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
+
+    {0},
+};
+
 
 /**
  * @brief Creates a new RRComm precon
@@ -55,17 +78,18 @@ static pscom_precon_t *pscom_precon_create_rrc(pscom_con_t *con)
     precon = (pscom_precon_t *)malloc(precon_size);
 
     assert(precon);
-    memset(precon, 0, sizeof(*precon));
+    memset(precon, 0, precon_size);
 
     pscom_precon_rrc_t *pre_rrc = (pscom_precon_rrc_t *)&precon->precon_data;
     precon->magic               = MAGIC_PRECON;
     pre_rrc->remote_con         = NULL;
 
-    pre_rrc->con         = con;
-    pre_rrc->recv_done   = 0;
-    pre_rrc->precon      = precon;
-    pre_rrc->local_jobid = RRC_getJobID();
-    pre_rrc->info_sent   = 0;
+    pre_rrc->con          = con;
+    pre_rrc->recv_done    = 0;
+    pre_rrc->precon       = precon;
+    pre_rrc->local_jobid  = RRC_getJobID();
+    pre_rrc->info_sent    = 0;
+    pre_rrc->resend_times = pscom.env.rrc_resend_times;
 
     return precon;
 }
@@ -129,8 +153,8 @@ static void pscom_precon_check_end_rrc(pscom_precon_rrc_t *pre_rrc,
         pscom_plugin_t *p  = con->precon->plugin;
 
         if (pre_rrc->con) {
-            pre_rrc->con->precon = NULL; // disallow precon usage in
-                                         // handshake
+            /* recv is done, disallow precon usage in handshake */
+            pre_rrc->con->precon = NULL;
         }
 
         if (p) { p->con_handshake(pre_rrc->con, PSCOM_INFO_EOF, NULL, 0); }
@@ -156,7 +180,7 @@ static void pscom_precon_check_end_rrc(pscom_precon_rrc_t *pre_rrc,
  * @return  PSCOM_SUCCESS if message is sent
  * @return  PSCOM_ERR_STDERROR if message cannot be sent
  */
-static pscom_err_t pscom_precon_send_rrc(pscom_precon_t *precon, uint32_t type,
+static pscom_err_t pscom_precon_send_rrc(pscom_precon_t *precon, unsigned type,
                                          void *data, uint32_t size)
 {
     uint32_t dest;
@@ -173,7 +197,10 @@ static pscom_err_t pscom_precon_send_rrc(pscom_precon_t *precon, uint32_t type,
     pscom_precon_info_dump(precon, "send", type, data, size);
 
     /* allocate a `send` buffer of `msg_size` bytes */
-    unsigned msg_size = size + sizeof(pscom_info_rrc_t);
+    ssize_t msg_size = (ssize_t)(size + sizeof(pscom_info_rrc_t));
+    /* all sent messages should be smaller than the max recv buffer size */
+    if (msg_size > max_buf_size) { max_buf_size = msg_size + 1; }
+
     char *msg, *send = (char *)malloc(msg_size);
     assert(send);
     msg = send;
@@ -187,15 +214,22 @@ static pscom_err_t pscom_precon_send_rrc(pscom_precon_t *precon, uint32_t type,
     /* Send RRcomm message to destination */
     dest = con->pub.remote_con_info.rank;
 
-    int len = (int)RRC_sendX(pre_rrc->remote_jobid, dest, send, msg_size);
+    ssize_t len = RRC_sendX(pre_rrc->remote_jobid, dest, send, msg_size);
 
     free(send);
 
     /* Error when sending the message? */
     if (len < 0) {
-        /* Message could not be sent */
+        /* Message could not be sent when len <0 */
+        DPRINT(D_ERR,
+               "RRC_sendX returns with %zd and sends msg with length %zd to "
+               "%ld, %d (jobid, dest).\n",
+               len, msg_size, pre_rrc->remote_jobid, dest);
         goto err_send;
     }
+
+    /* On success, all bytes must have been sent. */
+    assert(len == msg_size);
 
     return PSCOM_SUCCESS;
 
@@ -223,8 +257,9 @@ static void pscom_precon_rrcomm_abort_plugin(pscom_precon_rrc_t *pre_rrc)
         pre_rrc->precon->plugin->con_handshake(con, PSCOM_INFO_ARCH_NEXT, NULL,
                                                0);
     }
-    pre_rrc->precon->plugin = NULL; // Do not use plugin anymore after
-                                    // PSCOM_INFO_ARCH_NEXT
+
+    /* Do not use plugin anymore after PSCOM_INFO_ARCH_NEXT */
+    pre_rrc->precon->plugin = NULL;
 }
 
 
@@ -262,11 +297,11 @@ static void pscom_check_VERSION(pscom_info_version_t *version, pscom_con_t *con)
 static void pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
     pscom_con_t *con, int type, uint32_t local_sockid, uint32_t remote_sockid)
 {
-    pscom_precon_t *precon = con->precon;
-    pscom_info_con_info_version_t msg_con_info_version;
-    assert(precon->magic == MAGIC_PRECON);
     assert(con);
     assert(con->magic == MAGIC_CONNECTION);
+    pscom_precon_t *precon = con->precon;
+    assert(precon->magic == MAGIC_PRECON);
+    pscom_info_con_info_version_t msg_con_info_version;
 
     /* Send supported versions */
     msg_con_info_version.version.ver_from = VER_FROM;
@@ -274,13 +309,51 @@ static void pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
 
     /* Send connection information */
     pscom_con_info(con, &msg_con_info_version.con_info);
-    msg_con_info_version.local_sockid                  = local_sockid;
+    msg_con_info_version.source_sockid                 = local_sockid;
     msg_con_info_version.con_info.rrcomm.remote_sockid = remote_sockid;
 
     DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", precon,
            pscom_con_str(&con->pub));
-    pscom_precon_send(precon, type, &msg_con_info_version,
-                      sizeof(msg_con_info_version));
+    pscom_err_t ret = pscom_precon_send(precon, type, &msg_con_info_version,
+                                        sizeof(msg_con_info_version));
+    assert(ret == PSCOM_SUCCESS);
+}
+
+
+/**
+ * @brief Send a backconnect request
+ *
+ * This function will send a backconnect message.
+ *
+ * @param [in] precon  precon pointer
+ * @param [in] con     connection pointer
+ * @param [in] type    type of the message
+ */
+static void pscom_precon_send_PSCOM_INFO_CON_INFO_rrc(pscom_precon_t *precon,
+                                                      pscom_con_t *con,
+                                                      int type)
+{
+    pscom_info_con_info_version_t msg_con_info_version;
+    assert(con);
+    assert(con->magic == MAGIC_CONNECTION);
+    pscom_sock_t *sock = get_sock(con->pub.socket);
+    assert(precon->magic == MAGIC_PRECON);
+
+    /* Send supported versions */
+    msg_con_info_version.version.ver_from = VER_FROM;
+    msg_con_info_version.version.ver_to   = VER_TO;
+
+    /* Send connection information */
+    pscom_con_info(con, &msg_con_info_version.con_info);
+    msg_con_info_version.source_sockid = sock->id;
+    msg_con_info_version.con_info.rrcomm.remote_sockid =
+        con->pub.remote_con_info.rrcomm.remote_sockid;
+
+    DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", precon,
+           pscom_con_str(&con->pub));
+    pscom_err_t ret = pscom_precon_send(precon, type, &msg_con_info_version,
+                                        sizeof(msg_con_info_version));
+    assert(ret == PSCOM_SUCCESS);
 }
 
 
@@ -304,26 +377,27 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
     pscom_sock_t *sock          = NULL;
     pscom_con_info_t *con_info  = NULL;
     uint32_t remote_sockid;
+    uint32_t local_sockid;
     pscom_info_con_info_version_t *msg = NULL;
 
-    // Obtain socket when there is no connection yet
+    /* Obtain socket when there is no connection yet */
     if (!con) {
         msg = data;
         assert(msg);
-        con_info      = &msg->con_info;
-        remote_sockid = msg->con_info.rrcomm.remote_sockid;
+        con_info     = &msg->con_info;
+        /* the received remote sockid is the sockid at the recv side. */
+        local_sockid = msg->con_info.rrcomm.remote_sockid;
 
         struct list_head *pos;
         list_for_each (pos, &pscom.sockets) {
             pscom_sock_t *temp_sock = list_entry(pos, pscom_sock_t, next);
-            if (temp_sock->id == remote_sockid) {
+            if (temp_sock->id == local_sockid) {
                 sock = temp_sock;
                 break;
             }
         }
-    }
-    // Obtain socket from con
-    else {
+    } else {
+        /* get socket from con */
         sock = get_sock(con->pub.socket);
     }
     /* ensure that we have found one sock */
@@ -334,16 +408,16 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
     case PSCOM_INFO_CON_INFO_VERSION: {
         msg                           = data;
         pscom_info_version_t *version = &msg->version;
-        uint32_t local_sockid         = msg->local_sockid;
-        remote_sockid                 = msg->con_info.rrcomm.remote_sockid;
+        remote_sockid                 = msg->source_sockid;
+        local_sockid                  = msg->con_info.rrcomm.remote_sockid;
 
         assert(size == sizeof(*msg));
         pscom_check_VERSION(version, con);
 
-        if (!con) { // Accepting side of the connection
+        if (!con) { /* Accepting side of the connection */
             con                            = pscom_con_create(sock);
-            con->state.internal_connection = 1; // until the user gets a handle
-                                                // to con (via con->on_accept)
+            /* until the user gets a handle to con (via con->on_accept) */
+            con->state.internal_connection = 1;
             con->pub.state                 = PSCOM_CON_STATE_ACCEPTING;
             con->pub.remote_con_info       = msg->con_info;
 
@@ -357,7 +431,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
             pscom_precon_recv_start(pre_rrc->precon);
 
             pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
-                con, PSCOM_INFO_CON_INFO_VERSION, remote_sockid, local_sockid);
+                con, PSCOM_INFO_CON_INFO_VERSION, local_sockid, remote_sockid);
             /* this should only happen for direct connection;
              * for ONDEMAND, it should not be possible */
             if (pre_rrc->con->pub.type != PSCOM_CON_TYPE_ONDEMAND) {
@@ -378,7 +452,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
         assert(!con);
         pscom_info_version_t *version = &msg->version;
 
-        // Search for an existing matching connection
+        /* Search for an existing matching connection */
         con = pscom_ondemand_find_con(sock, con_info->name);
 
         if (con && con->pub.type == PSCOM_CON_TYPE_ONDEMAND) {
@@ -407,13 +481,13 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
     case PSCOM_INFO_CON_INFO_VERSION_DEMAND: {
         msg                           = data;
         pscom_info_version_t *version = &msg->version;
-        uint32_t local_sockid         = msg->local_sockid;
-        remote_sockid                 = msg->con_info.rrcomm.remote_sockid;
+        remote_sockid                 = msg->source_sockid;
+        local_sockid                  = msg->con_info.rrcomm.remote_sockid;
 
         assert(size == sizeof(*msg));
         pscom_check_VERSION(version, con);
 
-        // Search for the existing matching connection
+        /* Search for the existing matching connection */
         con = pscom_ondemand_get_con(sock, msg->con_info.name);
         if (con) {
 
@@ -441,8 +515,8 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
             /* Send INFO_CON_INFO_VERSION if not provided by backconnect yet */
             if (!pre_rrc->info_sent) {
                 pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
-                    con, PSCOM_INFO_CON_INFO_VERSION, remote_sockid,
-                    local_sockid);
+                    con, PSCOM_INFO_CON_INFO_VERSION, local_sockid,
+                    remote_sockid);
             }
 
             pre_rrc->precon->plugin = NULL;
@@ -474,7 +548,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
             /* Use asynchronous handshake */
             con->precon->plugin->con_handshake(con, type, data, size);
         } else {
-            // Unknown or disabled arch or con_init fail. Try next arch.
+            /* Unknown or disabled arch or con_init fail. Try next arch. */
             pscom_precon_send_PSCOM_INFO_ARCH_NEXT(con->precon);
         }
         break;
@@ -494,7 +568,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
                     pscom_precon_recv_stop(pre_rrc->precon);
                 }
             } else {
-                // Failed locally before. Handle OK like an ARCH_NEXT
+                /* Failed locally before. Handle OK like an ARCH_NEXT */
                 if (type == PSCOM_INFO_ARCH_OK) {
                     plugin_connect_next(pre_rrc->con);
                 }
@@ -527,6 +601,159 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
 
 
 /**
+ * @brief Enqueue a resend request when sending fails
+ *
+ * This function will enqueue a resend request when a resend signal is
+ * obtained due to the destination is not ready yet. If so the message will be
+ * resent in `do_write` after the specified delay.
+ *
+ * @param [in] jobid   current job ID of the process
+ * @param [in] dest    destination to resend the message
+ */
+static int pscom_enqueue_message(int dest, PStask_ID_t jobid)
+{
+    pscom_global_rrc_t *global_rrc =
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
+
+    struct list_head *pos;
+    /* Obtain the precon associated to this resend signal */
+    list_for_each (pos, &pscom_precon_provider->precon_list) {
+        pscom_precon_t *precon = list_entry(pos, pscom_precon_t, next);
+        pscom_precon_rrc_t *pre_rrc = (pscom_precon_rrc_t *)&precon->precon_data;
+        pscom_con_t *con = pre_rrc->con;
+        assert(con);
+
+        if (con->pub.remote_con_info.rank == dest &&
+            con->pub.remote_con_info.rrcomm.jobid == (uint64_t)jobid) {
+            /* Still more retries? */
+            if (!pscom.env.rrc_resend_times || pre_rrc->resend_times) {
+                /* create a resend req for this precon */
+                pscom_resend_request_t *resend = (pscom_resend_request_t *)
+                    malloc(sizeof(pscom_resend_request_t));
+                assert(resend);
+                /* get the start time stamp */
+                gettimeofday(&resend->start_time, NULL);
+                resend->jobid    = jobid;
+                resend->dest     = dest;
+                resend->msg_type = pre_rrc->msg_type;
+                resend->precon   = precon;
+
+                /* Append it to the list of resends */
+                INIT_LIST_HEAD(&resend->next);
+                assert(list_empty(&resend->next));
+
+                list_add_tail(&resend->next, &resend_requests);
+                resend_count++;
+
+                /* Set POLLOUT event until all resends have been finished */
+                ufd_event_set(&pscom.ufd, &global_rrc->ufd_info, POLLOUT);
+                return PSCOM_SUCCESS;
+            } else {
+                DPRINT(D_ERR, "RRC resend (%ld,%d): maximum retries reached\n",
+                       jobid, dest);
+                return PSCOM_ERR_STDERROR;
+            }
+        }
+    }
+    DPRINT(D_ERR, "RRC resend (%ld,%d): precon is not found for the resend \n",
+           jobid, dest);
+    return PSCOM_ERR_STDERROR;
+}
+
+
+/**
+ * @brief Resend a message when obtaining a resend signal
+ *
+ * This function will resend a message when we obtain a
+ * resend signal after the specified delay.
+ *
+ * @param [in] ufd       ufd pointer
+ * @param [in] ufd_info  ufd_info pointer
+ */
+static void pscom_precon_do_write_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
+{
+    pscom_global_rrc_t *global_rrc =
+        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
+
+    struct list_head *pos, *next;
+
+    /* only one thread is allowed to do the resend */
+    list_for_each_safe (pos, next, &resend_requests) {
+        pscom_resend_request_t *resend = list_entry(pos, pscom_resend_request_t,
+                                                    next);
+
+        /* get current timestamp */
+        struct timeval time;
+        gettimeofday(&time, NULL);
+
+        /* resend signal timestamp */
+        double st = (double)resend->start_time.tv_sec +
+                    (double)resend->start_time.tv_usec / 1e6;
+        /* Current timestamp */
+        double ct = (double)time.tv_sec + (double)time.tv_usec / 1e6;
+
+        /* Delay threshold reached? */
+        if (ct - st > (double)(pscom.env.rrc_resend_delay / 1e6)) {
+            pscom_precon_t *precon = resend->precon;
+            assert(precon->magic == MAGIC_PRECON);
+
+            pscom_precon_rrc_t *pre_rrc = (pscom_precon_rrc_t *)
+                                              resend->precon->precon_data;
+
+
+            if (pre_rrc->msg_type == PSCOM_INFO_CON_INFO_VERSION ||
+                pre_rrc->msg_type == PSCOM_INFO_CON_INFO_VERSION_DEMAND) {
+                /* Resend the INFO_VERSION message */
+                assert(pre_rrc->resend_times || !pscom.env.rrc_resend_times);
+                pre_rrc->resend_times--;
+                pscom_con_t *con = pre_rrc->con;
+                assert(con);
+                pscom_sock_t *sock = get_sock(con->pub.socket);
+
+                DPRINT(D_ERR, "resend message to %d, %ld, type %s\n",
+                       resend->dest, resend->jobid,
+                       pscom_info_type_str(resend->msg_type));
+
+                pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
+                    con, pre_rrc->msg_type, sock->id,
+                    con->pub.remote_con_info.rrcomm.remote_sockid);
+
+            } else if (pre_rrc->msg_type == PSCOM_INFO_BACK_CONNECT) {
+                /* Resend the BACK_CONNECT message */
+                assert(pre_rrc->resend_times || !pscom.env.rrc_resend_times);
+                pre_rrc->resend_times--;
+
+                DPRINT(D_ERR,
+                       "resend message to %d, %ld, type %s, send done %d\n",
+                       resend->dest, resend->jobid,
+                       pscom_info_type_str(resend->msg_type),
+                       pre_rrc->info_sent);
+
+                /* due to the delay, the con_info may be already sent to the
+                 * target, then the sending back_connect and con_info is not
+                 * needed. */
+                if (!pre_rrc->info_sent) {
+                    pscom_precon_send_PSCOM_INFO_CON_INFO_rrc(
+                        precon, pre_rrc->con, PSCOM_INFO_BACK_CONNECT);
+                }
+            }
+
+            /* Remove this resend from the list as it has been already resent */
+            list_del(&resend->next);
+            resend_count--;
+            free(resend);
+        }
+    }
+
+    /* Stop POLLOUT once there are no more pending resends */
+    if (list_empty(&resend_requests)) {
+        assert(resend_count == 0);
+        ufd_event_clr(&pscom.ufd, &global_rrc->ufd_info, POLLOUT);
+    }
+}
+
+
+/**
  * @brief Receive message via RRComm.
  *
  * This function receives a message and handles it
@@ -541,17 +768,48 @@ static void pscom_precon_do_read_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
     int rank;
     PStask_ID_t jobid;
-    char *recv = (char *)malloc(MAX_SIZE);
+    /* the messages sent and received should not be larger than max_buf_size.
+     * The payload information (libverbs, ucx, portals4) may excceed this limit
+     */
+    char *recv = (char *)malloc(max_buf_size);
     assert(recv);
 
     /* Read the package and store it in recv buffer */
-    int len = (int)RRC_recvX(&jobid, &rank, recv, MAX_SIZE);
+    ssize_t len = RRC_recvX(&jobid, &rank, recv, max_buf_size);
 
-    /* Handle a possible error */
+    /* the buffer is smaller than the message, len is the actual message size
+     * and RRComm will keep the message*/
+    while (len > max_buf_size) {
+        /* change the max_buf_size */
+        max_buf_size = len + 1;
+        recv         = (char *)realloc(recv, max_buf_size);
+        assert(recv);
+        /* RRC_recvX() shall be called again with an adapted buffer size to
+         * actually receive the message. */
+        len = RRC_recvX(&jobid, &rank, recv, max_buf_size);
+    }
+
+    /* Handle a resend signal or a possible error */
     if (len < 0) {
-        /* Print error and exit */
-        DPRINT(D_ERR, "RRC_recvX(%d) failed with error: %m\n", rank);
-        _exit(112); // terminate
+        /* This is a resend signal with errno=0, then resend the message */
+        if (!errno) {
+            /* enqueue resend request and start resending with a delay */
+            DPRINT(D_ERR, "RRC_sendX(%d) with job %ld failed. Resending it!\n",
+                   rank, (int64_t)jobid);
+            int ret = pscom_enqueue_message(rank, jobid);
+            if (ret == PSCOM_SUCCESS) {
+                return;
+            } else {
+                DPRINT(D_ERR, "RRC_recvX(%ld, %d): resend failed!\n", jobid,
+                       rank);
+                _exit(-1);
+            }
+        } else {
+            /* Print error and exit */
+            DPRINT(D_ERR, "RRC_recvX(%ld,%d) failed with error: %s\n", jobid,
+                   rank, strerror(errno));
+            _exit(112);
+        }
     }
 
     pscom_info_rrc_t *rrcomm = (pscom_info_rrc_t *)recv;
@@ -580,8 +838,9 @@ static void pscom_precon_assign_fd_rrc(void)
     pscom_global_rrc_t *global_rrc =
         (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
-    global_rrc->ufd_info.fd       = global_rrc->rrcomm_fd;
-    global_rrc->ufd_info.can_read = pscom_precon_do_read_rrc;
+    global_rrc->ufd_info.fd        = global_rrc->rrcomm_fd;
+    global_rrc->ufd_info.can_read  = pscom_precon_do_read_rrc;
+    global_rrc->ufd_info.can_write = pscom_precon_do_write_rrc;
 
     ufd_add(&pscom.ufd, &global_rrc->ufd_info);
 }
@@ -610,56 +869,20 @@ static void pscom_precon_handshake_rrc(pscom_precon_t *precon,
     if (pre_rrc->con && (pre_rrc->con->pub.state & PSCOM_CON_STATE_CONNECTING)) {
         int on_demand = (pre_rrc->con->pub.type == PSCOM_CON_TYPE_ONDEMAND);
         if (on_demand) {
-            pre_rrc->type           = PSCOM_INFO_CON_INFO_VERSION_DEMAND;
+            pre_rrc->msg_type       = PSCOM_INFO_CON_INFO_VERSION_DEMAND;
             pre_rrc->con->pub.state = PSCOM_CON_STATE_CONNECTING_ONDEMAND;
         } else {
-            pre_rrc->type           = PSCOM_INFO_CON_INFO_VERSION;
+            pre_rrc->msg_type       = PSCOM_INFO_CON_INFO_VERSION;
             pre_rrc->con->pub.state = PSCOM_CON_STATE_CONNECTING;
         }
 
         pre_rrc->remote_jobid = jobid;
         pre_rrc->remote_con   = NULL;
         pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(pre_rrc->con,
-                                                          pre_rrc->type,
+                                                          pre_rrc->msg_type,
                                                           local_sockid,
                                                           remote_sockid);
     }
-}
-
-
-/**
- * @brief Send a backconnect request
- *
- * This function will send a backconnect message.
- *
- * @param [in] precon  precon pointer
- * @param [in] con     connection pointer
- * @param [in] type    type of the message
- */
-static void pscom_precon_send_PSCOM_INFO_CON_INFO_rrc(pscom_precon_t *precon,
-                                                      pscom_con_t *con,
-                                                      int type)
-{
-    pscom_info_con_info_version_t msg_con_info_version;
-    pscom_sock_t *sock = get_sock(con->pub.socket);
-    assert(precon->magic == MAGIC_PRECON);
-    assert(con);
-    assert(con->magic == MAGIC_CONNECTION);
-
-    /* Send supported versions */
-    msg_con_info_version.version.ver_from = VER_FROM;
-    msg_con_info_version.version.ver_to   = VER_TO;
-
-    /* Send connection information */
-    pscom_con_info(con, &msg_con_info_version.con_info);
-    msg_con_info_version.local_sockid = sock->id;
-    msg_con_info_version.con_info.rrcomm.remote_sockid =
-        con->pub.remote_con_info.rrcomm.remote_sockid;
-
-    DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", precon,
-           pscom_con_str(&con->pub));
-    pscom_precon_send(precon, type, &msg_con_info_version,
-                      sizeof(msg_con_info_version));
 }
 
 
@@ -685,7 +908,7 @@ static void pscom_precon_ondemand_backconnect_rrc(pscom_con_t *con)
     pscom_precon_rrc_t *pre_rrc = (pscom_precon_rrc_t *)&precon->precon_data;
     if (start_receiver) { pscom_precon_recv_start(precon); }
 
-    pre_rrc->type         = PSCOM_INFO_BACK_CONNECT;
+    pre_rrc->msg_type     = PSCOM_INFO_BACK_CONNECT;
     pre_rrc->remote_con   = NULL;
     pre_rrc->con          = con;
     pre_rrc->remote_jobid = con->pub.remote_con_info.rrcomm.jobid;
@@ -728,11 +951,11 @@ static pscom_err_t pscom_precon_connect_rrc(pscom_con_t *con)
 
     return PSCOM_SUCCESS;
     /* --- */
-// err_init_failed:
+
 err_connect:
     if (errno != ENOPROTOOPT) {
-        // if (errno == ENOPROTOOPT) _plugin_connect_next() already called
-        // pscom_con_setup_failed().
+        /* if (errno == ENOPROTOOPT) _plugin_connect_next() already called
+         * pscom_con_setup_failed(). */
         pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
     }
     return PSCOM_ERR_STDERROR;
@@ -750,6 +973,9 @@ static void pscom_precon_provider_init_rrc(void)
 {
     pscom_global_rrc_t *global_rrc;
 
+    pscom_env_table_register_and_parse("pscom PRECON_RRCOMM", "PRECON_RRCOMM_",
+                                       pscom_env_table_precon_rrc);
+
     /* Initialize RRcomm */
     int fd = RRC_init();
 
@@ -766,7 +992,11 @@ static void pscom_precon_provider_init_rrc(void)
         _exit(1);
     }
 
-    // Assign memory for RRcomm sock variables
+    /* Init resend */
+    resend_count = 0;
+    INIT_LIST_HEAD(&resend_requests);
+
+    /* Assign memory for RRcomm sock variables */
     pscom_precon_provider->precon_provider_data = (void *)malloc(
         sizeof(pscom_global_rrc_t));
     assert(pscom_precon_provider->precon_provider_data);
@@ -774,13 +1004,13 @@ static void pscom_precon_provider_init_rrc(void)
                      pscom_precon_provider->precon_provider_data;
     memset(global_rrc, 0, sizeof(pscom_global_rrc_t));
 
-    // Assign RRcomm file descriptor
+    /* Assign RRcomm file descriptor */
     global_rrc->rrcomm_fd = fd;
-    // Initialize user counter of listener
+    /* Initialize user counter of listener */
     global_rrc->user_cnt  = 0;
-    // Initialize listener counter
+    /* Initialize listener counter */
     global_rrc->active    = 0;
-    // Assign RRcomm file descriptor
+    /* Assign RRcomm file descriptor */
     pscom_precon_assign_fd_rrc();
 }
 
@@ -797,19 +1027,43 @@ static void pscom_precon_provider_destroy_rrc(void)
     pscom_global_rrc_t *global_rrc =
         (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
-    // Ensure that precon_list is empty
+    /* check if precon_list is empty */
+    if (!list_empty(&pscom_precon_provider->precon_list)) {
+        struct list_head *pos, *next;
+        /* Obtain the precon associated to this resend signal */
+        list_for_each_safe (pos, next, &pscom_precon_provider->precon_list) {
+            pscom_precon_t *precon = list_entry(pos, pscom_precon_t, next);
+            pscom_precon_rrc_t *pre_rrc =
+                (pscom_precon_rrc_t *)&precon->precon_data;
+            DPRINT(D_ERR,
+                   "precon(%p): local jobid %ld, remote jobid %ld, user_cnt:%d "
+                   "active_cnt:%d recv done?:%s precon "
+                   "count:%u \n",
+                   pre_rrc, pre_rrc->local_jobid, pre_rrc->remote_jobid,
+                   global_rrc->user_cnt, global_rrc->active,
+                   pre_rrc->recv_done ? "yes" : "no",
+                   pscom_precon_provider->precon_count);
+            /* Remove precon from the list */
+            assert(precon->magic == MAGIC_PRECON);
+            pscom_precon_provider->cleanup(precon);
+            list_del_init(&precon->next);
+            pscom_precon_provider->precon_count--;
+            // free space
+            free(precon);
+        }
+    }
     assert(list_empty(&pscom_precon_provider->precon_list));
     assert(!pscom_precon_provider->precon_count);
 
-    // Ensure that connection and listener counters are 0
+    /* Ensure that connection and listener counters are 0 */
     assert(!global_rrc->user_cnt);
 
-    // Delete RRcomm ufd_info
+    /* Delete RRcomm ufd_info */
     ufd_del(&pscom.ufd, &global_rrc->ufd_info);
-    // Destroy sock rrcomm struct
+    /* Destroy sock rrcomm struct */
     free(global_rrc);
 
-    // finalize RRcomm for this socket
+    /* finalize RRcomm for this socket */
     RRC_finalize();
 }
 
@@ -945,12 +1199,12 @@ static pscom_err_t pscom_sock_start_listen_rrc(pscom_sock_t *sock, int portno)
     pscom_global_rrc_t *global_rrc =
         (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
-    // Avoid error in `_pscom_con_connect_ondemand`
+    /* Avoid error in `_pscom_con_connect_ondemand` to check portno */
     sock->pub.listen_portno                       = 0;
     sock->pub.local_con_info.rrcomm.jobid         = RRC_getJobID();
     sock->pub.local_con_info.rrcomm.remote_sockid = 0;
 
-    // Start receiver
+    /* Start receiver */
     if (global_rrc->active == 0 && !global_rrc->user_cnt) {
         ufd_event_set(&pscom.ufd, &global_rrc->ufd_info, POLLIN);
     }
@@ -972,7 +1226,7 @@ static void pscom_sock_stop_listen_rrc(pscom_sock_t *sock)
     pscom_global_rrc_t *global_rrc =
         (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
-    // this will be called when sock is closed, active may already be 0
+    /* this will be called when sock is closed, active may already be 0 */
     if (global_rrc->active == 0) { return; }
 
     assert(global_rrc->active > 0);
@@ -1058,8 +1312,8 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
             DPRINT(D_ERR, "ep_str format error, rank information empty.");
             goto err_invalid_ep_str;
         }
-
-        *colon = '\0'; // temp cut
+        /* temp cut*/
+        *colon = '\0';
 
         errno = 0;
         val   = strtol(p, &endptr, 10);
@@ -1073,7 +1327,8 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
         }
         con_info->rank = (int)val;
 
-        p = colon + 1; // move to next segment
+        /* move to next segment */
+        p = colon + 1;
 
         /* jobid */
         colon = strchr(p, ':');
@@ -1085,8 +1340,8 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
             DPRINT(D_ERR, "ep_str format error, jobid information empty.");
             goto err_invalid_ep_str;
         }
-
-        *colon = '\0'; // temp cut
+        /* temp cut*/
+        *colon = '\0';
 
         errno = 0;
         val   = strtol(p, &endptr, 10);
@@ -1096,7 +1351,8 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
         }
         con_info->rrcomm.jobid = (uint64_t)val;
 
-        p = colon + 1; // move to next segment
+        /* move to next segment */
+        p = colon + 1;
 
         /* sockid */
         colon = strchr(p, ':');
@@ -1108,11 +1364,10 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
             DPRINT(D_ERR, "ep_str format error, sockid information empty.");
             goto err_invalid_ep_str;
         }
-
-        *colon = '\0'; // temp cut
-
-        errno = 0;
-        val   = strtol(p, &endptr, 10);
+        /* temp cut*/
+        *colon = '\0';
+        errno  = 0;
+        val    = strtol(p, &endptr, 10);
         if (errno != 0 || *endptr != '\0') {
             DPRINT(D_ERR, "sockid error:%d, %s", (int)val, p);
             goto err_invalid_ep_str;
@@ -1123,7 +1378,8 @@ static pscom_err_t pscom_parse_ep_info_rrc(const char *ep_str,
         }
         con_info->rrcomm.remote_sockid = (uint32_t)val;
 
-        p = colon + 1; // move to next segment
+        /* move to next segment */
+        p = colon + 1;
 
         /* name */
         char *name = p;
