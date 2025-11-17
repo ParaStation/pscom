@@ -17,7 +17,7 @@
 #include "pscom.h"
 #include "pscom_priv.h"
 #include "pscom_sock.h"
-#include "pscom_precon.h"
+#include "test_utils_provider.h"
 
 
 int setup_dummy_sock(void **state)
@@ -27,8 +27,8 @@ int setup_dummy_sock(void **state)
     INIT_LIST_HEAD(&pscom.sockets);
     INIT_LIST_HEAD(&pscom.recvq_any_global);
 
-    /* init precon provider */
-    pscom_precon_provider_init();
+    /* init precon provider with tcp*/
+    setup_dummy_provider("tcp");
 
     new_sock = pscom_sock_create(0, 0, PSCOM_RANK_UNDEFINED,
                                  PSCOM_SOCK_FLAG_INTRA_JOB);
@@ -43,6 +43,9 @@ int teardown_dummy_sock(void **state)
     pscom_sock_t *sock = (pscom_sock_t *)(*state);
     pscom_sock_unset_id(sock);
     free(sock);
+
+    /* destroy provider */
+    teardown_dummy_provider();
 
     return 0;
 }
