@@ -260,6 +260,7 @@ test/mocks/misc_mocks.c \
 test/mocks/misc_mocks.h \
 test/mocks/portals4_mocks.c \
 test/mocks/portals4_mocks.h \
+test/mocks/rrcomm_mocks.c \
 test/mocks/ucx_mocks.c \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
@@ -275,6 +276,8 @@ test/pscom/test_plugin.c \
 test/pscom/test_plugin.h \
 test/pscom/test_precon.c \
 test/pscom/test_precon.h \
+test/pscom/test_rrcomm.c \
+test/pscom/test_rrcomm.h \
 test/pscom/test_ufd.c \
 test/pscom/test_ufd.h \
 test/pscom/test_version.c \
@@ -295,6 +298,8 @@ test/util/test_utils_env.c \
 test/util/test_utils_env.h \
 test/util/test_utils_listen.c \
 test/util/test_utils_listen.h \
+test/util/test_utils_provider.c \
+test/util/test_utils_provider.h \
 test/util/test_utils_sock.c \
 test/util/test_utils_sock.h \
 test/util/test_utils_ufd.c \
