@@ -33,11 +33,8 @@ struct ufd_info_s {
 
     void (*can_read)(ufd_t *ufd, ufd_info_t *ufd_info); /**< can_read() function
                                                            pointer */
-    void (*can_write)(ufd_t *ufd, ufd_info_t *ufd_info);        /**< can_write()
-                                                                   function pointer */
-    int (*poll)(ufd_t *ufd, ufd_info_t *ufd_info, int timeout); /**< poll()
-                                                                   function
-                                                                   pointer */
+    void (*can_write)(ufd_t *ufd, ufd_info_t *ufd_info); /**< can_write()
+                                                            function pointer */
 
     void *priv; /**< free usage */
 };

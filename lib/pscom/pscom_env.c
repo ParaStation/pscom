@@ -116,6 +116,15 @@ static pscom_env_table_entry_t pscom_env_table[] = {
      &pscom.env.shutdown_timeout, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
      PSCOM_ENV_PARSER_UINT},
 
+    {"DEADLOCK_WARNINGS", "0",
+     "Maximal number of warnings after the first deadlock detection. Each "
+     "warning sleeps for 1 second. When max number of warnings is reached, "
+     "pscom will be terminated with exit status 112. A value of 0 means direct "
+     "termination on first deadlock detection. A value of -1 means no "
+     "termination on detected deadlock.",
+     &pscom.env.deadlock_warnings, PSCOM_ENV_ENTRY_FLAGS_EMPTY,
+     PSCOM_ENV_PARSER_UINT},
+
     {"GUARD", "0",
      "Enable/disable the connection guards for the detection of failing "
      "peer processes",
