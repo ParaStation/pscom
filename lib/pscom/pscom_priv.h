@@ -953,15 +953,11 @@ void pscom_listener_init(struct pscom_listener *listener,
                          void *priv);
 void pscom_listener_set_fd(struct pscom_listener *listener, int fd);
 int pscom_listener_get_fd(struct pscom_listener *listener);
-/* keep fd open, until user_cnt == 0 */
-void pscom_listener_user_inc(struct pscom_listener *listener);
-void pscom_listener_user_dec(struct pscom_listener *listener);
 /* active listening on fd */
 void pscom_listener_active_inc(struct pscom_listener *listener);
 void pscom_listener_active_dec(struct pscom_listener *listener);
-/* suspend/ resume for listening */
-void pscom_listener_resume(struct pscom_listener *listener);
-void pscom_listener_suspend(struct pscom_listener *listener);
+/* close fd when sock is closed (tcp) */
+void pscom_listener_close_fd(struct pscom_listener *listener);
 
 static inline void _pscom_con_ref_hold(pscom_con_t *con)
 {

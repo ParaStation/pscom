@@ -79,9 +79,10 @@ retry:
         pscom_con_close(con);
     }
 
+
     pscom_precon_provider->stop_listen(sock);
-    // todo: listen_portno is forced to set to 1, if not, for rrcomm there will
-    // be a retry dead loop.
+    pscom_listener_close_fd(&sock->listen);
+    // set to -1 after we close this port and fd
     sock->pub.listen_portno = -1;
 
     // Wait until all connections are closed. If there is no progress made
@@ -567,7 +568,7 @@ void pscom_suspend_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_precon_provider->listener_suspend(&sock->listen);
+        pscom_precon_provider->suspend_listen(sock);
     }
     pscom_unlock();
 }
@@ -580,7 +581,9 @@ void pscom_resume_listen(pscom_socket_t *socket)
     {
         pscom_sock_t *sock = get_sock(socket);
         assert(sock->magic == MAGIC_SOCKET);
-        pscom_precon_provider->listener_resume(&sock->listen);
+        /* ensure that socket has a valid portno */
+        assert(sock->pub.listen_portno != -1);
+        pscom_precon_provider->resume_listen(sock, sock->pub.listen_portno);
     }
     pscom_unlock();
 }

@@ -239,9 +239,8 @@ static void pscom_dump_connections(FILE *out, pscom_sock_t *sock)
 
 static void pscom_dump_socket(FILE *out, pscom_sock_t *sock)
 {
-    fprintf(out, "  sock#%p listen:%6d demand:%4d(%4d)  src:%s anyrecv:%6u\n",
-            &sock->pub, sock->pub.listen_portno, sock->listen.usercnt,
-            sock->listen.activecnt,
+    fprintf(out, "  sock#%p listen:%6d demand:%4d  src:%s anyrecv:%6u\n",
+            &sock->pub, sock->pub.listen_portno, sock->listen.activecnt,
             pscom_con_info_str(&sock->pub.local_con_info),
             sock->recv_req_cnt_any);
     pscom_dump_connections(out, sock);

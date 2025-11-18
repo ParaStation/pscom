@@ -14,8 +14,9 @@
 #include "pscom_types.h"
 
 void start_listen(pscom_sock_t *sock);
+void stop_listen(pscom_sock_t *sock);
+void restart_listen(pscom_sock_t *sock, int portno);
 void suspend_listen(pscom_sock_t *sock);
 void resume_listen(pscom_sock_t *sock);
-void stop_listen(pscom_sock_t *sock);
 
 #endif /* _PSCOM_UTIL_LISTEN_H_ */

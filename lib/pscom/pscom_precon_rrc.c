@@ -982,52 +982,6 @@ static void pscom_sock_stop_listen_rrc(pscom_sock_t *sock)
     }
 }
 
-/**
- * @brief Resume listener
- *
- * Add `ufd_info` back to the pscom ufd list and
- * start listening again. It must be used
- * in pair with `pscom_listener_suspend()`.
- *
- * @param [in]  listener   pscom listener
- */
-static void pscom_listener_resume_rrc(struct pscom_listener *listener)
-{
-    pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
-
-    // todo: for now suspend/resume only controls `active` counter, more tests
-    // are needed
-    if (global_rrc->active == 0 && !global_rrc->user_cnt) {
-        ufd_event_set(&pscom.ufd, &global_rrc->ufd_info, POLLIN);
-    }
-    global_rrc->active++;
-}
-
-
-/**
- * @brief Resume listener
- *
- * Remove `ufd_info` from the pscom ufd list
- * and stop listening. The fd is not closed!
- * Use `pscom_listener_resume()` to start listening again.
- *
- * @param [in]  listener   pscom listener
- */
-static void pscom_listener_suspend_rrc(struct pscom_listener *listener)
-{
-    pscom_global_rrc_t *global_rrc =
-        (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
-
-    // todo: for now suspend/resume only controls `active` counter, more tests
-    // are needed
-    assert(global_rrc->active > 0);
-    global_rrc->active--;
-    if (global_rrc->active == 0 && !global_rrc->user_cnt) {
-        ufd_event_clr(&pscom.ufd, &global_rrc->ufd_info, POLLIN);
-    }
-}
-
 
 /**
  * @brief Obtain information from a socket
@@ -1282,16 +1236,6 @@ int pscom_precon_is_starting_peer_rrc(pscom_con_t *con)
 }
 
 
-static void pscom_listener_user_inc_rrc(struct pscom_listener *listener)
-{
-}
-
-
-static void pscom_listener_user_dec_rrc(struct pscom_listener *listener)
-{
-}
-
-
 pscom_precon_provider_t pscom_provider_rrc = {
     .init                    = pscom_precon_provider_init_rrc,
     .destroy                 = pscom_precon_provider_destroy_rrc,
@@ -1312,10 +1256,8 @@ pscom_precon_provider_t pscom_provider_rrc = {
     .start_listen            = pscom_sock_start_listen_rrc,
     .stop_listen             = pscom_sock_stop_listen_rrc,
     .ondemand_backconnect    = pscom_precon_ondemand_backconnect_rrc,
-    .listener_suspend        = pscom_listener_suspend_rrc,
-    .listener_resume         = pscom_listener_resume_rrc,
+    .suspend_listen          = pscom_sock_stop_listen_rrc,
+    .resume_listen           = pscom_sock_start_listen_rrc,
     .listener_active_inc     = pscom_listener_active_inc_rrc,
     .listener_active_dec     = pscom_listener_active_dec_rrc,
-    .listener_user_inc       = pscom_listener_user_inc_rrc,
-    .listener_user_dec       = pscom_listener_user_dec_rrc,
 };

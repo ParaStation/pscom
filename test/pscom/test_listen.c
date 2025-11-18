@@ -27,8 +27,7 @@
  * @brief Test starting and stopping of listening on pscom socket
  *
  * Given: Open pscom socket
- * When: Start listening prior to connection setup, stop listening after
- * connection setup
+ * When: Start listening on a socket and stop listening
  * Then: All internal counters and the file descriptor of the listener must have
  * the correct values
  */
@@ -47,10 +46,60 @@ void test_start_stop_listen_anyport(void **state)
 
     /* Both counters must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
-    assert_true(dummy_sock->listen.usercnt == 0);
 
-    /* No fd anymore */
+    /* Listener should NOT be listening for incoming connections anymore */
+    assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Manually close fd before closing to test this function */
+    pscom_listener_close_fd(&dummy_sock->listen);
+
+    /* No fd */
     assert_true(dummy_sock->listen.ufd_info.fd == -1);
+
+    /* Close the socket */
+    pscom_sock_close(dummy_sock);
+}
+
+
+/**
+ * @brief Test stopping and restarting of listening on pscom socket
+ *
+ * Given: Open pscom socket
+ * When: Start listening on a socket and stop listening then restart listening
+ * and stop listening.
+ * Then: All internal counters and the file descriptor of the listener must have
+ * the correct values
+ */
+void test_restart_listen_anyport(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* Start ufd */
+    ufd_init(&pscom.ufd);
+
+    /* Test start listening on socket */
+    start_listen(dummy_sock);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* activecnt must be reset to 0 */
+    assert_true(dummy_sock->listen.activecnt == 0);
+
+    /* Listener should NOT be listening for incoming connections anymore */
+    assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* restart listening with the any port */
+    restart_listen(dummy_sock, PSCOM_ANYPORT);
+
+    /* activecnt must be 1 */
+    assert_true(dummy_sock->listen.activecnt == 1);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* Both counters must be reset to 0 */
+    assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Listener should NOT be listening for incoming connections anymore */
     assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
@@ -58,6 +107,107 @@ void test_start_stop_listen_anyport(void **state)
     /* Close the socket */
     pscom_sock_close(dummy_sock);
 }
+
+
+/**
+ * @brief Test starting and stopping listening multiple times on pscom socket
+ *
+ * Given: Open pscom socket
+ * When: Start listening on a socket twice, and stop listening.
+ * Then: All internal counters and the file descriptor of the listener must have
+ * the correct values
+ */
+void test_start_listen_multiple(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* Start ufd */
+    ufd_init(&pscom.ufd);
+
+    /* Test start listening on socket */
+    start_listen(dummy_sock);
+
+    /* activecnt must be reset to 1 */
+    assert_true(dummy_sock->listen.activecnt == 1);
+
+    /* Test start listening on socket */
+    restart_listen(dummy_sock, PSCOM_ANYPORT);
+
+    /* listener is active, re-activate it will not increase activecnt */
+    assert_true(dummy_sock->listen.activecnt == 1);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* activecnt must be reset to 0 */
+    assert_true(dummy_sock->listen.activecnt == 0);
+
+    /* Listener should NOT be listening for incoming connections anymore */
+    assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Close the socket */
+    pscom_sock_close(dummy_sock);
+}
+
+
+/**
+ * @brief Test stopping and restarting of listening on pscom socket
+ *
+ * Given: Open pscom socket
+ * When: Start listening on a socket, stop listening then restart listening with
+ * the same `portno` and stop listening, finally restart listening with a
+ * different `portno` and stop listening
+ * Then: All internal counters and the file descriptor of the listener must have
+ * the correct values
+ */
+void test_restart_listen_specific_port(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+    int portno;
+
+    /* Start ufd */
+    ufd_init(&pscom.ufd);
+
+    /* Test start listening on socket */
+    start_listen(dummy_sock);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* store the portno of the socket */
+    portno = dummy_sock->pub.listen_portno;
+
+    /* restart listening with the same port */
+    restart_listen(dummy_sock, portno);
+
+    /* activecnt must be 1 */
+    assert_true(dummy_sock->listen.activecnt == 1);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* restart listening with a different port */
+    restart_listen(dummy_sock, portno + 1);
+
+    /* check if a new portno is assigned */
+    assert_true(dummy_sock->pub.listen_portno == portno + 1);
+
+    /* activecnt must be 1 */
+    assert_true(dummy_sock->listen.activecnt == 1);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* Both counters must be reset to 0 */
+    assert_true(dummy_sock->listen.activecnt == 0);
+
+    /* Listener should NOT be listening for incoming connections anymore */
+    assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Close the socket */
+    pscom_sock_close(dummy_sock);
+}
+
 
 /**
  * @brief Test starting and stopping of listening on a pscom socket where an
@@ -73,7 +223,6 @@ void test_start_stop_listen_ondemand(void **state)
 {
     pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
     unsigned int activecnt   = 0;
-    unsigned int usercnt     = 0;
 
     /* Start ufd */
     ufd_init(&pscom.ufd);
@@ -83,7 +232,9 @@ void test_start_stop_listen_ondemand(void **state)
 
     /* Save previous values for later comparison */
     activecnt = dummy_sock->listen.activecnt;
-    usercnt   = dummy_sock->listen.usercnt;
+
+    /* Check the active listen counter */
+    assert_true(activecnt == 1);
 
     /* Create a dummy ondemand connection */
     pscom_con_t *con = pscom_con_create(dummy_sock);
@@ -96,17 +247,11 @@ void test_start_stop_listen_ondemand(void **state)
 
     _pscom_con_connect_ondemand(con);
 
-    /* The counter for listen users must be increased by one due to the ondemand
-     * connection while the active listen counter must still be the same */
-    assert_true(dummy_sock->listen.usercnt == usercnt + 1 && usercnt + 1 == 2);
-    assert_true(dummy_sock->listen.activecnt == activecnt && activecnt == 1);
+    /* The active listen counter must still be the same */
+    assert_true(dummy_sock->listen.activecnt == activecnt);
 
     /* Test stop listening */
     stop_listen(dummy_sock);
-
-    /* There must still be the ondemand connection as a listen user */
-    assert_true(dummy_sock->listen.usercnt == 1);
-    assert_true(dummy_sock->listen.ufd_info.fd != -1);
 
     /* Listener should NOT be listening for incoming connections anymore */
     assert_true(dummy_sock->listen.activecnt == 0);
@@ -114,10 +259,6 @@ void test_start_stop_listen_ondemand(void **state)
 
     /* Close the connection */
     pscom_con_close(con);
-
-    /* The connection has been closed and fd and usercnt have been reset */
-    assert_true(dummy_sock->listen.usercnt == 0);
-    assert_true(dummy_sock->listen.ufd_info.fd == -1);
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
@@ -128,7 +269,7 @@ void test_start_stop_listen_ondemand(void **state)
  * ondemand connection is being attached and a receive request is being posted
  *
  * Given: Open pscom socket with an ondemand connection
- * When: Start listening prior to connection setup, posting a receivev reuqest
+ * When: Start listening prior to connection setup, post a receive request
  * after connection setup, and stop listening afterwards
  * Then: All internal counters and the file descriptor of the listener must have
  * the correct values
@@ -137,7 +278,6 @@ void test_start_stop_listen_ondemand_recv_req(void **state)
 {
     pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
     unsigned int activecnt   = 0;
-    unsigned int usercnt     = 0;
 
     /* Start ufd */
     ufd_init(&pscom.ufd);
@@ -158,7 +298,9 @@ void test_start_stop_listen_ondemand_recv_req(void **state)
 
     /* Save previous values for later comparison */
     activecnt = dummy_sock->listen.activecnt;
-    usercnt   = dummy_sock->listen.usercnt;
+
+    /* Check the active listen counter */
+    assert_true(activecnt == 1);
 
     /* Create a receive request and post it to the connection */
     pscom_request_t *req = pscom_request_create(0, 0);
@@ -166,37 +308,36 @@ void test_start_stop_listen_ondemand_recv_req(void **state)
     req->socket          = con->pub.socket;
     pscom_post_recv(req);
 
-    /* The counter for listen users must still be the same whereas the active
-     * counter must be increased by one due to the posting of the request */
-    assert_true(dummy_sock->listen.usercnt == usercnt && usercnt == 2);
-    assert_true(dummy_sock->listen.activecnt == activecnt + 1 &&
-                activecnt + 1 == 2);
+    /* The active counter must be increased by one due to the posting of the
+     * request */
+    assert_true(dummy_sock->listen.activecnt == activecnt + 1);
+
+    /* reduce activecnt by 1*/
+    con->read_stop(con);
+
+    /* The active counter is decreased by one due to read_stop */
+    assert_true(dummy_sock->listen.activecnt == activecnt);
 
     /* Save previous values again for later comparison */
     activecnt = dummy_sock->listen.activecnt;
-    usercnt   = dummy_sock->listen.usercnt;
 
     /* Test stop listening */
     stop_listen(dummy_sock);
 
-    /* There must still be the ondemand connection as a listen user */
-    assert_true(dummy_sock->listen.usercnt == usercnt && usercnt == 2);
-
     /* Listener should still be in active state for the receive request
        posted on the ondemand connection but decremented by one  */
-    assert_true(dummy_sock->listen.activecnt == activecnt - 1 &&
-                activecnt - 1 == 1);
+    assert_true(dummy_sock->listen.activecnt == activecnt - 1);
 
     /* Close the connection  */
     pscom_con_close(con);
 
     /* Both counters must be reset to 0 */
-    assert_true(dummy_sock->listen.usercnt == 0);
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
 }
+
 
 /**
  * @brief Suspend listening on pscom socket in between starting and stopping of
@@ -227,10 +368,6 @@ void test_suspend_listen(void **state)
 
     /* Both counters must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
-    assert_true(dummy_sock->listen.usercnt == 0);
-
-    /* No fd anymore */
-    assert_true(dummy_sock->listen.ufd_info.fd == -1);
 
     /* Listener should NOT be listening for incoming connections anymore */
     assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
@@ -276,10 +413,6 @@ void test_suspend_resume_listen(void **state)
 
     /* Both counters must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
-    assert_true(dummy_sock->listen.usercnt == 0);
-
-    /* No fd anymore */
-    assert_true(dummy_sock->listen.ufd_info.fd == -1);
 
     /* Listener should NOT be listening for incoming connections anymore */
     assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
@@ -331,20 +464,12 @@ void test_suspend_resume_listen_ondemand(void **state)
     /* Test stop listening on socket */
     stop_listen(dummy_sock);
 
-    /* There must still be the ondemand connection as a listen user */
-    assert_true(dummy_sock->listen.usercnt == 1);
-    assert_true(dummy_sock->listen.ufd_info.fd != -1);
-
     /* Listener should NOT be listening for incoming connections anymore */
     assert_true(dummy_sock->listen.activecnt == 0);
     assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
 
     /* Close the connection */
     pscom_con_close(con);
-
-    /* The connection has been closed and fd and usercnt have been reset */
-    assert_true(dummy_sock->listen.usercnt == 0);
-    assert_true(dummy_sock->listen.ufd_info.fd == -1);
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
@@ -368,6 +493,7 @@ void test_suspend_resume_listen_ondemand(void **state)
 void test_suspend_resume_listen_ondemand_recv_req(void **state)
 {
     pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+    unsigned int activecnt   = 0;
 
     /* Start ufd */
     ufd_init(&pscom.ufd);
@@ -386,17 +512,37 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
 
     _pscom_con_connect_ondemand(con);
 
+    /* Save previous values for later comparison */
+    activecnt = dummy_sock->listen.activecnt;
+
+    /* Check the active listen counter */
+    assert_true(activecnt == 1);
+
     /* Create a receive request and post it to the connection */
     pscom_request_t *req = pscom_request_create(0, 0);
     req->connection      = &con->pub;
     req->socket          = con->pub.socket;
     pscom_post_recv(req);
 
+    /* The active counter must be increased by one due to the posting of the
+     * request */
+    assert_true(dummy_sock->listen.activecnt == activecnt + 1);
+
+    /* reduce activecnt by 1*/
+    con->read_stop(con);
+
+    /* The active counter is decreased by one due to read_stop */
+    assert_true(dummy_sock->listen.activecnt == activecnt);
+
     /* Test suspend listening on socket */
     suspend_listen(dummy_sock);
 
+    assert_true(dummy_sock->listen.activecnt == 0);
+
     /* Test resume listening on socket */
     resume_listen(dummy_sock);
+
+    assert_true(dummy_sock->listen.activecnt == 1);
 
     /* Test stop listening on socket */
     stop_listen(dummy_sock);
@@ -405,7 +551,6 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
     pscom_con_close(con);
 
     /* Both counters must be reset to 0 */
-    assert_true(dummy_sock->listen.usercnt == 0);
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Close the socket */

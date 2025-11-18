@@ -199,7 +199,6 @@ void _pscom_con_suspend(pscom_con_t *con)
     if (err == PSCOM_ERR_ALREADY) {
         pscom_precon_provider->listener_active_inc(&sock->listen);
     }
-    // pscom_precon_provider->listener_user_inc(&sock->listen);
     portno = pscom_get_portno(&sock->pub);
     assert(portno > 0);
 
