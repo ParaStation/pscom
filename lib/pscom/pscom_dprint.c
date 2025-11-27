@@ -90,7 +90,7 @@ static char *pscom_dtimestr(void)
 }
 
 
-char *_pscom_debug_linefmt_disabled()
+char *_pscom_debug_linefmt_disabled(void)
 {
     return "%s%s\n";
 }
@@ -181,7 +181,7 @@ void pscom_debug_set_prefix(const char *prefix)
 }
 
 
-static FILE *_pscom_debug_file()
+static FILE *_pscom_debug_file(void)
 {
     if (pscom_debug_file) { return pscom_debug_file; }
     if (!pscom_debug_filename[0]) { return stderr; }

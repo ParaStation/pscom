@@ -115,7 +115,7 @@ static void getenv_ulong(unsigned long *val, const char *name)
 
 
 PSCOM_SHM_API_EXPORT
-void psshm_init()
+void psshm_init(void)
 {
     /* Hook into the malloc handler with __morecore... */
 

@@ -72,7 +72,7 @@ static int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2],
                        struct PSCOM_req *req);
 static int pspsm_send_pending(pspsm_con_info_t *con_info);
 
-static int pspsm_progress();
+static int pspsm_progress(void);
 
 static void pspsm_err(const char *str);
 

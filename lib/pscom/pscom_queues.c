@@ -255,7 +255,7 @@ void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock)
     }
 }
 
-void _pscom_recv_req_cnt_any_global_inc()
+void _pscom_recv_req_cnt_any_global_inc(void)
 {
     struct list_head *pos_con;
     struct list_head *pos_sock;
@@ -289,7 +289,7 @@ void _pscom_recv_req_cnt_any_dec(pscom_sock_t *sock)
     }
 }
 
-void _pscom_recv_req_cnt_any_global_dec()
+void _pscom_recv_req_cnt_any_global_dec(void)
 {
     struct list_head *pos_con;
     struct list_head *pos_sock;
@@ -385,7 +385,7 @@ static void _pscom_recvq_user_deq_any_global(pscom_req_t *req)
 }
 
 
-static void _pscom_recvq_terminate_any_global()
+static void _pscom_recvq_terminate_any_global(void)
 {
     while (!list_empty(&pscom.recvq_any_global)) {
         pscom_req_t *req = list_entry(pscom.recvq_any_global.next, pscom_req_t,
@@ -397,7 +397,7 @@ static void _pscom_recvq_terminate_any_global()
     }
 }
 
-void pscom_recvq_terminate_any_global()
+void pscom_recvq_terminate_any_global(void)
 {
     pscom_lock();
     {

@@ -129,7 +129,7 @@ static int pspsm_check_dev_ipath(void)
 }
 
 
-static void pspsm_print_stats()
+static void pspsm_print_stats(void)
 {
     psm2_mq_stats_t stats;
 
@@ -653,7 +653,7 @@ static int pspsm_recv_pending(pspsm_con_info_t *con_info)
 }
 
 
-static int pspsm_progress()
+static int pspsm_progress(void)
 {
     unsigned read_progress = 0;
     psm2_mq_req_t req;

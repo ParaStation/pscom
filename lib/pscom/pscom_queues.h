@@ -75,8 +75,8 @@ void _pscom_recv_req_cnt_inc(pscom_con_t *con);
 void _pscom_recv_req_cnt_dec(pscom_con_t *con);
 void _pscom_recv_req_cnt_any_inc(pscom_sock_t *sock);
 void _pscom_recv_req_cnt_any_dec(pscom_sock_t *sock);
-void _pscom_recv_req_cnt_any_global_inc();
-void _pscom_recv_req_cnt_any_global_dec();
+void _pscom_recv_req_cnt_any_global_inc(void);
+void _pscom_recv_req_cnt_any_global_dec(void);
 
 
 /*************
@@ -93,7 +93,7 @@ void _pscom_send_req_cnt_dec(pscom_con_t *con);
 void _pscom_recvq_user_enq(pscom_req_t *req);
 void _pscom_recvq_user_deq(pscom_req_t *req);
 
-void pscom_recvq_terminate_any_global();
+void pscom_recvq_terminate_any_global(void);
 
 pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con,
                                             pscom_header_net_t *header);

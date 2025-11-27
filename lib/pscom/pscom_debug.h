@@ -73,7 +73,7 @@ char *pscom_debug_req_str(pscom_req_t *req);
  *
  * @return The line format string.
  */
-char *_pscom_debug_linefmt_disabled();
+char *_pscom_debug_linefmt_disabled(void);
 
 
 /**

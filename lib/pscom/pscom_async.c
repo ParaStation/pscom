@@ -179,7 +179,7 @@ int pscom_backlog_del(void (*call)(void *priv), void *priv)
 }
 
 
-void pscom_backlog_execute()
+void pscom_backlog_execute(void)
 {
     struct list_head backlog;
     struct list_head *pos, *next;

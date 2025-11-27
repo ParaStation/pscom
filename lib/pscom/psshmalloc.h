@@ -39,7 +39,7 @@ static inline int is_psshm_ptr(void *ptr)
 
 
 /* If psshm is enabled? */
-static inline int is_psshm_enabled()
+static inline int is_psshm_enabled(void)
 {
     return !!psshm_info.base;
 }
@@ -53,7 +53,7 @@ static inline int is_psshm_enabled()
 
    (See libpsmalloc.so)
  */
-void psshm_init();
+void psshm_init(void);
 
 
 /*
