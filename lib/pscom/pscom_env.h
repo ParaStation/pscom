@@ -203,7 +203,7 @@ typedef enum pscom_env_table_entry_flags {
  *
  * @return 0 If @a config_val could be parsed successfully.
  */
-typedef int (*pscom_env_parser_set_t)(void *buf, const char *config_val);
+typedef pscom_err_t (*pscom_env_parser_set_t)(void *buf, const char *config_val);
 
 /**
  * @brief A routine for reading a configuration variable
