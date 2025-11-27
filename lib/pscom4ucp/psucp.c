@@ -536,9 +536,9 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2],
     // 2nd: rest of iov[0], if iov[0] is longer than con_info->small_msg_len
     // 3rd: iov[1], if iov[1]->iov_len > 0
     for (i = 0; i < 3; i++) {
-        size_t len = siov[i].iov_len;
-        if (!len) { continue; }
-        request = ucp_tag_send_nb(con_info->ucp_ep, siov[i].iov_base, len,
+        size_t iov_len = siov[i].iov_len;
+        if (!iov_len) { continue; }
+        request = ucp_tag_send_nb(con_info->ucp_ep, siov[i].iov_base, iov_len,
                                   ucp_dt_make_contig(1), con_info->remote_tag,
                                   /*(ucp_send_callback_t)*/ psucp_req_send_done);
         if (UCS_PTR_IS_ERR(request)) { goto err_send; }

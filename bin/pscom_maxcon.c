@@ -53,12 +53,12 @@ static void connection_accept_server(pscom_connection_t *new_connection)
 }
 
 
-static void conn_error_server(pscom_connection_t *connection,
-                              pscom_op_t operation, pscom_err_t error)
+static void conn_error_server(pscom_connection_t *conn, pscom_op_t operation,
+                              pscom_err_t error)
 {
     printf(RED "Error on connection from %s via %s : %s : %s" NORM "\n",
-           pscom_con_info_str(&connection->remote_con_info),
-           pscom_con_type_str(connection->type), pscom_op_str(operation),
+           pscom_con_info_str(&conn->remote_con_info),
+           pscom_con_type_str(conn->type), pscom_op_str(operation),
            pscom_err_str(error));
 }
 

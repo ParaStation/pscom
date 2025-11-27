@@ -317,7 +317,6 @@ static inline void extoll_send(unsigned len)
         assert(rc == RMA2_SUCCESS);
 
         if (arg_with_completion_notification) {
-            int rc;
             RMA2_Notification *notip;
 
             rc = rma2_noti_get_block(extoll_port, &notip);
