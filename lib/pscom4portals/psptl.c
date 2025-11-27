@@ -404,7 +404,7 @@ static int psptl_create_recv_queue(uint32_t num_bufs, size_t buf_len,
 
     /* initialize the buckets and register for receiving data */
     for (i = 0; i < num_bufs; ++i) {
-        void *buf                  = con_info->recv_buffers.mem + buf_len * i;
+        void *buf = (void *)((char *)con_info->recv_buffers.mem + buf_len * i);
         psptl_bucket_t *cur_bucket = &con_info->recv_buffers.buckets[i];
         uint32_t flags             = (PSPTL_PUT_FLAGS | PSPTL_USE_ONCE);
 
@@ -498,7 +498,7 @@ static void psptl_create_send_queue(uint32_t num_bufs, size_t buf_len,
 
     /* initialize the buckets */
     for (uint32_t i = 0; i < num_bufs; ++i) {
-        void *buf = con_info->send_buffers.mem + buf_len * i;
+        void *buf = (void *)((char *)con_info->send_buffers.mem + buf_len * i);
 
         con_info->send_buffers.buckets[i].con_info = con_info;
         con_info->send_buffers.buckets[i].buf      = buf;
@@ -1273,7 +1273,7 @@ int psptl_post_rma_put(psptl_rma_req_t *rma_req)
         if (ret != PTL_OK) { goto err_put; }
 
         /* update parameters for next fragment */
-        data += put_len;
+        data = (void *)((char *)data + put_len);
         data_len -= put_len;
     }
 

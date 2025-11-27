@@ -387,7 +387,8 @@ static int psex_mregion_deregister(RMA2_Region *rma2_region, RMA2_Port rma2_port
 
 static RMA2_NLA psex_mregion_nla(RMA2_Region *rma2_region, void *buf)
 {
-    return rma2_region->nla + (buf - rma2_region->start);
+    return rma2_region->nla +
+           (RMA2_NLA)((char *)buf - (char *)rma2_region->start);
 }
 
 #ifdef PSEX_USE_MREGION_CACHE

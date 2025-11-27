@@ -586,7 +586,7 @@ static int pspsm_sendv(pspsm_con_info_t *con_info, struct iovec iov[2],
         // pspsm_small_msg_length! The receive request has limited length.
         split_iov[0].iov_base = iov[0].iov_base;
         split_iov[0].iov_len  = first_len;
-        split_iov[1].iov_base = iov[0].iov_base + first_len;
+        split_iov[1].iov_base = (void *)((char *)iov[0].iov_base + first_len);
         split_iov[1].iov_len  = iov[0].iov_len - first_len;
         split_iov[2].iov_base = iov[1].iov_base;
         split_iov[2].iov_len  = iov[1].iov_len;
