@@ -58,25 +58,26 @@ typedef struct xhead {
 } xhead_t;
 
 
-void msg_hello(pscom_connection_t *con, void *data, size_t data_len)
+static void msg_hello(pscom_connection_t *con, void *data, size_t data_len)
 {
     printf("Receive HELLO from %s ('%s')\n", pscom_con_str(con), (char *)data);
     pscom_send(con, &(xhead_t){.msg_type = HELLO_RESPONSE}, sizeof(xhead_t),
                "Hello Client", 13);
 }
 
-void msg_hello_response(pscom_connection_t *con, void *data, size_t data_len)
+static void msg_hello_response(pscom_connection_t *con, void *data,
+                               size_t data_len)
 {
     printf("Receive HELLO_RESPONSE from %s ('%s')\n", pscom_con_str(con),
            (char *)data);
 }
 
-void msg_client_info(pscom_connection_t *con, void *data, size_t data_len)
+static void msg_client_info(pscom_connection_t *con, void *data, size_t data_len)
 {
     printf("Receive CLIENT_INFO : '%s'\n", (char *)data);
 }
 
-void msg_hello_bcast(pscom_connection_t *con, void *data, size_t data_len)
+static void msg_hello_bcast(pscom_connection_t *con, void *data, size_t data_len)
 {
     printf("Receive HELLO_BCAST from %s ('%s')\n", pscom_con_str(con),
            (char *)data);
@@ -103,8 +104,8 @@ void msg_hello_bcast(pscom_connection_t *con, void *data, size_t data_len)
     }
 }
 
-int recv_accept(pscom_request_t *request, pscom_connection_t *connection,
-                pscom_header_net_t *header_net)
+static int recv_accept(pscom_request_t *request, pscom_connection_t *connection,
+                       pscom_header_net_t *header_net)
 {
     /* Allocate data for this message */
     request->data     = malloc(header_net->data_len);
@@ -112,14 +113,14 @@ int recv_accept(pscom_request_t *request, pscom_connection_t *connection,
     return 1;
 }
 
-void con_error(pscom_connection_t *connection, pscom_op_t operation,
-               pscom_err_t error)
+static void con_error(pscom_connection_t *connection, pscom_op_t operation,
+                      pscom_err_t error)
 {
     printf("con_error : %s : operation %s : %s\n", pscom_con_str(connection),
            pscom_op_str(operation), pscom_err_str(error));
 }
 
-void dispatch(void)
+static void dispatch(void)
 {
     pscom_request_t *req = pscom_request_create(sizeof(xhead_t), 0);
     assert(req);

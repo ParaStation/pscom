@@ -12,6 +12,7 @@
 #include <cuda.h>
 #include <stddef.h>
 
+#include "test_utils_cuda.h"
 #include "pscom_cuda.h"
 
 extern CUstream pscom_cuda_stream_set[PSCOM_COPY_DIR_COUNT];

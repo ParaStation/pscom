@@ -28,6 +28,7 @@
 #include <stdlib.h>
 #include <errno.h>
 
+#include "test_rrcomm.h"
 #include "util/test_utils_provider.h"
 
 #include "pscom_precon_rrc.c" // check some variables.

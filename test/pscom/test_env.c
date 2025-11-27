@@ -25,6 +25,7 @@
 #include "pscom_env.h"
 #include "pscom_priv.h"
 
+#include "test_env.h"
 #include "util/test_utils_env.h"
 
 
@@ -582,7 +583,7 @@ void test_env_table_parse_multi_entry(void **state)
 }
 
 
-int parser_set_not_implemented(void *env_entry, const char *config_val)
+static int parser_set_not_implemented(void *env_entry, const char *config_val)
 {
     return PSCOM_NOT_IMPLEMENTED;
 }

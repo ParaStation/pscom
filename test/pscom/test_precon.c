@@ -15,6 +15,7 @@
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
+#include "test_precon.h"
 #include "pscom_precon.h"
 #include "util/test_utils_provider.h"
 

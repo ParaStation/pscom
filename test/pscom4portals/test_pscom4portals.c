@@ -22,6 +22,7 @@
 #include "mocks/portals4_mocks.h"
 #include "util/test_utils_con.h"
 #include "util/test_utils_sock.h"
+#include "test_pscom4portals.h"
 
 #include "list.h"
 #include "pscom.h"

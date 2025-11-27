@@ -20,6 +20,7 @@
 #include <stddef.h>
 #include <stdlib.h>
 
+#include "test_cuda.h"
 #include "mocks/misc_mocks.h"
 
 #include "pscom.h"

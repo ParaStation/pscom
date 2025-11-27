@@ -25,6 +25,7 @@
 #include "pscom_queues.h"
 #include "pscom_req.h"
 
+#include "test_io.h"
 #include "util/test_utils_con.h"
 
 /* we need to access some static functions */

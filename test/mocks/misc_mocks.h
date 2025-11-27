@@ -14,6 +14,8 @@
 
 #include <stddef.h>
 #include <sys/types.h>
+#include <sys/socket.h>
+#include <poll.h>
 
 #include "pscom_utest.h"
 
@@ -23,6 +25,22 @@ void *__real_memcpy(void *restrict dst, const void *restrict src, size_t nbytes)
 void *__real_malloc(size_t size);
 void __real_free(void *ptr);
 int __real_sched_yield(void);
+
+/* Mocking functions */
+
+void *__wrap_memcpy(void *restrict dst, const void *restrict src, size_t nbytes);
+void *__wrap_malloc(size_t size);
+void __wrap_free(void *ptr);
+void *__wrap_dlsym(void *restrict handle, const char *restrict symbol);
+void *__wrap_dlopen(const char *filename, int flags);
+int __wrap_dlclose(void *handle);
+char *__wrap_dlerror(void);
+ssize_t __wrap_read(int fd, void *buf, size_t count);
+ssize_t __wrap_send(int sockfd, const void *buf, size_t len, int flags);
+int __wrap_poll(struct pollfd *fds, nfds_t nfds, int timeout);
+int __wrap_setsockopt(int sockfd, int level, int optname, const void *optval,
+                      socklen_t optlen);
+int __wrap_sched_yield(void);
 
 typedef int (*pscom_utest_sched_yield_mock_t)(void *arg);
 

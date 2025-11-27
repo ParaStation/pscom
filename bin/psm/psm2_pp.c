@@ -304,7 +304,7 @@ static void init(void)
 }
 
 
-void connect_peer(FILE *peer)
+static void connect_peer(FILE *peer)
 {
     pp_info_msg_t lmsg, rmsg;
 
@@ -329,7 +329,7 @@ void connect_peer(FILE *peer)
 }
 
 
-void disconnect_peer(FILE *peer)
+static void disconnect_peer(FILE *peer)
 {
     // psm2 disconnect
     pspsm_disconnect();
@@ -550,7 +550,7 @@ static FILE *get_peer(void)
     return peer;
 }
 
-void put_peer(FILE *peer)
+static void put_peer(FILE *peer)
 {
     disconnect_peer(peer);
 

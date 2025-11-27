@@ -28,6 +28,7 @@
 #include "pscom_precon_tcp.h"
 #include "pscom_ufd.c"
 
+#include "test_ufd.h"
 #include "util/test_utils_ufd.h"
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -49,7 +50,7 @@ static void check_can_write(ufd_t *ufd, ufd_info_t *ufd_info)
     function_called();
 }
 
-int mock_sched_yield_close_global_ufd(void *arg)
+static int mock_sched_yield_close_global_ufd(void *arg)
 {
     ufd_info_t *ufd_info = (ufd_info_t *)arg;
 

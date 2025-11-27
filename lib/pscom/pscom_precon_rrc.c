@@ -1486,7 +1486,7 @@ static void pscom_precon_sock_init_rrc(pscom_sock_t *sock)
  * then decides whether `shm` will be used and starts the handshaking of plugin
  * information.
  */
-int pscom_precon_is_starting_peer_rrc(pscom_con_t *con)
+static int pscom_precon_is_starting_peer_rrc(pscom_con_t *con)
 {
     return !precon_con_is_connecting_peer(con);
 }

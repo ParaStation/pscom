@@ -236,7 +236,7 @@ static void pscom_async_msg_detach(pscom_async_ipc_t *ipc, int fd,
 }
 
 
-long pscom_time_diff(unsigned long t1, unsigned long t2)
+static long pscom_time_diff(unsigned long t1, unsigned long t2)
 {
     return t2 - t1;
 }

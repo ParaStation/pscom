@@ -15,6 +15,7 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#include "pscom.h"
 #include "pscom_priv.h"
 
 
@@ -50,6 +51,8 @@ void pscom_debug_set_filename(const char *filename, int expand);
 void pscom_debug_set_prefix(const char *prefix);
 
 const char *pscom_msgtype_str(uint8_t msg_type);
+
+void pscom_dump_con(FILE *out, pscom_con_t *con);
 
 // return an id string for the req and some state
 char *pscom_debug_req_str(pscom_req_t *req);
@@ -102,6 +105,12 @@ char *_pscom_debug_linefmt_custom(const char *prefix, const char *postfix);
 
 void pscom_debug_init(void);
 void pscom_dtime_init(void);
+
+char *pscom_debug_request_str(pscom_request_t *request);
+pscom_req_t *pscom_get_req(pscom_request_t *request);
+pscom_con_t *pscom_get_con(pscom_connection_t *connection);
+pscom_sock_t *pscom_get_sock(pscom_socket_t *socket);
+char *pscom_dump_str(int level);
 
 /* Debug Level */
 #define D_FATAL 0

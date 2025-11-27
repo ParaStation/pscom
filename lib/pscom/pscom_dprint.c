@@ -247,7 +247,7 @@ int pscom_dprintf(const char *fmt, ...)
 }
 
 
-ssize_t pscom_cookie_write(void *cookie, const char *buf, size_t len)
+static ssize_t pscom_cookie_write(void *cookie, const char *buf, size_t len)
 {
     return pscom_dwrite(_pscom_debug_file(), buf, len, _pscom_debug_linefmt());
 }

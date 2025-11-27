@@ -16,6 +16,8 @@
 #include <cmocka.h>
 #include <string.h>
 #include <sys/types.h>
+
+#include "rrcomm_mocks.h"
 #include "pscom.h"
 #include "pstaskid.h"
 #include "pscom_precon.h"

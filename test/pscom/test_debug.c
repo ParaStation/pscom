@@ -28,6 +28,7 @@
 #include "pscom_ufd.h"
 #include "pscom_precon_tcp.h"
 
+#include "test_debug.h"
 #include "util/test_utils_debug.h"
 /**
  * @brief Test PSP_DEBUG_OUT for PSP_DEBUG set to max

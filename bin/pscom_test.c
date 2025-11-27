@@ -71,7 +71,7 @@ int arg_type = 0;
 int arg_listenport = 5006;
 int arg_verbose    = 0;
 
-void parse_opt(int argc, char **argv)
+static void parse_opt(int argc, char **argv)
 {
     int c;
     poptContext optCon;
@@ -137,7 +137,7 @@ pscom_socket_t *sock;
 pscom_connection_t *connection = NULL;
 const char *progname;
 
-void abort_on_error(const char *msg, pscom_err_t error)
+static void abort_on_error(const char *msg, pscom_err_t error)
 {
     fprintf(stderr, "%s : %s\n", msg, pscom_err_str(error));
     exit(1);
@@ -155,7 +155,7 @@ static void init_common(void)
 }
 
 
-void connection_accept_server(pscom_connection_t *new_connection)
+static void connection_accept_server(pscom_connection_t *new_connection)
 {
     if (!connection) {
         printf("New connection from %s via %s\n",
@@ -171,8 +171,8 @@ void connection_accept_server(pscom_connection_t *new_connection)
 }
 
 
-void conn_error_server(pscom_connection_t *connection, pscom_op_t operation,
-                       pscom_err_t error)
+static void conn_error_server(pscom_connection_t *connection,
+                              pscom_op_t operation, pscom_err_t error)
 {
     printf("Error on connection from %s via %s : %s : %s\n",
            pscom_con_info_str(&connection->remote_con_info),
@@ -195,13 +195,14 @@ static void io_done_default(pscom_request_t *req)
 }
 
 
-int recv_accept_request_test(pscom_request_t *req, pscom_connection_t *con,
-                             pscom_header_net_t *header)
+static int recv_accept_request_test(pscom_request_t *req,
+                                    pscom_connection_t *con,
+                                    pscom_header_net_t *header)
 {
     return header->xheader->user.type == MSG_TYPE_REQUEST_TEST;
 }
 
-void request_test(pscom_connection_t *con, enum test_type test)
+static void request_test(pscom_connection_t *con, enum test_type test)
 {
     pscom_request_t *req = PSCOM_REQUEST_CREATE();
 
@@ -223,7 +224,7 @@ void request_test(pscom_connection_t *con, enum test_type test)
 }
 
 
-enum test_type get_test(pscom_connection_t *con)
+static enum test_type get_test(pscom_connection_t *con)
 {
     pscom_request_t *req = PSCOM_REQUEST_CREATE();
     enum test_type res;
@@ -278,8 +279,9 @@ static void io_done_msg_ordering(pscom_request_t *req)
 }
 
 
-int recv_accept_msg_ordering(pscom_request_t *req, pscom_connection_t *con,
-                             pscom_header_net_t *header)
+static int recv_accept_msg_ordering(pscom_request_t *req,
+                                    pscom_connection_t *con,
+                                    pscom_header_net_t *header)
 {
     return header->xheader->user.tag == req->user->req.msg_ordering.tag;
 }

@@ -167,7 +167,7 @@ static void parse_opt(int argc, char **argv)
     } while (0)
 
 
-void pscom_origin_cb(pscom_request_t *req)
+static void pscom_origin_cb(pscom_request_t *req)
 {
     Request_user_rma_t *pscom_rma_user = &req->user->type.cbdata_rma;
     *pscom_rma_user->local_complete += 1;
@@ -175,7 +175,7 @@ void pscom_origin_cb(pscom_request_t *req)
 }
 
 
-void pscom_put_target_cb(pscom_request_t *req)
+static void pscom_put_target_cb(pscom_request_t *req)
 {
     Xheader_rma_sync_t *xheader_rma = &req->xheader.rma_put.user;
     int *complete_op_count          = (int *)xheader_rma->remote_sync;
