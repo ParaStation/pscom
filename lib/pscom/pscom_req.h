@@ -27,7 +27,7 @@ void pscom_req_append(pscom_req_t *req, char *buf, size_t len);
 
 // #define USE_PSCOM_MALLOC 1
 
-#if USE_PSCOM_MALLOC
+#if defined(USE_PSCOM_MALLOC)
 
 #define PSCOM_MALLOC_SAFE_SIZE 0
 
