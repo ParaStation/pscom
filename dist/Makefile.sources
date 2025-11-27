@@ -256,12 +256,15 @@ scripts/vc_version.h.sh \
 scripts/vcversion \
 test/CMakeLists.txt \
 test/mocks/cuda_mocks.c \
+test/mocks/cuda_mocks.h \
 test/mocks/misc_mocks.c \
 test/mocks/misc_mocks.h \
 test/mocks/portals4_mocks.c \
 test/mocks/portals4_mocks.h \
 test/mocks/rrcomm_mocks.c \
+test/mocks/rrcomm_mocks.h \
 test/mocks/ucx_mocks.c \
+test/mocks/ucx_mocks.h \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
 test/pscom/test_debug.c \
