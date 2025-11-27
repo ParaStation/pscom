@@ -343,6 +343,7 @@ static inline void extoll_send(unsigned len)
     }
 }
 
+#if 0
 static char *dumpstr(void *buf, int size)
 {
     static char *ret = NULL;
@@ -366,6 +367,7 @@ static char *dumpstr(void *buf, int size)
     *tmp++ = 0;
     return ret;
 }
+#endif
 
 static inline void extoll_recv(void)
 {
