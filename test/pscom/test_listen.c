@@ -106,6 +106,9 @@ void test_restart_listen_anyport(void **state)
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }
 
 
@@ -262,6 +265,9 @@ void test_start_stop_listen_ondemand(void **state)
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }
 
 /**
@@ -336,6 +342,9 @@ void test_start_stop_listen_ondemand_recv_req(void **state)
 
     /* Close the socket */
     pscom_sock_close(dummy_sock);
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }
 
 
@@ -380,6 +389,9 @@ void test_suspend_listen(void **state)
 
     /* Check if ufd_info is detached from the list */
     assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }
 
 /**
@@ -422,6 +434,9 @@ void test_suspend_resume_listen(void **state)
 
     /* Check if ufd_info is detached from the list */
     assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }
 
 /**
@@ -476,6 +491,9 @@ void test_suspend_resume_listen_ondemand(void **state)
 
     /* Check if ufd_info is detached from the list */
     assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }
 
 /**
@@ -558,4 +576,7 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
 
     /* Check if ufd_info is detached from the list */
     assert_true(list_empty(&(dummy_sock->listen.ufd_info.next)));
+
+    /* clean up ufd */
+    ufd_cleanup(&pscom.ufd);
 }

@@ -41,6 +41,10 @@
 #include "util/test_utils_cuda.h"
 #endif /* PSCOM_CUDA_AWARENESS */
 
+#ifdef RRCOMM_PRECON_ENABLED
+#include "pscom/test_rrcomm.h"
+#endif /* RRComm enabled */
+
 
 pscom_utest_t pscom_utest = {
     .mock_functions =
@@ -347,6 +351,24 @@ int main(void)
     };
     total_tests += TEST_GROUP_SIZE(pscom_ufd_tests);
     failed_tests += cmocka_run_group_tests(pscom_ufd_tests, NULL, NULL);
+
+
+#ifdef RRCOMM_PRECON_ENABLED
+    /* rrcomm-related tests */
+    const struct CMUnitTest pscom_rrc_tests[] = {
+        cmocka_unit_test_setup_teardown(test_rrc_parse_ep_str, setup_dummy_con,
+                                        teardown_dummy_con),
+        cmocka_unit_test_setup_teardown(test_rrc_recv_msg, setup_dummy_con,
+                                        teardown_dummy_con),
+        cmocka_unit_test_setup_teardown(test_rrc_resend_signal, setup_dummy_con,
+                                        teardown_dummy_con),
+        cmocka_unit_test_setup_teardown(test_rrc_send_msg, setup_dummy_con,
+                                        teardown_dummy_con),
+    };
+    total_tests += TEST_GROUP_SIZE(pscom_rrc_tests);
+    failed_tests += cmocka_run_group_tests(pscom_rrc_tests, NULL, NULL);
+#endif /* RRCOMM_ENABLED */
+
 
 #ifdef UCP_ENABLED
     /* pscom4ucp tests */

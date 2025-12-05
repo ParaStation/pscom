@@ -107,6 +107,7 @@ add_executable(
   util/test_utils_debug.c
   util/test_utils_env.c
   util/test_utils_listen.c
+  util/test_utils_provider.c
   util/test_utils_sock.c
   util/test_utils_ufd.c)
 
@@ -134,6 +135,21 @@ target_link_libraries(pscom_utest PRIVATE pscom-static ${CMOCKA_LIBRARIES})
 target_include_directories(
   pscom_utest PRIVATE . ${PROJECT_SOURCE_DIR}/lib/pscom
                       ${PROJECT_BINARY_DIR}/include ${CMOCKA_INCLUDE_DIR})
+
+if(RRCOMM_PRECON_ENABLED)
+  target_link_options(
+    pscom_utest
+    PRIVATE
+    -Wl,--wrap=RRC_init
+    -Wl,--wrap=RRC_finalize
+    -Wl,--wrap=RRC_getJobID
+    -Wl,--wrap=RRC_sendX
+    -Wl,--wrap=RRC_recvX)
+
+  target_sources(pscom_utest PRIVATE mocks/rrcomm_mocks.c pscom/test_rrcomm.c)
+
+  target_add_rrcomm(pscom_utest)
+endif(RRCOMM_PRECON_ENABLED)
 
 if(UCP_ENABLED)
   target_link_options(

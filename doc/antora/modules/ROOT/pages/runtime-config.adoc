@@ -286,6 +286,12 @@ If none of the rendezvous environment variables are set (neither on plugin nor o
 
 | `PSP_PRECON_TCP_CONNECT_STALLED_MAX`
 | Declare the TCP/IP connection in precon as stalled after (`PSP_PRECON_TCP_CONNECT_STALLED_MAX` * `PSP_PRECON_TCP_RECONNECT_TIMEOUT`)[ms] without any sent and received bytes. Retry to reconnect.
+
+| `PSP_PRECON_RRCOMM_RESEND_TIMES`
+| The maximum number of resend retries after receiving a resend signal from RRComm.
+
+| `PSP_PRECON_RRCOMM_RESEND_DELAY`
+| The delay time before the first resend retry in microseconds after receiving a resend signal from RRComm.
 |===
 
 === OpenIB plugin options

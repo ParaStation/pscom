@@ -321,6 +321,8 @@ struct PSCOM_env {
     int debug_param;
     int debug_precon;
     char *precon_type;
+    int rrc_resend_times;
+    int rrc_resend_delay;
     unsigned int user_prio[PSCOM_ENV_ARCH_COUNT];
 #ifdef PSCOM_CUDA_AWARENESS
     int cuda;

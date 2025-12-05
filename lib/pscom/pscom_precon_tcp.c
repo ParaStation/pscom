@@ -422,12 +422,12 @@ void pscom_precon_recv_stop_tcp(pscom_precon_t *precon)
 
 
 pscom_err_t pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type,
-                                  void *data, unsigned size)
+                                  void *data, uint32_t size)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     uint32_t ntype              = htonl(type);
     uint32_t nsize              = htonl(size);
-    unsigned msg_size = size + (unsigned)(sizeof(ntype) + sizeof(nsize));
+    uint32_t msg_size = size + (uint32_t)(sizeof(ntype) + sizeof(nsize));
     char *msg;
 
     pscom_precon_info_dump(precon, "send", type, data, size);
@@ -533,7 +533,7 @@ static void pscom_precon_do_read_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
     int len;
     uint32_t ntype;
     uint32_t nsize;
-    const unsigned header_size = sizeof(ntype) + sizeof(nsize);
+    const uint32_t header_size = sizeof(ntype) + sizeof(nsize);
     int fd                     = pre_tcp->ufd_info.fd;
 
     /* Allocate bufferspace for the header. Be prepared for more data */
@@ -560,7 +560,7 @@ static void pscom_precon_do_read_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
         ntype = ntohl(*(uint32_t *)pre_tcp->recv);
         nsize = ntohl(*((uint32_t *)pre_tcp->recv + 1));
 
-        unsigned msg_len = header_size + nsize;
+        uint32_t msg_len = header_size + nsize;
 
         /* Allocate more for the data */
         pre_tcp->recv = realloc(pre_tcp->recv, msg_len);
@@ -1478,6 +1478,32 @@ static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
 
 static void pscom_precon_provider_destroy_tcp(void)
 {
+    /* check if precon_list is empty */
+    if (!list_empty(&pscom_precon_provider->precon_list)) {
+        struct list_head *pos, *next;
+        /* Obtain the precon associated to this resend signal */
+        list_for_each_safe (pos, next, &pscom_precon_provider->precon_list) {
+            pscom_precon_t *precon = list_entry(pos, pscom_precon_t, next);
+            pscom_precon_tcp_t *pre_tcp =
+                (pscom_precon_tcp_t *)&precon->precon_data;
+            DPRINT(D_ERR,
+                   "precon(%p): #%u send:%zu recv:%zu to_send:%u recv:%s "
+                   "active:%u \n",
+                   pre_tcp, pre_tcp->stat_poll_cnt, pre_tcp->stat_send,
+                   pre_tcp->stat_recv, pre_tcp->send_len,
+                   pre_tcp->recv_done ? "no" : "yes",
+                   pscom_precon_provider->precon_count);
+            /* Remove precon from the list */
+            assert(precon->magic == MAGIC_PRECON);
+            pscom_precon_provider->cleanup(precon);
+            list_del_init(&precon->next);
+            pscom_precon_provider->precon_count--;
+            // free space
+            free(precon);
+        }
+    }
+    assert(list_empty(&pscom_precon_provider->precon_list));
+    assert(!pscom_precon_provider->precon_count);
 }
 
 

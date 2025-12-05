@@ -26,8 +26,8 @@ typedef struct PSCOM_precon_tcp {
     pscom_sock_t *sock;
     pscom_precon_t *precon;
     ufd_info_t ufd_info;
-    unsigned send_len; // Length of send
-    unsigned recv_len; // Length of recv
+    uint32_t send_len; // Length of send
+    uint32_t recv_len; // Length of recv
     char *send;        // Send buffer
     char *recv;        // Receive buffer
 

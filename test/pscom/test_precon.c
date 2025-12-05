@@ -15,14 +15,8 @@
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
-#include <stdlib.h>
-
 #include "pscom_precon.h"
-
-/* we need to access some static functions */
-// #include "pscom_precon.c"
-
-extern pscom_precon_provider_t pscom_provider_tcp;
+#include "util/test_utils_provider.h"
 
 ////////////////////////////////////////////////////////////////////////////////
 /// pscom_precon_provider_lookup()
@@ -36,11 +30,13 @@ extern pscom_precon_provider_t pscom_provider_tcp;
  */
 void test_provider_init_existing_name(void **state)
 {
-    setenv("PSP_PRECON_TYPE", "tcp", 1);
-    pscom_precon_provider_init();
+    /* init provider with tcp */
+    setup_dummy_provider("tcp");
 
     pscom_precon_provider_t *provider_tcp = pscom_precon_provider_lookup("tcp");
     assert_ptr_equal(pscom_precon_provider, provider_tcp);
+
+    teardown_dummy_provider();
 }
 
 
@@ -53,11 +49,13 @@ void test_provider_init_existing_name(void **state)
  */
 void test_provider_init_missing_name(void **state)
 {
-    setenv("PSP_PRECON_TYPE", "foobar", 1);
-    pscom_precon_provider_init();
+    /* init provider with a non-existing name */
+    setup_dummy_provider("foobar");
 
     pscom_precon_provider_t *provider_tcp = pscom_precon_provider_lookup("tcp");
     assert_ptr_equal(pscom_precon_provider, provider_tcp);
+
+    teardown_dummy_provider();
 }
 
 
@@ -70,9 +68,11 @@ void test_provider_init_missing_name(void **state)
  */
 void test_provider_init_empty_name(void **state)
 {
-    setenv("PSP_PRECON_TYPE", "", 1);
-    pscom_precon_provider_init();
+    /* init provider with an empty string*/
+    setup_dummy_provider("");
 
     pscom_precon_provider_t *provider_tcp = pscom_precon_provider_lookup("tcp");
     assert_ptr_equal(pscom_precon_provider, provider_tcp);
+
+    teardown_dummy_provider();
 }
