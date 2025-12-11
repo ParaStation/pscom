@@ -210,23 +210,23 @@ int main(int argc, char **argv)
     if (arg_send) {
         printf("Send in 2 sec\n");
         sleep(2);
-        char buf[1] = "x";
+        char buf = 'x';
 
-        pscom_send(con, NULL, 0, buf, 1);
-        printf("Send: %1.1s\n", buf);
+        pscom_send(con, NULL, 0, &buf, 1);
+        printf("Send: %1.1s\n", &buf);
 
-        rc = pscom_recv(con, NULL, NULL, 0, buf, 1);
+        rc = pscom_recv(con, NULL, NULL, 0, &buf, 1);
         if (rc) { abort_on_error("pscom_recv()", rc); }
-        printf("Receive: %1.1s\n", buf);
+        printf("Receive: %1.1s\n", &buf);
     } else {
-        char buf[1] = "o";
-        rc          = pscom_recv(con, NULL, NULL, 0, buf, 1);
+        char buf = 'o';
+        rc       = pscom_recv(con, NULL, NULL, 0, &buf, 1);
         if (rc) { abort_on_error("pscom_recv()", rc); }
-        printf("Receive: %1.1s\n", buf);
+        printf("Receive: %1.1s\n", &buf);
 
-        buf[0] = 'y';
-        pscom_send(con, NULL, 0, buf, 1);
-        printf("Send: %1.1s\n", buf);
+        buf = 'y';
+        pscom_send(con, NULL, 0, &buf, 1);
+        printf("Send: %1.1s\n", &buf);
     }
 
     //	sleep(10);
