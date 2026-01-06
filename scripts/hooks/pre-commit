@@ -139,7 +139,7 @@ if [ -z ${file} ]; then
     echo -n "Determine modified files ... "
     # This will check the previous commit again when not amending a commit, but
     # that should be ok if the patches are correct.
-    files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.h' '*.c')
+    files_to_check=$(git diff --cached --name-only --diff-filter=ACM HEAD~1 -- bootstrap '*.h' '*.c' '*.h.in')
     # `cmake_files_to_check` - grep the cmake files with the exclusion of the modules in the `cmake/Modules` directory.
     # Those files can be moved or reused from other projects with different formatting and then our formatting should not
     # be applied to them.
@@ -147,7 +147,7 @@ if [ -z ${file} ]; then
         | grep -E -v '^cmake/Modules/')
     echo -e "${GREEN}done${NC}"
 else
-    if [[ ($file == *.c || $file == *.h) ]]; then
+    if [[ ($file == *.c || $file == *.h || $file == *.h.in) ]]; then
         files_to_check=${file}
     elif [[ ($file == *CMakeLists.txt || $file == *.cmake) ]]; then
         cmake_files_to_check=${file}
@@ -163,7 +163,7 @@ fi
 ret=0
 
 if [ ${#files_to_check} != 0 ]; then
-    # Iterate all .c and .h files with clang-format
+    # Iterate all .c, .h, and .h.in files with clang-format
     # (This won't work if we ever have a file with a space in the name)
     cmd="${CLANG_FORMAT} -i"
     check_format "${cmd}" "${files_to_check}"

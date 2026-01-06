@@ -40,8 +40,10 @@ struct sockaddr_in;
 #define PSCOM_CUDA_AWARENESS_SUPPORT
 #endif
 
+// clang-format off
 #define PSCOM_ABI_VERSION_MAJOR @PSCOM_ABI_VERSION_MAJOR@
 #define PSCOM_ABI_VERSION_MINOR @PSCOM_ABI_VERSION_MINOR@
+// clang-format on
 
 
 /* helper to mask all bits 0..i-1 */
