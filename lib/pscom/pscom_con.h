@@ -70,10 +70,7 @@ static inline void pscom_con_check_read_stop(pscom_con_t *con)
 }
 
 
-static inline
-    // void _pscom_recv_req_cnt_check_start(pscom_con_t *con)
-    void
-    pscom_con_check_read_start(pscom_con_t *con)
+static inline void pscom_con_check_read_start(pscom_con_t *con)
 {
     if (pscom_con_should_read(con)) { con->read_start(con); }
 }
