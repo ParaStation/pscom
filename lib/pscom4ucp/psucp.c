@@ -379,7 +379,7 @@ void psucp_con_cleanup(psucp_con_info_t *con_info)
         }
     }
     return;
-err_close : {
+err_close: {
     ucs_status_t status = UCS_PTR_STATUS(request);
     psucp_err_status("ucp_ep_close_nb()", status);
     psucp_dprint(D_WARN, "failed psucp_con_cleanup() : %s", psucp_err_str);
@@ -556,7 +556,7 @@ ssize_t psucp_sendv(psucp_con_info_t *con_info, struct iovec iov[2],
 
 
     return len;
-err_send : {
+err_send: {
     ucs_status_t status = UCS_PTR_STATUS(request);
 
     psucp_err_status("ucp_tag_send_nb()", status);
@@ -661,7 +661,7 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf,
     //       (unsigned) len, pscom_dumpstr(buf, len));
     return len;
 
-err_recv : {
+err_recv: {
     ucs_status_t status = UCS_PTR_STATUS(request);
 
     psucp_err_status("ucp_tag_msg_recv_nb()", status);

@@ -388,7 +388,7 @@ err_mxm_ep_wireup:
 err_mxm_ep_connect:
     psmxm_msg_err("mxm_ep_connect()", error);
     goto err_common;
-err_protocol : {
+err_protocol: {
     char str[80];
     snprintf(str, sizeof(str), "protocol error : '%04x' != '%04x'",
              info_msg->psmxm_protocol_version, PSMXM_PROTOCOL_VERSION);

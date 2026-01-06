@@ -361,7 +361,7 @@ err_connect:
     pspsm_err(psm2_error_get_string(ret));
     pspsm_dprint(D_ERR, "pspsm_con_connect: %s", pspsm_err_str);
     return -1;
-err_protocol : {
+err_protocol: {
     char str[80];
     snprintf(str, sizeof(str), "protocol error : '%.8s' != '%.8s'",
              info_msg->protocol_version, PSPSM_PROTOCOL_VERSION);

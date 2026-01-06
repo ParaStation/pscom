@@ -28,10 +28,7 @@
 
 #include "pscom_util.h"
 
-#define FREE_GMPORTS                                                           \
-    {                                                                          \
-        2, 4, 5, 6, 7                                                          \
-    }
+#define FREE_GMPORTS {2, 4, 5, 6, 7}
 
 #define GM_MAX_RBUFS        1000
 #define GM_MAX_SBUFS        40

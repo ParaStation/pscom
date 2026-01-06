@@ -61,15 +61,10 @@ static pscom_err_t pscom_extoll_parser_set_sendq_size(void *buf,
 
 
 #define PSCOM_EXTOLL_PARSER_PENDING_TOKENS                                     \
-    {                                                                          \
-        pscom_extoll_parser_set_pending_tokens,                                \
-            pscom_env_parser_get_config_int                                    \
-    }
+    {pscom_extoll_parser_set_pending_tokens, pscom_env_parser_get_config_int}
 
 #define PSCOM_EXTOLL_PARSER_SENDQ_SIZE                                         \
-    {                                                                          \
-        pscom_extoll_parser_set_sendq_size, pscom_env_parser_get_config_uint   \
-    }
+    {pscom_extoll_parser_set_sendq_size, pscom_env_parser_get_config_uint}
 
 
 static pscom_env_table_entry_t pscom_env_table_extoll[] = {

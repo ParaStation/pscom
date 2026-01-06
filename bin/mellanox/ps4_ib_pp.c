@@ -382,7 +382,7 @@ err_alllinkdown:
     psib_err("HCA all Ports are down!");
     return -1;
     /* --- */
-err_linkdown : {
+err_linkdown: {
     char msg[100];
     snprintf(msg, 99, "HCA Port %d is down!\n", port);
     psib_err(msg);

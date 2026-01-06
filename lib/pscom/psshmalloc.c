@@ -156,13 +156,13 @@ out_disabled:
 #ifndef PSCOM_ALLIN
     psshm_info.msg = "disabled by " ENV_MALLOC " = 0";
 #else
-    psshm_info.msg        = "not enabled by " ENV_MALLOC " = 1";
+    psshm_info.msg = "not enabled by " ENV_MALLOC " = 1";
 #endif
     return;
 out_disabled_shm:
     psshm_info.msg = "disabled by " ENV_ARCH_NEW_SHM " = 0";
     return;
-err_init_base : {
+err_init_base: {
     static char msg[170];
     snprintf(msg, sizeof(msg),
              "failed. " ENV_MALLOC_MIN " = %lu " ENV_MALLOC_MAX " = %lu : %s "

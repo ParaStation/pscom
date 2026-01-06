@@ -409,7 +409,7 @@ err_no_dev2:
     ibv_free_device_list(dev_list);
     return 0;
     /* --- */
-err_no_dev_name : {
+err_no_dev_name: {
     static char err_str[50];
     snprintf(err_str, sizeof(err_str), "IB device \"%s\"", in_hca_name);
     psoib_err_errno(err_str, ENODEV);
