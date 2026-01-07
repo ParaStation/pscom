@@ -1311,7 +1311,7 @@ static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
 }
 
 
-void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
+static void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
 {
     return;
 }
@@ -1332,7 +1332,7 @@ int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
  * the `nodeid` of the accepting side. Therefore, the connecting side can
  * determine whether `shm` plugin will be used.
  */
-int pscom_precon_is_starting_peer_tcp(pscom_con_t *con)
+static int pscom_precon_is_starting_peer_tcp(pscom_con_t *con)
 {
     return precon_con_is_connecting_peer(con);
 }

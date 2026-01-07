@@ -35,7 +35,7 @@ pscom_socket_t *sock;
 pscom_connection_t *connection = NULL;
 const char *progname;
 
-void abort_on_error(const char *msg, pscom_err_t error)
+static void abort_on_error(const char *msg, pscom_err_t error)
 {
     if (!error) { return; }
     printf(RED "%s : %s" NORM "\n", msg, pscom_err_str(error));
@@ -43,7 +43,7 @@ void abort_on_error(const char *msg, pscom_err_t error)
 }
 
 
-void connection_accept_server(pscom_connection_t *new_connection)
+static void connection_accept_server(pscom_connection_t *new_connection)
 {
     connections++;
 
@@ -53,12 +53,12 @@ void connection_accept_server(pscom_connection_t *new_connection)
 }
 
 
-void conn_error_server(pscom_connection_t *connection, pscom_op_t operation,
-                       pscom_err_t error)
+static void conn_error_server(pscom_connection_t *conn, pscom_op_t operation,
+                              pscom_err_t error)
 {
     printf(RED "Error on connection from %s via %s : %s : %s" NORM "\n",
-           pscom_con_info_str(&connection->remote_con_info),
-           pscom_con_type_str(connection->type), pscom_op_str(operation),
+           pscom_con_info_str(&conn->remote_con_info),
+           pscom_con_type_str(conn->type), pscom_op_str(operation),
            pscom_err_str(error));
 }
 

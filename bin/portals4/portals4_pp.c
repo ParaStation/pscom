@@ -195,7 +195,7 @@ static void pp_info_get(pp_info_msg_t *msg)
 }
 
 
-size_t recv_data(void *buffer, size_t length, int sock)
+static size_t recv_data(void *buffer, size_t length, int sock)
 {
     size_t bytes_received = 0;
     while (bytes_received < length) {
@@ -207,7 +207,7 @@ size_t recv_data(void *buffer, size_t length, int sock)
     return bytes_received;
 }
 
-size_t send_data(void *buffer, size_t length, int sock)
+static size_t send_data(void *buffer, size_t length, int sock)
 {
     size_t bytes_sent = 0;
     while (bytes_sent < length) {

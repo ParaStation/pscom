@@ -15,6 +15,7 @@
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
+#include "ucx_mocks.h"
 #include <ucp/api/ucp.h>
 #include <ucp/api/ucp_def.h>
 

@@ -540,7 +540,7 @@ err_no_lid:
 }
 
 
-struct ibv_qp *psofed_open_qp(context_info_t *context)
+static struct ibv_qp *psofed_open_qp(context_info_t *context)
 {
     /* open UD queue pair */
     struct ibv_qp *qp;

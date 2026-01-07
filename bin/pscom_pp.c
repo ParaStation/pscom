@@ -291,8 +291,8 @@ static int pp_loop_histo(pscom_request_t *sreq, pscom_request_t *rreq,
 
 static int run_pp_c(pscom_connection_t *con, size_t msize, unsigned xsize,
                     unsigned loops,
-                    int (*pp_loop)(pscom_request_t *sreq, pscom_request_t *rreq,
-                                   unsigned loops))
+                    int (*_pp_loop)(pscom_request_t *sreq,
+                                    pscom_request_t *rreq, unsigned loops))
 {
     unsigned cnt;
     void *sbuf = arg_valloc ? valloc(msize) : malloc(msize);
@@ -317,7 +317,7 @@ static int run_pp_c(pscom_connection_t *con, size_t msize, unsigned xsize,
     pscom_req_prepare(sreq, con, sbuf, msize, NULL, xsize);
     pscom_req_prepare(rreq, con, rbuf, msize, NULL, xsize);
 
-    ret = pp_loop(sreq, rreq, loops);
+    ret = _pp_loop(sreq, rreq, loops);
 
     pscom_request_free(sreq);
     pscom_request_free(rreq);
@@ -396,9 +396,8 @@ static void do_accept(pscom_connection_t *con)
            pscom_con_type_str(con->type));
 }
 
-#define PSCALL(func)                                                           \
+#define PSCALL(func, rc)                                                       \
     do {                                                                       \
-        pscom_err_t rc;                                                        \
         rc = (func);                                                           \
         if (rc != PSCOM_SUCCESS) {                                             \
             printf(#func ": %s\n", pscom_err_str(rc));                         \
@@ -424,7 +423,7 @@ int main(int argc, char **argv)
     if (!arg_client) { // server
         socket->ops.con_accept = do_accept;
         do {
-            PSCALL(pscom_listen(socket, arg_lport));
+            PSCALL(pscom_listen(socket, arg_lport), rc);
             char *ep_str = NULL;
             rc           = pscom_socket_get_ep_str(socket, &ep_str);
             assert(rc == PSCOM_SUCCESS);
@@ -454,7 +453,8 @@ int main(int argc, char **argv)
         assert(con);
         // tcp direct connect
         PSCALL(pscom_connect(con, arg_server, PSCOM_RANK_UNDEFINED,
-                             PSCOM_CON_FLAG_DIRECT));
+                             PSCOM_CON_FLAG_DIRECT),
+               rc);
 
         do_pp_client(con);
         pscom_close_connection(con);

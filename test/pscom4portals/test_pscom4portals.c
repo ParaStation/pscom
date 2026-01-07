@@ -22,6 +22,7 @@
 #include "mocks/portals4_mocks.h"
 #include "util/test_utils_con.h"
 #include "util/test_utils_sock.h"
+#include "test_pscom4portals.h"
 
 #include "list.h"
 #include "pscom.h"
@@ -1409,7 +1410,8 @@ void test_portals_rma_write_fragmentation(void **state)
 
     /* check data buffers passed to PtlPut() */
     for (size_t offset = 0; offset < msg_size; offset += fragment_size) {
-        expect_value(__wrap_PtlPut, local_offset, src_buf + offset);
+        expect_value(__wrap_PtlPut, local_offset,
+                     (void *)((char *)src_buf + offset));
         expect_value(__wrap_PtlPut, length, fragment_size);
     }
 
@@ -1457,11 +1459,12 @@ void test_portals_rma_write_fragmentation_remainder(void **state)
     /* check data buffers passed to PtlPut() */
     for (size_t offset = 0; offset < full_fragment_cnt * fragment_size;
          offset += fragment_size) {
-        expect_value(__wrap_PtlPut, local_offset, src_buf + offset);
+        expect_value(__wrap_PtlPut, local_offset,
+                     (void *)((char *)src_buf + offset));
         expect_value(__wrap_PtlPut, length, fragment_size);
     }
     expect_value(__wrap_PtlPut, local_offset,
-                 src_buf + full_fragment_cnt * fragment_size);
+                 (void *)((char *)src_buf + full_fragment_cnt * fragment_size));
     expect_value(__wrap_PtlPut, length, remainder);
 
     assert_true(dummy_con->rndv.rma_write(dummy_con, src_buf, &rndv_msg, NULL,

@@ -317,7 +317,6 @@ static inline void extoll_send(unsigned len)
         assert(rc == RMA2_SUCCESS);
 
         if (arg_with_completion_notification) {
-            int rc;
             RMA2_Notification *notip;
 
             rc = rma2_noti_get_block(extoll_port, &notip);
@@ -344,6 +343,7 @@ static inline void extoll_send(unsigned len)
     }
 }
 
+#if 0
 static char *dumpstr(void *buf, int size)
 {
     static char *ret = NULL;
@@ -367,6 +367,7 @@ static char *dumpstr(void *buf, int size)
     *tmp++ = 0;
     return ret;
 }
+#endif
 
 static inline void extoll_recv(void)
 {

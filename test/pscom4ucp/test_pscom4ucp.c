@@ -16,6 +16,7 @@
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 
+#include "test_pscom4ucp.h"
 #include <ucp/api/ucp_def.h>
 
 #include "pscom_env.h"
@@ -27,7 +28,6 @@
 /// Some forward declarations
 ////////////////////////////////////////////////////////////////////////////////
 extern pscom_plugin_t pscom_plugin_ucp;
-void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit);
 
 
 ////////////////////////////////////////////////////////////////////////////////

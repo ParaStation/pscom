@@ -129,7 +129,7 @@ typedef struct msg_buf {
 msg_buf_t *s_buf;
 msg_buf_t *r_buf;
 
-pspsm_con_info_t *con;
+pspsm_con_info_t *_con;
 
 
 static void rc_check(int ret, char *msg)
@@ -193,12 +193,12 @@ static void init(FILE *peer)
     rc = pspsm_init();
     rc_check(rc, "pspsm_init");
 
-    con = pspsm_con_create();
-    assert(con);
+    _con = pspsm_con_create();
+    assert(_con);
 
-    pspsm_con_init(con, DUMMY_CON);
+    pspsm_con_init(_con, DUMMY_CON);
 
-    pspsm_con_get_info_msg(con, &lmsg);
+    pspsm_con_get_info_msg(_con, &lmsg);
 
     if (is_server) {
         pp_info_write(peer, &lmsg);
@@ -208,7 +208,7 @@ static void init(FILE *peer)
         pp_info_write(peer, &lmsg);
     }
 
-    pspsm_con_connect(con, &rmsg);
+    pspsm_con_connect(_con, &rmsg);
 
     printf("I'm the %s\n", is_server ? "server" : "client");
     sleep(1);
@@ -219,9 +219,9 @@ static void init(FILE *peer)
 
 static void cleanup(void)
 {
-    pspsm_con_cleanup(con);
-    pspsm_con_free(con);
-    con = NULL;
+    pspsm_con_cleanup(_con);
+    pspsm_con_free(_con);
+    _con = NULL;
     pspsm_close_endpoint();
     pspsm_finalize_mq();
 }
@@ -243,13 +243,13 @@ static inline void pspsm_send(size_t len)
 
     // memcpy(s_buf->buf, r_buf->buf, len);
 
-    rc = pspsm_sendv(con, iov, DUMMY_REQ);
+    rc = pspsm_sendv(_con, iov, DUMMY_REQ);
 
     if (rc == 0) {
         // send done.
     } else if (rc == -EAGAIN) {
         // send pending. Wait for write done
-        while (pspsm_send_pending(con)) { pspsm_progress(); }
+        while (pspsm_send_pending(_con)) { pspsm_progress(); }
     } else {
         rc_check(rc, "pspsm_sendv");
     }
@@ -260,10 +260,10 @@ static inline unsigned pspsm_recv(void)
 {
     int rc;
 
-    rc = pspsm_recv_start(con, (char *)r_buf, sizeof(*r_buf));
+    rc = pspsm_recv_start(_con, (char *)r_buf, sizeof(*r_buf));
     assert(rc == 0);
 
-    while (pspsm_recv_pending(con)) { pspsm_progress(); }
+    while (pspsm_recv_pending(_con)) { pspsm_progress(); }
 
     return r_buf->len;
 }

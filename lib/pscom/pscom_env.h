@@ -203,7 +203,7 @@ typedef enum pscom_env_table_entry_flags {
  *
  * @return 0 If @a config_val could be parsed successfully.
  */
-typedef int (*pscom_env_parser_set_t)(void *buf, const char *config_val);
+typedef pscom_err_t (*pscom_env_parser_set_t)(void *buf, const char *config_val);
 
 /**
  * @brief A routine for reading a configuration variable
@@ -336,7 +336,6 @@ struct PSCOM_env {
 #endif
 };
 
-
 void pscom_env_init(void);
 void pscom_env_table_list_clear(void);
 
@@ -389,6 +388,9 @@ pscom_err_t pscom_env_parser_get_config_size_t(void *env_entry, char *val,
     {                                                                          \
         pscom_env_parser_set_config_size_t, pscom_env_parser_get_config_size_t \
     }
+
+void pscom_env_psm_fastinit_set(unsigned int psm_fastinit);
+void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit);
 
 /**
  * @brief Parse an environment definition table

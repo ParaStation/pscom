@@ -724,8 +724,9 @@ void pscom_env_table_list_clear(void)
 }
 
 
-void pscom_env_entry_print(pscom_env_table_entry_t *entry, const char *prefix,
-                           pscom_env_print_flags_t flags)
+static void pscom_env_entry_print(pscom_env_table_entry_t *entry,
+                                  const char *prefix,
+                                  pscom_env_print_flags_t flags)
 {
     char entry_and_value[PSCOM_ENV_MAX_ENV_LEN + PSCOM_ENV_MAX_VAL_LEN];
     char val_str[PSCOM_ENV_MAX_VAL_LEN];
@@ -772,9 +773,9 @@ void pscom_env_entry_print(pscom_env_table_entry_t *entry, const char *prefix,
 }
 
 
-void pscom_env_table_print(const char *name, const char *prefix,
-                           pscom_env_table_entry_t *table,
-                           pscom_env_print_flags_t flags)
+static void pscom_env_table_print(const char *name, const char *prefix,
+                                  pscom_env_table_entry_t *table,
+                                  pscom_env_print_flags_t flags)
 {
     /* print the table header */
     char table_header[100];

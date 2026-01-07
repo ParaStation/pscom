@@ -44,7 +44,7 @@ int arg_listenport         = 5016;
 int arg_verbose            = 0;
 int arg_send               = 0;
 
-void parse_opt(int argc, char **argv)
+static void parse_opt(int argc, char **argv)
 {
     int c;
     poptContext optCon;
@@ -106,7 +106,7 @@ pscom_socket_t *sock;
 pscom_connection_t *connection = NULL;
 const char *progname;
 
-void abort_on_error(const char *msg, pscom_err_t error)
+static void abort_on_error(const char *msg, pscom_err_t error)
 {
     if (!error) { return; }
     printf(RED "%s : %s" NORM "\n", msg, pscom_err_str(error));
@@ -114,7 +114,7 @@ void abort_on_error(const char *msg, pscom_err_t error)
 }
 
 
-void connection_accept_server(pscom_connection_t *new_connection)
+static void connection_accept_server(pscom_connection_t *new_connection)
 {
     printf(GREEN "New connection %p from %s via %s" NORM "\n", new_connection,
            pscom_con_info_str(&new_connection->remote_con_info),
@@ -132,12 +132,12 @@ void connection_accept_server(pscom_connection_t *new_connection)
 }
 
 
-void conn_error_server(pscom_connection_t *connection, pscom_op_t operation,
-                       pscom_err_t error)
+static void conn_error_server(pscom_connection_t *conn, pscom_op_t operation,
+                              pscom_err_t error)
 {
     printf(RED "Error on connection from %s via %s : %s : %s" NORM "\n",
-           pscom_con_info_str(&connection->remote_con_info),
-           pscom_con_type_str(connection->type), pscom_op_str(operation),
+           pscom_con_info_str(&conn->remote_con_info),
+           pscom_con_type_str(conn->type), pscom_op_str(operation),
            pscom_err_str(error));
 }
 
@@ -210,23 +210,23 @@ int main(int argc, char **argv)
     if (arg_send) {
         printf("Send in 2 sec\n");
         sleep(2);
-        char buf[1] = "x";
+        char buf = 'x';
 
-        pscom_send(con, NULL, 0, buf, 1);
-        printf("Send: %1.1s\n", buf);
+        pscom_send(con, NULL, 0, &buf, 1);
+        printf("Send: %1.1s\n", &buf);
 
-        rc = pscom_recv(con, NULL, NULL, 0, buf, 1);
+        rc = pscom_recv(con, NULL, NULL, 0, &buf, 1);
         if (rc) { abort_on_error("pscom_recv()", rc); }
-        printf("Receive: %1.1s\n", buf);
+        printf("Receive: %1.1s\n", &buf);
     } else {
-        char buf[1] = "o";
-        rc          = pscom_recv(con, NULL, NULL, 0, buf, 1);
+        char buf = 'o';
+        rc       = pscom_recv(con, NULL, NULL, 0, &buf, 1);
         if (rc) { abort_on_error("pscom_recv()", rc); }
-        printf("Receive: %1.1s\n", buf);
+        printf("Receive: %1.1s\n", &buf);
 
-        buf[0] = 'y';
-        pscom_send(con, NULL, 0, buf, 1);
-        printf("Send: %1.1s\n", buf);
+        buf = 'y';
+        pscom_send(con, NULL, 0, &buf, 1);
+        printf("Send: %1.1s\n", &buf);
     }
 
     //	sleep(10);

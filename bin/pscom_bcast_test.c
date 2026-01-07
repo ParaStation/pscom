@@ -154,18 +154,19 @@ static void hello_received(pscom_request_t *req)
         unsigned rank;
 
         for (rank = 0; rank < arg_np; rank++) {
-            struct Connection *Con = &connections[rank];
+            struct Connection *_Con = &connections[rank];
             unsigned drank;
-            pscom_send(Con->con, NULL, 0, &rank, sizeof(rank));
+            pscom_send(_Con->con, NULL, 0, &rank, sizeof(rank));
             for (drank = 0; drank < arg_np; drank++) {
                 struct Connection *dCon = &connections[drank];
-                pscom_send(Con->con, NULL, 0, &dCon->hello, sizeof(dCon->hello));
+                pscom_send(_Con->con, NULL, 0, &dCon->hello,
+                           sizeof(dCon->hello));
             }
 
-            if (Con->con->type != PSCOM_CON_TYPE_LOOP) {
-                pscom_close_connection(Con->con);
+            if (_Con->con->type != PSCOM_CON_TYPE_LOOP) {
+                pscom_close_connection(_Con->con);
             }
-            Con->con = NULL;
+            _Con->con = NULL;
         }
     }
 }

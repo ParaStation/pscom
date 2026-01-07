@@ -157,9 +157,8 @@ static void parse_opt(int argc, char **argv)
 }
 
 
-#define PSCALL(func)                                                           \
+#define PSCALL(func, rc)                                                       \
     do {                                                                       \
-        pscom_err_t rc;                                                        \
         rc = (func);                                                           \
         if (rc != PSCOM_SUCCESS) {                                             \
             printf(#func ": %s \n", pscom_err_str(rc));                        \
@@ -167,7 +166,7 @@ static void parse_opt(int argc, char **argv)
     } while (0)
 
 
-void pscom_origin_cb(pscom_request_t *req)
+static void pscom_origin_cb(pscom_request_t *req)
 {
     Request_user_rma_t *pscom_rma_user = &req->user->type.cbdata_rma;
     *pscom_rma_user->local_complete += 1;
@@ -175,7 +174,7 @@ void pscom_origin_cb(pscom_request_t *req)
 }
 
 
-void pscom_put_target_cb(pscom_request_t *req)
+static void pscom_put_target_cb(pscom_request_t *req)
 {
     Xheader_rma_sync_t *xheader_rma = &req->xheader.rma_put.user;
     int *complete_op_count          = (int *)xheader_rma->remote_sync;
@@ -596,7 +595,7 @@ int main(int argc, char **argv)
     if (!arg_client) { // server
         socket->ops.con_accept = do_accept;
         do {
-            PSCALL(pscom_listen(socket, arg_lport));
+            PSCALL(pscom_listen(socket, arg_lport), rc);
             char *ep_str = NULL;
             rc           = pscom_socket_get_ep_str(socket, &ep_str);
             assert(rc == PSCOM_SUCCESS);
@@ -631,7 +630,8 @@ int main(int argc, char **argv)
         assert(con);
 
         PSCALL(pscom_connect(con, arg_server, PSCOM_RANK_UNDEFINED,
-                             PSCOM_CON_FLAG_DIRECT));
+                             PSCOM_CON_FLAG_DIRECT),
+               rc);
 
         do_rma_client(con);
         pscom_close_connection(con);

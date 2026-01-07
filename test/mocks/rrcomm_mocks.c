@@ -16,6 +16,8 @@
 #include <cmocka.h>
 #include <string.h>
 #include <sys/types.h>
+
+#include "rrcomm_mocks.h"
 #include "pscom.h"
 #include "pstaskid.h"
 #include "pscom_precon.h"
@@ -31,7 +33,7 @@ typedef struct {
 /**
  * \brief Mocking function for RRC_init()
  */
-int __wrap_RRC_init()
+int __wrap_RRC_init(void)
 {
     return 1;
 }
@@ -40,7 +42,7 @@ int __wrap_RRC_init()
 /**
  * \brief Mocking function for ucp_config_release()
  */
-void __wrap_RRC_finalize()
+void __wrap_RRC_finalize(void)
 {
 }
 
@@ -48,7 +50,7 @@ void __wrap_RRC_finalize()
 /**
  * \brief Mocking function for RRC_getJobID()
  */
-PStask_ID_t __wrap_RRC_getJobID()
+PStask_ID_t __wrap_RRC_getJobID(void)
 {
     return 88;
 }

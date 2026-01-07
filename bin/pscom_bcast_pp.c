@@ -235,9 +235,8 @@ static void do_accept(pscom_connection_t *con)
            pscom_con_info_str(&con->remote_con_info));
 }
 
-#define PSCALL(func)                                                           \
+#define PSCALL(func, rc)                                                       \
     do {                                                                       \
-        pscom_err_t rc;                                                        \
         rc = (func);                                                           \
         if (rc != PSCOM_SUCCESS) {                                             \
             printf(#func ": %s\n", pscom_err_str(rc));                         \
@@ -270,7 +269,7 @@ int main(int argc, char **argv)
     if (!arg_client) { // server
         socket->ops.con_accept = do_accept;
 
-        PSCALL(pscom_listen(socket, arg_lport));
+        PSCALL(pscom_listen(socket, arg_lport), rc);
         char *ep_str = NULL;
         rc           = pscom_socket_get_ep_str(socket, &ep_str);
         assert(rc == PSCOM_SUCCESS);
@@ -307,7 +306,8 @@ int main(int argc, char **argv)
         assert(con);
         // TCP direct connect with ip:port in arg_server
         PSCALL(pscom_connect(con, arg_server, PSCOM_RANK_UNDEFINED,
-                             PSCOM_CON_FLAG_DIRECT));
+                             PSCOM_CON_FLAG_DIRECT),
+               rc);
 
         do_pp(con, con_loop, 1);
         if (arg_verbose) { pscom_dump_info(stdout); }

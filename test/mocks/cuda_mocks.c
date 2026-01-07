@@ -19,6 +19,7 @@
 #include <stddef.h>
 #include <stdio.h>
 
+#include "cuda_mocks.h"
 #include "mocks/misc_mocks.h"
 
 #define CUDA_MAX_STR "999"

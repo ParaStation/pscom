@@ -301,7 +301,7 @@ static void dump_msg(void *buf, int offset, int size)
     while (offset < size) {
         int len = size - offset > 32 ? 32 : size - offset;
         printf("%s%04x : %s\n", is_server ? "s:" : "c:", offset,
-               dumpstr(buf + offset, len));
+               dumpstr((char *)buf + offset, len));
         offset += len;
     }
 }

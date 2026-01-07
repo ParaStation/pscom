@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 
+#include "test_plugin.h"
 #include "pscom_plugin.h"
 
 /*

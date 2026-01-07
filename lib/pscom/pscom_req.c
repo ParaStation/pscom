@@ -61,7 +61,7 @@ static inline size_t round_up8(size_t val)
     return (val + 7) & ~7;
 }
 
-#if USE_PSCOM_MALLOC
+#if defined(USE_PSCOM_MALLOC)
 // Malloc cache for PSCOM_MALLOC_SIZE mallocs
 #ifndef PSCOM_MALLOC_EXTRA_SIZE
 #define PSCOM_MALLOC_EXTRA_SIZE 50
