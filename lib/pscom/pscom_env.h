@@ -365,29 +365,19 @@ pscom_err_t pscom_env_parser_get_config_size_t(void *env_entry, char *val,
 
 
 #define PSCOM_ENV_PARSER_UINT                                                  \
-    {                                                                          \
-        pscom_env_parser_set_config_uint, pscom_env_parser_get_config_uint     \
-    }
+    {pscom_env_parser_set_config_uint, pscom_env_parser_get_config_uint}
 
 #define PSCOM_ENV_PARSER_INT                                                   \
-    {                                                                          \
-        pscom_env_parser_set_config_int, pscom_env_parser_get_config_int       \
-    }
+    {pscom_env_parser_set_config_int, pscom_env_parser_get_config_int}
 
 #define PSCOM_ENV_PARSER_STR                                                   \
-    {                                                                          \
-        pscom_env_parser_set_config_str, pscom_env_parser_get_config_str       \
-    }
+    {pscom_env_parser_set_config_str, pscom_env_parser_get_config_str}
 
 #define PSCOM_ENV_PARSER_DIR                                                   \
-    {                                                                          \
-        pscom_env_parser_set_config_dir, pscom_env_parser_get_config_dir       \
-    }
+    {pscom_env_parser_set_config_dir, pscom_env_parser_get_config_dir}
 
 #define PSCOM_ENV_PARSER_SIZE_T                                                \
-    {                                                                          \
-        pscom_env_parser_set_config_size_t, pscom_env_parser_get_config_size_t \
-    }
+    {pscom_env_parser_set_config_size_t, pscom_env_parser_get_config_size_t}
 
 void pscom_env_psm_fastinit_set(unsigned int psm_fastinit);
 void pscom_env_ucp_fastinit_set(unsigned int ucp_fastinit);

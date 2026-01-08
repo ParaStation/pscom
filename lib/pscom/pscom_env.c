@@ -46,9 +46,7 @@ static pscom_err_t pscom_env_parser_set_debug_out(void *buf,
 }
 
 #define PSCOM_ENV_PARSER_DEBUG_OUT                                             \
-    {                                                                          \
-        pscom_env_parser_set_debug_out, pscom_env_parser_get_config_str        \
-    }
+    {pscom_env_parser_set_debug_out, pscom_env_parser_get_config_str}
 
 static pscom_env_table_entry_t pscom_env_table[] = {
     {"DEBUG_OUT", NULL,

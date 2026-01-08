@@ -66,16 +66,11 @@ static pscom_err_t pscom_openib_env_parser_set_sendq_size(void *buf,
 
 
 #define PSCOM_OPENIB_ENV_PARSER_PENDING_TOKENS                                 \
-    {                                                                          \
-        pscom_openib_env_parser_set_pending_tokens,                            \
-            pscom_env_parser_get_config_int                                    \
-    }
+    {pscom_openib_env_parser_set_pending_tokens,                               \
+     pscom_env_parser_get_config_int}
 
 #define PSCOM_OPENIB_ENV_PARSER_SENDQ_SIZE                                     \
-    {                                                                          \
-        pscom_openib_env_parser_set_sendq_size,                                \
-            pscom_env_parser_get_config_uint                                   \
-    }
+    {pscom_openib_env_parser_set_sendq_size, pscom_env_parser_get_config_uint}
 
 
 pscom_env_table_entry_t pscom_env_table_openib[] = {

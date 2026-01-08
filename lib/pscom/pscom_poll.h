@@ -36,10 +36,7 @@ static inline int pscom_poll_list_empty(pscom_poll_list_t *poll_list)
     return list_empty(&poll_list->head);
 }
 
-#define POLL_LIST_HEAD_INIT(POLL_LIST)                                         \
-    {                                                                          \
-        .head = LIST_HEAD_INIT(POLL_LIST.head)                                 \
-    }
+#define POLL_LIST_HEAD_INIT(POLL_LIST) {.head = LIST_HEAD_INIT(POLL_LIST.head)}
 
 
 /**

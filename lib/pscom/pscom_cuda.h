@@ -23,7 +23,7 @@
 #include "pscom_env.h"
 
 
-#define CU_MEMORYTYPE_UNDEFINED ((CUmemorytype)-1)
+#define CU_MEMORYTYPE_UNDEFINED ((CUmemorytype) - 1)
 #define MIN(a, b)               (((a) < (b)) ? (a) : (b))
 
 typedef enum PSCOM_copy_dir {

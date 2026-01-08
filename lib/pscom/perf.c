@@ -31,8 +31,7 @@ static void cycles_cal(void)
     t1 = pscom_wtime_usec();
     GET_CPU_CYCLES(rt1);
     /* usleep call kapm-idled and slowdown the cpu! */
-    while (pscom_wtime_usec() - 1000 < t1)
-        ;
+    while (pscom_wtime_usec() - 1000 < t1);
     GET_CPU_CYCLES(rt2);
     t2 = pscom_wtime_usec();
 

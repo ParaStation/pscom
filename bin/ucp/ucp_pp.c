@@ -542,7 +542,7 @@ static void do_pp_client(void)
 
 #define INET_ADDR_SPLIT(addr)                                                  \
     ((addr) >> 24) & 0xff, ((addr) >> 16) & 0xff, ((addr) >> 8) & 0xff,        \
-        (addr)&0xff
+        (addr) & 0xff
 #define INET_ADDR_FORMAT "%u.%u.%u.%u"
 
 

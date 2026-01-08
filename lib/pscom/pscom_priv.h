@@ -673,7 +673,7 @@ struct PSCOM {
 extern pscom_t pscom;
 
 
-#define PSCOM_ARCH2CON_TYPE(arch)     ((pscom_con_type_t)((arch)-101))
+#define PSCOM_ARCH2CON_TYPE(arch)     ((pscom_con_type_t)((arch) - 101))
 #define PSCOM_CON_TYPE2ARCH(con_type) ((con_type) + 101)
 
 /* Keep PSCOM_ARCH_{} in sync with PSCOM_CON_TYPE_{} ! */
@@ -1024,7 +1024,7 @@ typedef void (*rma_origin_callback)(pscom_request_t *req);
 #define MAGIC_RKEYBUF                0x52425546
 #define MAGIC_MEMH                   0x4D454D48
 #define MAGIC_RKEY                   0x524B4559
-#define PSCOM_INVALID_RKEYBUF_OFFSET (uint16_t) - 1
+#define PSCOM_INVALID_RKEYBUF_OFFSET (uint16_t)-1
 
 /**
  * @brief remote key buffer

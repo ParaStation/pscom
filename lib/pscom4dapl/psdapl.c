@@ -47,7 +47,7 @@
 
 #define PSDAPL_LEN(len) ((len + 7) & ~7)
 #define PSDAPL_DATA_OFFSET(pos, psdapllen)                                     \
-    ((pos)*DAPL_BUFSIZE + DAPL_BUFSIZE_PAYLOAD - (psdapllen))
+    ((pos) * DAPL_BUFSIZE + DAPL_BUFSIZE_PAYLOAD - (psdapllen))
 
 int psdapl_debug = 2;
 char psdapl_provider[128];

@@ -44,10 +44,7 @@ pscom_ofed_env_parser_set_pending_tokens(void *buf, const char *config_val)
 
 
 #define PSCOM_OFED_ENV_PARSER_PENDING_TOKENS                                   \
-    {                                                                          \
-        pscom_ofed_env_parser_set_pending_tokens,                              \
-            pscom_env_parser_get_config_int                                    \
-    }
+    {pscom_ofed_env_parser_set_pending_tokens, pscom_env_parser_get_config_int}
 
 
 static pscom_env_table_entry_t pscom_env_table_ofed[] = {
