@@ -28,10 +28,10 @@ image::{imageprefix}pscom-init-cleanup.svg[pscom init and cleanup]
 
 == Connection establishment
 
-* A socket is opened (per rank) using `+pscom_open_socket(...)+` and assigned a unique name using `+pscom_socket_set_name(...)+`. When opening a socket users are suggested to provide a unique ID of the process like `rank` or use `PSCOM_RANK_UNDEFINED` if not applied. The unique name of socket are also advised to set with a unique ID, e.g., the `rank` of the process
+* A socket is opened (per rank) using `+pscom_open_socket(...)+` and assigned a unique name using `+pscom_socket_set_name(...)+`. When opening a socket users are suggested to provide a unique ID of the process like `rank` or use `PSCOM_RANK_UNDEFINED` if not applied. Besides, users should set the socket type in `sock_flag`. There are two socket types: intra-job socket and inter-job socket. The intra-job socket is used for connecting processes in the same job or intra-communicator, e.g. `MPI_COMM_WORLD`. Only one intra-job socket can be created for connecting processes in the initial job. The inter-job socket is created for connecting processes of different jobs of an inter-communicator, e.g., the inter-communicator created by calling `MPI_Comm_spawn`.
 * For connection establishment, the following `pscom` functions are used:
  ** `+pscom_open_connection(...)+` to create the connection (malloc)
- ** `+pscom_connect(...)+` to establish the connection, calls `+pscom_connect_loopback+` in case of local connection, otherwise calls `+pscom_connect_direct(...)+` or `+pscom_connect_ondemand(...)+` depending on the chosen connectivity schema
+ ** `+pscom_connect(...)+` to establish the connection. Users should provide the `ep_str` containing the information of the remote endpoint, and `dest_rank`, which is set by the application layer (e.g., psmpi) and should be equal to what is provided by the process manager. `+pscom_connect_loopback+` is called in case of local connection, otherwise `+pscom_connect_direct(...)+` or `+pscom_connect_ondemand(...)+` is called depending on the chosen connectivity schema set in the `connection_flags`
 * `+pscom_send(...)+` can be used to send the init message via the established connection
 
 === Instant connectivity &ndash; `PSP_DIRECT_CONNECT=1`
@@ -39,8 +39,9 @@ image::{imageprefix}pscom-init-cleanup.svg[pscom init and cleanup]
 image::{imageprefix}pscom-connectivity-instant.svg[pscom instant connectivity]
 
 * `+pscom_connect_direct(...)+` calls `+pscom_precon_connect(...)+` to establish the connection
- ** initially via a pre-connection (precon) protocol (`+pscom_precon_connect(...)+`), e.g., TCP or RRcomm, and then use precon to establish a better (the best) connection depending on the available plugins and their priorities
- ** Plugins can use the precon to communicate the required information for connection establishment in their own `+con_connect(...)+` function (part of the plugin)
+ ** initially via a pre-connection (precon) protocol (`+pscom_precon_connect(...)+`), e.g., TCP or RRcomm, to establish a pre-connection (precon). A precon protocol is initialized and selected by setting `PSP_PRECON_TYPE` (`tcp` or `rrcomm`).
+ ** then use precon to establish a better (the best) connection depending on the available plugins and their priorities
+ ** Plugins can use the precon via `tcp` or `rrcomm` protocol to communicate the required information for connection establishment in their own `+con_connect(...)+` function (part of the plugin)
 * To wait for and accept incoming connections, the following function is used:
  ** `pscom_wait_any()` to wait for progress/ activity on any communication channel (polling, see `+pscom_progress(...)+` and `+pscom_con_accept_tcp(...)+`)
  ** Also when accepting incoming connections, the best connection plug-in is determined
