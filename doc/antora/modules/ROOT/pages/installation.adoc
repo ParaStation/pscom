@@ -110,7 +110,7 @@ If you want to disable CUDA awareness, you can pass `-DCUDA_ENABLED=0` to CMake.
 
 === Pre-connection protocol
 
-The default pre-connection protocol is TCP/IP. If the RRComm library is found on your system, `pscom` is automatically compiled with RRComm features. `-DRRCOMM_PRECON_ENABLED=1` can be set to compile pscom with RRComm. If the RRComm library is not found, cmake will return an error if `-DRRCOMM_PRECON_ENABLED=1`. `-DRRCOMM_PRECON_ENABLED=0` can be passed to CMake to to compile pscom without RRComm pre-connection protocol.
+The default pre-connection protocol is TCP/IP. The other available protocol is RRComm (Rank Routed Communication), which improves the scalability of the startup stage of large applications. RRcomm provides communication capabilities to enable client processes to directly exchange information and avoids the global synchronization of certain endpoint information during the initialization stage. For the details of RRComm, see link:https://github.com/ParaStation/psmgmt/blob/master/plugins/rrcomm/include/rrcomm.h[here]. If the RRComm library is found on your system, `pscom` is automatically compiled with RRComm features. `-DRRCOMM_PRECON_ENABLED=1` can be set to compile pscom with RRComm. If the RRComm library is not found, CMake will return an error if `-DRRCOMM_PRECON_ENABLED=1` is set. `-DRRCOMM_PRECON_ENABLED=0` can be passed to CMake to to compile pscom without RRComm pre-connection protocol.
 
 RRComm as pre-connection protocol can be enabled via setting the environment variable `PSP_PRECON_TYPE=rrcomm` during runtime. `PSP_PRECON_TYPE` is set to "tcp" by default to use the TCP/IP pre-connection protocol.
 
