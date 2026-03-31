@@ -46,6 +46,22 @@ execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r .. -n
                 OUTPUT_VARIABLE VC_VERSION)
 message(STATUS "VC_VERSION:          ${VC_VERSION}")
 
+# Obtain the api version x.x.x from the release tag
+string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" API_VERSION ${VC_VERSION})
+
+if(API_VERSION)
+  string(REPLACE "." ";" VERSION_LIST ${API_VERSION})
+
+  list(GET VERSION_LIST 0 PSCOM_API_VERSION_MAJOR)
+  list(GET VERSION_LIST 1 PSCOM_API_VERSION_MINOR)
+  list(GET VERSION_LIST 2 PSCOM_API_VERSION_PATCH)
+else()
+  # set to 0 if API_VERSION not found
+  set(PSCOM_API_VERSION_MAJOR 0)
+  set(PSCOM_API_VERSION_MINOR 0)
+  set(PSCOM_API_VERSION_PATCH 0)
+endif()
+
 # set the default build type
 set(default_build_type "RelWithDebInfo")
 if(NOT CMAKE_BUILD_TYPE)
