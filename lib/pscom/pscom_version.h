@@ -12,6 +12,20 @@
 
 #include "pscom.h"
 
-pscom_err_t pscom_version_check(int pscom_version_required, int pscom_version);
+/**
+ * @brief Check if ABI version pscom_version fulfills the required
+ *        ABI version pscom_version_required.
+ *
+ * @param pscom_version_required Required ABI version
+ * @param pscom_version          Available ABI version
+ * @return pscom_err_t Returns PSCOM_ERR_UNSUPPORTED_VERSION if CUDA
+ *                     support differs in both ABI versions, if major
+ *                     ABI versions differ, or (in case major versions
+ *                     are identical) if minor required ABI version is
+ *                     larger than minor available ABI version.
+ *                     Returns PSCOM_SUCCESS otherwise.
+ */
+pscom_err_t pscom_abi_version_check_internal(int pscom_version_required,
+                                             int pscom_version);
 
 #endif /* _PSCOM_VERSION_H_ */
