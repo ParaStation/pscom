@@ -28,8 +28,8 @@
  */
 void test_pscom_version_cuda_support_success(void **state)
 {
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(1, 3, 11),
-                                          PSCOM_VERSION_BUILD(1, 3, 11));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(1, 3, 11), PSCOM_VERSION_BUILD(1, 3, 11));
     assert_true(ret == PSCOM_SUCCESS);
 }
 
@@ -43,8 +43,8 @@ void test_pscom_version_cuda_support_success(void **state)
  */
 void test_pscom_version_cuda_support_failure(void **state)
 {
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(1, 3, 11),
-                                          PSCOM_VERSION_BUILD(0, 3, 11));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(1, 3, 11), PSCOM_VERSION_BUILD(0, 3, 11));
     assert_true(ret == PSCOM_ERR_UNSUPPORTED_VERSION);
 }
 
@@ -59,13 +59,13 @@ void test_pscom_version_cuda_support_failure(void **state)
 void test_pscom_version_no_cuda_support(void **state)
 {
     /* no CUDA support */
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 3, 12),
-                                          PSCOM_VERSION_BUILD(0, 3, 12));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(0, 3, 12), PSCOM_VERSION_BUILD(0, 3, 12));
     assert_true(ret == PSCOM_SUCCESS);
 
     /* CUDA support */
-    ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 3, 11),
-                              PSCOM_VERSION_BUILD(1, 3, 11));
+    ret = pscom_abi_version_check_internal(PSCOM_VERSION_BUILD(0, 3, 11),
+                                           PSCOM_VERSION_BUILD(1, 3, 11));
     assert_true(ret == PSCOM_SUCCESS);
 }
 
@@ -79,13 +79,13 @@ void test_pscom_version_no_cuda_support(void **state)
 void test_pscom_version_major_failure(void **state)
 {
     /* smaller major number */
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 5, 11),
-                                          PSCOM_VERSION_BUILD(0, 3, 11));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(0, 5, 11), PSCOM_VERSION_BUILD(0, 3, 11));
     assert_true(ret == PSCOM_ERR_UNSUPPORTED_VERSION);
 
     /* larger major number */
-    ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 3, 11),
-                              PSCOM_VERSION_BUILD(0, 5, 11));
+    ret = pscom_abi_version_check_internal(PSCOM_VERSION_BUILD(0, 3, 11),
+                                           PSCOM_VERSION_BUILD(0, 5, 11));
     assert_true(ret == PSCOM_ERR_UNSUPPORTED_VERSION);
 }
 
@@ -98,8 +98,8 @@ void test_pscom_version_major_failure(void **state)
  */
 void test_pscom_version_major_success(void **state)
 {
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 4, 2),
-                                          PSCOM_VERSION_BUILD(0, 4, 2));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(0, 4, 2), PSCOM_VERSION_BUILD(0, 4, 2));
     assert_true(ret == PSCOM_SUCCESS);
 }
 
@@ -113,13 +113,13 @@ void test_pscom_version_major_success(void **state)
 void test_pscom_version_minor_success(void **state)
 {
     /* equal minor number */
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 3, 11),
-                                          PSCOM_VERSION_BUILD(0, 3, 11));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(0, 3, 11), PSCOM_VERSION_BUILD(0, 3, 11));
     assert_true(ret == PSCOM_SUCCESS);
 
     /* higher minor number */
-    ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 3, 11),
-                              PSCOM_VERSION_BUILD(0, 3, 12));
+    ret = pscom_abi_version_check_internal(PSCOM_VERSION_BUILD(0, 3, 11),
+                                           PSCOM_VERSION_BUILD(0, 3, 12));
     assert_true(ret == PSCOM_SUCCESS);
 }
 
@@ -132,7 +132,7 @@ void test_pscom_version_minor_success(void **state)
  */
 void test_pscom_version_minor_failure(void **state)
 {
-    pscom_err_t ret = pscom_version_check(PSCOM_VERSION_BUILD(0, 3, 11),
-                                          PSCOM_VERSION_BUILD(0, 3, 10));
+    pscom_err_t ret = pscom_abi_version_check_internal(
+        PSCOM_VERSION_BUILD(0, 3, 11), PSCOM_VERSION_BUILD(0, 3, 10));
     assert_true(ret == PSCOM_ERR_UNSUPPORTED_VERSION);
 }

@@ -25,7 +25,8 @@ pscom_version_t pscom_get_version(void)
 }
 
 
-pscom_err_t pscom_version_check(int pscom_version_required, int pscom_version)
+pscom_err_t pscom_abi_version_check_internal(int pscom_version_required,
+                                             int pscom_version)
 {
     int cuda_req, major_req, minor_req, cuda, major, minor;
     pscom_err_t ret = PSCOM_SUCCESS;

@@ -326,7 +326,7 @@ pscom_err_t pscom_init(int pscom_version)
     int cuda, major, minor;
     PSCOM_VERSION_SPLIT(pscom_version, cuda, major, minor);
 
-    if ((err = pscom_version_check(pscom_version, PSCOM_VERSION)) !=
+    if ((err = pscom_abi_version_check_internal(pscom_version, PSCOM_VERSION)) !=
         PSCOM_SUCCESS) {
         DPRINT(D_FATAL,
                "Error: libpscom ABI version mismatch! Application requested "
