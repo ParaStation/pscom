@@ -1,3 +1,16 @@
+2026-04-17  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-0rc2
+
+2026-04-17  Xu Huang  <huang@par-tec.com>
+
+	* New: Increase ABI minor version. New ABI version: 5.1.
+
+	* New: Macro `PSCOM_API_VERSION` provides numeric pscom API version;
+	Additional macros with post-fixes `_MAJOR`,`_MINOR`, and `_PATCH` provide
+	the sub-parts of the API version.
+
+	* New: Function `pscom_get_version` to get pscom API and ABI versions incl.
+	CUDA support at runtime.
+
 2026-02-02  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-0rc1
 
 2026-01-07  Sonja Happ  <sonja.happ@par-tec.com>
