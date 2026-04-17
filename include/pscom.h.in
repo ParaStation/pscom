@@ -43,14 +43,25 @@ struct sockaddr_in;
 // clang-format off
 #define PSCOM_ABI_VERSION_MAJOR @PSCOM_ABI_VERSION_MAJOR@
 #define PSCOM_ABI_VERSION_MINOR @PSCOM_ABI_VERSION_MINOR@
+
+#define PSCOM_API_VERSION_MAJOR @PSCOM_API_VERSION_MAJOR@
+#define PSCOM_API_VERSION_MINOR @PSCOM_API_VERSION_MINOR@
+#define PSCOM_API_VERSION_PATCH @PSCOM_API_VERSION_PATCH@
 // clang-format on
 
+/*
+ * 32-bit pscom API version:
+ * major (16) | minor (8) | patch (8)
+ */
+#define PSCOM_API_VERSION                                                      \
+    ((PSCOM_API_VERSION_MAJOR << 16) | (PSCOM_API_VERSION_MINOR << 8) |        \
+     PSCOM_API_VERSION_PATCH)
 
 /* helper to mask all bits 0..i-1 */
 #define PSCOM_BIT_MASK(i) ((i) >= 64 ? ~0 : ((1 << (i)) - 1))
 
 /*
- * 16-bit pscom version:
+ * 16-bit pscom ABI version:
  * cuda_support (1) | major_version (7) | minor_version (8)
  */
 #define PSCOM_ABI_VERSION_CUDA_BITS  1
@@ -76,6 +87,24 @@ struct sockaddr_in;
 #define PSCOM_VERSION                                                          \
     PSCOM_VERSION_BUILD(PSCOM_ABI_CUDA_SUPPORT, PSCOM_ABI_VERSION_MAJOR,       \
                         PSCOM_ABI_VERSION_MINOR)
+
+
+/**
+ * @brief pscom versions
+ *
+ * @note The ABI version includes major and minor version as well as CUDA
+ * support. The API version contains major, minor and patch based on the release
+ * tag.
+ */
+typedef struct PSCOM_version {
+    int abi_major;
+    int abi_minor;
+    int abi_cuda;
+    int api_major;
+    int api_minor;
+    int api_patch;
+} pscom_version_t;
+
 
 /**
  * @brief Status codes.
@@ -709,6 +738,14 @@ pscom_err_t pscom_init(int pscom_version);
  * return PSCOM_SUCCESS or PSCOM_ERR_UNSUPPORTED_VERSION
  */
 pscom_err_t pscom_init_thread(int pscom_version);
+
+
+/**
+ * @brief Obtain the pscom ABI and API version.
+ *
+ * @return pscom_version_t
+ */
+pscom_version_t pscom_get_version(void);
 
 
 /**
