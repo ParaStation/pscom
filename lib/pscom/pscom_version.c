@@ -8,8 +8,25 @@
  * file.
  */
 #include "pscom_version.h"
+#include "pscom.h"
+#include "pscom_priv.h"
 
-pscom_err_t pscom_version_check(int pscom_version_required, int pscom_version)
+PSCOM_API_EXPORT
+pscom_version_t pscom_get_version(void)
+{
+    pscom_version_t versions;
+    versions.abi_major = PSCOM_ABI_VERSION_MAJOR;
+    versions.abi_minor = PSCOM_ABI_VERSION_MINOR;
+    versions.abi_cuda  = PSCOM_ABI_CUDA_SUPPORT;
+    versions.api_major = PSCOM_API_VERSION_MAJOR;
+    versions.api_minor = PSCOM_API_VERSION_MINOR;
+    versions.api_patch = PSCOM_API_VERSION_PATCH;
+    return versions;
+}
+
+
+pscom_err_t pscom_abi_version_check_internal(int pscom_version_required,
+                                             int pscom_version)
 {
     int cuda_req, major_req, minor_req, cuda, major, minor;
     pscom_err_t ret = PSCOM_SUCCESS;
