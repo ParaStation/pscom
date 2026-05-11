@@ -1,3 +1,54 @@
+2026-05-08  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-1
+
+2026-04-17  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-0rc2
+
+2026-04-17  Xu Huang  <huang@par-tec.com>
+
+	* New: Increase ABI minor version. New ABI version: 5.1.
+
+	* New: Macro `PSCOM_API_VERSION` provides numeric pscom API version;
+	Additional macros with post-fixes `_MAJOR`,`_MINOR`, and `_PATCH` provide
+	the sub-parts of the API version.
+
+	* New: Function `pscom_get_version` to get pscom API and ABI versions incl.
+	CUDA support at runtime.
+
+2026-02-02  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-0rc1
+
+2026-01-07  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Enhancement: Check and fix more GCC compiler warnings.
+
+2025-12-05  Xu Huang  <huang@par-tec.com>
+
+	* New: Unit tests and documentation for RRComm precon.
+
+	* New: Resend mechanism for RRComm precon to handle errors obtained
+	from RRC_recvX during connection establishment via RRComm.
+
+	* Enhancement: Close the listener file descriptor when closing the socket.
+	Now, the function `pscom_listen` handles file descriptors similarly to
+	`pscom_resume_listen` and the function `pscom_stop_listen` handles file
+	descriptors similarly to `pscom_suspend_listen`. The functions
+	`pscom_resume_listen` and `pscom_suspend_listen` might be removed from the
+	API in a future release.
+
+	* New: Configurability of deadlock detection behavior via new
+	environment variable `PSP_DEADLOCK_WARNINGS`.
+
+	* New: Callback function for RMA get operation.
+
+	* Fix: Uninitialized memory in pscom_con_info_t.
+
+2025-09-30  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Enhancement: Improved internal separation of precon providers	and
+	core pscom.
+
+2025-09-29  Anna Karbownik  <anna.karbownik@par-tec.com>
+
+	* Enhancement: Configurable output directory for RPM builds.
+
 2025-09-26  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-1
 
 2025-09-23  Simon Pickartz  <pickartz@par-tec.com>	-	6.0.0-0rc3
