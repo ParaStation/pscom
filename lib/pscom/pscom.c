@@ -257,10 +257,10 @@ static void pscom_cleanup(void)
     }
     perf_print();
 
+    pscom_precon_provider_destroy();
+
     ufd_cleanup(&pscom.ufd);
     pscom_env_cleanup();
-
-    pscom_precon_provider_destroy();
 
     DPRINT(D_BYE_MSG, "Byee.");
 }
