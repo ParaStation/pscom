@@ -1034,7 +1034,7 @@ static void pscom_precon_provider_destroy_rrc(void)
             pscom_precon_t *precon = list_entry(pos, pscom_precon_t, next);
             pscom_precon_rrc_t *pre_rrc =
                 (pscom_precon_rrc_t *)&precon->precon_data;
-            DPRINT(D_ERR,
+            DPRINT(D_PRECON_TRACE,
                    "precon(%p): local jobid %ld, remote jobid %ld, user_cnt:%d "
                    "active_cnt:%d recv done?:%s precon "
                    "count:%u \n",
