@@ -881,8 +881,8 @@ static void pscom_precon_print_stat_tcp(pscom_precon_tcp_t *pre_tcp)
         }
     }
     DPRINT(D_PRECON_TRACE,
-           "precon(%p): #%u send:%zu recv:%zu to_send:%u recv:%s active:%u "
-           "state:%s\n",
+           "precon(%p): #%u send:%zu recv:%zu to_send:%u still active to "
+           "recv:%s precon counter:%u state:%s\n",
            pre_tcp, pre_tcp->stat_poll_cnt, pre_tcp->stat_send,
            pre_tcp->stat_recv, pre_tcp->send_len,
            pre_tcp->recv_done ? "no" : "yes",
@@ -1486,9 +1486,9 @@ static void pscom_precon_provider_destroy_tcp(void)
             pscom_precon_t *precon = list_entry(pos, pscom_precon_t, next);
             pscom_precon_tcp_t *pre_tcp =
                 (pscom_precon_tcp_t *)&precon->precon_data;
-            DPRINT(D_ERR,
-                   "precon(%p): #%u send:%zu recv:%zu to_send:%u recv:%s "
-                   "active:%u \n",
+            DPRINT(D_PRECON_TRACE,
+                   "precon(%p): #%u send:%zu recv:%zu to_send:%u still active "
+                   "to recv:%s precon counter:%u \n",
                    pre_tcp, pre_tcp->stat_poll_cnt, pre_tcp->stat_send,
                    pre_tcp->stat_recv, pre_tcp->send_len,
                    pre_tcp->recv_done ? "no" : "yes",
