@@ -42,8 +42,8 @@ set(PSCOM_ABI_VERSION_MINOR 0)
 # execute_process(COMMAND echo bar OUTPUT_VARIABLE FOO)
 # OUTPUT_STRIP_TRAILING_WHITESPACE
 
-execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r .. -n
-                OUTPUT_VARIABLE VC_VERSION)
+execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r
+                        ${PROJECT_SOURCE_DIR}/ -n OUTPUT_VARIABLE VC_VERSION)
 message(STATUS "VC_VERSION:          ${VC_VERSION}")
 
 # set the default build type
