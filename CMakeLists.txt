@@ -42,12 +42,14 @@ set(PSCOM_ABI_VERSION_MINOR 1)
 # execute_process(COMMAND echo bar OUTPUT_VARIABLE FOO)
 # OUTPUT_STRIP_TRAILING_WHITESPACE
 
-execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r .. -n
-                OUTPUT_VARIABLE VC_VERSION)
+execute_process(COMMAND ${PROJECT_SOURCE_DIR}/scripts/vcversion -r
+                        ${PROJECT_SOURCE_DIR}/ -n OUTPUT_VARIABLE VC_VERSION)
 message(STATUS "VC_VERSION:          ${VC_VERSION}")
 
-# Obtain the api version x.x.x from the release tag
-string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" API_VERSION ${VC_VERSION})
+if(NOT ${VC_VERSION} STREQUAL "")
+  # Obtain the api version x.y.z from the release tag
+  string(REGEX MATCH "([0-9]+)\\.([0-9]+)\\.([0-9]+)" API_VERSION ${VC_VERSION})
+endif(NOT ${VC_VERSION} STREQUAL "")
 
 if(API_VERSION)
   string(REPLACE "." ";" VERSION_LIST ${API_VERSION})
