@@ -1,3 +1,19 @@
+2026-06-26  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.1-0rc1
+
+2025-06-26  Simon Pickartz  <pickartz@par-tec.com>
+
+	* Fix: Support iwyu version 0.25.
+
+2026-06-26  Xu Huang  <huang@par-tec.com>
+
+	* Fix: Move destruction of precon provider before cleanup of ufd and env.
+
+	* Enhancement: Improve debug output of precon providers.
+
+2026-05-21  Sonja Happ  <sonja.happ@par-tec.com>
+
+	* Fix: Use of vcversion script in CMake.
+
 2026-05-08  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-1
 
 2026-04-17  Sonja Happ  <sonja.happ@par-tec.com>	-	6.1.0-0rc2
