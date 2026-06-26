@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stddef.h>
 
 #include "pscom_precon.h"
 #include "list.h"

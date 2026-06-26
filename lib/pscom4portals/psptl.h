@@ -11,7 +11,6 @@
 #ifndef _PSPORTALS_H_
 #define _PSPORTALS_H_
 
-#include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 #include <sys/types.h>
