@@ -11,7 +11,6 @@
 
 #include <stdarg.h> /* IWYU pragma: keep */
 #include <stdio.h>
-#include <stddef.h>
 #include <stdint.h> /* IWYU pragma: keep */
 #include <stdlib.h>
 #include <setjmp.h> /* IWYU pragma: keep */
