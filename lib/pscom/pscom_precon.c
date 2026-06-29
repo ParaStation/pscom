@@ -14,7 +14,6 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-#include <stddef.h>
 
 #include "pscom_precon.h"
 #include "list.h"
@@ -118,14 +117,16 @@ void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
     case PSCOM_INFO_FD_ERROR: {
         int noerr = 0;
         int *err  = size == sizeof(int) && data ? data : &noerr;
-        DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\t%d(%s)", precon, op,
-               plugin_name, pscom_info_type_str(type), *err, strerror(*err));
+        DPRINT(D_PRECON_TRACE, "precon(%p) %s:%s:%s %s\t%d(%s)", precon,
+               pscom.env.precon_type, op, plugin_name,
+               pscom_info_type_str(type), *err, strerror(*err));
         break;
     }
     case PSCOM_INFO_ARCH_REQ: {
         pscom_info_arch_req_t *arch_req = data;
-        DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tarch_id:%u (%s)", precon,
-               op, plugin_name, pscom_info_type_str(type), arch_req->arch_id,
+        DPRINT(D_PRECON_TRACE, "precon(%p) %s:%s:%s %s\tarch_id:%u (%s)",
+               precon, pscom.env.precon_type, op, plugin_name,
+               pscom_info_type_str(type), arch_req->arch_id,
                pscom_con_type_str(PSCOM_ARCH2CON_TYPE(arch_req->arch_id)));
         break;
     }
@@ -135,21 +136,23 @@ void pscom_precon_info_dump(pscom_precon_t *precon, const char *op, int type,
     case PSCOM_INFO_CON_INFO_VERSION_DEMAND:
     case PSCOM_INFO_CON_INFO_VERSION: {
         pscom_info_con_info_t *msg = data;
-        DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tcon_info:%s", precon, op,
-               plugin_name, pscom_info_type_str(type),
-               pscom_con_info_str(&msg->con_info));
+        DPRINT(D_PRECON_TRACE, "precon(%p) %s:%s:%s %s\tcon_info:%s", precon,
+               pscom.env.precon_type, op, plugin_name,
+               pscom_info_type_str(type), pscom_con_info_str(&msg->con_info));
         break;
     }
     case PSCOM_INFO_VERSION: {
         pscom_info_version_t *version = data;
-        DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\tver_from:%04x ver_to:%04x",
-               precon, op, plugin_name, pscom_info_type_str(type),
-               version->ver_from, version->ver_to);
+        DPRINT(D_PRECON_TRACE,
+               "precon(%p) %s:%s:%s %s\tver_from:%04x ver_to:%04x", precon,
+               pscom.env.precon_type, op, plugin_name,
+               pscom_info_type_str(type), version->ver_from, version->ver_to);
         break;
     }
     default:
-        DPRINT(D_PRECON_TRACE, "precon(%p):%s:%s %s\t%p %u", precon, op,
-               plugin_name, pscom_info_type_str(type), data, size);
+        DPRINT(D_PRECON_TRACE, "precon(%p) %s:%s:%s %s\t%p %u", precon,
+               pscom.env.precon_type, op, plugin_name,
+               pscom_info_type_str(type), data, size);
     }
 }
 
@@ -257,6 +260,11 @@ void pscom_precon_provider_init(void)
     INIT_LIST_HEAD(&pscom_precon_provider.precon_list);
     pscom_precon_provider.precon_count = 0;
     pscom_precon_provider.init();
+
+    DPRINT(D_PRECON_TRACE,
+           "%s is selected as the precon protocol and the "
+           "initialization of the precon provider is done!\n",
+           pscom.env.precon_type);
 }
 
 

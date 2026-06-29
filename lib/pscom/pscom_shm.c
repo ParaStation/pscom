@@ -14,7 +14,6 @@
 
 #include <assert.h>
 #include <errno.h>
-#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/ipc.h>
@@ -393,8 +392,7 @@ static void shm_pending_io_enq(pscom_con_t *con, shm_msg_t *msg,
         shm->shm_pending = sp;
     } else {
         // Append at the end
-        for (old_sp = shm->shm_pending; old_sp->next; old_sp = old_sp->next)
-            ;
+        for (old_sp = shm->shm_pending; old_sp->next; old_sp = old_sp->next);
         old_sp->next = sp;
     }
 }
