@@ -123,9 +123,8 @@ static void pscom_precon_print_stat_rrc(pscom_precon_rrc_t *pre_rrc)
         }
     }
     DPRINT(D_PRECON_TRACE,
-           "precon(%p): user_cnt:%d active_cnt:%d recv done?:%s precon "
-           "count:%u "
-           "state:%s\n",
+           "precon(%p) rrc: user_cnt:%d active_cnt:%d recv done?:%s precon "
+           "count:%u state:%s\n",
            pre_rrc, global_rrc->user_cnt, global_rrc->active,
            pre_rrc->recv_done ? "yes" : "no",
            pscom_precon_provider->precon_count, state);
@@ -311,7 +310,7 @@ static void pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
     msg_con_info_version.source_sockid                 = local_sockid;
     msg_con_info_version.con_info.rrcomm.remote_sockid = remote_sockid;
 
-    DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", precon,
+    DPRINT(D_PRECON_TRACE, "precon(%p) rrc: con:%s", precon,
            pscom_con_str(&con->pub));
     pscom_err_t ret = pscom_precon_send(precon, type, &msg_con_info_version,
                                         sizeof(msg_con_info_version));
@@ -348,7 +347,7 @@ static void pscom_precon_send_PSCOM_INFO_CON_INFO_rrc(pscom_precon_t *precon,
     msg_con_info_version.con_info.rrcomm.remote_sockid =
         con->pub.remote_con_info.rrcomm.remote_sockid;
 
-    DPRINT(D_PRECON_TRACE, "precon(%p): con:%s", precon,
+    DPRINT(D_PRECON_TRACE, "precon(%p) rrc: con:%s", precon,
            pscom_con_str(&con->pub));
     pscom_err_t ret = pscom_precon_send(precon, type, &msg_con_info_version,
                                         sizeof(msg_con_info_version));
@@ -456,7 +455,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
 
         if (con && con->pub.type == PSCOM_CON_TYPE_ONDEMAND) {
             /* Trigger the back connect */
-            DPRINT(D_DBG_V, "RACCEPT %s", pscom_con_str(&con->pub));
+            DPRINT(D_DBG_V, "pre_rrc RACCEPT %s", pscom_con_str(&con->pub));
             con->write_start(con);
 
             /* Handle VERSION and CON_INFO during backconnect */
@@ -472,7 +471,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
             DPRINT(D_PRECON_TRACE, "pre_rrc(%p): recv backcon %.8s to %.8s",
                    pre_rrc, con_info->name, sock->pub.local_con_info.name);
         } else {
-            DPRINT(D_DBG_V, "RACCEPT from %s skipped",
+            DPRINT(D_DBG_V, "pre_rrc RACCEPT from %s skipped",
                    pscom_con_info_str(con_info));
         }
         break;
@@ -709,7 +708,7 @@ static void pscom_precon_do_write_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
                 assert(con);
                 pscom_sock_t *sock = get_sock(con->pub.socket);
 
-                DPRINT(D_ERR, "resend message to %d, %ld, type %s\n",
+                DPRINT(D_ERR, "pre_rrc resend message to %d, %ld, type %s\n",
                        resend->dest, resend->jobid,
                        pscom_info_type_str(resend->msg_type));
 
@@ -723,7 +722,8 @@ static void pscom_precon_do_write_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
                 pre_rrc->resend_times--;
 
                 DPRINT(D_ERR,
-                       "resend message to %d, %ld, type %s, send done %d\n",
+                       "pre_rrc resend message to %d, %ld, type %s, send done "
+                       "%d\n",
                        resend->dest, resend->jobid,
                        pscom_info_type_str(resend->msg_type),
                        pre_rrc->info_sent);
@@ -1034,8 +1034,9 @@ static void pscom_precon_provider_destroy_rrc(void)
             pscom_precon_t *precon = list_entry(pos, pscom_precon_t, next);
             pscom_precon_rrc_t *pre_rrc =
                 (pscom_precon_rrc_t *)&precon->precon_data;
-            DPRINT(D_ERR,
-                   "precon(%p): local jobid %ld, remote jobid %ld, user_cnt:%d "
+            DPRINT(D_PRECON_TRACE,
+                   "precon(%p) rrc: local jobid %ld, remote jobid %ld, "
+                   "user_cnt:%d "
                    "active_cnt:%d recv done?:%s precon "
                    "count:%u \n",
                    pre_rrc, pre_rrc->local_jobid, pre_rrc->remote_jobid,
