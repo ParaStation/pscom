@@ -18,6 +18,8 @@
 #include <cmocka.h>
 
 #include "pscom_utest.h"
+
+/* tests for the various pscom functionalities */
 #include "pscom/test_debug.h"
 #include "pscom/test_env.h"
 #include "pscom/test_io.h"
@@ -27,13 +29,18 @@
 #include "pscom/test_ufd.h"
 #include "pscom/test_version.h"
 
+/* tests dedicated to specific pscom plugins */
 #include "pscom4ucp/test_pscom4ucp.h"
 #include "pscom4portals/test_pscom4portals.h"
 
+/* sets of helper functions for the utests */
 #include "util/test_utils_con.h"
 #include "util/test_utils_debug.h"
 #include "util/test_utils_env.h"
 #include "util/test_utils_sock.h"
+
+/* tests dedicated to utest helper functions */
+#include "utest/test_utest_utils.h"
 
 #ifdef PSCOM_CUDA_AWARENESS
 #include "pscom/test_cuda.h"
@@ -85,6 +92,24 @@ int main(void)
     if (output_format && !strcmp(output_format, "xml")) {
         cmocka_set_message_output(CM_OUTPUT_XML);
     }
+
+    /* pscom_utest_utils tests */
+    const struct CMUnitTest pscom_utest_utils_tests[] = {
+        cmocka_unit_test_setup_teardown(
+            test_utest_utils_common_envvar_backup_overwrite,
+            setup_dummy_envvars, teardown_dummy_envvars),
+        cmocka_unit_test_setup_teardown(
+            test_utest_utils_common_envvar_backup_no_overwrite,
+            setup_dummy_envvars, teardown_dummy_envvars),
+        cmocka_unit_test_setup_teardown(
+            test_utest_utils_common_envvar_backup_unset, setup_dummy_envvars,
+            teardown_dummy_envvars),
+        cmocka_unit_test_setup_teardown(
+            test_utest_utils_common_envvar_backup_reset, setup_dummy_envvars,
+            teardown_dummy_envvars),
+    };
+    total_tests += TEST_GROUP_SIZE(pscom_utest_utils_tests);
+    failed_tests += cmocka_run_group_tests(pscom_utest_utils_tests, NULL, NULL);
 
     /* pscom_io tests */
     const struct CMUnitTest pscom_io_tests[] = {

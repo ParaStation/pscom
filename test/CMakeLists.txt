@@ -110,7 +110,8 @@ add_executable(
   util/test_utils_listen.c
   util/test_utils_provider.c
   util/test_utils_sock.c
-  util/test_utils_ufd.c)
+  util/test_utils_ufd.c
+  utest/test_utest_utils.c)
 
 # Mocked functions
 target_link_options(
