@@ -23,9 +23,11 @@
 #include "pscom_con.h"
 #include "pscom_precon.h"
 #include "pscom_precon_tcp.h"
+#include "pscom_utest.h"
 
 #include "test_utils_con.h"
 #include "test_utils_sock.h"
+#include "test_utils_common.h"
 
 
 int setup_dummy_con(void **state)
@@ -49,6 +51,20 @@ int setup_dummy_con(void **state)
     return 0;
 }
 
+static test_utils_common_envvar_backup_t env_precon_type_backup_prestate = {
+    .name = "PSP_PRECON_TYPE"};
+
+int setup_dummy_con_with_prestate(void **state)
+{
+    pscom_utest_prestate_t *prestate = *state;
+
+    /* set provider (store and overwrite if already set) */
+    env_precon_type_backup_prestate.value     = prestate->precon_type;
+    env_precon_type_backup_prestate.overwrite = 1;
+    test_utils_common_envvar_backup_capture(&env_precon_type_backup_prestate);
+
+    return setup_dummy_con(state);
+}
 
 int setup_dummy_con_pair(void **state)
 {
@@ -95,6 +111,9 @@ int teardown_dummy_con(void **state)
 
     /* destroy the dummy socket */
     teardown_dummy_sock((void **)&sock);
+
+    /* restore the state of the precon type (if changed) */
+    test_utils_common_envvar_backup_restore(&env_precon_type_backup_prestate);
 
     return 0;
 }

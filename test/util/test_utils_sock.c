@@ -27,8 +27,8 @@ int setup_dummy_sock(void **state)
     INIT_LIST_HEAD(&pscom.sockets);
     INIT_LIST_HEAD(&pscom.recvq_any_global);
 
-    /* init precon provider with tcp*/
-    setup_dummy_provider("tcp");
+    /* init precon provider (NULL means use default) */
+    setup_dummy_provider(NULL);
 
     new_sock = pscom_sock_create(0, 0, PSCOM_RANK_UNDEFINED,
                                  PSCOM_SOCK_FLAG_INTRA_JOB);

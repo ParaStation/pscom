@@ -103,6 +103,7 @@ add_executable(
   pscom/test_plugin.c
   pscom/test_precon.c
   pscom/test_version.c
+  util/test_utils_common.c
   util/test_utils_con.c
   util/test_utils_debug.c
   util/test_utils_env.c

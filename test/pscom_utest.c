@@ -61,6 +61,10 @@ pscom_utest_t pscom_utest = {
                     .extended_ptl_put = 0,
                 },
         },
+    .default_values =
+        {
+            .precon_type = "tcp",
+        },
 };
 
 #define TEST_GROUP_SIZE(test_group)                                            \
@@ -355,14 +359,22 @@ int main(void)
 #ifdef RRCOMM_PRECON_ENABLED
     /* rrcomm-related tests */
     const struct CMUnitTest pscom_rrc_tests[] = {
-        cmocka_unit_test_setup_teardown(test_rrc_parse_ep_str, setup_dummy_con,
-                                        teardown_dummy_con),
-        cmocka_unit_test_setup_teardown(test_rrc_recv_msg, setup_dummy_con,
-                                        teardown_dummy_con),
-        cmocka_unit_test_setup_teardown(test_rrc_resend_signal, setup_dummy_con,
-                                        teardown_dummy_con),
-        cmocka_unit_test_setup_teardown(test_rrc_send_msg, setup_dummy_con,
-                                        teardown_dummy_con),
+        cmocka_unit_test_prestate_setup_teardown(test_rrc_parse_ep_str,
+                                                 setup_dummy_con_with_prestate,
+                                                 teardown_dummy_con,
+                                                 &(pscom_utest_prestate_t){
+                                                     .precon_type = "rrcomm"}),
+        cmocka_unit_test_prestate_setup_teardown(
+            test_rrc_recv_msg, setup_dummy_con_with_prestate, teardown_dummy_con,
+            &(pscom_utest_prestate_t){.precon_type = "rrcomm"}),
+        cmocka_unit_test_prestate_setup_teardown(test_rrc_resend_signal,
+                                                 setup_dummy_con_with_prestate,
+                                                 teardown_dummy_con,
+                                                 &(pscom_utest_prestate_t){
+                                                     .precon_type = "rrcomm"}),
+        cmocka_unit_test_prestate_setup_teardown(
+            test_rrc_send_msg, setup_dummy_con_with_prestate, teardown_dummy_con,
+            &(pscom_utest_prestate_t){.precon_type = "rrcomm"}),
     };
     total_tests += TEST_GROUP_SIZE(pscom_rrc_tests);
     failed_tests += cmocka_run_group_tests(pscom_rrc_tests, NULL, NULL);
