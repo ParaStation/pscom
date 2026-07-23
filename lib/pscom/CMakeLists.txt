@@ -72,6 +72,29 @@ set_target_properties(
   PROPERTIES VERSION "${PSCOM_ABI_VERSION_MAJOR}.${PSCOM_ABI_VERSION_MINOR}"
              SOVERSION "${PSCOM_ABI_VERSION_MAJOR}")
 
+set_target_properties(pscom PROPERTIES C_STANDARD 11 C_STANDARD_REQUIRED ON)
+
+# Check if user sets CACHELINE_SIZE
+if(DEFINED CACHELINE_SIZE)
+  set(CACHELINE_SIZE
+      ${CACHELINE_SIZE}
+      CACHE STRING "User defined cacheline size" FORCE)
+  message(STATUS "Using user-defined cacheline size: ${CACHELINE_SIZE}")
+else()
+  set(DEFAULT_CACHELINE_SIZE 64) # default cacheline size
+  # set the default value to CACHELINE_SIZE
+  set(CACHELINE_SIZE
+      ${DEFAULT_CACHELINE_SIZE}
+      CACHE STRING "Default cacheline size")
+  message(
+    STATUS
+      "Default cacheline size: ${CACHELINE_SIZE}. Strongly suggest user set cacheline size based on the architecture of compute nodes."
+  )
+endif()
+
+# define CACHELINE_SIZE macro
+target_compile_definitions(pscom PRIVATE PSCOM_CACHELINE_SIZE=${CACHELINE_SIZE})
+
 if(RRCOMM_PRECON_ENABLED)
   target_add_rrcomm(pscom)
   target_sources(pscom PRIVATE pscom_precon_rrc.c)
