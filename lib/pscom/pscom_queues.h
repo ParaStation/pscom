@@ -12,7 +12,6 @@
 #ifndef _PSCOM_QUEUES_H_
 #define _PSCOM_QUEUES_H_
 
-#include "list.h"
 #include "pscom.h"
 #include "pscom_priv.h"
 
@@ -101,10 +100,6 @@ pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con,
 
 /* used for debug: */
 int _pscom_recvq_user_is_inside(pscom_req_t *req);
-
-
-/* if possible, move all req's from recvq_any(_global) to recvq_user. */
-void _pscom_recvq_any_cleanup(struct list_head *recvq_any);
 
 
 /*************

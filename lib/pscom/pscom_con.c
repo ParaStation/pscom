@@ -116,8 +116,6 @@ static inline void _pscom_recv_req_terminate_deq(pscom_req_t *req)
 // of this connection with error. (keep recv any!)
 void pscom_con_terminate_recvq(pscom_con_t *con)
 {
-    struct list_head *pos, *next;
-
     assert(con->magic == MAGIC_CONNECTION);
 
     // current receive:
@@ -133,36 +131,6 @@ void pscom_con_terminate_recvq(pscom_con_t *con)
         pscom_req_t *req = list_entry(con->recvq_user.next, pscom_req_t, next);
 
         _pscom_recv_req_terminate_deq(req);
-    }
-
-    // Socket RecvAny Queue:
-    pscom_sock_t *sock = get_sock(con->pub.socket);
-
-    assert(sock->magic == MAGIC_SOCKET);
-
-    list_for_each_safe (pos, next, &sock->recvq_any) {
-        pscom_req_t *req = list_entry(pos, pscom_req_t, next);
-
-        /* Check for connection-related requests that have temporarily (for the
-           sake of message ordering) been moved to the any-source queue of the
-           socket: */
-        if (req->pub.connection == &con->pub) {
-
-            _pscom_recv_req_terminate_deq(req);
-        }
-    }
-
-    // Global RecvAny Queue:
-    list_for_each_safe (pos, next, &pscom.recvq_any_global) {
-        pscom_req_t *req = list_entry(pos, pscom_req_t, next);
-
-        /* Check for connection-related requests that have temporarily (for the
-           sake of message ordering) been moved to the global any-source queue:
-         */
-        if (req->pub.connection == &con->pub) {
-
-            _pscom_recv_req_terminate_deq(req);
-        }
     }
 
     // RMA read requests:

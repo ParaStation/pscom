@@ -321,17 +321,6 @@ static void _pscom_recvq_user_enq_con(pscom_con_t *con, pscom_req_t *req)
 }
 
 
-static void _pscom_recvq_user_reenq_con(pscom_con_t *con, pscom_req_t *req)
-{
-    list_del(&req->next); // probably from sock->recvq_any
-    list_add_tail(&req->next, &con->recvq_user); // to con->recvq_user
-                                                 /* No need for:
-                                                    _pscom_recv_req_cnt_dec(con);
-                                                    _pscom_recv_req_cnt_inc(con);
-                                                 */
-}
-
-
 static void _pscom_recvq_user_deq_con(pscom_con_t *con, pscom_req_t *req)
 {
     // req in sock->recvq_any or con->recvq_user
@@ -432,29 +421,9 @@ void _pscom_recvq_user_enq(pscom_req_t *req)
         }
     }
 
-    /* In the case that a connection is given, it has to be checked (for the
-       sake of message ordering) whether there are already pending any-source
-       requests, either within the socket-related queue (for
-       MPI_COMM_WORLD-derived communicators) or within the global queue (for
-       communicators covering multiple MPI_COMM_WORLDs). If there are such
-       pending any-source requests, then enqueue the given request in the
-       appropriate one of those queues instead of the connection-related queue.
-    */
-    if (req->pub.socket) {
-        if (!list_empty(&get_sock(req->pub.socket)->recvq_any)) {
-            _pscom_recvq_user_enq_any(get_sock(req->pub.socket), req);
-            return;
-        }
-    } else {
-        req->pub.socket = req->pub.connection->socket;
-        if (!list_empty(&pscom.recvq_any_global)) {
-            _pscom_recvq_user_enq_any_global(req);
-            return;
-        }
-    }
-
     /* Finally, the default case remains, where the request goes into the
      * connection's queue. */
+    req->pub.socket = req->pub.connection->socket;
     _pscom_recvq_user_enq_con(get_con(req->pub.connection), req);
 }
 
@@ -473,47 +442,67 @@ void _pscom_recvq_user_deq(pscom_req_t *req)
 }
 
 
-pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con,
-                                            pscom_header_net_t *header)
+static inline pscom_req_t *_pscom_search_matching_req(
+    pscom_con_t *con, pscom_header_net_t *header, struct list_head *req_list)
 {
     struct list_head *pos;
-    pscom_sock_t *sock;
-
-    list_for_each (pos, &con->recvq_user) {
-        pscom_req_t *req = list_entry(pos, pscom_req_t, next);
-
-        if (req_recv_user_accept(req, &con->pub, header)) {
-            _pscom_recvq_user_deq_con(con, req);
-            return req;
-        }
-    }
-
-    sock = get_sock(con->pub.socket);
-
-    list_for_each (pos, &sock->recvq_any) {
-        pscom_req_t *req = list_entry(pos, pscom_req_t, next);
-        if (((!req->pub.connection) || (req->pub.connection == &con->pub)) &&
-            req_recv_user_accept(req, &con->pub, header)) {
-            _pscom_recvq_user_deq(req); // con or any request
-            _pscom_recvq_any_cleanup(&sock->recvq_any);
-            return req;
-        }
-    }
-
-    /* check for ANY_SOURCE requests pending in global queue: */
-    if (pscom.recv_req_cnt_any_global) {
-
-        list_for_each (pos, &pscom.recvq_any_global) {
+    if (!list_empty(req_list)) {
+        list_for_each (pos, req_list) {
             pscom_req_t *req = list_entry(pos, pscom_req_t, next);
-            if (((!req->pub.connection) || (req->pub.connection == &con->pub)) &&
-                req_recv_user_accept(req, &con->pub, header)) {
-                _pscom_recvq_user_deq(req); // con or any request
-                _pscom_recvq_any_cleanup(&pscom.recvq_any_global);
-                return req;
-            }
+            if (req_recv_user_accept(req, &con->pub, header)) { return req; }
         }
     }
     return NULL;
+}
+
+
+static inline pscom_req_t *_pscom_compare_req_no(pscom_req_t *req_candidate,
+                                                 pscom_req_t *req_new_candidate)
+{
+    /* compare with the new candidate */
+    if (req_new_candidate && (!req_candidate || (req_new_candidate->req_no <
+                                                 req_candidate->req_no))) {
+        return req_new_candidate;
+    } else {
+        return req_candidate;
+    }
+}
+
+
+pscom_req_t *_pscom_recvq_user_find_and_deq(pscom_con_t *con,
+                                            pscom_header_net_t *header)
+{
+    pscom_sock_t *sock;
+    pscom_req_t *req_from_sock   = NULL;
+    pscom_req_t *req_from_global = NULL;
+    pscom_req_t *req_candidate   = NULL;
+
+    /* search the req list in con for the first candidate */
+    req_candidate = _pscom_search_matching_req(con, header, &con->recvq_user);
+
+    /* search the any source req list in sock for the second candidate  */
+    sock          = get_sock(con->pub.socket);
+    req_from_sock = _pscom_search_matching_req(con, header, &sock->recvq_any);
+
+    /* compare with the second candidate (if not NULL), overwrite req_candidate
+     * with the second candidate if req_no of the second candidate is smaller
+     * than the current candidate or the current candidate is NULL */
+    req_candidate = _pscom_compare_req_no(req_candidate, req_from_sock);
+
+    /* search for the third req candidate from ANY_SOURCE requests in global
+     * queue: */
+    req_from_global = _pscom_search_matching_req(con, header,
+                                                 &pscom.recvq_any_global);
+
+    /* compare with the third candidate (if not NULL), overwrite req_candidate
+     * with the third candidate if req_no of the third candidate is smaller
+     * than the current candidate or the current candidate is NULL */
+    req_candidate = _pscom_compare_req_no(req_candidate, req_from_global);
+
+    /* if a final candidate is found, dequeue it */
+    if (req_candidate) { _pscom_recvq_user_deq(req_candidate); }
+
+    return req_candidate;
 }
 
 
@@ -554,22 +543,6 @@ int _pscom_recvq_user_is_inside(pscom_req_t *req)
     return 0;
 }
 
-
-void _pscom_recvq_any_cleanup(struct list_head *recvq_any)
-{
-    struct list_head *pos, *next;
-
-    list_for_each_safe (pos, next, recvq_any) {
-        pscom_req_t *req = list_entry(pos, pscom_req_t, next);
-        if (req->pub.connection) {
-            /* Move request from any queue to con queue */
-            pscom_con_t *con = get_con(req->pub.connection);
-            _pscom_recvq_user_reenq_con(con, req);
-        } else {
-            break;
-        }
-    }
-}
 
 /*************
  * Recvq ctrl
@@ -677,7 +650,7 @@ _pscom_net_recvq_user_find_from_any_global(pscom_req_t *req)
     return NULL;
 }
 
-
+/* enqueue both con->net_recvq_user and sock->genrecvq_any */
 void _pscom_net_recvq_user_enq(pscom_con_t *con, pscom_req_t *req)
 {
     pscom_sock_t *sock = get_sock(con->pub.socket);
@@ -701,14 +674,17 @@ void _pscom_net_recvq_user_deq(pscom_req_t *req)
 }
 
 
-/* find net generated user request. */
+/* find net generated user request:
+   1. if con, search req candidate in con->net_recvq_user
+   2. if socket, search req candidate in socket net_recvq_user lists
+   3. search req candidate in global net_recvq_user lists
+*/
 pscom_req_t *_pscom_net_recvq_user_find(pscom_req_t *req)
 {
     if (req->pub.connection) {
         return _pscom_net_recvq_user_find_from_con(get_con(req->pub.connection),
                                                    req);
     } else {
-        // receive "any"
         if (req->pub.socket) {
             return _pscom_net_recvq_user_find_from_any(get_sock(req->pub.socket),
                                                        req);

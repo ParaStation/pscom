@@ -19,6 +19,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/uio.h>
+#include <inttypes.h>
 
 #include "list.h"
 
@@ -126,8 +127,8 @@ const char *pscom_msgtype_str(pscom_msgtype_t msg_type)
 static void pscom_dump_request(FILE *out, pscom_req_t *req)
 {
     fprintf(out,
-            "req#%p state:%20s xhlen:%3lu dlen:%7lu ty:%s con:%p no:%5u "
-            "received:%7d",
+            "req#%p state:%20s xhlen:%3lu dlen:%7lu ty:%s con:%p"
+            " no:%5" PRIu64 " received:%7d",
             &req->pub, pscom_req_state_str(req->pub.state),
             req->pub.xheader_len, req->pub.data_len,
             pscom_msgtype_str(req->pub.header.msg_type), req->pub.connection,
@@ -329,7 +330,7 @@ char *pscom_debug_req_str(pscom_req_t *req)
 {
     static char buf[sizeof("reqUSER_: XXX(Pgpsdec)done_____")];
     if (req) {
-        snprintf(buf, sizeof(buf), "req%s: %s%u(%s)",
+        snprintf(buf, sizeof(buf), "req%s: %s%" PRIu64 "(%s)",
                  pscom_msgtype_str(req->pub.header.msg_type),
                  req->magic == MAGIC_REQUEST ? "" : "!MAGIC", req->req_no,
                  pscom_req_state_str(req->pub.state));

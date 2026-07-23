@@ -23,6 +23,7 @@
 #include "pscom_priv.h"
 #include "pscom_util.h"
 
+
 // ToDo: disable:
 #define ENABLE_REQUEST_MONITORING 1
 
@@ -163,7 +164,8 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
     req->write_hook = NULL;
 
     req->pending_io = 0;
-    req->req_no     = ++pscom.stat.reqs; // ToDo: disable debug?
+
+    pscom.stat.reqs++;
 
     req->pub.state = PSCOM_REQ_STATE_DONE;
 
