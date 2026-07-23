@@ -709,6 +709,7 @@ void test_portals_read_out_of_order_receive(void **state)
     pscom_request_free(recv_req);
 
     /* cleanup the readers */
+    dummy_con->read_stop(dummy_con);
     pscom_poll(&pscom.poll_read);
 }
 
@@ -820,6 +821,7 @@ void test_portals_read_three_out_of_order_receive(void **state)
     pscom_request_free(recv_req);
 
     /* cleanup the readers */
+    dummy_con->read_stop(dummy_con);
     pscom_poll(&pscom.poll_read);
 }
 
