@@ -238,3 +238,11 @@ if(CUDA_ENABLED)
 
   target_add_cuda(pscom_utest)
 endif(CUDA_ENABLED)
+
+add_test(
+  NAME pscom_utest_memcheck
+  COMMAND
+    valgrind --error-exitcode=1 --tool=memcheck --leak-check=full
+    --errors-for-leak-kinds=all --show-leak-kinds=all --track-origins=yes
+    --track-fds=yes ${PROJECT_BINARY_DIR}/test/pscom_utest
+  WORKING_DIRECTORY ${CMAKE_CURRENT_LIST_DIR})
