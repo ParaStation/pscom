@@ -291,6 +291,10 @@ test/pscom4ucp/test_pscom4ucp.c \
 test/pscom4ucp/test_pscom4ucp.h \
 test/pscom_utest.c \
 test/pscom_utest.h \
+test/utest/test_utest_utils.c \
+test/utest/test_utest_utils.h \
+test/util/test_utils_common.c \
+test/util/test_utils_common.h \
 test/util/test_utils_con.c \
 test/util/test_utils_con.h \
 test/util/test_utils_cuda.c \

@@ -26,8 +26,15 @@ typedef struct pscom_utest {
             unsigned int extended_ptl_put;
         } portals;
     } mock_functions;
+    struct {
+        const char *const precon_type;
+    } default_values;
 } pscom_utest_t;
 
 extern pscom_utest_t pscom_utest;
+
+typedef struct pscom_utest_prestate {
+    const char *precon_type;
+} pscom_utest_prestate_t;
 
 #endif /* _PSCOM_UTEST_H_ */

@@ -19,6 +19,7 @@ typedef struct dummy_con_pair {
 
 int setup_dummy_con(void **state);
 int teardown_dummy_con(void **state);
+int setup_dummy_con_with_prestate(void **state);
 
 int setup_dummy_con_pair(void **state);
 int teardown_dummy_con_pair(void **state);

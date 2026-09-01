@@ -22,13 +22,11 @@
 
 #include "list.h"
 #include "pscom_precon_rrc.h"
-#include "pscom_ufd.h"
 
 #include <stdlib.h>
 #include <errno.h>
 
 #include "test_rrcomm.h"
-#include "util/test_utils_provider.h"
 
 #include "pscom_precon_rrc.c" // check some variables.
 
@@ -41,12 +39,6 @@
  */
 void test_rrc_parse_ep_str(void **state)
 {
-    /* Start ufd */
-    ufd_init(&pscom.ufd);
-
-    /* re-init provider pointer with rrcomm */
-    setup_dummy_provider("rrcomm");
-
     pscom_precon_provider_t *provider_rrc = pscom_precon_provider_lookup("rrcom"
                                                                          "m");
     assert_ptr_equal(pscom_precon_provider, provider_rrc);
@@ -83,9 +75,6 @@ void test_rrc_parse_ep_str(void **state)
 
     /* check if precon is freed */
     assert_true(list_empty(&pscom_precon_provider->precon_list));
-
-    /* clean up ufd */
-    ufd_cleanup(&pscom.ufd);
 }
 
 
@@ -98,12 +87,6 @@ void test_rrc_parse_ep_str(void **state)
  */
 void test_rrc_recv_msg(void **state)
 {
-    /* Start ufd */
-    ufd_init(&pscom.ufd);
-
-    /* re-init provider pointer with rrcomm */
-    setup_dummy_provider("rrcomm");
-
     pscom_precon_provider_t *provider_rrc = pscom_precon_provider_lookup("rrcom"
                                                                          "m");
     assert_ptr_equal(pscom_precon_provider, provider_rrc);
@@ -129,9 +112,6 @@ void test_rrc_recv_msg(void **state)
 
     /* check if precon is freed */
     assert_true(list_empty(&pscom_precon_provider->precon_list));
-
-    /* clean up ufd */
-    ufd_cleanup(&pscom.ufd);
 }
 
 
@@ -144,12 +124,6 @@ void test_rrc_recv_msg(void **state)
  */
 void test_rrc_resend_signal(void **state)
 {
-    /* Start ufd */
-    ufd_init(&pscom.ufd);
-
-    /* re-init provider pointer with rrcomm */
-    setup_dummy_provider("rrcomm");
-
     pscom_precon_provider_t *provider_rrc = pscom_precon_provider_lookup("rrcom"
                                                                          "m");
     assert_ptr_equal(pscom_precon_provider, provider_rrc);
@@ -204,9 +178,6 @@ void test_rrc_resend_signal(void **state)
 
     /* check if precon is freed */
     assert_true(list_empty(&pscom_precon_provider->precon_list));
-
-    /* clean up ufd */
-    ufd_cleanup(&pscom.ufd);
 }
 
 
@@ -219,12 +190,6 @@ void test_rrc_resend_signal(void **state)
  */
 void test_rrc_send_msg(void **state)
 {
-    /* Start ufd */
-    ufd_init(&pscom.ufd);
-
-    /* re-init provider pointer with rrcomm */
-    setup_dummy_provider("rrcomm");
-
     pscom_precon_provider_t *provider_rrc = pscom_precon_provider_lookup("rrcom"
                                                                          "m");
     assert_ptr_equal(pscom_precon_provider, provider_rrc);
@@ -253,7 +218,4 @@ void test_rrc_send_msg(void **state)
 
     /* check if precon is freed */
     assert_true(list_empty(&pscom_precon_provider->precon_list));
-
-    /* clean up ufd */
-    ufd_cleanup(&pscom.ufd);
 }
