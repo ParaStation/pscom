@@ -39,6 +39,14 @@ int resend_count;
 /**< list  of pending resend requests */
 struct list_head resend_requests;
 
+/**< global counters of intra- and inter-job sockets */
+static int32_t inter_sockid = 1; // Unique incremental socket id for inter-job
+                                 // socket, starting from 1.
+static int32_t intra_sockid = 0; // The only one intra-job socket id is 0, this
+                                 // variable will be increased to 1 when the
+                                 // intra-job socket is created and decreased to
+                                 // 0 when the socket is destroyed.
+
 /**< Maximum packet size (gets increased automatically if necessary) */
 static ssize_t max_buf_size = 1000;
 
@@ -1473,10 +1481,47 @@ static int pscom_precon_guard_setup_rrc(pscom_precon_t *precon)
 }
 
 
-static void pscom_precon_sock_init_rrc(pscom_sock_t *sock)
+static pscom_err_t pscom_precon_sock_init_rrc(pscom_sock_t *sock)
 {
+    /* TODO: Need lock when calling this function. In the future,
+     * atomics should be used. */
+    /* The sock type is exclusive, either INTER_JOB or INTRA_JOB. */
+    pscom_err_t ret = PSCOM_SUCCESS;
+    int intra_job   = sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB;
+    int inter_job   = sock->sock_flags & PSCOM_SOCK_FLAG_INTER_JOB;
+    /* Set socket id. For RRComm, only one intra-job socket is allowed. */
+    if (inter_job && !intra_job) {
+        /* allow multiple inter-job sockets */
+        sock->id = inter_sockid++;
+    } else if (intra_job && !inter_job) {
+        sock->id = intra_sockid++;
+        /* allow only one intra-job socket, and its id will be 0 */
+        if (sock->id) {
+            DPRINT(D_BUG, "More than one intra-job socket has been created. %s",
+                   pscom_err_str(PSCOM_ERR_STDERROR));
+            ret = PSCOM_ERR_STDERROR;
+        }
+    } else {
+        DPRINT(D_BUG, "The flag for the socket type is not set correctly. %s",
+               pscom_err_str(PSCOM_ERR_INVALID));
+        ret = PSCOM_ERR_INVALID;
+    }
+
     /* TODO: Currently, TCP is not supported as payload when RRComm is used. */
     pscom_con_type_mask_del(&sock->pub, PSCOM_CON_TYPE_TCP);
+    return ret;
+}
+
+
+static void pscom_precon_sock_destroy_rrc(pscom_sock_t *sock)
+{
+    /* If RRComm is used, release the only intra-job socket, reset intra_sockid
+     * to 0. */
+    if (sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB) {
+        intra_sockid--;
+        assert(intra_sockid == 0);
+    }
+    return;
 }
 
 
@@ -1502,6 +1547,7 @@ pscom_precon_provider_t pscom_provider_rrc = {
     .recv_stop               = pscom_precon_recv_stop_rrc,
     .connect                 = pscom_precon_connect_rrc,
     .sock_init               = pscom_precon_sock_init_rrc,
+    .sock_destroy            = pscom_precon_sock_destroy_rrc,
     .guard_setup             = pscom_precon_guard_setup_rrc,
     .is_starting_peer        = pscom_precon_is_starting_peer_rrc,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_rrc,

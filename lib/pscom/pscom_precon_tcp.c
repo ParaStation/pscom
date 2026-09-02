@@ -33,6 +33,14 @@
 #include "pscom_env.h"
 #include "pscom_plugin.h"
 
+
+/* The first TCP socket id is set to 0 when the first socket is created (e.g.,
+ * within `MPI_Init()`). We assume that this socket will not be destroyed until
+ * the end of the respective pscom runtime. The socket id will be incremented
+ * when more TCP sockets are created. */
+static int32_t sockid = 0;
+
+
 pscom_env_table_entry_t pscom_env_table_precon_tcp[] = {
     {"SO_SNDBUF", "32768",
      "The SO_SNDBUF size set in the TCP/IP socket in precon.",
@@ -1312,8 +1320,33 @@ static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
 }
 
 
-static void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
+static pscom_err_t pscom_precon_sock_init_tcp(pscom_sock_t *sock)
 {
+    /* The sock type is exclusive, either INTER_JOB or INTRA_JOB. */
+    pscom_err_t ret = PSCOM_SUCCESS;
+    int intra_job   = sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB;
+    int inter_job   = sock->sock_flags & PSCOM_SOCK_FLAG_INTER_JOB;
+    if (inter_job != intra_job) {
+        /* Either intra-job or inter-job socket uses the incremental sock id
+         * counter. We assume that the first socket is always set to 0 and
+         * created during the init phase (e.g., within `MPI_Init()`). */
+        sock->id = sockid++;
+    } else {
+        DPRINT(D_BUG, "The flag for the socket type is not set correctly. %s",
+               pscom_err_str(PSCOM_ERR_INVALID));
+        ret = PSCOM_ERR_INVALID;
+    }
+    return ret;
+}
+
+
+static void pscom_precon_sock_destroy_tcp(pscom_sock_t *sock)
+{
+    /* Note: If TCP is used, do nothing. However, if the first socket is
+     * destroyed, the RMA mem registration happens with `comm->socket == NULL`,
+     * so the registration may fail, because memory regions are attached to
+     * sockets for now. See `pscom_mem_register()` in `pscom_rma.c`. We could
+     * change pscom socket to something like ucp worker in the future. */
     return;
 }
 
@@ -1518,6 +1551,7 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,
     .sock_init               = pscom_precon_sock_init_tcp,
+    .sock_destroy            = pscom_precon_sock_destroy_tcp,
     .guard_setup             = pscom_precon_guard_setup_tcp,
     .is_starting_peer        = pscom_precon_is_starting_peer_tcp,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,
