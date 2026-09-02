@@ -313,7 +313,7 @@ static void pscom_precon_terminate_backconnect_tcp(pscom_precon_tcp_t *pre_tcp)
            "state:%8s",
            pre_tcp, pre_tcp->con, pscom_con_type_str(pre_tcp->con->pub.type),
            pscom_con_state_str(pre_tcp->con->pub.state));
-    pre_tcp->con = NULL; /* do not touch the connected con anymore. */
+    pre_tcp->con = NULL; /* Do not touch the connected con anymore. */
 
     pscom_precon_handle_receive_tcp(pre_tcp, PSCOM_INFO_FD_EOF, NULL, 0);
 }
@@ -375,7 +375,7 @@ void pscom_precon_check_connect_tcp(pscom_precon_tcp_t *pre_tcp)
         pre_tcp->last_reconnect = now;
 
         if (!pscom_precon_isconnected_tcp(pre_tcp)) {
-            /* reconnect after failure followed by the
+            /* Reconnect after failure followed by the
              * precon_tcp_reconnect_timeout: */
             pscom_precon_reconnect_tcp(pre_tcp);
         } else if ((pre_tcp->stat_recv == 0) && (pre_tcp->stat_send == 0)) {
@@ -441,13 +441,13 @@ pscom_err_t pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type,
 
     pscom_precon_info_dump(precon, "send", type, data, size);
 
-    /* allocate msg_size bytes after existing pre->send */
+    /* Allocate msg_size bytes after existing pre->send */
     pre_tcp->send = realloc(pre_tcp->send, pre_tcp->send_len + msg_size);
     assert(pre_tcp->send);
     msg = pre_tcp->send + pre_tcp->send_len;
     pre_tcp->send_len += msg_size;
 
-    /* append the message to pre->send */
+    /* Append the message to pre->send */
     memcpy(msg, &ntype, sizeof(ntype));
     msg += sizeof(ntype);
     memcpy(msg, &nsize, sizeof(nsize));
@@ -608,7 +608,7 @@ static void pscom_precon_do_read_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
     /* --- */
 check_read_error:
     if (len == 0) {
-        /* receive EOF. Handle the pseudo message FD_EOF */
+        /* Receive EOF. Handle the pseudo message FD_EOF. */
         ufd_event_clr(&pscom.ufd, &pre_tcp->ufd_info, POLLIN);
         pscom_precon_handle_receive_tcp(pre_tcp, PSCOM_INFO_FD_EOF, NULL, 0);
     } else if (errno == EAGAIN || errno == EINTR) {
@@ -720,7 +720,7 @@ void pscom_precon_handle_receive_tcp(pscom_precon_tcp_t *pre_tcp, uint32_t type,
             con                            = pscom_con_create(sock);
             pre_tcp->con                   = con;
             con->precon                    = pre_tcp->precon;
-            /* until the user get a handle to con (via con->on_accept) */
+            /* Until the user get a handle to con (via con->on_accept) */
             con->state.internal_connection = 1;
             con->pub.state                 = PSCOM_CON_STATE_ACCEPTING;
             con->pub.remote_con_info       = msg->con_info;
@@ -964,7 +964,7 @@ void pscom_precon_terminate_tcp(pscom_precon_tcp_t *pre_tcp)
     assert(pre_tcp->magic == MAGIC_PRECON);
     DPRINT(D_DBG, "precon(%p) tcp: terminated", pre_tcp->precon);
     pscom_precon_recv_stop(pre_tcp->precon);
-    /* throw away the sendbuffer */
+    /* Throw away the sendbuffer */
     if (pre_tcp->send) {
         free(pre_tcp->send);
         pre_tcp->send = NULL;
@@ -1071,7 +1071,7 @@ static void pscom_precon_cleanup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     assert(pre_tcp->magic == MAGIC_PRECON);
-    /* clean up tcp */
+    /* Clean up tcp */
     int fd = pre_tcp->ufd_info.fd;
     if (fd != -1) {
         ufd_del(&pscom.ufd, &pre_tcp->ufd_info);
@@ -1197,19 +1197,19 @@ static pscom_err_t pscom_sock_start_listen_tcp(pscom_sock_t *sock, int portno)
     /* This is NOT the first listen call on this socket */
     if (sock->pub.listen_portno != -1) {
         if (portno == sock->pub.listen_portno || portno == PSCOM_ANYPORT) {
-            /* we have already opened a listener and bind `fd` to it, and as the
+            /* We have already opened a listener and bind `fd` to it, and as the
                requested porno is equal to this `fd` or PSCOM_ANYPORT, here we
                will just re-activate it and start listening on the same `fd`. */
             if (sock->listen.activecnt == 0) {
-                /* if listener is not active, re-activate it. */
-                /* if activecnt > 0 do nothing. */
+                /* If listener is not active, re-activate it. */
+                /* If activecnt > 0, do nothing. */
                 pscom_listener_active_inc(&sock->listen);
             }
             return ret;
         } else {
-            /* binding a new `fd` to an active listener is not allowed */
+            /* Binding a new `fd` to an active listener is not allowed */
             if (sock->listen.activecnt > 0) { goto err_fd_error; }
-            /* the previous listen_portno is not equal to the portno, we have to
+            /* The previous listen_portno is not equal to the portno, we have to
                close the previous `fd`, and reset the listener struct  */
             pscom_listener_close_fd(&sock->listen);
             sock->pub.listen_portno = -1;
@@ -1354,7 +1354,7 @@ static void pscom_precon_sock_destroy_tcp(pscom_sock_t *sock)
 int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
-    /* set cleanup to 0 such that fd will not be closed when precon tcp is
+    /* Set cleanup to 0 such that fd will not be closed when precon tcp is
      * destroyed */
     pre_tcp->closefd_on_cleanup = 0;
     return pre_tcp->ufd_info.fd;
@@ -1448,10 +1448,10 @@ static pscom_err_t pscom_parse_ep_info_tcp(const char *ep_str,
     con_info->tcp.portno = (int)ntohs(sock.sin_port);
 
     memset(con_info->name, 0, sizeof(con_info->name));
-    /* the parsed name should be socket->local_con_info.name from the remote
+    /* The parsed name should be `socket->local_con_info.name` from the remote
      * side, it will be used to find ondemand connection and determine who is
      * connecting/ back-connecting by comparing with the name in
-     * socket->local_con_info.name */
+     * `socket->local_con_info.name`. */
     if (nametok) { strncpy(con_info->name, nametok, sizeof(con_info->name)); }
 
     return ret;
@@ -1512,7 +1512,7 @@ static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
 
 static void pscom_precon_provider_destroy_tcp(void)
 {
-    /* check if precon_list is empty */
+    /* Check if precon_list is empty */
     if (!list_empty(&pscom_precon_provider->precon_list)) {
         struct list_head *pos, *next;
         /* Obtain the precon associated to this resend signal */

@@ -152,14 +152,14 @@ static void pscom_precon_check_end_rrc(pscom_precon_rrc_t *pre_rrc,
                                        pscom_con_t *con)
 {
     if (pre_rrc->recv_done) {
-        /* print precon information */
+        /* Print precon information */
         pscom_precon_print_stat_rrc(pre_rrc);
 
         pre_rrc->recv_done = 0;
         pscom_plugin_t *p  = con->precon->plugin;
 
         if (pre_rrc->con) {
-            /* recv is done, disallow precon usage in handshake */
+            /* Receive is done, disallow precon usage in handshake */
             pre_rrc->con->precon = NULL;
         }
 
@@ -202,19 +202,19 @@ static pscom_err_t pscom_precon_send_rrc(pscom_precon_t *precon, unsigned type,
 
     pscom_precon_info_dump(precon, "send", type, data, size);
 
-    /* allocate a `send` buffer of `msg_size` bytes */
+    /* Allocate a `send` buffer of `msg_size` bytes */
     ssize_t msg_size = (ssize_t)(size + sizeof(pscom_info_rrc_t));
-    /* all sent messages should be smaller than the max recv buffer size */
+    /* All sent messages should be smaller than the max recv buffer size */
     if (msg_size > max_buf_size) { max_buf_size = msg_size + 1; }
 
     char *msg, *send = (char *)malloc(msg_size);
     assert(send);
     msg = send;
 
-    /* copy the message header to the send buffer */
+    /* Copy the message header to the send buffer */
     memcpy(msg, &rrcomm, sizeof(pscom_info_rrc_t));
     msg += sizeof(pscom_info_rrc_t);
-    /* append the message to the send buffer */
+    /* Append the message to the send buffer */
     memcpy(msg, data, size);
 
     /* Send RRcomm message to destination */
@@ -391,7 +391,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
         msg = data;
         assert(msg);
         con_info     = &msg->con_info;
-        /* the received remote sockid is the sockid at the recv side. */
+        /* The received remote sockid is the sockid at the recv side. */
         local_sockid = msg->con_info.rrcomm.remote_sockid;
 
         struct list_head *pos;
@@ -403,10 +403,10 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
             }
         }
     } else {
-        /* get socket from con */
+        /* Get socket from con */
         sock = get_sock(con->pub.socket);
     }
-    /* ensure that we have found one sock */
+    /* Ensure that we have found one sock */
     assert(sock);
 
     assert(!con || con->magic == MAGIC_CONNECTION);
@@ -422,7 +422,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
 
         if (!con) { /* Accepting side of the connection */
             con                            = pscom_con_create(sock);
-            /* until the user gets a handle to con (via con->on_accept) */
+            /* Until the user gets a handle to con (via con->on_accept) */
             con->state.internal_connection = 1;
             con->pub.state                 = PSCOM_CON_STATE_ACCEPTING;
             con->pub.remote_con_info       = msg->con_info;
@@ -438,7 +438,7 @@ static void pscom_precon_handle_receive_rrc(uint32_t type, PStask_ID_t jobid,
 
             pscom_precon_send_PSCOM_INFO_CON_INFO_VERSION_rrc(
                 con, PSCOM_INFO_CON_INFO_VERSION, local_sockid, remote_sockid);
-            /* this should only happen for direct connection;
+            /* This should only happen for direct connection;
              * for ONDEMAND, it should not be possible */
             if (pre_rrc->con->pub.type != PSCOM_CON_TYPE_ONDEMAND) {
                 pre_rrc->precon->plugin = NULL;
@@ -633,11 +633,11 @@ static int pscom_enqueue_message(int dest, PStask_ID_t jobid)
             con->pub.remote_con_info.rrcomm.jobid == (uint64_t)jobid) {
             /* Still more retries? */
             if (!pscom.env.rrc_resend_times || pre_rrc->resend_times) {
-                /* create a resend req for this precon */
+                /* Create a resend req for this precon */
                 pscom_resend_request_t *resend = (pscom_resend_request_t *)
                     malloc(sizeof(pscom_resend_request_t));
                 assert(resend);
-                /* get the start time stamp */
+                /* Get the start time stamp */
                 gettimeofday(&resend->start_time, NULL);
                 resend->jobid    = jobid;
                 resend->dest     = dest;
@@ -683,16 +683,16 @@ static void pscom_precon_do_write_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 
     struct list_head *pos, *next;
 
-    /* only one thread is allowed to do the resend */
+    /* Only one thread is allowed to do the resend */
     list_for_each_safe (pos, next, &resend_requests) {
         pscom_resend_request_t *resend = list_entry(pos, pscom_resend_request_t,
                                                     next);
 
-        /* get current timestamp */
+        /* Get current timestamp */
         struct timeval time;
         gettimeofday(&time, NULL);
 
-        /* resend signal timestamp */
+        /* Resend signal timestamp */
         double st = (double)resend->start_time.tv_sec +
                     (double)resend->start_time.tv_usec / 1e6;
         /* Current timestamp */
@@ -736,7 +736,7 @@ static void pscom_precon_do_write_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
                        pscom_info_type_str(resend->msg_type),
                        pre_rrc->info_sent);
 
-                /* due to the delay, the con_info may be already sent to the
+                /* Due to the delay, the con_info may be already sent to the
                  * target, then the sending back_connect and con_info is not
                  * needed. */
                 if (!pre_rrc->info_sent) {
@@ -775,7 +775,7 @@ static void pscom_precon_do_read_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
 {
     int rank;
     PStask_ID_t jobid;
-    /* the messages sent and received should not be larger than max_buf_size.
+    /* The messages sent and received should not be larger than max_buf_size.
      * The payload information (libverbs, ucx, portals4) may excceed this limit
      */
     char *recv = (char *)malloc(max_buf_size);
@@ -784,10 +784,10 @@ static void pscom_precon_do_read_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
     /* Read the package and store it in recv buffer */
     ssize_t len = RRC_recvX(&jobid, &rank, recv, max_buf_size);
 
-    /* the buffer is smaller than the message, len is the actual message size
+    /* The buffer is smaller than the message, len is the actual message size
      * and RRComm will keep the message*/
     while (len > max_buf_size) {
-        /* change the max_buf_size */
+        /* Change the max_buf_size */
         max_buf_size = len + 1;
         recv         = (char *)realloc(recv, max_buf_size);
         assert(recv);
@@ -800,7 +800,7 @@ static void pscom_precon_do_read_rrc(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
     if (len < 0) {
         /* This is a resend signal with errno=0, then resend the message */
         if (!errno) {
-            /* enqueue resend request and start resending with a delay */
+            /* Enqueue resend request and start resending with a delay */
             DPRINT(D_ERR, "RRC_sendX(%d) with job %ld failed. Resending it!\n",
                    rank, (int64_t)jobid);
             int ret = pscom_enqueue_message(rank, jobid);
@@ -961,7 +961,7 @@ static pscom_err_t pscom_precon_connect_rrc(pscom_con_t *con)
 
 err_connect:
     if (errno != ENOPROTOOPT) {
-        /* if (errno == ENOPROTOOPT) _plugin_connect_next() already called
+        /* If (errno == ENOPROTOOPT) _plugin_connect_next() already called
          * pscom_con_setup_failed(). */
         pscom_con_setup_failed(con, PSCOM_ERR_STDERROR);
     }
@@ -1034,7 +1034,7 @@ static void pscom_precon_provider_destroy_rrc(void)
     pscom_global_rrc_t *global_rrc =
         (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
-    /* check if precon_list is empty */
+    /* Check if precon_list is empty */
     if (!list_empty(&pscom_precon_provider->precon_list)) {
         struct list_head *pos, *next;
         /* Obtain the precon associated to this resend signal */
@@ -1071,7 +1071,7 @@ static void pscom_precon_provider_destroy_rrc(void)
     /* Destroy sock rrcomm struct */
     free(global_rrc);
 
-    /* finalize RRcomm for this socket */
+    /* Finalize RRcomm for this socket */
     RRC_finalize();
 }
 
@@ -1234,7 +1234,7 @@ static void pscom_sock_stop_listen_rrc(pscom_sock_t *sock)
     pscom_global_rrc_t *global_rrc =
         (pscom_global_rrc_t *)pscom_precon_provider->precon_provider_data;
 
-    /* this will be called when sock is closed, active may already be 0 */
+    /* This will be called when sock is closed, active may already be 0 */
     if (global_rrc->active == 0) { return; }
 
     assert(global_rrc->active > 0);
