@@ -21,6 +21,7 @@ void test_suspend_listen(void **state);
 void test_suspend_resume_listen(void **state);
 void test_suspend_resume_listen_ondemand(void **state);
 void test_suspend_resume_listen_ondemand_recv_req(void **state);
+void test_start_stop_listen_on_two_sockets(void **state);
 
 
 #endif /* _TEST_LISTEN_H_ */

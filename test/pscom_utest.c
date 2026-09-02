@@ -199,6 +199,8 @@ int main(void)
             test_suspend_resume_listen_ondemand_recv_req, setup_dummy_sock,
             teardown_dummy_sock),
 
+        cmocka_unit_test_setup_teardown(test_start_stop_listen_on_two_sockets,
+                                        setup_dummy_sock, teardown_dummy_sock),
     };
     total_tests += TEST_GROUP_SIZE(pscom_listener_tests);
     failed_tests += cmocka_run_group_tests(pscom_listener_tests, NULL, NULL);

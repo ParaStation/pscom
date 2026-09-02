@@ -15,6 +15,7 @@
 
 #include "list.h"
 #include "pscom.h"
+#include "pscom_precon.h"
 #include "pscom_priv.h"
 #include "pscom_sock.h"
 #include "test_utils_provider.h"
@@ -41,7 +42,7 @@ int setup_dummy_sock(void **state)
 int teardown_dummy_sock(void **state)
 {
     pscom_sock_t *sock = (pscom_sock_t *)(*state);
-    pscom_sock_unset_id(sock);
+    pscom_precon_provider->sock_destroy(sock);
     free(sock);
 
     /* destroy provider */

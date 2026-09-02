@@ -13,6 +13,7 @@
 #include <setjmp.h> /* IWYU pragma: keep */
 #include <cmocka.h>
 #include <string.h>
+#include <stdlib.h>
 
 #include "list.h"
 #include "pscom.h"
@@ -46,7 +47,7 @@ void test_start_stop_listen_anyport(void **state)
     /* Test stop listening */
     stop_listen(dummy_sock);
 
-    /* Both counters must be reset to 0 */
+    /* The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Listener should NOT be listening for incoming connections anymore */
@@ -100,7 +101,7 @@ void test_restart_listen_anyport(void **state)
     /* Test stop listening */
     stop_listen(dummy_sock);
 
-    /* Both counters must be reset to 0 */
+    /* The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Listener should NOT be listening for incoming connections anymore */
@@ -203,7 +204,7 @@ void test_restart_listen_specific_port(void **state)
     /* Test stop listening */
     stop_listen(dummy_sock);
 
-    /* Both counters must be reset to 0 */
+    /* The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Listener should NOT be listening for incoming connections anymore */
@@ -339,7 +340,7 @@ void test_start_stop_listen_ondemand_recv_req(void **state)
     /* Close the connection  */
     pscom_con_close(con);
 
-    /* Both counters must be reset to 0 */
+    /* The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Close the socket */
@@ -377,7 +378,7 @@ void test_suspend_listen(void **state)
     /* Test stop listening */
     stop_listen(dummy_sock);
 
-    /* Both counters must be reset to 0 */
+    /* The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Listener should NOT be listening for incoming connections anymore */
@@ -425,7 +426,7 @@ void test_suspend_resume_listen(void **state)
     /* Test stop listening */
     stop_listen(dummy_sock);
 
-    /* Both counters must be reset to 0 */
+    /*The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Listener should NOT be listening for incoming connections anymore */
@@ -570,7 +571,7 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
     /* Close the connection  */
     pscom_con_close(con);
 
-    /* Both counters must be reset to 0 */
+    /* The active counter must be reset to 0 */
     assert_true(dummy_sock->listen.activecnt == 0);
 
     /* Close the socket */
@@ -581,4 +582,70 @@ void test_suspend_resume_listen_ondemand_recv_req(void **state)
 
     /* clean up ufd */
     ufd_cleanup(&pscom.ufd);
+}
+
+/**
+ * @brief Test starting and stopping of listening on two intra-job pscom socket
+ * with TCP as precon protocol
+ *
+ * Given: Two open pscom sockets
+ * When: Start listening on both sockets and stop listening
+ * Then: All internal counters and the file descriptor of the listener must have
+ * the correct values
+ */
+void test_start_stop_listen_on_two_sockets(void **state)
+{
+    pscom_sock_t *dummy_sock = (pscom_sock_t *)(*state);
+
+    /* create the second intra-job socket */
+    pscom_sock_t *newsock = pscom_sock_create(0, 0, PSCOM_RANK_UNDEFINED,
+                                              PSCOM_SOCK_FLAG_INTRA_JOB);
+
+    /* Start ufd */
+    ufd_init(&pscom.ufd);
+
+    /* Test start listening on socket */
+    start_listen(dummy_sock);
+
+    /* Test start listening on the second socket */
+    start_listen(newsock);
+
+    /* Test stop listening */
+    stop_listen(dummy_sock);
+
+    /* The active counter must be reset to 0 */
+    assert_true(dummy_sock->listen.activecnt == 0);
+
+    /* Listener should NOT be listening for incoming connections anymore */
+    assert_true(dummy_sock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Manually close fd before closing to test this function */
+    pscom_listener_close_fd(&dummy_sock->listen);
+
+    /* No fd */
+    assert_true(dummy_sock->listen.ufd_info.fd == -1);
+
+    /* Close the socket */
+    pscom_sock_close(dummy_sock);
+
+    /* Test stop listening */
+    stop_listen(newsock);
+
+    /* The active counter must be reset to 0 */
+    assert_true(newsock->listen.activecnt == 0);
+
+    /* Listener should NOT be listening for incoming connections anymore */
+    assert_true(newsock->listen.ufd_info.pollfd_idx == -1);
+
+    /* Manually close fd before closing to test this function */
+    pscom_listener_close_fd(&newsock->listen);
+
+    /* No fd */
+    assert_true(newsock->listen.ufd_info.fd == -1);
+
+    /* Close the socket */
+    pscom_sock_close(newsock);
+
+    pscom_precon_provider->sock_destroy(newsock);
+    free(newsock);
 }
