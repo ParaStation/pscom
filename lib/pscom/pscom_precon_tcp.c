@@ -33,6 +33,14 @@
 #include "pscom_env.h"
 #include "pscom_plugin.h"
 
+
+/* The first TCP socket id is set to 0 when the first socket is created (e.g.,
+ * within `MPI_Init()`). We assume that this socket will not be destroyed until
+ * the end of the respective pscom runtime. The socket id will be incremented
+ * when more TCP sockets are created. */
+static int32_t sockid = 0;
+
+
 pscom_env_table_entry_t pscom_env_table_precon_tcp[] = {
     {"SO_SNDBUF", "32768",
      "The SO_SNDBUF size set in the TCP/IP socket in precon.",
@@ -305,7 +313,7 @@ static void pscom_precon_terminate_backconnect_tcp(pscom_precon_tcp_t *pre_tcp)
            "state:%8s",
            pre_tcp, pre_tcp->con, pscom_con_type_str(pre_tcp->con->pub.type),
            pscom_con_state_str(pre_tcp->con->pub.state));
-    pre_tcp->con = NULL; /* do not touch the connected con anymore. */
+    pre_tcp->con = NULL; /* Do not touch the connected con anymore. */
 
     pscom_precon_handle_receive_tcp(pre_tcp, PSCOM_INFO_FD_EOF, NULL, 0);
 }
@@ -367,7 +375,7 @@ void pscom_precon_check_connect_tcp(pscom_precon_tcp_t *pre_tcp)
         pre_tcp->last_reconnect = now;
 
         if (!pscom_precon_isconnected_tcp(pre_tcp)) {
-            /* reconnect after failure followed by the
+            /* Reconnect after failure followed by the
              * precon_tcp_reconnect_timeout: */
             pscom_precon_reconnect_tcp(pre_tcp);
         } else if ((pre_tcp->stat_recv == 0) && (pre_tcp->stat_send == 0)) {
@@ -433,13 +441,13 @@ pscom_err_t pscom_precon_send_tcp(pscom_precon_t *precon, unsigned type,
 
     pscom_precon_info_dump(precon, "send", type, data, size);
 
-    /* allocate msg_size bytes after existing pre->send */
+    /* Allocate msg_size bytes after existing pre->send */
     pre_tcp->send = realloc(pre_tcp->send, pre_tcp->send_len + msg_size);
     assert(pre_tcp->send);
     msg = pre_tcp->send + pre_tcp->send_len;
     pre_tcp->send_len += msg_size;
 
-    /* append the message to pre->send */
+    /* Append the message to pre->send */
     memcpy(msg, &ntype, sizeof(ntype));
     msg += sizeof(ntype);
     memcpy(msg, &nsize, sizeof(nsize));
@@ -600,7 +608,7 @@ static void pscom_precon_do_read_tcp(ufd_t *ufd, ufd_funcinfo_t *ufd_info)
     /* --- */
 check_read_error:
     if (len == 0) {
-        /* receive EOF. Handle the pseudo message FD_EOF */
+        /* Receive EOF. Handle the pseudo message FD_EOF. */
         ufd_event_clr(&pscom.ufd, &pre_tcp->ufd_info, POLLIN);
         pscom_precon_handle_receive_tcp(pre_tcp, PSCOM_INFO_FD_EOF, NULL, 0);
     } else if (errno == EAGAIN || errno == EINTR) {
@@ -712,7 +720,7 @@ void pscom_precon_handle_receive_tcp(pscom_precon_tcp_t *pre_tcp, uint32_t type,
             con                            = pscom_con_create(sock);
             pre_tcp->con                   = con;
             con->precon                    = pre_tcp->precon;
-            /* until the user get a handle to con (via con->on_accept) */
+            /* Until the user get a handle to con (via con->on_accept) */
             con->state.internal_connection = 1;
             con->pub.state                 = PSCOM_CON_STATE_ACCEPTING;
             con->pub.remote_con_info       = msg->con_info;
@@ -956,7 +964,7 @@ void pscom_precon_terminate_tcp(pscom_precon_tcp_t *pre_tcp)
     assert(pre_tcp->magic == MAGIC_PRECON);
     DPRINT(D_DBG, "precon(%p) tcp: terminated", pre_tcp->precon);
     pscom_precon_recv_stop(pre_tcp->precon);
-    /* throw away the sendbuffer */
+    /* Throw away the sendbuffer */
     if (pre_tcp->send) {
         free(pre_tcp->send);
         pre_tcp->send = NULL;
@@ -1063,7 +1071,7 @@ static void pscom_precon_cleanup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
     assert(pre_tcp->magic == MAGIC_PRECON);
-    /* clean up tcp */
+    /* Clean up tcp */
     int fd = pre_tcp->ufd_info.fd;
     if (fd != -1) {
         ufd_del(&pscom.ufd, &pre_tcp->ufd_info);
@@ -1189,19 +1197,19 @@ static pscom_err_t pscom_sock_start_listen_tcp(pscom_sock_t *sock, int portno)
     /* This is NOT the first listen call on this socket */
     if (sock->pub.listen_portno != -1) {
         if (portno == sock->pub.listen_portno || portno == PSCOM_ANYPORT) {
-            /* we have already opened a listener and bind `fd` to it, and as the
+            /* We have already opened a listener and bind `fd` to it, and as the
                requested porno is equal to this `fd` or PSCOM_ANYPORT, here we
                will just re-activate it and start listening on the same `fd`. */
             if (sock->listen.activecnt == 0) {
-                /* if listener is not active, re-activate it. */
-                /* if activecnt > 0 do nothing. */
+                /* If listener is not active, re-activate it. */
+                /* If activecnt > 0, do nothing. */
                 pscom_listener_active_inc(&sock->listen);
             }
             return ret;
         } else {
-            /* binding a new `fd` to an active listener is not allowed */
+            /* Binding a new `fd` to an active listener is not allowed */
             if (sock->listen.activecnt > 0) { goto err_fd_error; }
-            /* the previous listen_portno is not equal to the portno, we have to
+            /* The previous listen_portno is not equal to the portno, we have to
                close the previous `fd`, and reset the listener struct  */
             pscom_listener_close_fd(&sock->listen);
             sock->pub.listen_portno = -1;
@@ -1312,8 +1320,33 @@ static void pscom_sock_stop_listen_tcp(pscom_sock_t *sock)
 }
 
 
-static void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
+static pscom_err_t pscom_precon_sock_init_tcp(pscom_sock_t *sock)
 {
+    /* The sock type is exclusive, either INTER_JOB or INTRA_JOB. */
+    pscom_err_t ret = PSCOM_SUCCESS;
+    int intra_job   = sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB;
+    int inter_job   = sock->sock_flags & PSCOM_SOCK_FLAG_INTER_JOB;
+    if (inter_job != intra_job) {
+        /* Either intra-job or inter-job socket uses the incremental sock id
+         * counter. We assume that the first socket is always set to 0 and
+         * created during the init phase (e.g., within `MPI_Init()`). */
+        sock->id = sockid++;
+    } else {
+        DPRINT(D_BUG, "The flag for the socket type is not set correctly. %s",
+               pscom_err_str(PSCOM_ERR_INVALID));
+        ret = PSCOM_ERR_INVALID;
+    }
+    return ret;
+}
+
+
+static void pscom_precon_sock_destroy_tcp(pscom_sock_t *sock)
+{
+    /* Note: If TCP is used, do nothing. However, if the first socket is
+     * destroyed, the RMA mem registration happens with `comm->socket == NULL`,
+     * so the registration may fail, because memory regions are attached to
+     * sockets for now. See `pscom_mem_register()` in `pscom_rma.c`. We could
+     * change pscom socket to something like ucp worker in the future. */
     return;
 }
 
@@ -1321,7 +1354,7 @@ static void pscom_precon_sock_init_tcp(pscom_sock_t *sock)
 int pscom_precon_guard_setup_tcp(pscom_precon_t *precon)
 {
     pscom_precon_tcp_t *pre_tcp = (pscom_precon_tcp_t *)&precon->precon_data;
-    /* set cleanup to 0 such that fd will not be closed when precon tcp is
+    /* Set cleanup to 0 such that fd will not be closed when precon tcp is
      * destroyed */
     pre_tcp->closefd_on_cleanup = 0;
     return pre_tcp->ufd_info.fd;
@@ -1415,10 +1448,10 @@ static pscom_err_t pscom_parse_ep_info_tcp(const char *ep_str,
     con_info->tcp.portno = (int)ntohs(sock.sin_port);
 
     memset(con_info->name, 0, sizeof(con_info->name));
-    /* the parsed name should be socket->local_con_info.name from the remote
+    /* The parsed name should be `socket->local_con_info.name` from the remote
      * side, it will be used to find ondemand connection and determine who is
      * connecting/ back-connecting by comparing with the name in
-     * socket->local_con_info.name */
+     * `socket->local_con_info.name`. */
     if (nametok) { strncpy(con_info->name, nametok, sizeof(con_info->name)); }
 
     return ret;
@@ -1479,7 +1512,7 @@ static int pscom_is_connect_loopback_tcp(pscom_socket_t *socket,
 
 static void pscom_precon_provider_destroy_tcp(void)
 {
-    /* check if precon_list is empty */
+    /* Check if precon_list is empty */
     if (!list_empty(&pscom_precon_provider->precon_list)) {
         struct list_head *pos, *next;
         /* Obtain the precon associated to this resend signal */
@@ -1518,6 +1551,7 @@ pscom_precon_provider_t pscom_provider_tcp = {
     .recv_stop               = pscom_precon_recv_stop_tcp,
     .connect                 = pscom_precon_connect_tcp,
     .sock_init               = pscom_precon_sock_init_tcp,
+    .sock_destroy            = pscom_precon_sock_destroy_tcp,
     .guard_setup             = pscom_precon_guard_setup_tcp,
     .is_starting_peer        = pscom_precon_is_starting_peer_tcp,
     .get_ep_info_from_socket = pscom_get_ep_info_from_socket_tcp,

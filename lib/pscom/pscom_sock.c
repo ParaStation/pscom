@@ -31,9 +31,6 @@
 #include "pscom_precon.h"
 #include "pscom_precon_tcp.h"
 
-static int32_t inter_sockid = 1;
-static int32_t intra_sockid = 0;
-
 
 static void _pscom_sock_terminate_all_recvs(pscom_sock_t *sock)
 {
@@ -179,67 +176,12 @@ static void pscom_sock_init_con_info(pscom_sock_t *sock, int local_rank)
 }
 
 
-/**
- * @brief Thread safe sock ID increase
- *
- * Safely increase sock->id with unique ID.
- *
- * For now, we allow one intra socket only
- * because in the RRcomm implementation multiple
- * intra-job sockets might cause issues due to the
- * local connection not knowing which socket the
- * remote connection belongs to at the peer side.
- *
- * @param [in]  sock   sock pointer
- */
-static int pscom_sock_set_id(pscom_sock_t *sock)
-{
-    pscom_lock();
-
-    /* sock type is exclusive, either INTER_JOB or INTRA_JOB */
-    int intra_job = sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB;
-    int inter_job = sock->sock_flags & PSCOM_SOCK_FLAG_INTER_JOB;
-    int ret       = PSCOM_SUCCESS;
-
-    if (inter_job && !intra_job) {
-        // Allow multiple inter-sockets
-        sock->id = inter_sockid++;
-    } else if (intra_job && !inter_job) {
-        sock->id = intra_sockid++;
-        // Allow only one intra-socket, and its id will be 0
-        if (sock->id) {
-            ret = PSCOM_ERR_STDERROR;
-            DPRINT(D_BUG, "More than one intra job has been created. %s",
-                   pscom_err_str(ret));
-        }
-    } else {
-        ret = PSCOM_ERR_INVALID;
-        DPRINT(D_BUG, "the flag for socket type is not set correctly. %s",
-               pscom_err_str(ret));
-    }
-
-    pscom_unlock();
-
-    return ret;
-}
-
-
-void pscom_sock_unset_id(pscom_sock_t *sock)
-{
-    /* release the only intra job socket, reset intra_sockid to 0 */
-    if (sock->sock_flags & PSCOM_SOCK_FLAG_INTRA_JOB) {
-        intra_sockid--;
-        assert(intra_sockid == 0);
-    }
-}
-
-
 PSCOM_PLUGIN_API_EXPORT
 pscom_sock_t *pscom_sock_create(size_t userdata_size,
                                 size_t connection_userdata_size, int local_rank,
                                 uint64_t socket_flags)
 {
-    int ret = PSCOM_SUCCESS;
+    pscom_err_t ret;
     pscom_sock_t *sock;
     sock = malloc(sizeof(*sock) + userdata_size);
     if (!sock) { goto err_out; }
@@ -276,22 +218,25 @@ pscom_sock_t *pscom_sock_create(size_t userdata_size,
     sock->sock_flags = socket_flags;
     sock->id         = -1;
 
-    /* set sock ID for this socket */
-    ret = pscom_sock_set_id(sock);
-    if (ret) { goto err_out; }
-
-    /* call the precon provider init hook */
-    pscom_precon_provider->sock_init(sock);
-
-    pscom_plugins_sock_init(sock);
-
     pscom_lock();
     {
+        /* call the precon provider init hook */
+        ret = pscom_precon_provider->sock_init(sock);
         list_add_tail(&sock->next, &pscom.sockets);
     }
     pscom_unlock();
 
+    if (ret) { goto err_init; }
+
+    pscom_plugins_sock_init(sock);
+
     return sock;
+
+err_init:
+    if (!list_empty(&sock->next)) { list_del_init(&sock->next); }
+    /* call the precon provider destroy hook */
+    pscom_precon_provider->sock_destroy(sock);
+    free(sock);
 
 err_out:
     return NULL; // error
@@ -324,8 +269,8 @@ static void pscom_sock_destroy(pscom_sock_t *sock)
 
     sock->magic = 0;
 
-    /* only intra-job socket releases its id */
-    pscom_sock_unset_id(sock);
+    /* call the precon provider destroy hook */
+    pscom_precon_provider->sock_destroy(sock);
 
     free(sock);
 }
