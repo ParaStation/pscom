@@ -17,8 +17,11 @@
 #include <assert.h>
 #include <errno.h>
 #include <stdlib.h>
+#include <stdint.h>
+#include <string.h>
 #include <sys/types.h>
 #include <sys/uio.h>
+#include <ucp/api/ucp_def.h>
 
 #include "list.h"
 #include "pscom.h"
@@ -28,6 +31,7 @@
 #include "pscom_plugin.h"
 #include "pscom_poll.h"
 #include "pscom_precon.h"
+#include "pscom_io.h"
 #include "pscom_priv.h"
 #include "psucp.h"
 #include "ucp/api/ucp.h"
@@ -195,8 +199,12 @@ static void pscom_ucp_con_cleanup(pscom_con_t *con)
     psucp_con_info_t *ci = con->arch.ucp.ci;
     if (!ci) { return; }
 
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    free(con_rma_stat);
     psucp_con_cleanup(ci);
     psucp_con_free(ci);
+
 
     con->arch.ucp.ci = NULL;
 }
@@ -217,6 +225,241 @@ static void pscom_poll_write_start_ucp(pscom_con_t *con)
 }
 
 
+static int pscom_ucp_rma_mem_register(void *addr, size_t length, void **rkeybuf,
+                                      uint16_t *bufsize,
+                                      pscom_arch_sock_t *arch_sock,
+                                      void **plugin_memh)
+{
+    ucp_mem_h ucp_memh = NULL;
+    int status         = psucp_rma_mem_register(addr, length, rkeybuf, bufsize,
+                                                &ucp_memh);
+
+    *plugin_memh = (void *)ucp_memh;
+    return status;
+}
+
+static int pscom_ucp_rma_mem_deregister(void *plugin_memh)
+{
+    int status = psucp_rma_mem_deregister((ucp_mem_h)plugin_memh);
+    return status;
+}
+
+static int pscom_ucp_rma_rkey_generate(pscom_con_t *con, void *rkeybuf,
+                                       void **plugin_rkey)
+{
+    psucp_con_info_t *ci = con->arch.ucp.ci;
+    ucp_rkey_h ucp_rkey  = NULL;
+
+    int status = psucp_rma_rkey_generate(ci, rkeybuf, &ucp_rkey);
+
+    if (status == 0) {
+        *plugin_rkey = (void *)ucp_rkey;
+    } else {
+        *plugin_rkey = NULL;
+    }
+
+    return status;
+}
+
+static int pscom_ucp_rma_rkey_destroy(void *plugin_rkey)
+{
+    int status = psucp_rma_rkey_destroy((ucp_rkey_h)plugin_rkey);
+    return status;
+}
+
+static void pscom_ucp_rma_rkey_buf_free(void *rkey_buf)
+{
+    psucp_rma_rkey_buf_free(rkey_buf);
+
+    return;
+}
+
+static int pscom_ucp_rma_put(pscom_con_t *con, void *buffer, size_t length,
+                             void *remote_addr, void *plugin_rkey,
+                             pscom_req_t *req)
+{
+    ucp_rkey_h ucp_rkey;
+    psucp_con_info_t *ci = con->arch.ucp.ci;
+
+    ucp_rkey = (ucp_rkey_h)plugin_rkey;
+    return psucp_rma_put(ci, buffer, length, remote_addr, ucp_rkey, (void *)req);
+}
+
+void pscom_psucp_rma_put_done(void *req_priv)
+{
+    pscom_req_t *req = (pscom_req_t *)req_priv;
+    assert(req != NULL);
+    assert(req->magic == MAGIC_REQUEST);
+
+    /* Note: Which version should be used here? locked or unlocked? */
+    pscom_req_done(req);
+}
+
+void pscom_psucp_rma_cs_done(void *req_priv)
+{
+    pscom_req_t *req = (pscom_req_t *)req_priv;
+    assert(req != NULL);
+    assert(req->magic == MAGIC_REQUEST);
+
+    /* copy the result data to result buffer */
+    memcpy(req->pub.rma.result_addr, req->pub.data, req->pub.data_len);
+
+    /* free the temp buffer: IMPORTANT */
+    free(req->pub.data);
+
+    /* Note: Which version should be used here? locked or unlocked? */
+    pscom_req_done(req);
+}
+
+static int pscom_ucp_rma_get(pscom_con_t *con, void *buffer, size_t length,
+                             void *remote_addr, void *plugin_rkey,
+                             pscom_req_t *req)
+{
+    ucp_rkey_h ucp_rkey;
+    psucp_con_info_t *ci = con->arch.ucp.ci;
+
+    ucp_rkey = (ucp_rkey_h)plugin_rkey;
+
+    return psucp_rma_get(ci, buffer, length, remote_addr, ucp_rkey, (void *)req);
+}
+
+static int pscom_ucp_rma_atomic(pscom_con_t *con, void *buffer, size_t length,
+                                void *remote_addr, void *result_addr,
+                                pscom_rma_atomic_op_t rma_atomic_op,
+                                pscom_datatype_t data_type, void *plugin_rkey,
+                                pscom_req_t *req)
+{
+    ucp_rkey_h ucp_rkey;
+    psucp_con_info_t *ci = con->arch.ucp.ci;
+
+    ucp_rkey                   = (ucp_rkey_h)plugin_rkey;
+    ucp_atomic_op_t ucp_opcode = psucp_rma_opcode_convert(rma_atomic_op);
+
+    return psucp_rma_atomic_op(ci, buffer, length, remote_addr, result_addr,
+                               ucp_opcode, ucp_rkey, (void *)req);
+}
+
+
+static int pscom_ucp_rma_atomic_segment(pscom_con_t *con, void *buffer,
+                                        size_t length, void *remote_addr,
+                                        void *result_addr,
+                                        pscom_rma_atomic_op_t rma_atomic_op,
+                                        pscom_datatype_t data_type,
+                                        void *plugin_rkey, pscom_req_t *req)
+{
+    ucp_rkey_h ucp_rkey;
+    psucp_con_info_t *ci = con->arch.ucp.ci;
+
+    ucp_rkey                   = (ucp_rkey_h)plugin_rkey;
+    ucp_atomic_op_t ucp_opcode = psucp_rma_opcode_convert(rma_atomic_op);
+
+    return psucp_rma_atomic_op_segment(ci, buffer, length, data_type,
+                                       remote_addr, result_addr, ucp_opcode,
+                                       ucp_rkey, (void *)req);
+}
+
+
+static int pscom_ucp_rma_compare_swap(pscom_con_t *con, void *buffer,
+                                      size_t length, void *remote_addr,
+                                      void *origin_addr, void *result_addr,
+                                      pscom_datatype_t data_type,
+                                      void *plugin_rkey, pscom_req_t *req)
+{
+    /*
+    Comments:
+    In MPI standard, the origin and result buffers (origin_addr and result_addr)
+    must be disjoint. However, in ucx implementation those buffers are identical
+    in psucp_rma_atomic_op. result_addr = origin_addr in ucx. Here, a new buffer
+    will be allocated and data will be copied from origin_addr to this new
+    buffer, this new buffer will be passed to ucp_atomic_op_nbx as the origin
+    and result buffer. When the compare&swap is finished, the data in this new
+    buffer has to be copied to result_addr. This avoids overwriting origin_addr
+    and gets the data from target into result_addr, but increases the overheads
+    of the communication slightly due to the data copy.
+
+    Result=Y; if (X==Y) then Y=Z
+              X              Y                 Z                     R
+    ucx    buffer       remote_addr    param.reply_buffer   param.reply_buffer
+    mpi  compare_addr   target_addr       origin_addr           result_addr
+     */
+    ucp_rkey_h ucp_rkey;
+    psucp_con_info_t *ci = con->arch.ucp.ci;
+
+    ucp_rkey = (ucp_rkey_h)plugin_rkey;
+
+    void *reply_addr  = malloc(length);
+    req->pub.data     = reply_addr;
+    req->pub.data_len = length;
+    memcpy(reply_addr, origin_addr, length);
+
+    return psucp_rma_atomic_op(ci, buffer, length, remote_addr, reply_addr,
+                               UCP_ATOMIC_OP_CSWAP, ucp_rkey, (void *)req);
+}
+
+/* check if RMA communication is supported or not */
+static int pscom_ucp_rma_native_check(pscom_rma_op_t rma_op)
+{
+    return psucp_rma_native_check(rma_op);
+}
+
+/* check if accumulate operation and max data length is supported or not */
+static int pscom_ucp_rma_atomics_check(pscom_rma_atomic_op_t atomic_op,
+                                       pscom_datatype_t data_type,
+                                       size_t length, pscom_rma_op_t rma_op)
+{
+    /* ucx does not support different data_type*/
+    return psucp_rma_atomics_check(atomic_op, data_type, length, rma_op);
+}
+
+
+static int pscom_ucp_rma_worker_flush(pscom_sock_t *sock)
+{
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_UCP);
+    assert(arch_sock);
+    pscom_ucp_sock_t *ucp_sock = arch_sock->arch.ucp;
+    int status                 = 0;
+    if (ucp_sock->flush_required) {
+        status                   = psucp_rma_worker_flush();
+        ucp_sock->flush_required = 0;
+    }
+    /* commemnts: Flush socket will also flush all the connections but flush
+    flag is not set in connection, this may cause problems. */
+    return status;
+}
+
+
+static int pscom_ucp_rma_ep_flush(pscom_con_t *con)
+{
+    psucp_con_info_t *ci               = con->arch.ucp.ci;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    int status = 0;
+    if (con_rma_stat->flush_remote) {
+        status                     = psucp_rma_ep_flush(ci);
+        con_rma_stat->flush_remote = 0;
+        con_rma_stat->flush_local  = 0;
+    }
+    return status;
+}
+
+static int pscom_ucp_rma_ep_flush_local(pscom_con_t *con)
+{
+    psucp_con_info_t *ci               = con->arch.ucp.ci;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    int status = 0;
+
+    if (con_rma_stat->flush_local) {
+        assert(con_rma_stat->local_complete < con_rma_stat->issued_op_count);
+        status = psucp_rma_ep_flush_local(ci);
+        assert(con_rma_stat->local_complete == con_rma_stat->issued_op_count);
+        con_rma_stat->flush_local = 0;
+    }
+
+    return status;
+}
+
+
 static void pscom_ucp_init_con(pscom_con_t *con)
 {
     con->pub.type = PSCOM_CON_TYPE_UCP;
@@ -232,9 +475,32 @@ static void pscom_ucp_init_con(pscom_con_t *con)
     con->write_start = pscom_poll_write_start_ucp;
     con->write_stop  = pscom_poll_write_stop;
 
+    // rma
+    con->rma.rkey_generate = pscom_ucp_rma_rkey_generate;
+    con->rma.rkey_destroy  = pscom_ucp_rma_rkey_destroy;
+    con->rma.put           = pscom_ucp_rma_put;
+    con->rma.get           = pscom_ucp_rma_get;
+    con->rma.acc           = pscom_ucp_rma_atomic_segment;
+    con->rma.get_acc       = pscom_ucp_rma_atomic_segment;
+    con->rma.fop           = pscom_ucp_rma_atomic;
+    con->rma.cas           = pscom_ucp_rma_compare_swap;
+    con->rma.native_check  = pscom_ucp_rma_native_check;
+    con->rma.atomics_check = pscom_ucp_rma_atomics_check;
+    con->rma.flush         = pscom_ucp_rma_ep_flush;
+    con->rma.flush_local   = pscom_ucp_rma_ep_flush_local;
+
     con->close = pscom_ucp_con_close;
 
     con->rendezvous_size = pscom.env.rendezvous_size_ucp;
+
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)malloc(
+        sizeof(psucp_con_rma_stat_t));
+
+    con->arch.ucp.rma_stat        = (void *)con_rma_stat;
+    con_rma_stat->issued_op_count = 0;
+    con_rma_stat->local_complete  = 0;
+    con_rma_stat->flush_local     = 0;
+    con_rma_stat->flush_remote    = 0;
 
     pscom_con_setup_ok(con);
 }
@@ -259,6 +525,8 @@ static void pscom_ucp_init(void)
 
     /* ensure the initialization of the UCP memory cache */
     if (pscom.env.ucp_fastinit) { psucp_init(); }
+
+    psucp_init_rma_masks();
 }
 
 
@@ -270,18 +538,36 @@ static void pscom_ucp_destroy(void)
 
 static void pscom_ucp_sock_init(pscom_sock_t *sock)
 {
+    /* init ucp and prepare for memory region registration */
+    int ret = psucp_init();
+
+    if (ret != 0) {
+        DPRINT(D_ERR, "ucp plugin init failed!\n");
+        /* UCP init failed and we return directly here, so no ucp arch sock is
+         * added. */
+        return;
+    }
+
     /* allocate space for a new arch sock */
-    pscom_arch_sock_t *arch_sock = malloc(sizeof(pscom_arch_sock_t));
+    pscom_arch_sock_t *arch_sock = malloc(sizeof(pscom_arch_sock_t) +
+                                          sizeof(pscom_ucp_sock_t));
     /* set up the arch_sock structure */
     arch_sock->plugin_con_type   = PSCOM_CON_TYPE_UCP;
+    arch_sock->arch.ucp = (pscom_ucp_sock_t *)&arch_sock->arch_sock_data;
 
-    arch_sock->rma.mem_register   = NULL;
-    arch_sock->rma.mem_deregister = NULL;
-    arch_sock->rma.rkey_buf_free  = free;
+    arch_sock->rma.mem_register   = pscom_ucp_rma_mem_register;
+    arch_sock->rma.mem_deregister = pscom_ucp_rma_mem_deregister;
+    arch_sock->rma.rkey_buf_free  = pscom_ucp_rma_rkey_buf_free;
+    arch_sock->rma.fence          = pscom_ucp_rma_worker_flush;
 
     /* add the new arch sock to the socket archs list */
     assert(get_arch_sock(sock, PSCOM_CON_TYPE_UCP) == NULL);
     list_add_tail(&arch_sock->next, &sock->archs);
+
+    pscom_ucp_sock_t *ucp_sock = arch_sock->arch.ucp;
+    ucp_sock->flush_required   = 0;
+
+    return;
 }
 
 

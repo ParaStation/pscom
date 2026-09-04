@@ -92,6 +92,7 @@ struct PSCOM_req {
 
 
 typedef struct pscom_portals_sock pscom_portals_sock_t;
+typedef struct pscom_ucp_sock pscom_ucp_sock_t;
 typedef struct pscom_arch_sock pscom_arch_sock_t;
 
 /* RMA functions */
@@ -236,6 +237,7 @@ struct pscom_arch_sock {
     union {
         psgm_sock_t gm;
         pscom_portals_sock_t *portals;
+        pscom_ucp_sock_t *ucp;
     } arch;
     char arch_sock_data[0];
 };
