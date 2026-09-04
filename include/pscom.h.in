@@ -219,6 +219,49 @@ typedef enum PSCOM_op {
 
 #define PSCOM_HAS_TWO_SIDED_RMA
 
+/* pscom datatype, used for datatype check of atomic operations.
+ * psmpi has to convert mpi datatype into pscom datatype before using it.
+ */
+typedef int pscom_datatype_t;
+#define PSCOM_CHAR           ((pscom_datatype_t)0x4c000101)
+#define PSCOM_SIGNED_CHAR    ((pscom_datatype_t)0x4c000118)
+#define PSCOM_UNSIGNED_CHAR  ((pscom_datatype_t)0x4c000102)
+#define PSCOM_BYTE           ((pscom_datatype_t)0x4c00010d)
+#define PSCOM_SHORT          ((pscom_datatype_t)0x4c000203)
+#define PSCOM_UNSIGNED_SHORT ((pscom_datatype_t)0x4c000204)
+#define PSCOM_INT            ((pscom_datatype_t)0x4c000405)
+#define PSCOM_UNSIGNED       ((pscom_datatype_t)0x4c000406)
+#define PSCOM_LONG           ((pscom_datatype_t)0x4c000807)
+#define PSCOM_UNSIGNED_LONG  ((pscom_datatype_t)0x4c000808)
+#define PSCOM_FLOAT          ((pscom_datatype_t)0x4c00040a)
+#define PSCOM_DOUBLE         ((pscom_datatype_t)0x4c00080b)
+#define PSCOM_LONG_DOUBLE    ((pscom_datatype_t)0x4c00100c)
+#define PSCOM_LONG_LONG_INT  ((pscom_datatype_t)0x4c000809)
+#define PSCOM_LONG_LONG      PSCOM_LONG_LONG_INT
+
+#define PSCOM_C_FLOAT_COMPLEX       ((pscom_datatype_t)0x4c000840)
+#define PSCOM_C_COMPLEX             PSCOM_C_FLOAT_COMPLEX
+#define PSCOM_C_DOUBLE_COMPLEX      ((pscom_datatype_t)0x4c001041)
+#define PSCOM_C_LONG_DOUBLE_COMPLEX ((pscom_datatype_t)0x4c002042)
+
+
+/* RMA atomic operations */
+typedef int pscom_rma_atomic_op_t;
+#define PSCOM_MAX     (pscom_rma_atomic_op_t)(0x58000001)
+#define PSCOM_MIN     (pscom_rma_atomic_op_t)(0x58000002)
+#define PSCOM_SUM     (pscom_rma_atomic_op_t)(0x58000003)
+#define PSCOM_PROD    (pscom_rma_atomic_op_t)(0x58000004)
+#define PSCOM_LAND    (pscom_rma_atomic_op_t)(0x58000005)
+#define PSCOM_BAND    (pscom_rma_atomic_op_t)(0x58000006)
+#define PSCOM_LOR     (pscom_rma_atomic_op_t)(0x58000007)
+#define PSCOM_BOR     (pscom_rma_atomic_op_t)(0x58000008)
+#define PSCOM_LXOR    (pscom_rma_atomic_op_t)(0x58000009)
+#define PSCOM_BXOR    (pscom_rma_atomic_op_t)(0x5800000a)
+#define PSCOM_MINLOC  (pscom_rma_atomic_op_t)(0x5800000b)
+#define PSCOM_MAXLOC  (pscom_rma_atomic_op_t)(0x5800000c)
+#define PSCOM_REPLACE (pscom_rma_atomic_op_t)(0x5800000d)
+#define PSCOM_NO_OP   (pscom_rma_atomic_op_t)(0x5800000e)
+
 /**
  * @brief RMA operations in pscom.
  *
@@ -550,11 +593,15 @@ struct PSCOM_request {
                                          source on any socket" case) */
 
     struct PSCOM_request_rma {
-        void *origin_addr;  /**< RMA source address */
-        void *target_addr;  /**< RMA destination address */
-        void *compare_addr; /**< RMA address for compare and swap */
-        void *result_addr;  /**< RMA result address for get/get acc */
-        pscom_rkey_t rkey;  /**< remote key */
+        void *origin_addr;          /**< RMA source address */
+        void *target_addr;          /**< RMA destination address */
+        void *compare_addr;         /**< RMA address for compare and swap */
+        void *result_addr;          /**< RMA result address for get/get acc */
+        pscom_rkey_t rkey;          /**< remote key */
+        pscom_datatype_t data_type; /**< data type for atomic memory operations
+                                     */
+        pscom_rma_atomic_op_t rma_atomic_op; /**< atomic memory operations */
+        int native_rma; /**< flag indicating whether to use native RMA or not */
     } rma;
 
     struct PSCOM_request_ops {
@@ -1832,6 +1879,8 @@ void pscom_rkey_buffer_release(void *rkey_buffer);
  * - request->rma.target_addr the destination address at the target
  * - request->ops.io_done     the local callback, optional
  * - request->rma.rkey        the remote key
+ * Additional fields for the use of native RMA (if supported):
+ * - request->rma.native_rma  the flag indicating whether to use native RMA
  *
  * @param [in] request       The request handle for tracking the progress.
  */
@@ -1853,6 +1902,8 @@ void pscom_post_rma_put(pscom_request_t *request);
  * - request->rma.target_addr the source address at the target
  * - request->ops.io_done     the local callback, optional
  * - request->rma.rkey        the remote key
+ * Additional fields for the use of native RMA (if supported):
+ * - request->rma.native_rma  the flag indicating whether to use native RMA
  *
  * @param [in] request     The request handle for tracking the progress.
  */
@@ -1871,10 +1922,14 @@ void pscom_post_rma_get(pscom_request_t *request);
  * extended headers.
  *
  * Mandatory fields in the @a request @a rma_params:
- * - request->rma.origin_addr the source address at the local process
- * - request->rma.target_addr the destination address at the target
- * - request->ops.io_done     the local callback, optional
- * - request->rma.rkey        the remote key
+ * - request->rma.origin_addr   the source address at the local process
+ * - request->rma.target_addr   the destination address at the target
+ * - request->ops.io_done       the local callback, optional
+ * - request->rma.rkey          the remote key
+ * Additional fields for the use of native RMA (if supported):
+ * - request->rma.data_type     the data type used in atomic operation
+ * - request->rma.rma_atomic_op the RMA atomic opertion type
+ * - request->rma.native_rma    the flag indicating whether to use native RMA
  *
  * @param [in] request       The request handle for tracking the progress.
  */
@@ -1893,12 +1948,16 @@ void pscom_post_rma_accumulate(pscom_request_t *request);
  * synchronization, has to be defined by user in the extended headers.
  *
  * Mandatory fields in the @a request @a rma_params:
- * - request->rma.origin_addr the source address at the local process
- * - request->rma.target_addr the destination address at the target
- * - request->rma.result_addr the result address to receive data from
- *                            target buffer
- * - request->ops.io_done     the local callback, optional
- * - request->rma.rkey        the remote key
+ * - request->rma.origin_addr   the source address at the local process
+ * - request->rma.target_addr   the destination address at the target
+ * - request->rma.result_addr   the result address to receive data from
+ *                              target buffer
+ * - request->ops.io_done       the local callback, optional
+ * - request->rma.rkey          the remote key
+ * Additional fields for the use of native RMA (if supported):
+ * - request->rma.data_type     the data type used in atomic operation
+ * - request->rma.rma_atomic_op the RMA atomic opertion type
+ * - request->rma.native_rma    the flag indicating whether to use native RMA
  *
  * @param [in] request       The request handle for tracking the progress.
  */
@@ -1919,12 +1978,16 @@ void pscom_post_rma_get_accumulate(pscom_request_t *request);
  * headers.
  *
  * Mandatory fields in the @a request @a rma_params:
- * - request->rma.origin_addr the source address at the local process
- * - request->rma.target_addr the destination address at the target
- * - request->rma.result_addr the result address to receive data from
- *                            target buffer
- * - request->ops.io_done     the local callback, optional
- * - request->rma.rkey        the remote key
+ * - request->rma.origin_addr   the source address at the local process
+ * - request->rma.target_addr   the destination address at the target
+ * - request->rma.result_addr   the result address to receive data from
+ *                              target buffer
+ * - request->ops.io_done       the local callback, optional
+ * - request->rma.rkey          the remote key
+ * Additional fields for the use of native RMA (if supported):
+ * - request->rma.data_type     the data type used in atomic operation
+ * - request->rma.rma_atomic_op the RMA atomic opertion type
+ * - request->rma.native_rma    the flag indicating whether to use native RMA
  *
  * @param [in] request       The request handle for tracking the progress.
  */
@@ -1944,18 +2007,22 @@ void pscom_post_rma_fetch_op(pscom_request_t *request);
  * synchronization, has to be defined by user in the extended headers.
  *
  * Mandatory fields in the @a request @a rma_params:
- * - request->rma.origin_addr  the origin address at the local process
- * - request->rma.compare_addr the compare address to be compared with
- *                             target buffer
- * - request->rma.result_addr  the result address to receive data from
- *                             target buffer
- * - request->rma.target_addr  the destination address at the target
- * - request->ops.io_done      the local callback, optional
- * - request->rma.rkey         the remote key
+ * - request->rma.origin_addr   the origin address at the local process
+ * - request->rma.compare_addr  the compare address to be compared with
+ *                              target buffer
+ * - request->rma.result_addr   the result address to receive data from
+ *                              target buffer
+ * - request->rma.target_addr   the destination address at the target
+ * - request->ops.io_done       the local callback, optional
+ * - request->rma.rkey          the remote key
+ * Additional fields for the use of native RMA (if supported):
+ * - request->rma.data_type     the data type used in atomic operation
+ * - request->rma.native_rma    the flag indicating whether to use native RMA
  *
  * @param [in] request       The request handle for tracking the progress.
  */
 void pscom_post_rma_compare_swap(pscom_request_t *request);
+
 
 /**
  * @brief Register RMA callbacks at memory region for the target side.
@@ -1972,6 +2039,78 @@ void pscom_post_rma_compare_swap(pscom_request_t *request);
  */
 void pscom_register_rma_callbacks(void (*target_callback)(pscom_request_t *req),
                                   pscom_memh_t memh, pscom_rma_op_t rma_op);
+
+
+/**
+ * @brief RMA communication availability check
+ * This routine checks whether the RMA communication via native RMA API is
+ * available or not
+ *
+ * @param [in] connection    The pscom connection handle
+ * @param [in] rkey          The remote key handle
+ * @param [in] rma_op        The RMA operation type
+ *
+ * @return PSCOM_SUCCESS      available
+ * @return PSCOM_ERR_INVALID  not available
+ */
+pscom_err_t pscom_native_rma_is_available(pscom_connection_t *connection,
+                                          pscom_rkey_t rkey,
+                                          pscom_rma_op_t rma_op);
+
+
+/**
+ * @brief RMA atomic operation availability check
+ * This routine checks whether the atomic operation via native RMA API is
+ * available or not. It also checks if the data length and type is supported or
+ * not.
+ *
+ * @param [in] connection    The pscom connection handle
+ * @param [in] rkey          The remote key handle
+ * @param [in] rma_atomic_op The RMA atomic operation type
+ * @param [in] data_type     The data type
+ * @param [in] length        The data length
+ * @param [in] rma_op        The RMA operation type
+ *
+ * @return PSCOM_SUCCESS      available
+ * @return PSCOM_ERR_INVALID  not available
+ */
+pscom_err_t pscom_native_rma_atomic_op_is_available(
+    pscom_connection_t *connection, pscom_rkey_t rkey,
+    pscom_rma_atomic_op_t rma_atomic_op, pscom_datatype_t data_type,
+    size_t length, pscom_rma_op_t rma_op);
+
+
+/**
+ * @brief local connection RMA flush
+ * This routine flushes RMA communications issued on this connection via native
+ * RMA locally. When this routine returns, the buffer can be reused. The
+ * completion at the target side is not guaranteed.
+ *
+ * @param [in] connection    The pscom connection handle
+ */
+pscom_err_t pscom_rma_connection_flush_local(pscom_connection_t *connection);
+
+
+/**
+ * @brief connection RMA flush
+ * This routine flushes RMA communications issued on this connection via native
+ * RMA. When this routine returns, it ensures that RMA communications prior to
+ * this call are finished at the origin and target side.
+ *
+ * @param [in] connection    The pscom connection handle
+ */
+pscom_err_t pscom_rma_connection_flush(pscom_connection_t *connection);
+
+
+/**
+ * @brief socket RMA flush
+ * This routine flushes RMA communications issued on this socket via native RMA.
+ * When this routine returns, it ensures that all RMA communications prior to
+ * this call are finished at the origin and target side.
+ *
+ * @param [in] socket    The pscom socket handle
+ */
+pscom_err_t pscom_rma_socket_flush(pscom_socket_t *socket);
 
 
 void pscom_set_debug(int level);

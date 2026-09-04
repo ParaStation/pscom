@@ -89,7 +89,7 @@ pscom_err_t pscom_mem_register(pscom_socket_t *socket, void *addr,
     pscom_memh->magic       = MAGIC_MEMH;
     pscom_memh->rkey_buffer = NULL;
     pscom_memh->rkey_buffer_length = 0;
-    memset(pscom_memh->target_cbs, 0, MAX_RMA_OP * sizeof(void *));
+    memset(pscom_memh->target_cbs, 0, PSCOM_RMA_OP_COUNT * sizeof(void *));
 
     /* init lists */
     INIT_LIST_HEAD(&pscom_memh->arch_memh_list);
@@ -325,8 +325,21 @@ pscom_err_t pscom_rkey_generate(pscom_connection_t *connection, void *rkeybuf,
     new_rkey->remote_addr = temp_buf->remote_addr;
     new_rkey->remote_len  = temp_buf->remote_len;
     new_rkey->remote_memh = temp_buf->remote_memh;
+    new_rkey->rkey_buf    = NULL;
+    new_rkey->bufsize     = 0;
 
-    /* connetion has rekey_gen, and temp_buf has valid remote key buffer */
+    /* When connection type is ondemand, store the buffer and generate the key
+     * later */
+    if (con->pub.type == PSCOM_CON_TYPE_ONDEMAND) {
+        /* ondemand connection, generate rkey after connection is established */
+        new_rkey->bufsize  = bufsize;
+        new_rkey->rkey_buf = malloc(new_rkey->bufsize);
+        memcpy(new_rkey->rkey_buf, rkeybuf, bufsize);
+        *rkey = new_rkey;
+        return PSCOM_SUCCESS;
+    }
+
+    /* connection has rkey_generate, and temp_buf has valid remote key buffer */
     if (con->rma.rkey_generate && rkeydata_len != 0) {
         int index  = (int)connection->type;
         buf_offset = temp_buf->rkey_data_offset[index];
@@ -511,21 +524,28 @@ PSCOM_API_EXPORT
 void pscom_post_rma_put(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
-
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_con_t *con = get_con(request->connection);
+    assert(con->magic == MAGIC_CONNECTION);
     pscom_rkey_t rkey = request->rma.rkey;
     request->data     = request->rma.origin_addr;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
 
-    pscom_con_t *con = get_con(request->connection);
-    /* If plugin implements rma put, then use this: */
-    if (con->rma.put && rkey->plugin_rkey != NULL) {
+    /* check rkey if native rma is true */
+    if (request->rma.native_rma) {
+        assert(con->rma.put);
+        assert(rkey->plugin_rkey);
+    }
+    /* plugin implements rma put, rkey is valid, and native rma is true */
+    if (con->rma.put && rkey->plugin_rkey != NULL && request->rma.native_rma) {
         if (con->rma.put(con, request->data, request->data_len,
                          request->rma.target_addr, rkey->plugin_rkey, req)) {
             request->state |= PSCOM_REQ_STATE_ERROR;
+            /* post RMA request error, use assert to abort */
+            assert(pscom_req_successful(request));
         }
         return;
     }
@@ -548,9 +568,6 @@ void pscom_post_rma_put(pscom_request_t *request)
         }
     }
 
-    if (req->pub.ops.io_done == NULL) {
-        req->pub.ops.io_done = pscom_request_free;
-    }
     pscom_post_send_direct(req, PSCOM_MSGTYPE_RMA_PUT);
     return;
 }
@@ -560,21 +577,28 @@ PSCOM_API_EXPORT
 void pscom_post_rma_get(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
-
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_con_t *con = get_con(request->connection);
+    assert(con->magic == MAGIC_CONNECTION);
     pscom_rkey_t rkey = request->rma.rkey;
     request->data     = request->rma.origin_addr;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
 
-    pscom_con_t *con = get_con(request->connection);
-    /* If plugin implements rma get, then use this: */
-    if (con->rma.get && rkey->plugin_rkey != NULL) {
+    /* check rkey if native rma is true */
+    if (request->rma.native_rma) {
+        assert(con->rma.get);
+        assert(rkey->plugin_rkey);
+    }
+    /* plugin implements rma get, rkey is valid, and native rma is true */
+    if (con->rma.get && rkey->plugin_rkey != NULL && request->rma.native_rma) {
         if (con->rma.get(con, request->data, request->data_len,
                          request->rma.target_addr, rkey->plugin_rkey, req)) {
             request->state |= PSCOM_REQ_STATE_ERROR;
+            /* post RMA request error, use assert to abort */
+            assert(pscom_req_successful(request));
         }
         return;
     }
@@ -599,10 +623,6 @@ void pscom_post_rma_get(pscom_request_t *request)
     }
 
     request->header.msg_type = PSCOM_MSGTYPE_RMA_GET_REP;
-    if (req->pub.ops.io_done == NULL) {
-        req->pub.ops.io_done = pscom_request_free;
-    }
-
     pscom_post_rma_get_req(req);
     return;
 }
@@ -612,21 +632,37 @@ PSCOM_API_EXPORT
 void pscom_post_rma_accumulate(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
-
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_con_t *con = get_con(request->connection);
+    assert(con->magic == MAGIC_CONNECTION);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
+    request->data = request->rma.origin_addr;
 
-    request->data                               = request->rma.origin_addr;
+    /* check rkey if native rma is true */
+    if (request->rma.native_rma) {
+        assert(con->rma.acc);
+        assert(rkey->plugin_rkey);
+    }
+    /* plugin implements rma acc, rkey is valid, and native rma is true */
+    if (con->rma.acc && rkey->plugin_rkey != NULL && request->rma.native_rma) {
+        if (con->rma.acc(con, request->data, request->data_len,
+                         request->rma.target_addr, NULL,
+                         request->rma.rma_atomic_op, request->rma.data_type,
+                         rkey->plugin_rkey, req)) {
+            request->state |= PSCOM_REQ_STATE_ERROR;
+            /* post RMA request error, use assert to abort */
+            assert(pscom_req_successful(request));
+        }
+        return;
+    }
+
     request->xheader.rma_accumulate.common.dest = request->rma.target_addr;
     request->xheader.rma_accumulate.common.memh = rkey->remote_memh;
 
-    if (req->pub.ops.io_done == NULL) {
-        req->pub.ops.io_done = pscom_request_free;
-    }
     pscom_post_send_direct(req, PSCOM_MSGTYPE_RMA_ACCUMULATE);
     return;
 }
@@ -636,15 +672,35 @@ PSCOM_API_EXPORT
 void pscom_post_rma_get_accumulate(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
-
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_con_t *con = get_con(request->connection);
+    assert(con->magic == MAGIC_CONNECTION);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
+    request->data = request->rma.origin_addr;
 
-    request->data                                  = request->rma.origin_addr;
+    /* check rkey if native rma is true */
+    if (request->rma.native_rma) {
+        assert(con->rma.get_acc);
+        assert(rkey->plugin_rkey);
+    }
+    /* plugin implements rma get acc, rkey is valid, and native rma is true */
+    if (con->rma.get_acc && rkey->plugin_rkey != NULL &&
+        request->rma.native_rma) {
+        if (con->rma.get_acc(con, request->data, request->data_len,
+                             request->rma.target_addr, request->rma.result_addr,
+                             request->rma.rma_atomic_op, request->rma.data_type,
+                             rkey->plugin_rkey, req)) {
+            request->state |= PSCOM_REQ_STATE_ERROR;
+            /* post RMA request error, use assert to abort */
+            assert(pscom_req_successful(request));
+        }
+        return;
+    }
+
     request->xheader.rma_get_accumulate.common.src = request->rma.target_addr;
     request->xheader.rma_get_accumulate.common.src_len = request->data_len;
 
@@ -652,10 +708,6 @@ void pscom_post_rma_get_accumulate(pscom_request_t *request)
     request->xheader.rma_get_accumulate.common.memh = rkey->remote_memh;
 
     request->header.msg_type = PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REP;
-    if (req->pub.ops.io_done == NULL) {
-        req->pub.ops.io_done = pscom_request_free;
-    }
-
     pscom_post_rma_get_accumulate_req(req, PSCOM_MSGTYPE_RMA_GET_ACCUMULATE_REQ);
 }
 
@@ -663,25 +715,40 @@ PSCOM_API_EXPORT
 void pscom_post_rma_fetch_op(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
-
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_con_t *con = get_con(request->connection);
+    assert(con->magic == MAGIC_CONNECTION);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
+    request->data = request->rma.origin_addr;
 
-    request->data                                = request->rma.origin_addr;
+    /* check rkey if native rma is true */
+    if (request->rma.native_rma) {
+        assert(con->rma.fop);
+        assert(rkey->plugin_rkey);
+    }
+    /* plugin implements rma fop, rkey is valid, and native rma is true */
+    if (con->rma.fop && rkey->plugin_rkey != NULL && request->rma.native_rma) {
+        if (con->rma.fop(con, request->data, request->data_len,
+                         request->rma.target_addr, request->rma.result_addr,
+                         request->rma.rma_atomic_op, request->rma.data_type,
+                         rkey->plugin_rkey, req)) {
+            request->state |= PSCOM_REQ_STATE_ERROR;
+            /* post RMA request error, use assert to abort */
+            assert(pscom_req_successful(request));
+        }
+        return;
+    }
+
     request->xheader.rma_fetch_op.common.src     = request->rma.target_addr;
     request->xheader.rma_fetch_op.common.src_len = request->data_len;
     req->rma_result                              = request->rma.result_addr;
     request->xheader.rma_fetch_op.common.memh    = rkey->remote_memh;
 
     request->header.msg_type = PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REP;
-    if (req->pub.ops.io_done == NULL) {
-        req->pub.ops.io_done = pscom_request_free;
-    }
-
     pscom_post_rma_get_accumulate_req(req, PSCOM_MSGTYPE_RMA_FETCH_AND_OP_REQ);
 }
 
@@ -690,24 +757,39 @@ PSCOM_API_EXPORT
 void pscom_post_rma_compare_swap(pscom_request_t *request)
 {
     pscom_req_t *req = get_req(request);
-
     assert(req->magic == MAGIC_REQUEST);
     assert(request->state & PSCOM_REQ_STATE_DONE);
     assert(request->connection != NULL);
+    pscom_con_t *con = get_con(request->connection);
+    assert(con->magic == MAGIC_CONNECTION);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
+    request->data = request->rma.origin_addr;
 
-    request->data                                    = request->rma.origin_addr;
+    /* check rkey if native rma is true */
+    if (request->rma.native_rma) {
+        assert(con->rma.cas);
+        assert(rkey->plugin_rkey);
+    }
+    /* plugin implements rma cas, rkey is valid, and flag is true */
+    if (con->rma.cas && rkey->plugin_rkey != NULL && request->rma.native_rma) {
+        if (con->rma.cas(con, request->rma.compare_addr, request->data_len,
+                         request->rma.target_addr, request->rma.origin_addr,
+                         request->rma.result_addr, request->rma.data_type,
+                         rkey->plugin_rkey, req)) {
+            request->state |= PSCOM_REQ_STATE_ERROR;
+            /* post RMA request error, use assert to abort */
+            assert(pscom_req_successful(request));
+        }
+        return;
+    }
+
     request->xheader.rma_compare_swap.common.src     = request->rma.target_addr;
     request->xheader.rma_compare_swap.common.src_len = request->data_len;
     request->xheader.rma_compare_swap.common.memh    = rkey->remote_memh;
 
     request->header.msg_type = PSCOM_MSGTYPE_RMA_COMPARE_AND_SWAP_REP;
-    if (req->pub.ops.io_done == NULL) {
-        req->pub.ops.io_done = pscom_request_free;
-    }
-
     pscom_post_rma_compare_swap_req(req, request->rma.origin_addr,
                                     request->rma.compare_addr,
                                     request->rma.result_addr);
@@ -721,4 +803,149 @@ void pscom_register_rma_callbacks(void (*target_callback)(pscom_request_t *req),
     if (memh == NULL) { return; }
     uint8_t handler           = (uint8_t)rma_op;
     memh->target_cbs[handler] = target_callback;
+}
+
+
+PSCOM_API_EXPORT
+pscom_err_t pscom_native_rma_is_available(pscom_connection_t *connection,
+                                          pscom_rkey_t rkey,
+                                          pscom_rma_op_t rma_op)
+{
+    if (!connection) { return PSCOM_ERR_INVALID; }
+    if (rkey == NULL) { return PSCOM_ERR_INVALID; }
+    if (rkey->rkey_buf == NULL && rkey->plugin_rkey == NULL) {
+        return PSCOM_ERR_INVALID;
+    }
+    pscom_con_t *con = get_con(connection);
+
+    if (rkey->rkey_buf != NULL && rkey->bufsize != 0) {
+        if (connection->type == PSCOM_CON_TYPE_ONDEMAND) {
+            /* connection is still not ready */
+            return PSCOM_ERR_INVALID;
+        } else {
+            if (con->rma.rkey_generate) {
+                /* lazy rkey generation */
+                /* remote key is supported by this plugin*/
+                pscom_rkey_buffer_t *temp_buf = rkey->rkey_buf;
+                int index                     = (int)connection->type;
+                unsigned buf_offset = temp_buf->rkey_data_offset[index];
+                size_t rkeydata_len = rkey->bufsize -
+                                      sizeof(pscom_rkey_buffer_t);
+                assert(rkeydata_len > 0);
+
+                if (buf_offset == PSCOM_INVALID_RKEYBUF_OFFSET) {
+                    /* No plugin data is provided, so rkey will be NULL, this
+                     * indicates that the memory registration in this plugin
+                     * failed at the process which shares this memory segment */
+                    DPRINT(D_ERR, "lazy rkey generation failed with invalid "
+                                  "buffer offset\n ");
+
+                    /* Free rkey buffer because the data is not usable. */
+                    free(rkey->rkey_buf);
+                    rkey->rkey_buf = NULL;
+                    rkey->bufsize  = 0;
+                    return PSCOM_ERR_INVALID;
+                }
+
+                int pscom_err = con->rma.rkey_generate(
+                    con, (char *)&temp_buf->rkey_data + buf_offset,
+                    &(rkey->plugin_rkey));
+
+                /* Free rkey buffer no matter whether rkey is generated. */
+                free(rkey->rkey_buf);
+                rkey->rkey_buf = NULL;
+                rkey->bufsize  = 0;
+
+                /* If rkey is not successfully generated, this connection can
+                 * not perform native RMA ops and falls back to two-sided RMA */
+                if (pscom_err != PSCOM_SUCCESS) {
+                    DPRINT(D_ERR, "lazy rkey generation failed in plugin\n ");
+                    return PSCOM_ERR_INVALID;
+                }
+            } else {
+                /* Remote key can not be generated by this plugin, fall back to
+                 * two-sided RMA */
+                free(rkey->rkey_buf);
+                rkey->rkey_buf = NULL;
+                rkey->bufsize  = 0;
+                return PSCOM_ERR_INVALID;
+            }
+        }
+    }
+
+    if (con->rma.native_check && (rkey->plugin_rkey != NULL)) {
+        return con->rma.native_check(rma_op);
+    }
+
+    return PSCOM_ERR_INVALID;
+}
+
+
+PSCOM_API_EXPORT
+pscom_err_t pscom_native_rma_atomic_op_is_available(
+    pscom_connection_t *connection, pscom_rkey_t rkey,
+    pscom_rma_atomic_op_t rma_atomic_op, pscom_datatype_t data_type,
+    size_t length, pscom_rma_op_t rma_op)
+{
+    if (!connection) { return PSCOM_ERR_INVALID; }
+    if (rkey == NULL) { return PSCOM_ERR_INVALID; }
+    /* ondemand connection return PSCOM_ERR_INVALID directly */
+    if (connection->type == PSCOM_CON_TYPE_ONDEMAND) {
+        return PSCOM_ERR_INVALID;
+    }
+    pscom_con_t *con = get_con(connection);
+
+    if (con->rma.atomics_check) {
+        return con->rma.atomics_check(rma_atomic_op, data_type, length, rma_op);
+    }
+
+    return PSCOM_ERR_INVALID;
+}
+
+
+PSCOM_API_EXPORT
+pscom_err_t pscom_rma_connection_flush_local(pscom_connection_t *connection)
+{
+    if (!connection) { return PSCOM_ERR_INVALID; }
+    pscom_con_t *con = get_con(connection);
+
+    if (con->rma.flush_local) {
+        int status = con->rma.flush_local(con);
+        return status;
+    }
+
+    return PSCOM_SUCCESS;
+}
+
+
+PSCOM_API_EXPORT
+pscom_err_t pscom_rma_connection_flush(pscom_connection_t *connection)
+{
+    if (!connection) { return PSCOM_ERR_INVALID; }
+    pscom_con_t *con = get_con(connection);
+    if (con->rma.flush) {
+        int status = con->rma.flush(con);
+        return status;
+    }
+
+    return PSCOM_SUCCESS;
+}
+
+
+PSCOM_API_EXPORT
+pscom_err_t pscom_rma_socket_flush(pscom_socket_t *socket)
+{
+    if (!socket) { return PSCOM_ERR_INVALID; }
+    pscom_sock_t *sock = get_sock(socket);
+
+    /* flush all plugins for issued RMA ops */
+    struct list_head *pos;
+    list_for_each (pos, &sock->archs) {
+        pscom_arch_sock_t *arch_sock = list_entry(pos, pscom_arch_sock_t, next);
+        if (arch_sock->rma.fence) {
+            int status = arch_sock->rma.fence(sock);
+            return status;
+        }
+    }
+    return PSCOM_SUCCESS;
 }

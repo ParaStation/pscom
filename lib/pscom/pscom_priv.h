@@ -132,7 +132,7 @@ typedef int (*pscom_rma_mem_deregister_fn_t)(void *plugin_memh);
  * region is used to generate the remote key in the plugin.
  *
  * @param [in]  con         The connection which the remote key is bound to.
- * @param [in]  rekey_buf   The buffer used to generate remote key.
+ * @param [in]  rkey_buf    The buffer used to generate remote key.
  * @param [out] plugin_rkey The opaque handle of remote key in the plugin.
  */
 typedef int (*pscom_rma_rkey_generate_fn_t)(pscom_con_t *con, void *rkey_buf,
@@ -193,6 +193,37 @@ typedef int (*pscom_rma_get_fn_t)(pscom_con_t *con, void *buffer, size_t length,
                                   void *remote_addr, void *plugin_rkey,
                                   pscom_req_t *req);
 
+
+typedef int (*pscom_rma_accumulate_fn_t)(pscom_con_t *con, void *buffer,
+                                         size_t length, void *remote_addr,
+                                         void *result_addr,
+                                         pscom_rma_atomic_op_t rma_opcode,
+                                         pscom_datatype_t data_type,
+                                         void *plugin_rkey, pscom_req_t *req);
+typedef int (*pscom_rma_get_accumulate_fn_t)(
+    pscom_con_t *con, void *buffer, size_t length, void *remote_addr,
+    void *result_addr, pscom_rma_atomic_op_t rma_opcode,
+    pscom_datatype_t data_type, void *plugin_rkey, pscom_req_t *req);
+typedef int (*pscom_rma_fetch_and_op_fn_t)(pscom_con_t *con, void *buffer,
+                                           size_t length, void *remote_addr,
+                                           void *result_addr,
+                                           pscom_rma_atomic_op_t rma_opcode,
+                                           pscom_datatype_t data_type,
+                                           void *plugin_rkey, pscom_req_t *req);
+typedef int (*pscom_rma_compare_and_swap_fn_t)(
+    pscom_con_t *con, void *buffer, size_t length, void *remote_addr,
+    void *origin_addr, void *result_addr, pscom_datatype_t data_type,
+    void *plugin_rkey, pscom_req_t *req);
+typedef int (*pscom_rma_native_check_fn_t)(pscom_rma_op_t rma_op);
+typedef int (*pscom_rma_atomics_check_fn_t)(pscom_rma_atomic_op_t atomic_op,
+                                            pscom_datatype_t data_type,
+                                            size_t length,
+                                            pscom_rma_op_t rma_op);
+
+typedef int (*pscom_rma_con_flush_fn_t)(pscom_con_t *con);
+typedef int (*pscom_rma_con_flush_local_fn_t)(pscom_con_t *con);
+typedef int (*pscom_rma_sock_fence_fn_t)(pscom_sock_t *sock);
+
 struct pscom_arch_sock {
     struct list_head next;
     pscom_con_type_t plugin_con_type;
@@ -200,6 +231,7 @@ struct pscom_arch_sock {
         pscom_rma_mem_register_fn_t mem_register;
         pscom_rma_mem_deregister_fn_t mem_deregister;
         pscom_rma_rkey_buf_free_fn_t rkey_buf_free;
+        pscom_rma_sock_fence_fn_t fence;
     } rma;
     union {
         psgm_sock_t gm;
@@ -264,6 +296,7 @@ typedef struct psmxm_conn {
 
 typedef struct psucp_conn {
     struct psucp_con_info *ci;
+    void *rma_stat;
     unsigned reading : 1;
 } psucp_conn_t;
 
@@ -479,12 +512,19 @@ struct PSCOM_con {
         pscom_rndv_rma_read_fn_t rma_read;
         pscom_rndv_rma_write_fn_t rma_write;
     } rndv;
-
     struct {
         pscom_rma_rkey_generate_fn_t rkey_generate;
         pscom_rma_rkey_destroy_fn_t rkey_destroy;
         pscom_rma_put_fn_t put;
         pscom_rma_get_fn_t get;
+        pscom_rma_accumulate_fn_t acc;
+        pscom_rma_get_accumulate_fn_t get_acc;
+        pscom_rma_fetch_and_op_fn_t fop;
+        pscom_rma_compare_and_swap_fn_t cas;
+        pscom_rma_native_check_fn_t native_check;
+        pscom_rma_atomics_check_fn_t atomics_check;
+        pscom_rma_con_flush_fn_t flush;
+        pscom_rma_con_flush_local_fn_t flush_local;
     } rma;
 
     pscom_precon_t *precon; // Pre connection handshake data.
@@ -983,9 +1023,6 @@ void _pscom_post_send_msgtype(pscom_request_t *request,
                               pscom_msgtype_t msg_type);
 
 
-/* number of RMA communication functions defined in MPI */
-#define MAX_RMA_OP PSCOM_RMA_OP_COUNT
-
 /* define the global callbacks for RMA communications via two-sided semantics */
 typedef void (*rma_target_callback)(pscom_request_t *req);
 typedef void (*rma_origin_callback)(pscom_request_t *req);
@@ -1025,6 +1062,15 @@ typedef void (*rma_origin_callback)(pscom_request_t *req);
 #define MAGIC_MEMH                   0x4D454D48
 #define MAGIC_RKEY                   0x524B4559
 #define PSCOM_INVALID_RKEYBUF_OFFSET (uint16_t)-1
+
+/* Hackish version of getting datatype size in pscom */
+/* Note: For now we do not want to maintain a datatype system like in MPICH, so
+ * the size is obtained directly via the macro value */
+static inline int pscom_datatype_get_size(pscom_datatype_t datatype)
+{
+    return (datatype & 0x0000ff00) >> 8;
+}
+
 
 /**
  * @brief remote key buffer
@@ -1078,8 +1124,8 @@ struct PSCOM_memh {
     void *rkey_buffer; /**< pointer to remote key buffer, to be released during
                             de-registration */
     size_t rkey_buffer_length; /**< length of remote key buffer */
-    rma_target_callback target_cbs[MAX_RMA_OP]; /**< callback when payload
-                                                   arrives */
+    rma_target_callback target_cbs[PSCOM_RMA_OP_COUNT]; /**< callback when
+                                                   payload arrives */
 };
 
 /**
@@ -1093,6 +1139,9 @@ struct PSCOM_rkey {
     void *remote_addr; /**< address of the memory region at target */
     size_t remote_len; /**< length of memory region at target */
     void *remote_memh; /**< pointer of memory region at target */
+                       /* lazy key generation if connection is ondemand */
+    void *rkey_buf;    /**< buffer of data used for rkey generation */
+    size_t bufsize;    /**< buffer size */
 };
 
 #endif /* _PSCOM_PRIV_H_ */

@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/uio.h>
 
 #include "list.h"
@@ -160,6 +161,9 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
     req = pscom_malloc(sizeof(*req) + extra_xh_size + user_size);
     if (!req) { return NULL; }
 
+    /* reset all parameters to 0 */
+    memset(req, 0, sizeof(*req));
+
     req->magic      = MAGIC_REQUEST;
     req->write_hook = NULL;
 
@@ -187,6 +191,8 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
     req->pub.user      = (void *)(((char *)&req->pub.xheader) + max_xhl);
 
     req->pub.max_xheader_len = max_xhl; // at least sizeof(req->pub.xheader)
+
+    req->pub.rma.native_rma = 0;
 
     announce_new_req(req);
     D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
