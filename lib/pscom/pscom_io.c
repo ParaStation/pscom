@@ -28,6 +28,8 @@
 #include "pscom_util.h"
 
 
+static uint64_t pscom_global_req_counter = 1;
+
 static inline size_t header_length(pscom_header_net_t *header);
 static inline int header_complete(void *buf, size_t size);
 static inline int is_recv_req_done(pscom_req_t *req);
@@ -1435,13 +1437,6 @@ static int _pscom_cancel_recv(pscom_req_t *req)
 
     _pscom_recvq_user_deq(req);
 
-    if (req->pub.socket) {
-        pscom_sock_t *sock = get_sock(req->pub.socket);
-        _pscom_recvq_any_cleanup(&sock->recvq_any);
-    } else {
-        _pscom_recvq_any_cleanup(&pscom.recvq_any_global);
-    }
-
     req->pub.state |= PSCOM_REQ_STATE_CANCELED;
     _pscom_recv_req_done(req); // done
 
@@ -1635,6 +1630,8 @@ void _pscom_post_recv_ctrl(pscom_req_t *req)
     assert(req->pub.connection != NULL);
 
     req->pub.state = PSCOM_REQ_STATE_RECV_REQUEST | PSCOM_REQ_STATE_POSTED;
+    /* fetch a unique req number */
+    req->req_no    = pscom_global_req_counter++;
 
     genreq = _pscom_net_recvq_ctrl_find(req);
     if (!genreq) {
@@ -1707,6 +1704,8 @@ void pscom_post_recv(pscom_request_t *request)
         perf_add("pscom_post_recv");
 
         req->pub.state  = PSCOM_REQ_STATE_RECV_REQUEST | PSCOM_REQ_STATE_POSTED;
+        /* fetch a unique req number */
+        req->req_no     = pscom_global_req_counter++;
         req->pending_io = 0;
         genreq          = _pscom_net_recvq_user_find(req);
 

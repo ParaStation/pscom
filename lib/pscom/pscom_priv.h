@@ -86,7 +86,7 @@ struct PSCOM_req {
 
     void (*write_hook)(pscom_req_t *req, char *buf, size_t len);
 
-    unsigned int req_no; // debug counter
+    uint64_t req_no; // req seq to record post order
     pscom_request_t pub;
 };
 
