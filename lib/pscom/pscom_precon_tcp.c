@@ -1467,10 +1467,10 @@ err_to_sock:
 
 static char *pscom_get_con_info_str_tcp(pscom_con_info_t *con_info)
 {
-    static char buf[sizeof("(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+    static char buf[sizeof("(xxx.xxx.xxx.xxx:xxxxx,xxxxxxxxxxx,"
                            "0xxxxxxxxxxxxxxxxx,xxxxxxxx____")];
 
-    snprintf(buf, sizeof(buf), "(" INET_ADDR_FORMAT ":portno %d,%d,%p,%.8s)",
+    snprintf(buf, sizeof(buf), "(" INET_ADDR_FORMAT ":%d,%d,%p,%.8s)",
              INET_ADDR_SPLIT(con_info->node_id), con_info->tcp.portno,
              con_info->rank, con_info->id, con_info->name);
 
@@ -1481,14 +1481,14 @@ static char *pscom_get_con_info_str_tcp(pscom_con_info_t *con_info)
 static char *pscom_get_con_info_str2_tcp(pscom_con_info_t *con_info1,
                                          pscom_con_info_t *con_info2)
 {
-    static char buf[sizeof("(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+    static char buf[sizeof("(xxx.xxx.xxx.xxx:xxxxx,xxxxxxxxxxx,"
                            "0xxxxxxxxxxxxxxxxx,xxxxxxxx____ to "
-                           "(xxx.xxx.xxx.xxx :portno xxxxxxxxxx,xxxxxxxxxx,"
+                           "(xxx.xxx.xxx.xxx:xxxxx,xxxxxxxxxxx,"
                            "0xxxxxxxxxxxxxxxxx,xxxxxxxx____ to ")];
 
     snprintf(buf, sizeof(buf),
-             "(" INET_ADDR_FORMAT ":portno%d,%d,%p,%.8s) to "
-             "(" INET_ADDR_FORMAT ":portno%d,%d,%p,"
+             "(" INET_ADDR_FORMAT ":%d,%d,%p,%.8s) to "
+             "(" INET_ADDR_FORMAT ":%d,%d,%p,"
              "%.8s)",
              INET_ADDR_SPLIT(con_info1->node_id), con_info1->tcp.portno,
              con_info1->rank, con_info1->id, con_info1->name,
