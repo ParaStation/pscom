@@ -28,6 +28,7 @@
 #include "pscom/test_precon.h"
 #include "pscom/test_ufd.h"
 #include "pscom/test_version.h"
+#include "pscom/test_atomic.h"
 
 /* tests dedicated to specific pscom plugins */
 #include "pscom4ucp/test_pscom4ucp.h"
@@ -333,6 +334,17 @@ int main(void)
     };
     total_tests += TEST_GROUP_SIZE(pscom_version_tests);
     failed_tests += cmocka_run_group_tests(pscom_version_tests, NULL, NULL);
+
+    /* pscom_atomic tests */
+    const struct CMUnitTest pscom_atomic_tests[] = {
+        cmocka_unit_test(test_atomic_cacheline_size),
+        cmocka_unit_test(test_atomic_load_store),
+        cmocka_unit_test(test_atomic_fetch_add_sub),
+        cmocka_unit_test(test_atomic_swap),
+        cmocka_unit_test(test_atomic_cas),
+    };
+    total_tests += TEST_GROUP_SIZE(pscom_atomic_tests);
+    failed_tests += cmocka_run_group_tests(pscom_atomic_tests, NULL, NULL);
 
     /* pscom_ufd tests */
     const struct CMUnitTest pscom_ufd_tests[] = {

@@ -121,6 +121,7 @@ lib/pscom/perf.sh \
 lib/pscom/pscom.c \
 lib/pscom/pscom_async.c \
 lib/pscom/pscom_async.h \
+lib/pscom/pscom_atomic.h \
 lib/pscom/pscom_con.c \
 lib/pscom/pscom_con.h \
 lib/pscom/pscom_cuda.c \
@@ -265,6 +266,8 @@ test/mocks/rrcomm_mocks.c \
 test/mocks/rrcomm_mocks.h \
 test/mocks/ucx_mocks.c \
 test/mocks/ucx_mocks.h \
+test/pscom/test_atomic.c \
+test/pscom/test_atomic.h \
 test/pscom/test_cuda.c \
 test/pscom/test_cuda.h \
 test/pscom/test_debug.c \
