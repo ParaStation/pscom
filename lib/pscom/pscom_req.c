@@ -192,8 +192,6 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 
     req->pub.max_xheader_len = max_xhl; // at least sizeof(req->pub.xheader)
 
-    req->pub.rma.native_rma = 0;
-
     announce_new_req(req);
     D_TR(printf("%s:%u:%s(%s)\n", __FILE__, __LINE__, __func__,
                 pscom_debug_req_str(req)));
