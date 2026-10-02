@@ -303,18 +303,15 @@ static void do_rma_client(pscom_connection_t *con, int native_rma)
         rma_req->connection      = con;
         rma_req->data_len        = msgsize;
 
-        if (native_rma) {
-            rma_req->ops.io_done    = pscom_request_free;
-            rma_req->rma.native_rma = 1;
-            rma_req->rma.data_type  = PSCOM_CHAR;
-        }
+        if (native_rma) { rma_req->ops.io_done = pscom_request_free; }
 
         correct = arg_verify;
 
-        pscom_post_rma_get(rma_req);
         if (native_rma) {
+            pscom_post_rma_get_native(rma_req);
             PSCALL(pscom_rma_connection_flush(con), errcode);
         } else {
+            pscom_post_rma_get(rma_req);
             pscom_wait(rma_req);
             pscom_request_free(rma_req);
         }

@@ -274,10 +274,7 @@ static void do_rma_client(pscom_connection_t *con)
     req_put->data_len        = DATASIZE * sizeof(int);
     req_put->ops.io_done     = pscom_request_free;
 
-    req_put->rma.native_rma = 1;
-    req_put->rma.data_type  = PSCOM_INT;
-
-    pscom_post_rma_put(req_put);
+    pscom_post_rma_put_native(req_put);
     PSCALL(pscom_rma_connection_flush(con), errcode);
 
     //=====================================================================
@@ -296,10 +293,8 @@ static void do_rma_client(pscom_connection_t *con)
     req_get->connection      = con;
     req_get->data_len        = DATASIZE * sizeof(int);
     req_get->ops.io_done     = pscom_request_free;
-    req_get->rma.native_rma  = 1;
-    req_get->rma.data_type   = PSCOM_INT;
 
-    pscom_post_rma_get(req_get);
+    pscom_post_rma_get_native(req_get);
     PSCALL(pscom_rma_connection_flush(con), errcode);
 
     /* check result buffer value, the value at target should be 99 */
@@ -331,11 +326,7 @@ static void do_rma_client(pscom_connection_t *con)
     req_acc->data_len        = DATASIZE * sizeof(int);
     req_acc->ops.io_done     = pscom_request_free;
 
-    req_acc->rma.native_rma    = 1;
-    req_acc->rma.data_type     = PSCOM_INT;
-    req_acc->rma.rma_atomic_op = PSCOM_SUM;
-
-    pscom_post_rma_accumulate(req_acc);
+    pscom_post_rma_accumulate_native(req_acc, PSCOM_SUM, PSCOM_INT);
     PSCALL(pscom_rma_connection_flush(con), errcode);
     /* the value at target should be 101. */
 
@@ -347,10 +338,8 @@ static void do_rma_client(pscom_connection_t *con)
     req_get->connection      = con;
     req_get->data_len        = DATASIZE * sizeof(int);
     req_get->ops.io_done     = pscom_request_free;
-    req_get->rma.native_rma  = 1;
-    req_get->rma.data_type   = PSCOM_INT;
 
-    pscom_post_rma_get(req_get);
+    pscom_post_rma_get_native(req_get);
     PSCALL(pscom_rma_connection_flush(con), errcode);
 
     /* check result buffer value, the value at target should be 101 after acc */
@@ -383,11 +372,7 @@ static void do_rma_client(pscom_connection_t *con)
     req_get_acc->data_len        = DATASIZE * sizeof(int);
     req_get_acc->ops.io_done     = pscom_request_free;
 
-    req_get_acc->rma.native_rma    = 1;
-    req_get_acc->rma.data_type     = PSCOM_INT;
-    req_get_acc->rma.rma_atomic_op = PSCOM_SUM;
-
-    pscom_post_rma_get_accumulate(req_get_acc);
+    pscom_post_rma_get_accumulate_native(req_get_acc, PSCOM_SUM, PSCOM_INT);
     PSCALL(pscom_rma_connection_flush(con), errcode);
     /* the value at target should be 103. */
     /* check result buffer value */
@@ -424,10 +409,7 @@ static void do_rma_client(pscom_connection_t *con)
     req_cas->data_len         = sizeof(int);
     req_cas->ops.io_done      = pscom_request_free;
 
-    req_cas->rma.native_rma = 1;
-    req_cas->rma.data_type  = PSCOM_INT;
-
-    pscom_post_rma_compare_swap(req_cas);
+    pscom_post_rma_compare_swap_native(req_cas, PSCOM_INT);
     PSCALL(pscom_rma_connection_flush(con), errcode);
 
     /* check result buffer value, compare == target, so target value should be
@@ -444,15 +426,12 @@ static void do_rma_client(pscom_connection_t *con)
     req_get->connection      = con;
     req_get->data_len        = sizeof(int);
     req_get->ops.io_done     = pscom_request_free;
-    req_get->rma.native_rma  = 1;
-    req_get->rma.data_type   = PSCOM_INT;
 
-    pscom_post_rma_get(req_get);
+    pscom_post_rma_get_native(req_get);
     PSCALL(pscom_rma_connection_flush(con), errcode);
 
     /* check result buffer value, the value at target should be 88 after cas */
     assert(result_buf[0] == 88);
-
 
     printf("client side: all native RMA communications are done!\n");
 
