@@ -523,12 +523,10 @@ static inline void pscom_post_rma_compare_swap_req(pscom_req_t *rma_read_req,
 PSCOM_API_EXPORT
 void pscom_post_rma_put(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     request->data     = request->rma.origin_addr;
     assert(rkey);
@@ -561,12 +559,10 @@ void pscom_post_rma_put(pscom_request_t *request)
 PSCOM_API_EXPORT
 void pscom_post_rma_get(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     request->data     = request->rma.origin_addr;
     assert(rkey);
@@ -601,12 +597,10 @@ void pscom_post_rma_get(pscom_request_t *request)
 PSCOM_API_EXPORT
 void pscom_post_rma_accumulate(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -623,12 +617,10 @@ void pscom_post_rma_accumulate(pscom_request_t *request)
 PSCOM_API_EXPORT
 void pscom_post_rma_get_accumulate(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -647,12 +639,10 @@ void pscom_post_rma_get_accumulate(pscom_request_t *request)
 PSCOM_API_EXPORT
 void pscom_post_rma_fetch_op(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -671,12 +661,10 @@ void pscom_post_rma_fetch_op(pscom_request_t *request)
 PSCOM_API_EXPORT
 void pscom_post_rma_compare_swap(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -851,12 +839,10 @@ pscom_err_t pscom_rma_socket_flush(pscom_socket_t *socket)
 PSCOM_API_EXPORT
 void pscom_post_rma_put_native(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     request->data     = request->rma.origin_addr;
     assert(rkey);
@@ -879,12 +865,10 @@ void pscom_post_rma_put_native(pscom_request_t *request)
 PSCOM_API_EXPORT
 void pscom_post_rma_get_native(pscom_request_t *request)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     request->data     = request->rma.origin_addr;
     assert(rkey);
@@ -910,12 +894,10 @@ void pscom_post_rma_accumulate_native(pscom_request_t *request,
                                       pscom_rma_atomic_op_t rma_atomic_op,
                                       pscom_datatype_t data_type)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -941,12 +923,10 @@ void pscom_post_rma_get_accumulate_native(pscom_request_t *request,
                                           pscom_rma_atomic_op_t rma_atomic_op,
                                           pscom_datatype_t data_type)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -971,12 +951,10 @@ void pscom_post_rma_fetch_op_native(pscom_request_t *request,
                                     pscom_rma_atomic_op_t rma_atomic_op,
                                     pscom_datatype_t data_type)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);
@@ -1001,12 +979,10 @@ PSCOM_API_EXPORT
 void pscom_post_rma_compare_swap_native(pscom_request_t *request,
                                         pscom_datatype_t data_type)
 {
-    pscom_req_t *req = get_req(request);
-    assert(req->magic == MAGIC_REQUEST);
-    assert(request->state & PSCOM_REQ_STATE_DONE);
-    assert(request->connection != NULL);
-    pscom_con_t *con = get_con(request->connection);
-    assert(con->magic == MAGIC_CONNECTION);
+    pscom_req_t *req;
+    PSCOM_GET_REQ_AND_CHECK_VALIDITY(req, request);
+    pscom_con_t *con;
+    PSCOM_GET_CON_AND_CHECK_VALIDITY(con, request);
     pscom_rkey_t rkey = request->rma.rkey;
     assert(rkey);
     assert(rkey->magic == MAGIC_RKEY);

@@ -1065,6 +1065,21 @@ typedef void (*rma_origin_callback)(pscom_request_t *req);
 #define MAGIC_RKEY                   0x524B4559
 #define PSCOM_INVALID_RKEYBUF_OFFSET (uint16_t)-1
 
+/* Macros for sanity checks of request and connection to reduce redundancy */
+#define PSCOM_GET_REQ_AND_CHECK_VALIDITY(_req, _request)                       \
+    do {                                                                       \
+        (_req) = get_req(_request);                                            \
+        assert((_req)->magic == MAGIC_REQUEST);                                \
+        assert((_request)->state & PSCOM_REQ_STATE_DONE);                      \
+    } while (0)
+
+#define PSCOM_GET_CON_AND_CHECK_VALIDITY(_con, _request)                       \
+    do {                                                                       \
+        assert((_request)->connection);                                        \
+        (_con) = get_con((_request)->connection);                              \
+        assert((_con)->magic == MAGIC_CONNECTION);                             \
+    } while (0)
+
 /* Hackish version of getting datatype size in pscom */
 /* Note: For now we do not want to maintain a datatype system like in MPICH, so
  * the size is obtained directly via the macro value */
