@@ -708,6 +708,14 @@ pscom_con_t *pscom_con_create(pscom_sock_t *sock)
     con->rma.rkey_destroy  = NULL;
     con->rma.put           = NULL;
     con->rma.get           = NULL;
+    con->rma.acc           = NULL;
+    con->rma.get_acc       = NULL;
+    con->rma.fop           = NULL;
+    con->rma.cas           = NULL;
+    con->rma.native_check  = NULL;
+    con->rma.atomics_check = NULL;
+    con->rma.flush         = NULL;
+    con->rma.flush_local   = NULL;
 
     con->rendezvous_size = pscom.env.rendezvous_size;
 

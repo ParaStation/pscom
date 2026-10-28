@@ -14,6 +14,7 @@
 #include <assert.h>
 #include <pthread.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/uio.h>
 
 #include "list.h"
@@ -159,6 +160,9 @@ pscom_req_t *pscom_req_create(size_t max_xheader_len, size_t user_size)
 
     req = pscom_malloc(sizeof(*req) + extra_xh_size + user_size);
     if (!req) { return NULL; }
+
+    /* reset all parameters to 0 */
+    memset(req, 0, sizeof(*req));
 
     req->magic      = MAGIC_REQUEST;
     req->write_hook = NULL;

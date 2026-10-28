@@ -26,6 +26,12 @@ target_include_directories(pscom_rma_get
                            PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
 install(TARGETS pscom_rma_get DESTINATION "${CMAKE_INSTALL_BINDIR}")
 
+add_executable(pscom_rma_native pscom_rma_native.c)
+target_link_libraries(pscom_rma_native PRIVATE pscom)
+target_include_directories(pscom_rma_native
+                           PRIVATE ${PROJECT_SOURCE_DIR}/lib/pscom)
+install(TARGETS pscom_rma_native DESTINATION "${CMAKE_INSTALL_BINDIR}")
+
 add_executable(pscom_rma_sync_notify pscom_rma_sync_notify.c)
 target_link_libraries(pscom_rma_sync_notify PRIVATE pscom)
 target_include_directories(pscom_rma_sync_notify

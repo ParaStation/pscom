@@ -21,6 +21,7 @@
 #include <ucp/api/ucp_compat.h> /* IWYU pragma: keep */
 
 #include "list.h"
+#include "pscom.h"
 #include "pscom_env.h" /* IWYU pragma: keep */
 #include "pscom_debug.h"
 #include "pscom_priv.h"
@@ -39,6 +40,49 @@ struct psucp_hca_info {
 
     struct list_head pending_requests; // List of psucp_req_t.next
 };
+
+
+/* information on RMA accumulate operations
+********************************************
+MPI op :
+1 MPI_MAX maximum                          not supported
+2 MPI_MIN minimum                          not supported
+3 MPI_SUM sum                              supported
+4 MPI_PROD product                         not supported
+5 MPI_LAND logical and                     not supported
+6 MPI_BAND bit-wise and                    supported
+7 MPI_LOR logical or                       not supported
+8 MPI_BOR bit-wise or                      supported
+9 MPI_LXOR logical exclusive or (xor)      not supported
+10 MPI_BXOR bit-wise exclusive or (xor)    supported
+11 MPI_MINLOC min value and location       not supported
+12 MPI_MAXLOC max value and location       not supported
+13 MPI_REPLACE                             supported
+   MPI_NO_OP   (MPI_Op)(0x5800000e)
+********************************************
+initialized rma_op_mask  0b0001 0010 1010 0100
+********************************************
+ucx supported hardware-enabled RMA acc ops
+enum ucp_atomic_op_t used for ucp_atomic_op_nbx
+UCP_ATOMIC_OP_ADD Atomic add
+UCP_ATOMIC_OP_SWAP Atomic swap
+UCP_ATOMIC_OP_CSWAP Atomic conditional swap
+UCP_ATOMIC_OP_AND Atomic and
+UCP_ATOMIC_OP_OR Atomic or
+UCP_ATOMIC_OP_XOR Atomic xor
+*/
+
+struct psucp_rma_module {
+    /* specific plugin definitions go below */
+    unsigned int rma_fetch_op_mask; /* which rma get accumulate operation is
+                                       supported by the hardware */
+    unsigned int rma_mask;        /* which rma communication is supported by the
+                                     hardware */
+    unsigned int rma_acc_op_mask; /* which rma accumulate operation is supported
+                                     by the hardware */
+};
+
+static struct psucp_rma_module ucp_rma_module;
 
 
 typedef struct psucp_req psucp_req_t;
@@ -77,6 +121,11 @@ struct psucp_req {
         } recv;
     } type;
 };
+
+typedef struct {
+    size_t remaining; // TODO: use atomic datatype
+    void *req_priv;
+} psucp_atomic_segment_ctx_t;
 
 
 static psucp_hca_info_t psucp_default_hca;
@@ -272,7 +321,8 @@ static int psucp_init_hca(psucp_hca_info_t *hca_info)
     ucp_params.field_mask = UCP_PARAM_FIELD_FEATURES |
                             UCP_PARAM_FIELD_REQUEST_SIZE |
                             UCP_PARAM_FIELD_REQUEST_INIT;
-    ucp_params.features        = UCP_FEATURE_TAG;
+    ucp_params.features = UCP_FEATURE_TAG | UCP_FEATURE_RMA |
+                          UCP_FEATURE_AMO32 | UCP_FEATURE_AMO64;
     ucp_params.request_size    = sizeof(psucp_req_t);
     ucp_params.request_init    = psucp_req_init;
     ucp_params.request_cleanup = NULL;
@@ -669,4 +719,723 @@ err_recv: {
 }
     return -EPIPE;
     ;
+}
+
+
+/* RMA functions */
+int psucp_rma_mem_register(void *addr, size_t length, void **rkeybuf,
+                           uint16_t *bufsize, ucp_mem_h *memh)
+{
+    ucp_context_h ucp_context = psucp_default_hca.ucp_context;
+    ucp_mem_map_params_t mem_map_params;
+    ucs_status_t status;
+
+    mem_map_params.field_mask = UCP_MEM_MAP_PARAM_FIELD_ADDRESS |
+                                UCP_MEM_MAP_PARAM_FIELD_LENGTH;
+    mem_map_params.address = addr;
+    mem_map_params.length  = length;
+
+    status = ucp_mem_map(ucp_context, &mem_map_params, memh);
+
+    if (status != UCS_OK) {
+        psucp_err_status("ucp_mem_map()", status);
+        psucp_dprint(D_ERR, "psucp_rma_mem_register() : %s", psucp_err_str);
+        return PSCOM_ERR_STDERROR;
+    }
+
+    status = ucp_rkey_pack(ucp_context, *memh, rkeybuf, (size_t *)bufsize);
+    if (status != UCS_OK) { goto err_rkey; }
+
+    return PSCOM_SUCCESS;
+
+err_rkey:
+    psucp_err_status("ucp_rkey_pack()", status);
+    psucp_dprint(D_ERR, "psucp_rma_mem_register() : %s", psucp_err_str);
+    ucp_mem_unmap(ucp_context, *memh);
+    return PSCOM_ERR_STDERROR;
+}
+
+
+int psucp_rma_mem_deregister(ucp_mem_h memh)
+{
+    ucs_status_t status;
+    ucp_context_h ucp_context = psucp_default_hca.ucp_context;
+
+    status = ucp_mem_unmap(ucp_context, memh);
+
+    if (status != UCS_OK) { goto err_dereg; }
+
+    return PSCOM_SUCCESS;
+err_dereg:
+    psucp_err_status("ucp_mem_unmap()", status);
+    psucp_dprint(D_ERR, "psucp_rma_mem_deregister() : %s", psucp_err_str);
+    return PSCOM_ERR_STDERROR;
+}
+
+
+int psucp_rma_rkey_generate(psucp_con_info_t *con_info, void *rkeybuf,
+                            ucp_rkey_h *rkey)
+{
+    ucs_status_t status;
+    ucp_ep_h ep = con_info->ucp_ep;
+
+    status = ucp_ep_rkey_unpack(ep, rkeybuf, rkey);
+
+    if (status != UCS_OK) { goto err_keygen; }
+
+    return PSCOM_SUCCESS;
+err_keygen:
+    psucp_err_status("ucp_ep_rkey_unpack()", status);
+    psucp_dprint(D_ERR, "psucp_rma_rkey_generate() : %s", psucp_err_str);
+    return PSCOM_ERR_STDERROR;
+}
+
+
+int psucp_rma_rkey_destroy(ucp_rkey_h rkey)
+{
+    ucp_rkey_destroy(rkey);
+    return PSCOM_SUCCESS;
+}
+
+
+void psucp_rma_rkey_buf_free(void *rkey_buf)
+{
+    ucp_rkey_buffer_release(rkey_buf);
+    return;
+}
+
+
+static void psucp_rma_put_done(void *request, ucs_status_t status)
+{
+    psucp_req_t *psucp_req = (psucp_req_t *)request;
+    psucp_req->completed   = PSUCP_COMPLETED_SEND; // use the same tag as send
+    pscom_con_t *con       = psucp_req->con_info->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    con_rma_stat->local_complete++;
+
+    pscom_psucp_rma_put_done(psucp_req->type.send.req_priv);
+    psucp_pending_req_dequeue_and_release(psucp_req);
+}
+
+
+int psucp_rma_put(psucp_con_info_t *ci, void *buffer, size_t length,
+                  void *remote_addr, ucp_rkey_h ucp_rkey, void *req_priv)
+{
+    ucs_status_ptr_t request = NULL;
+    psucp_req_t *psucp_req;
+    pscom_con_t *con                   = ci->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    pscom_sock_t *sock           = get_sock(con->pub.socket);
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_UCP);
+    assert(arch_sock);
+    pscom_ucp_sock_t *ucp_sock = arch_sock->arch.ucp;
+
+    request = ucp_put_nb(ci->ucp_ep, buffer, length, (uint64_t)remote_addr,
+                         ucp_rkey,
+                         /*(ucp_send_callback_t)*/ psucp_rma_put_done);
+    if (UCS_PTR_IS_ERR(request)) { goto err_rma_put; }
+
+    if (request) {
+        psucp_pending_req_attach(request, ci);
+        psucp_req = (psucp_req_t *)request;
+        assert(!psucp_req->completed);
+        psucp_req->type.send.req_priv = req_priv;
+        con_rma_stat->issued_op_count++; // issue op locally
+        /* flush local and remote */
+        con_rma_stat->flush_local  = 1;
+        con_rma_stat->flush_remote = 1;
+        ucp_sock->flush_required   = 1;
+    } else {
+        /* direct return, only flush remote, this is not explained clearly in
+         * ucp document, we assume that local completion is guaranteed */
+        con_rma_stat->flush_remote = 1;
+        ucp_sock->flush_required   = 1;
+        pscom_psucp_rma_put_done(req_priv);
+    }
+
+
+    return PSCOM_SUCCESS;
+err_rma_put: {
+    ucs_status_t status = UCS_PTR_STATUS(request);
+
+    psucp_err_status("ucp_put_nb()", status);
+    psucp_dprint(D_ERR, "psucp_rma_put() : %s", psucp_err_str);
+}
+    return PSCOM_ERR_STDERROR;
+}
+
+
+static void psucp_rma_get_done(void *request, ucs_status_t status)
+{
+    psucp_req_t *psucp_req = (psucp_req_t *)request;
+    psucp_req->completed   = PSUCP_COMPLETED_SEND; // use the same tag as send
+
+    pscom_con_t *con                   = psucp_req->con_info->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    con_rma_stat->local_complete++;
+    /* use the same `done` function as put */
+    pscom_psucp_rma_put_done(psucp_req->type.send.req_priv);
+    psucp_pending_req_dequeue_and_release(psucp_req);
+}
+
+int psucp_rma_get(psucp_con_info_t *ci, void *buffer, size_t length,
+                  void *remote_addr, ucp_rkey_h ucp_rkey, void *req_priv)
+{
+    ucs_status_ptr_t request = NULL;
+    psucp_req_t *psucp_req;
+    pscom_con_t *con                   = ci->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    pscom_sock_t *sock           = get_sock(con->pub.socket);
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_UCP);
+    assert(arch_sock);
+    pscom_ucp_sock_t *ucp_sock = arch_sock->arch.ucp;
+
+    request = ucp_get_nb(ci->ucp_ep, buffer, length, (uint64_t)remote_addr,
+                         ucp_rkey,
+                         /*(ucp_send_callback_t)*/ psucp_rma_get_done);
+    if (UCS_PTR_IS_ERR(request)) { goto err_rma_get; }
+
+    if (request) {
+        psucp_pending_req_attach(request, ci);
+        psucp_req = (psucp_req_t *)request;
+        assert(!psucp_req->completed);
+        psucp_req->type.send.req_priv = req_priv;
+        con_rma_stat->issued_op_count++; // issue op locally
+        /* flush local and remote */
+        con_rma_stat->flush_local  = 1;
+        con_rma_stat->flush_remote = 1;
+        ucp_sock->flush_required   = 1;
+    } else {
+        /* direct return, we assume a local completion, for rma_get, local
+         * completion means total completion of this operation, no need to
+         * flush??? */
+        con_rma_stat->flush_remote = 1;
+        ucp_sock->flush_required   = 1;
+        /* use the same `done` function as put */
+        pscom_psucp_rma_put_done(req_priv);
+    }
+
+
+    return PSCOM_SUCCESS;
+err_rma_get: {
+    ucs_status_t status = UCS_PTR_STATUS(request);
+
+    psucp_err_status("ucp_get_nb()", status);
+    psucp_dprint(D_ERR, "psucp_rma_get() : %s", psucp_err_str);
+}
+    return PSCOM_ERR_STDERROR;
+}
+
+
+static void psucp_rma_cs_done(void *request, ucs_status_t status,
+                              void *user_data)
+{
+    psucp_req_t *psucp_req = (psucp_req_t *)request;
+    psucp_req->completed   = PSUCP_COMPLETED_SEND; // use the same tag as send
+
+    pscom_con_t *con                   = psucp_req->con_info->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    con_rma_stat->local_complete++;
+
+    pscom_psucp_rma_cs_done(psucp_req->type.send.req_priv);
+    psucp_pending_req_dequeue_and_release(psucp_req);
+}
+
+static void psucp_rma_acc_done(void *request, ucs_status_t status,
+                               void *user_data)
+{
+    psucp_req_t *psucp_req = (psucp_req_t *)request;
+    psucp_req->completed   = PSUCP_COMPLETED_SEND; // use the same tag as send
+
+    pscom_con_t *con                   = psucp_req->con_info->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    con_rma_stat->local_complete++;
+
+    psucp_atomic_segment_ctx_t *seg_ctx = (psucp_atomic_segment_ctx_t *)
+        user_data;
+    /* if segment context is set in userdata */
+    if (seg_ctx != NULL) {
+        seg_ctx->remaining--;
+        if (seg_ctx->remaining == 0) {
+            assert(psucp_req->type.send.req_priv == seg_ctx->req_priv);
+            pscom_psucp_rma_put_done(seg_ctx->req_priv);
+            free(seg_ctx);
+        }
+    } else {
+        /* no segment context is set in userdata */
+        if (psucp_req->type.send.req_priv) {
+            pscom_psucp_rma_put_done(psucp_req->type.send.req_priv);
+        }
+    }
+    psucp_pending_req_dequeue_and_release(psucp_req);
+}
+
+int psucp_rma_atomic_op(psucp_con_info_t *ci, void *buffer, size_t length,
+                        void *remote_addr, void *result_addr,
+                        ucp_atomic_op_t ucp_opcode, ucp_rkey_h ucp_rkey,
+                        void *req_priv)
+{
+    ucs_status_ptr_t request = NULL;
+    psucp_req_t *psucp_req;
+    pscom_con_t *con                   = ci->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    pscom_sock_t *sock           = get_sock(con->pub.socket);
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_UCP);
+    assert(arch_sock);
+    pscom_ucp_sock_t *ucp_sock = arch_sock->arch.ucp;
+
+    if (ucp_opcode == UCP_ATOMIC_OP_LAST) { goto err_rma_opcode; }
+
+    assert(result_addr); /* fetch op and CAS need a valid result buffer */
+
+    ucp_request_param_t param = {
+        /* Only ucp_dt_make_contig(4) and
+           ucp_dt_make_contig(8) are valid, which
+           meansonly 4 or 8 bytes of data length is
+           acceptable. */
+        .datatype     = ucp_dt_make_contig(length),
+        .op_attr_mask = UCP_OP_ATTR_FIELD_CALLBACK |
+                        UCP_OP_ATTR_FIELD_DATATYPE |
+                        UCP_OP_ATTR_FIELD_REPLY_BUFFER,
+        .reply_buffer = result_addr,
+    };
+
+    if (ucp_opcode == UCP_ATOMIC_OP_CSWAP) {
+        param.cb.send = (ucp_send_nbx_callback_t)psucp_rma_cs_done;
+    } else {
+        param.cb.send = (ucp_send_nbx_callback_t)psucp_rma_acc_done;
+    }
+
+    /* Currently atomic operations can handle one element only. Thus, count must
+     * be set to 1. */
+    request = ucp_atomic_op_nbx(ci->ucp_ep, (ucp_atomic_op_t)ucp_opcode, buffer,
+                                1, (uint64_t)remote_addr, ucp_rkey, &param);
+    if (UCS_PTR_IS_ERR(request)) { goto err_rma_atomic; }
+
+    if (request) {
+        psucp_pending_req_attach(request, ci);
+        psucp_req = (psucp_req_t *)request;
+        assert(!psucp_req->completed);
+        psucp_req->type.send.req_priv = req_priv;
+        con_rma_stat->issued_op_count++; // issue op locally
+        /* flush local and remote */
+        con_rma_stat->flush_local  = 1;
+        con_rma_stat->flush_remote = 1;
+        ucp_sock->flush_required   = 1;
+    } else {
+        /* direct return, only flush remote, this is not explained clearly in
+         * ucp document, we assume that local completion is guaranteed*/
+        con_rma_stat->flush_remote = 1;
+        ucp_sock->flush_required   = 1;
+        if (ucp_opcode == UCP_ATOMIC_OP_CSWAP) {
+            pscom_psucp_rma_cs_done(req_priv);
+        } else {
+            pscom_psucp_rma_put_done(req_priv);
+        }
+    }
+
+
+    return PSCOM_SUCCESS;
+err_rma_atomic: {
+    ucs_status_t status = UCS_PTR_STATUS(request);
+
+    psucp_err_status("ucp_atomic_op_nbx()", status);
+    psucp_dprint(D_ERR, "psucp_rma_atomic_op() : %s", psucp_err_str);
+    return PSCOM_ERR_STDERROR;
+}
+err_rma_opcode: {
+    printf("error: psucp_rma_atomic_op() opcode: UCP_ATOMIC_OP_LAST\n");
+    return PSCOM_ERR_STDERROR;
+}
+}
+
+int psucp_rma_atomic_op_segment(psucp_con_info_t *ci, void *buffer,
+                                size_t length, pscom_datatype_t data_type,
+                                void *remote_addr, void *result_addr,
+                                ucp_atomic_op_t ucp_opcode, ucp_rkey_h ucp_rkey,
+                                void *req_priv)
+{
+    ucs_status_ptr_t request = NULL;
+    psucp_req_t *psucp_req;
+    pscom_con_t *con                   = ci->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    pscom_sock_t *sock           = get_sock(con->pub.socket);
+    pscom_arch_sock_t *arch_sock = get_arch_sock(sock, PSCOM_CON_TYPE_UCP);
+    assert(arch_sock);
+    pscom_ucp_sock_t *ucp_sock = arch_sock->arch.ucp;
+
+    if (ucp_opcode == UCP_ATOMIC_OP_LAST) { goto err_rma_opcode; }
+
+    int data_size      = pscom_datatype_get_size(data_type);
+    size_t segment_num = length / data_size;
+
+    if (segment_num == 0) {
+        pscom_psucp_rma_put_done(req_priv);
+        return PSCOM_SUCCESS;
+    }
+
+    psucp_atomic_segment_ctx_t *seg_ctx = malloc(
+        sizeof(psucp_atomic_segment_ctx_t));
+    seg_ctx->remaining = segment_num;
+    seg_ctx->req_priv  = req_priv;
+
+    ucp_request_param_t param = {
+        /* Only ucp_dt_make_contig(4) and ucp_dt_make_contig(8) are valid, which
+         * means only 4 or 8 bytes of data length is acceptable. */
+        .datatype  = ucp_dt_make_contig(data_size),
+        .cb.send   = (ucp_send_nbx_callback_t)psucp_rma_acc_done,
+        .user_data = seg_ctx,
+    };
+
+
+    if (result_addr) /* get_acc */
+    {
+        param.op_attr_mask = UCP_OP_ATTR_FIELD_CALLBACK |
+                             UCP_OP_ATTR_FIELD_DATATYPE |
+                             UCP_OP_ATTR_FIELD_USER_DATA |
+                             UCP_OP_ATTR_FIELD_REPLY_BUFFER;
+
+    } else /* acc, no reply is required */
+    {
+        param.op_attr_mask = UCP_OP_ATTR_FIELD_CALLBACK |
+                             UCP_OP_ATTR_FIELD_DATATYPE |
+                             UCP_OP_ATTR_FIELD_USER_DATA;
+    }
+
+    /* pipelining the acc or get acc operations */
+    for (size_t i = 0; i < segment_num; i++) {
+        /* set offset for result buffer for get acc */
+        if (result_addr) {
+            param.reply_buffer = (void *)((char *)result_addr + i * data_size);
+        }
+        /* Currently atomic operations can handle one element only. Thus, count
+         * must be set to 1. */
+        request = ucp_atomic_op_nbx(ci->ucp_ep, (ucp_atomic_op_t)ucp_opcode,
+                                    (void *)((char *)buffer + i * data_size), 1,
+                                    (uint64_t)remote_addr + i * data_size,
+                                    ucp_rkey, &param);
+        if (UCS_PTR_IS_ERR(request)) { goto err_rma_atomic; }
+
+        if (request) {
+            psucp_pending_req_attach(request, ci);
+            psucp_req = (psucp_req_t *)request;
+            assert(!psucp_req->completed);
+            psucp_req->type.send.req_priv = req_priv;
+            con_rma_stat->issued_op_count++; // issue op locally
+            /* flush local and remote */
+            con_rma_stat->flush_local  = 1;
+            con_rma_stat->flush_remote = 1;
+            ucp_sock->flush_required   = 1;
+        } else {
+            /* direct return, only flush remote, this is not explained clearly
+             * in ucp document, we assume that local completion is guaranteed*/
+            con_rma_stat->flush_remote = 1;
+            ucp_sock->flush_required   = 1;
+            /* finish one segment */
+            seg_ctx->remaining--;
+            if (seg_ctx->remaining == 0) {
+                pscom_psucp_rma_put_done(req_priv);
+                free(seg_ctx);
+            }
+        }
+    }
+
+    return PSCOM_SUCCESS;
+err_rma_atomic: {
+    ucs_status_t status = UCS_PTR_STATUS(request);
+
+    psucp_err_status("ucp_atomic_op_nbx()", status);
+    psucp_dprint(D_ERR, "psucp_rma_atomic_op_segment() : %s", psucp_err_str);
+    return PSCOM_ERR_STDERROR;
+}
+err_rma_opcode: {
+    printf("error: psucp_rma_atomic_op_segment() opcode: UCP_ATOMIC_OP_LAST\n");
+    return PSCOM_ERR_STDERROR;
+}
+}
+
+
+static void psucp_rma_flush_cb(void *request, ucs_status_t status)
+{
+    // empty
+}
+
+/* Important comments:
+ * If one ucp sock is used for multiple windows in MPI RMA implementation, when
+ * fence is issued on one window, all the RMA communications issued on this
+ * worker will be flushed. This means that the RMA communications issued by
+ * another window which shares the same socket and worker will also be flushed.
+ * In conclusion, worker(socket) rma flush operation is not exclusive for
+ * certain MPI window when this worker(socket) is shared by multiple windows. */
+
+/* Blocking flush implementation with non-blocking worker flush
+ * This function flushes all RMA communication on the worker.
+ * All the RMA communications issued on this worker prior to this call are
+ * complete at the ORIGIN and TARGET side when this call returns.
+ */
+int psucp_rma_worker_flush(void)
+{
+    psucp_hca_info_t *hca_info = &psucp_default_hca;
+    ucs_status_t status;
+
+    /* non-blocking version */
+    /* flag = 0, empty callback function is provided*/
+    void *request = ucp_worker_flush_nb(hca_info->ucp_worker, 0,
+                                        &psucp_rma_flush_cb);
+
+    if (request == NULL) {
+        return UCS_OK;
+    } else if (UCS_PTR_IS_ERR(request)) {
+        status = UCS_PTR_STATUS(request);
+        psucp_err_status("ucp_worker_flush_nb()", status);
+        psucp_dprint(D_ERR, "psucp_rma_worker_flush() : %s", psucp_err_str);
+        return PSCOM_ERR_STDERROR;
+    } else {
+        do {
+            ucp_worker_progress(hca_info->ucp_worker);
+            status = ucp_request_check_status(request);
+        } while (status == UCS_INPROGRESS);
+        ucp_request_release(request);
+        if (status == UCS_OK) {
+            return PSCOM_SUCCESS;
+        } else {
+            psucp_err_status("ucp_worker_progress()", status);
+            psucp_dprint(D_ERR, "psucp_rma_worker_flush() : %s", psucp_err_str);
+            return PSCOM_ERR_STDERROR;
+        }
+    }
+}
+
+
+/* Important comments:
+ * We have the same circumstance as worker flush. In conclusion, the
+ * ep(connection) rma flush operation is not exclusive for certain pscom
+ * connection when this connection is shared by multiple windows. */
+
+/* Blocking flush implementation with non-blocking ep flush
+ * This function flushes all RMA communication on the endpoint(connection).
+ * All the RMA communications issued on this ep prior to this call are complete
+ * at the ORIGIN and TARGET side when this call returns
+ */
+int psucp_rma_ep_flush(psucp_con_info_t *con_info)
+{
+    psucp_hca_info_t *hca_info = &psucp_default_hca;
+    ucs_status_t status;
+    void *request = ucp_ep_flush_nb(con_info->ucp_ep, 0, &psucp_rma_flush_cb);
+    if (request == NULL) {
+        return UCS_OK;
+    } else if (UCS_PTR_IS_ERR(request)) {
+        status = UCS_PTR_STATUS(request);
+        psucp_err_status("ucp_ep_flush_nb()", status);
+        psucp_dprint(D_ERR, "psucp_rma_ep_flush() : %s", psucp_err_str);
+        return PSCOM_ERR_STDERROR;
+    } else {
+        do {
+            ucp_worker_progress(hca_info->ucp_worker);
+            status = ucp_request_check_status(request);
+        } while (status == UCS_INPROGRESS);
+        ucp_request_release(request);
+        if (status == UCS_OK) {
+            return PSCOM_SUCCESS;
+        } else {
+            psucp_err_status("ucp_worker_progress()", status);
+            psucp_dprint(D_ERR, "psucp_rma_ep_flush() : %s", psucp_err_str);
+            return PSCOM_ERR_STDERROR;
+        }
+    }
+}
+
+
+int psucp_rma_ep_flush_local(psucp_con_info_t *con_info)
+{
+    psucp_hca_info_t *hca_info         = &psucp_default_hca;
+    pscom_con_t *con                   = con_info->con_priv;
+    psucp_con_rma_stat_t *con_rma_stat = (psucp_con_rma_stat_t *)
+                                             con->arch.ucp.rma_stat;
+    /* Note: This implementation only guarantee local completion using the
+     * counter but this may lead to endless cycle here. One alternative solution
+     * is to flush the ep completely as above to guarantee completion at origin
+     * and target side. */
+    do {
+        ucp_worker_progress(hca_info->ucp_worker);
+    } while (con_rma_stat->issued_op_count > con_rma_stat->local_complete);
+
+    return PSCOM_SUCCESS;
+}
+
+
+int psucp_rma_native_check(pscom_rma_op_t rma_op)
+{
+    psucp_rma_module_t *ucp_rma = &ucp_rma_module;
+
+    /* check if rma comm api is available */
+    if (ucp_rma->rma_mask & (1 << rma_op)) { return PSCOM_SUCCESS; }
+    /* not supported */
+    return PSCOM_ERR_INVALID;
+}
+
+
+int psucp_rma_atomics_check(pscom_rma_atomic_op_t atomic_op,
+                            pscom_datatype_t data_type, size_t length,
+                            pscom_rma_op_t rma_op)
+{
+    psucp_rma_module_t *ucp_rma = &ucp_rma_module;
+    /* Note:
+     * Many data types are defined in MPICH and pscom. Which should we enable
+     * here? Only 4 or 8 bytes datatype is supported by UCP.
+     * For now, we only allow integer with size of 4 or 8
+     */
+    switch (data_type) {
+    case PSCOM_INT:
+    case PSCOM_UNSIGNED:
+    case PSCOM_LONG:
+    case PSCOM_UNSIGNED_LONG:
+    case PSCOM_LONG_LONG_INT: break;
+
+    default: return PSCOM_ERR_INVALID; break;
+    }
+
+    /* if data length % size != 0, something is wrong with the data length and
+     * we can not pipeline */
+    int size = pscom_datatype_get_size(data_type);
+    if (length % size != 0) { return PSCOM_ERR_INVALID; }
+
+    if (rma_op == PSCOM_RMA_COMPARE_AND_SWAP) {
+        if (((length == 4) || (length == 8)) && ((int)length == size)) {
+            return PSCOM_SUCCESS;
+        } else {
+            return PSCOM_ERR_INVALID;
+        }
+    }
+
+    int temp_op_type = (atomic_op & 0x0000000f) - 1;
+    if (rma_op == PSCOM_RMA_GET_ACCUMULATE) {
+        if (ucp_rma->rma_fetch_op_mask & (1 << temp_op_type)) {
+            /* check if rma op is supported */
+            return PSCOM_SUCCESS;
+        } else {
+            return PSCOM_ERR_INVALID;
+        }
+    }
+
+    if (rma_op == PSCOM_RMA_FETCH_AND_OP) {
+        if ((ucp_rma->rma_fetch_op_mask & (1 << temp_op_type)) &&
+            ((int)length == size)) {
+            /* check if rma op is supported, only one element is allowed for fop
+             */
+            return PSCOM_SUCCESS;
+        } else {
+            return PSCOM_ERR_INVALID;
+        }
+    }
+
+    if (rma_op == PSCOM_RMA_ACCUMULATE) {
+        if (ucp_rma->rma_acc_op_mask & (1 << temp_op_type)) {
+            /* check if rma op is supported */
+            return PSCOM_SUCCESS;
+        } else {
+            return PSCOM_ERR_INVALID;
+        }
+    }
+
+    return PSCOM_ERR_INVALID;
+}
+
+/* information on RMA accumulate operations
+********************************************
+typedef int MPI_Op;
+#define MPI_MAX     (MPI_Op)(0x58000001)
+#define MPI_MIN     (MPI_Op)(0x58000002)
+#define MPI_SUM     (MPI_Op)(0x58000003)
+#define MPI_PROD    (MPI_Op)(0x58000004)
+#define MPI_LAND    (MPI_Op)(0x58000005)
+#define MPI_BAND    (MPI_Op)(0x58000006)
+#define MPI_LOR     (MPI_Op)(0x58000007)
+#define MPI_BOR     (MPI_Op)(0x58000008)
+#define MPI_LXOR    (MPI_Op)(0x58000009)
+#define MPI_BXOR    (MPI_Op)(0x5800000a)
+#define MPI_MINLOC  (MPI_Op)(0x5800000b)
+#define MPI_MAXLOC  (MPI_Op)(0x5800000c)
+#define MPI_REPLACE (MPI_Op)(0x5800000d)
+#define MPI_NO_OP   (MPI_Op)(0x5800000e)
+
+MPI op :
+1 MPI_MAX maximum                          not supported
+2 MPI_MIN minimum                          not supported
+3 MPI_SUM sum                              supported
+4 MPI_PROD product                         not supported
+5 MPI_LAND logical and                     not supported
+6 MPI_BAND bit-wise and                    supported
+7 MPI_LOR logical or                       not supported
+8 MPI_BOR bit-wise or                      supported
+9 MPI_LXOR logical exclusive or (xor)      not supported
+10 MPI_BXOR bit-wise exclusive or (xor)    supported
+11 MPI_MINLOC min value and location       not supported
+12 MPI_MAXLOC max value and location       not supported
+13 MPI_REPLACE                             supported
+   MPI_NO_OP   (MPI_Op)(0x5800000e)
+********************************************
+initialized rma_op_mask  0b0001 0010 1010 0100
+********************************************
+ucx supported hardware-enabled RMA acc ops
+enum ucp_atomic_op_t used for ucp_atomic_op_nbx
+UCP_ATOMIC_OP_ADD Atomic add 0
+UCP_ATOMIC_OP_SWAP Atomic swap 1
+UCP_ATOMIC_OP_CSWAP Atomic conditional swap 2
+UCP_ATOMIC_OP_AND Atomic and 3
+UCP_ATOMIC_OP_OR Atomic or 4
+UCP_ATOMIC_OP_XOR Atomic xor 5
+*/
+void psucp_init_rma_masks(void)
+{
+    psucp_rma_module_t *pscom_ucp_rma_module = &ucp_rma_module;
+
+    /* init plugin rma masks, hardcoded for now */
+    pscom_ucp_rma_module->rma_mask = 0;
+    pscom_ucp_rma_module->rma_mask |= (1 << PSCOM_RMA_PUT);
+    pscom_ucp_rma_module->rma_mask |= (1 << PSCOM_RMA_GET);
+    pscom_ucp_rma_module->rma_mask |= (1 << PSCOM_RMA_ACCUMULATE);
+    pscom_ucp_rma_module->rma_mask |= (1 << PSCOM_RMA_GET_ACCUMULATE);
+    pscom_ucp_rma_module->rma_mask |= (1 << PSCOM_RMA_FETCH_AND_OP);
+    pscom_ucp_rma_module->rma_mask |= (1 << PSCOM_RMA_COMPARE_AND_SWAP);
+
+    /* determined by which atomic operation is supported by the hardware */
+    /* mask used for get acc and fop */
+    pscom_ucp_rma_module->rma_fetch_op_mask = 0b0001001010100100;
+    /* mask used for acc */
+    pscom_ucp_rma_module->rma_acc_op_mask   = 0b0000001010100100;
+
+    return;
+}
+
+
+/**
+ * @brief this converts pscom atomic op code (mpich op code) into ucp atomic op
+ * code
+ *
+ * @param rma_opcode pscom op code (MPICH op code)
+ * @return ucp_atomic_op_t
+ *
+ */
+ucp_atomic_op_t psucp_rma_opcode_convert(pscom_rma_atomic_op_t rma_opcode)
+{
+    switch (rma_opcode) {
+    case PSCOM_SUM: return UCP_ATOMIC_OP_ADD; break;
+    case PSCOM_BAND: return UCP_ATOMIC_OP_AND; break;
+    case PSCOM_BOR: return UCP_ATOMIC_OP_OR; break;
+    case PSCOM_BXOR: return UCP_ATOMIC_OP_XOR; break;
+    case PSCOM_REPLACE: return UCP_ATOMIC_OP_SWAP; break;
+    default: break;
+    }
+    /* we use `UCP_ATOMIC_OP_LAST` as a placeholder for an invalid operation
+     * here */
+    return UCP_ATOMIC_OP_LAST;
 }

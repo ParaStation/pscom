@@ -16,10 +16,26 @@
 #include <stdio.h>
 #include <sys/uio.h>
 #include <sys/types.h>
+#include "pscom.h"
 
 
 typedef struct psucp_con_info psucp_con_info_t;
 typedef struct psucp_hca_info psucp_hca_info_t;
+typedef struct psucp_rma_module psucp_rma_module_t;
+typedef struct psucp_con_rma_stat psucp_con_rma_stat_t;
+
+struct psucp_con_rma_stat {
+    size_t issued_op_count;
+    size_t local_complete;
+    int flush_local;
+    int flush_remote;
+};
+
+
+typedef struct pscom_ucp_sock {
+    unsigned flush_required; /**< flush tag */
+} pscom_ucp_sock_t;
+
 
 // contact endpoint info
 typedef struct psucp_info_msg_s {
@@ -112,6 +128,40 @@ ssize_t psucp_irecv(psucp_con_info_t *con_info, psucp_msg_t *msg, void *buf,
                     size_t size);
 /* Callback to be implemented by upper layer */
 void pscom_psucp_read_done(void *con_priv, void *req_priv);
+
+/* rma */
+int psucp_rma_mem_register(void *addr, size_t length, void **rkeybuf,
+                           uint16_t *bufsize, ucp_mem_h *memh);
+int psucp_rma_mem_deregister(ucp_mem_h memh);
+int psucp_rma_rkey_generate(psucp_con_info_t *con_info, void *rkeybuf,
+                            ucp_rkey_h *rkey);
+int psucp_rma_rkey_destroy(ucp_rkey_h rkey);
+void psucp_rma_rkey_buf_free(void *rkey_buf);
+
+int psucp_rma_put(psucp_con_info_t *ci, void *buffer, size_t length,
+                  void *remote_addr, ucp_rkey_h ucp_rkey, void *req_priv);
+int psucp_rma_get(psucp_con_info_t *ci, void *buffer, size_t length,
+                  void *remote_addr, ucp_rkey_h ucp_rkey, void *req_priv);
+int psucp_rma_native_check(pscom_rma_op_t rma_op);
+int psucp_rma_atomics_check(pscom_rma_atomic_op_t atomic_op,
+                            pscom_datatype_t data_type, size_t length,
+                            pscom_rma_op_t rma_op);
+int psucp_rma_atomic_op(psucp_con_info_t *ci, void *buffer, size_t length,
+                        void *remote_addr, void *result_addr,
+                        ucp_atomic_op_t ucp_opcode, ucp_rkey_h ucp_rkey,
+                        void *req_priv);
+int psucp_rma_atomic_op_segment(psucp_con_info_t *ci, void *buffer,
+                                size_t length, pscom_datatype_t data_type,
+                                void *remote_addr, void *result_addr,
+                                ucp_atomic_op_t ucp_opcode, ucp_rkey_h ucp_rkey,
+                                void *req_priv);
+ucp_atomic_op_t psucp_rma_opcode_convert(pscom_rma_atomic_op_t rma_opcode);
+int psucp_rma_worker_flush(void);
+int psucp_rma_ep_flush(psucp_con_info_t *con_info);
+int psucp_rma_ep_flush_local(psucp_con_info_t *con_info);
+void pscom_psucp_rma_put_done(void *req_priv);
+void pscom_psucp_rma_cs_done(void *req_priv);
+void psucp_init_rma_masks(void);
 
 /*
  * Configuration
